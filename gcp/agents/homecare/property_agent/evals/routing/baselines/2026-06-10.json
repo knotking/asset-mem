@@ -1,0 +1,955 @@
+{
+  "generated_at": "2026-06-10T23:23:13+0530",
+  "cases_file": "/Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/property_agent/evals/routing/cases.yaml",
+  "filter": null,
+  "repeat": 1,
+  "summary": {
+    "total": 42,
+    "passed": 39,
+    "failed": 3,
+    "errors": 0,
+    "pass_rate": 0.9286,
+    "latency_ms": {
+      "p50": 1496,
+      "p95": 2255,
+      "mean": 1663
+    },
+    "field_mismatch_counts": {
+      "retrieval_only": 2,
+      "capability_key": 1,
+      "run_optional_agents": 1
+    }
+  },
+  "results": [
+    {
+      "case_id": "greeting_hi",
+      "passed": true,
+      "elapsed_ms": 2255,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "greeting",
+        "route": "none",
+        "expanded_user_query": "hi",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "greeting",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "greeting_good_morning",
+      "passed": true,
+      "elapsed_ms": 1653,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "greeting",
+        "route": "none",
+        "expanded_user_query": "good morning!",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "greeting",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "greeting_with_selection",
+      "passed": true,
+      "elapsed_ms": 2267,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "greeting",
+        "route": "none",
+        "expanded_user_query": "hello",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "greeting",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "capabilities_what_can_you_do",
+      "passed": true,
+      "elapsed_ms": 1413,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "capabilities",
+        "route": "none",
+        "expanded_user_query": "what can you do?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "capabilities",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "capabilities_suggest",
+      "passed": true,
+      "elapsed_ms": 1271,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "capabilities",
+        "route": "none",
+        "expanded_user_query": "what do you suggest I look at?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "capabilities",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "closure_thanks",
+      "passed": true,
+      "elapsed_ms": 1423,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "acknowledgment",
+        "route": "none",
+        "expanded_user_query": "thanks, that's really helpful",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "closure",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "closure_got_it",
+      "passed": true,
+      "elapsed_ms": 1351,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "acknowledgment",
+        "route": "none",
+        "expanded_user_query": "got it",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "closure",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "accept_offer_yes_pending_cost",
+      "passed": true,
+      "elapsed_ms": 6784,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Run cost analysis for the vehicle paint damage",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "cost"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_explicit",
+        "menu_index": 5,
+        "capability_key": "cost",
+        "discourse_act": "accept_offer",
+        "focus_branch": "cost",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "accept_offer_sure_do_it",
+      "passed": true,
+      "elapsed_ms": 1677,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Find local service providers for this repair",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "service"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_explicit",
+        "menu_index": 4,
+        "capability_key": "service",
+        "discourse_act": "accept_offer",
+        "focus_branch": "service",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "accept_offer_ok_after_question",
+      "passed": true,
+      "elapsed_ms": 1836,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Run cost analysis and compare DIY vs professional",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "cost"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_explicit",
+        "menu_index": 5,
+        "capability_key": "cost",
+        "discourse_act": "accept_offer",
+        "focus_branch": "cost",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "decline_offer_is_closure",
+      "passed": true,
+      "elapsed_ms": 1197,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "acknowledgment",
+        "route": "none",
+        "expanded_user_query": "no thanks, that's all",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "closure",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "explain_prior_pro_expensive",
+      "passed": true,
+      "elapsed_ms": 1851,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "why is professional so expensive?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": 5,
+        "capability_key": "cost",
+        "discourse_act": "explain_prior",
+        "focus_branch": "cost",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "explain_prior_diy_steps",
+      "passed": true,
+      "elapsed_ms": 1631,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "can you explain the DIY steps in more detail?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": 3,
+        "capability_key": "diy",
+        "discourse_act": "explain_prior",
+        "focus_branch": "diy",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "explain_prior_worth_it",
+      "passed": true,
+      "elapsed_ms": 1239,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "is DIY really worth it compared to hiring someone?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": "cost",
+        "discourse_act": "explain_prior",
+        "focus_branch": "cost",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "provider_detail_first",
+      "passed": true,
+      "elapsed_ms": 1572,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "tell me more about the first provider, Brentwood Pro Painters",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "provider_detail",
+        "focus_branch": "service",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "provider_detail_phone",
+      "passed": true,
+      "elapsed_ms": 1321,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "do they have a phone number for the service providers mentioned?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "provider_detail",
+        "focus_branch": "service",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "cold_summarize_selected",
+      "passed": true,
+      "elapsed_ms": 1267,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Summarize the issues for the selected checkpoint",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "new_analysis",
+        "query_mode": "interpret_session",
+        "menu_index": 0,
+        "capability_key": "checkpoints",
+        "discourse_act": "new_work",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "inventory_status",
+      "passed": true,
+      "elapsed_ms": 1794,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "What checkpoints do I have and what is their current status?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "new_analysis",
+        "query_mode": "interpret_session",
+        "menu_index": 0,
+        "capability_key": "checkpoints",
+        "discourse_act": "new_work",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "inventory_list",
+      "passed": true,
+      "elapsed_ms": 1806,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "list my checkpoints",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "new_analysis",
+        "query_mode": "interpret_session",
+        "menu_index": 0,
+        "capability_key": "checkpoints",
+        "discourse_act": "new_work",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "cold_any_issues",
+      "passed": true,
+      "elapsed_ms": 1583,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "are there any issues with my property?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "new_analysis",
+        "query_mode": "interpret_session",
+        "menu_index": 0,
+        "capability_key": "checkpoints",
+        "discourse_act": "new_work",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "selection_changed_car_issue",
+      "passed": true,
+      "elapsed_ms": 1580,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Is there any issue with my car based on the selected checkpoints?",
+        "retrieval_only": false,
+        "run_optional_agents": [],
+        "user_goal": "new_analysis",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": "checkpoints",
+        "discourse_act": "new_work",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "post_branch_summarize",
+      "passed": true,
+      "elapsed_ms": 1623,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Summarize the issues for the selected checkpoints",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": "checkpoints",
+        "discourse_act": "explain_prior",
+        "focus_branch": "checkpoint",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "fresh_provider_search",
+      "passed": true,
+      "elapsed_ms": 1409,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "search again for current providers near me",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "service"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_issue_search",
+        "menu_index": 4,
+        "capability_key": "service",
+        "discourse_act": "new_work",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "branch_cost_explicit",
+      "passed": true,
+      "elapsed_ms": 1496,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "run cost analysis",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "cost"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_explicit",
+        "menu_index": 5,
+        "capability_key": "cost",
+        "discourse_act": "new_work",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "branch_diy_explicit",
+      "passed": true,
+      "elapsed_ms": 1781,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Run DIY analysis on the selected checkpoint",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "diy"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_explicit",
+        "menu_index": 3,
+        "capability_key": "diy",
+        "discourse_act": "new_work",
+        "focus_branch": "diy",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "branch_service_providers",
+      "passed": true,
+      "elapsed_ms": 1429,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "find local service providers for this repair",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "service"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_explicit",
+        "menu_index": 4,
+        "capability_key": "service",
+        "discourse_act": "new_work",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "branch_coverage_insurance",
+      "passed": true,
+      "elapsed_ms": 1909,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "would this damage be covered by my insurance?",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "coverage"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_issue_search",
+        "menu_index": 2,
+        "capability_key": "coverage",
+        "discourse_act": "new_work",
+        "focus_branch": "coverage",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "branch_cost_compare_chip_text",
+      "passed": true,
+      "elapsed_ms": 1678,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Run cost analysis and compare DIY vs professional",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "diy",
+          "cost"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_explicit",
+        "menu_index": 5,
+        "capability_key": "cost",
+        "discourse_act": "new_work",
+        "focus_branch": "cost",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "branch_rerun_cost_explicit",
+      "passed": true,
+      "elapsed_ms": 1299,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "run cost analysis again",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "cost"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_explicit",
+        "menu_index": 5,
+        "capability_key": "cost",
+        "discourse_act": "new_work",
+        "focus_branch": "cost",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "branch_how_about_cost",
+      "passed": true,
+      "elapsed_ms": 1317,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "how about cost?",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "cost"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_explicit",
+        "menu_index": 5,
+        "capability_key": "cost",
+        "discourse_act": "new_work",
+        "focus_branch": "cost",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "menu_ordinal_last_pick",
+      "passed": false,
+      "elapsed_ms": 1297,
+      "mismatches": {
+        "capability_key": {
+          "expected": "cost",
+          "actual": "checkpoints"
+        }
+      },
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Help me choose what to explore from the capability menu.",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "cost"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_issue_search",
+        "menu_index": 5,
+        "capability_key": "checkpoints",
+        "discourse_act": "accept_offer",
+        "focus_branch": "cost",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "docs_policy_water_damage",
+      "passed": true,
+      "elapsed_ms": 1181,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "user_docs",
+        "expanded_user_query": "what does my insurance policy say about water damage?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": "documents",
+        "discourse_act": "new_work",
+        "focus_branch": "documents",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "docs_lease_end",
+      "passed": true,
+      "elapsed_ms": 1770,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "user_docs",
+        "expanded_user_query": "when does my lease end?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": "documents",
+        "discourse_act": "new_work",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "docs_summarize",
+      "passed": true,
+      "elapsed_ms": 1326,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "user_docs",
+        "expanded_user_query": "summarize my documents",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": "documents",
+        "discourse_act": "new_work",
+        "focus_branch": "documents",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "docs_coverage_question_on_docs_tab",
+      "passed": true,
+      "elapsed_ms": 1333,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "user_docs",
+        "expanded_user_query": "does my policy cover the garage door damage?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": "documents",
+        "discourse_act": "new_work",
+        "focus_branch": "coverage",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "report_summarize",
+      "passed": true,
+      "elapsed_ms": 1750,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "report",
+        "expanded_user_query": "summarize my report",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": "reports",
+        "discourse_act": "replay_report",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "report_cost_question_stays_report",
+      "passed": true,
+      "elapsed_ms": 1356,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "report",
+        "expanded_user_query": "what were the cost estimates in the report?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": "reports",
+        "discourse_act": "replay_report",
+        "focus_branch": "cost",
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "report_show_again",
+      "passed": true,
+      "elapsed_ms": 1566,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "report",
+        "expanded_user_query": "show me the report again",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "replay_deliverable",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": "reports",
+        "discourse_act": "replay_report",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "checkpoint_replay_full_report",
+      "passed": true,
+      "elapsed_ms": 1516,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "report",
+        "expanded_user_query": "show me the full analysis report again",
+        "retrieval_only": false,
+        "run_optional_agents": [],
+        "user_goal": "replay_deliverable",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "replay_report",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "ui_toggles_never_copied",
+      "passed": true,
+      "elapsed_ms": 1401,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "are there any issues with my checkpoints?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "new_analysis",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": "checkpoints",
+        "discourse_act": "new_work",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "selection_cleared_summarize",
+      "passed": false,
+      "elapsed_ms": 1376,
+      "mismatches": {
+        "retrieval_only": {
+          "expected": true,
+          "actual": false
+        }
+      },
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "summarize the issues for the vehicle exterior checkpoints",
+        "retrieval_only": false,
+        "run_optional_agents": [],
+        "user_goal": "new_analysis",
+        "query_mode": "interpret_session",
+        "menu_index": 0,
+        "capability_key": "checkpoints",
+        "discourse_act": "new_work",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    },
+    {
+      "case_id": "general_homecare_question",
+      "passed": false,
+      "elapsed_ms": 1273,
+      "mismatches": {
+        "retrieval_only": {
+          "expected": true,
+          "actual": false
+        },
+        "run_optional_agents": {
+          "expected": [],
+          "actual": [
+            "service"
+          ]
+        }
+      },
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "how often should I service my HVAC system?",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "service"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_issue_search",
+        "menu_index": 4,
+        "capability_key": "service",
+        "discourse_act": "new_work",
+        "focus_branch": null,
+        "resolve_source": "llm"
+      }
+    }
+  ]
+}
