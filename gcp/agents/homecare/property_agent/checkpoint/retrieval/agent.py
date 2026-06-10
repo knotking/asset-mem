@@ -28,6 +28,19 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+_FIRESTORE_CLIENT: Any = None
+
+
+def _firestore_client():
+    """Cached Firestore client — construction costs hundreds of ms per call."""
+    global _FIRESTORE_CLIENT
+    if _FIRESTORE_CLIENT is None:
+        # Lazy import to avoid deployment issues
+        from google.cloud import firestore  # type: ignore[attr-defined]
+
+        _FIRESTORE_CLIENT = firestore.Client()
+    return _FIRESTORE_CLIENT
+
 
 
 def build_search_query_from_checkpoints(
@@ -67,6 +80,7 @@ def ask_checkpoints_retrieval(
     location: Optional[str] = None,
     checkpoint_ids: Optional[List[str]] = None,
     tool_context: ToolContext | None = None,
+    refine_branch_intents: bool = True,
 ):
     """
     Retrieves relevant checkpoints using Firestore Vector Search based on semantic query matching.
@@ -77,6 +91,8 @@ def ask_checkpoints_retrieval(
         location: Optional location filter (e.g., "Kitchen", "Car")
         checkpoint_ids: Optional list of specific checkpoint IDs to limit results to (when provided, only these checkpoints are considered)
         tool_context: Tool context containing user_id and session information
+        refine_branch_intents: When False, skip the branch-intent refiner LLM call
+            (used on retrieval-only turns where no optional branch will consume it)
 
     Returns:
         ``{"checkpoints": [...], "search_query": str, "inventory_meta": dict|None}`` —
@@ -167,11 +183,7 @@ def ask_checkpoints_retrieval(
             property_id,
         )
 
-        # Lazy import to avoid deployment issues
-        from google.cloud import firestore  # type: ignore[attr-defined]
-
-        # Initialize Firestore client
-        db = firestore.Client()
+        db = _firestore_client()
 
         # If specific checkpoint IDs are provided, fetch those checkpoints directly
         if checkpoint_ids and len(checkpoint_ids) > 0:
@@ -195,27 +207,28 @@ def ask_checkpoints_retrieval(
             )
 
             t_fetch = time.monotonic()
-            for checkpoint_id in checkpoint_ids:
-                try:
-                    logger.debug("checkpoint_retrieval: fetch doc id=%s", checkpoint_id)
-                    checkpoint_doc = checkpoints_ref.document(checkpoint_id).get()
+            try:
+                doc_refs = [checkpoints_ref.document(cid) for cid in checkpoint_ids]
+                fetched_by_id: Dict[str, Dict[str, Any]] = {}
+                for checkpoint_doc in db.get_all(doc_refs):
                     if checkpoint_doc.exists:
                         checkpoint_data = checkpoint_doc.to_dict()
                         checkpoint_data["id"] = checkpoint_doc.id
+                        fetched_by_id[checkpoint_doc.id] = checkpoint_data
+                # Preserve requested order; get_all returns docs in arbitrary order.
+                for checkpoint_id in checkpoint_ids:
+                    checkpoint_data = fetched_by_id.get(checkpoint_id)
+                    if checkpoint_data is not None:
                         checkpoints.append(checkpoint_data)
-                        logger.debug(
-                            "checkpoint_retrieval: loaded id=%s aiAnalysis=%s",
-                            checkpoint_id,
-                            bool(checkpoint_data.get("aiAnalysis")),
-                        )
                     else:
                         logger.warning(
                             f"Checkpoint document {checkpoint_id} does not exist"
                         )
-                except Exception as e:
-                    logger.error(
-                        f"Error fetching checkpoint {checkpoint_id}: {e}", exc_info=True
-                    )
+            except Exception as e:
+                logger.error(
+                    f"Error batch-fetching checkpoints {checkpoint_ids}: {e}",
+                    exc_info=True,
+                )
 
             logger.info(
                 "checkpoint_retrieval: firestore_by_id fetch_duration_ms=%d "
@@ -409,9 +422,19 @@ def ask_checkpoints_retrieval(
             )
 
         search_query = build_search_query_from_checkpoints(formatted_results)
-        branch_intents = refine_checkpoint_branch_search_intents(
-            search_query, formatted_results
-        )
+        if refine_branch_intents:
+            branch_intents = refine_checkpoint_branch_search_intents(
+                search_query, formatted_results
+            )
+        else:
+            from property_agent.checkpoint.branch_search_intents import (
+                BranchSearchIntents,
+            )
+
+            logger.debug(
+                "checkpoint_retrieval: branch intent refinement skipped (retrieval-only)"
+            )
+            branch_intents = BranchSearchIntents.fallback_from_raw_query(search_query)
         search_query = branch_intents.issue_stem or search_query
         if formatted_results:
             logger.debug(
@@ -429,7 +452,11 @@ def ask_checkpoints_retrieval(
         )
         if tool_context is not None and search_query:
             tool_context.state[CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY] = search_query
-        if tool_context is not None and branch_intents.issue_stem:
+        if (
+            tool_context is not None
+            and refine_branch_intents
+            and branch_intents.issue_stem
+        ):
             tool_context.state[CHECKPOINT_BRANCH_SEARCH_INTENTS_KEY] = (
                 branch_intents.to_dict()
             )

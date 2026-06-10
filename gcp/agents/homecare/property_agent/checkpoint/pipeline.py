@@ -159,11 +159,25 @@ async def run_checkpoint_pipeline(
     tool_context.state["user_query"] = user_query
     tool_context.state["property_id"] = property_id
 
+    requested = optional_agents_for_progress_from_state(tool_context.state)
+    if not requested and checkpoint_optional_agents:
+        requested = [
+            b for b in checkpoint_optional_agents if b in ("coverage", "diy", "service", "cost")
+        ]
+
+    resolved = resolved_turn_from_state(tool_context.state)
+    retrieval_only = bool(resolved and resolved.retrieval_only)
+    if retrieval_only:
+        requested = []
+
     retrieval = ask_checkpoints_retrieval(
         user_query=user_query,
         property_id=property_id,
         checkpoint_ids=checkpoint_ids,
         tool_context=tool_context,
+        # Branch search intents (YouTube/shopping/service queries) are only consumed
+        # by optional branches; skip the extra LLM hop on retrieval-only turns.
+        refine_branch_intents=bool(requested),
     )
     checkpoints = retrieval.get("checkpoints") if isinstance(retrieval, dict) else []
     inventory_meta = (
@@ -193,17 +207,6 @@ async def run_checkpoint_pipeline(
         if isinstance(sq, str):
             search_query = sq
             tool_context.state[CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY] = sq
-
-    requested = optional_agents_for_progress_from_state(tool_context.state)
-    if not requested and checkpoint_optional_agents:
-        requested = [
-            b for b in checkpoint_optional_agents if b in ("coverage", "diy", "service", "cost")
-        ]
-
-    resolved = resolved_turn_from_state(tool_context.state)
-    retrieval_only = bool(resolved and resolved.retrieval_only)
-    if retrieval_only:
-        requested = []
 
     analysis = build_initial_analysis(
         checkpoint_results=blob,
