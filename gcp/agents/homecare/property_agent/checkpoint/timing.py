@@ -36,10 +36,11 @@ def _write_state(state: Any, data: Dict[str, Any]) -> None:
 
 
 def begin_checkpoint_request(state: Any) -> None:
-    """Start wall-clock timer for an end-to-end checkpoint analysis request."""
-    data = _state_dict(state)
-    if data.get("started_at") is not None:
-        return
+    """Start wall-clock timer for an end-to-end checkpoint analysis request.
+
+    Always resets: session state persists across turns, so a stale ``started_at``
+    from a prior request would otherwise make every later total_ms wrong.
+    """
     data = {
         "started_at": time.monotonic(),
         "emitted": False,

@@ -56,6 +56,20 @@ def test_emit_is_idempotent():
     assert logger.info.call_count == 1
 
 
+def test_begin_resets_stale_timing_from_prior_request():
+    state: dict = {}
+    crt.begin_checkpoint_request(state)
+    crt.record_retrieval_ms(state, 100)
+    crt.emit_checkpoint_request_timing(state, source="first")
+    first_started = state[crt.CHECKPOINT_REQUEST_TIMING_STATE_KEY]["started_at"]
+
+    crt.begin_checkpoint_request(state)
+    data = state[crt.CHECKPOINT_REQUEST_TIMING_STATE_KEY]
+    assert data["started_at"] >= first_started
+    assert data["emitted"] is False
+    assert data["retrieval_ms"] is None
+
+
 def test_record_parallel_sets_synthesis_start():
     state: dict = {}
     crt.record_parallel_ms(state, 1000)

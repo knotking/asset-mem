@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 def normalize_checkpoint_optional_agents(value: Any) -> List[str]:
     if not isinstance(value, list):
         return []
-    return [str(x) for x in value if str(x) in _VALID_OPTIONAL_BRANCHES]
+    return list(
+        dict.fromkeys(str(x) for x in value if str(x) in _VALID_OPTIONAL_BRANCHES)
+    )
 
 
 def optional_agents_for_progress_from_state(state: Any) -> List[str]:
@@ -29,9 +31,11 @@ def optional_agents_for_progress_from_state(state: Any) -> List[str]:
         and resolved.run_optional_agents
         and not resolved.retrieval_only
     ):
-        return [
-            b for b in resolved.run_optional_agents if b in _VALID_OPTIONAL_BRANCHES
-        ]
+        return list(
+            dict.fromkeys(
+                b for b in resolved.run_optional_agents if b in _VALID_OPTIONAL_BRANCHES
+            )
+        )
     return normalize_checkpoint_optional_agents(state.get("checkpoint_optional_agents"))
 
 

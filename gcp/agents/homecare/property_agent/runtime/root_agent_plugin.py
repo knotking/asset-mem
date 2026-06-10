@@ -282,12 +282,12 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
                 )
                 if not block_ui:
                     branches.extend(branches_mentioned_in_query(uq))
-                    state_branches = tool_context.state.get(
-                        "checkpoint_optional_agents"
-                    ) or []
-                    for branch in state_branches:
-                        if branch not in branches:
-                            branches.append(branch)
+                    branches.extend(
+                        tool_context.state.get("checkpoint_optional_agents") or []
+                    )
+                # Dedupe while preserving order: duplicates here pollute session
+                # state and get echoed back by the next turn's resolve LLM.
+                branches = list(dict.fromkeys(branches))
                 if branches:
                     args["checkpoint_optional_agents"] = branches
             from property_agent.checkpoint.session_input import (

@@ -129,6 +129,9 @@ def test_ask_checkpoints_retrieval_uses_inventory_path(monkeypatch: pytest.Monke
         "property_agent.checkpoint.retrieval.agent.list_recent_property_checkpoints",
         _fake_list,
     )
+    monkeypatch.setattr(
+        "property_agent.checkpoint.retrieval.agent._FIRESTORE_CLIENT", None
+    )
     monkeypatch.setattr("google.cloud.firestore.Client", lambda: MagicMock())
     monkeypatch.setattr(
         "property_agent.checkpoint.retrieval.agent.refine_checkpoint_branch_search_intents",

@@ -316,11 +316,13 @@ def sanitize_llm_payload_nlu_first(
             menu_index = int(menu_index)
         except (TypeError, ValueError):
             menu_index = None
-    branches = [
-        str(b)
-        for b in (data.get("run_optional_agents") or [])
-        if str(b) in OPTIONAL_CHECKPOINT_BRANCHES
-    ]
+    branches = list(
+        dict.fromkeys(
+            str(b)
+            for b in (data.get("run_optional_agents") or [])
+            if str(b) in OPTIONAL_CHECKPOINT_BRANCHES
+        )
+    )
     base: dict[str, Any] = {
         "route": route,
         "expanded_user_query": expanded,

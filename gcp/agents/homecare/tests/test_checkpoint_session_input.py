@@ -3,19 +3,27 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from unittest.mock import MagicMock
 
 import pytest
 
 from property_agent.checkpoint.session_input import (
     apply_session_checkpoint_ids_to_tool_args,
     checkpoint_ids_for_pipeline_from_state,
+    normalize_checkpoint_optional_agents,
 )
 
 
 def test_checkpoint_ids_for_pipeline_from_state_normalizes() -> None:
     state = {"checkpoint_ids": ["  abc123  ", "", None, "def456"]}
     assert checkpoint_ids_for_pipeline_from_state(state) == ["abc123", "def456"]
+
+
+def test_normalize_checkpoint_optional_agents_dedupes_preserving_order() -> None:
+    assert normalize_checkpoint_optional_agents(["diy", "diy", "cost", "diy"]) == [
+        "diy",
+        "cost",
+    ]
+    assert normalize_checkpoint_optional_agents(["bogus", "cost"]) == ["cost"]
 
 
 def test_apply_session_checkpoint_ids_drops_executor_invented_slugs() -> None:
@@ -64,8 +72,8 @@ def test_ask_checkpoints_retrieval_falls_back_to_vector_on_by_id_miss(
         ]
 
     class _Doc:
-        def exists(self) -> bool:
-            return False
+        exists = False
+        id = "garage"
 
         def to_dict(self) -> dict:
             return {}
@@ -73,9 +81,6 @@ def test_ask_checkpoints_retrieval_falls_back_to_vector_on_by_id_miss(
     class _CheckpointRef:
         def document(self, _doc_id: str) -> "_CheckpointRef":
             return self
-
-        def get(self) -> _Doc:
-            return _Doc()
 
     class _CheckpointsCollection:
         def document(self, _doc_id: str) -> _CheckpointRef:
@@ -104,9 +109,15 @@ def test_ask_checkpoints_retrieval_falls_back_to_vector_on_by_id_miss(
             assert name == "users"
             return _UsersCollection()
 
+        def get_all(self, refs: list) -> list:
+            return [_Doc() for _ in refs]
+
     monkeypatch.setattr(
         "property_agent.checkpoint.retrieval.agent.search_checkpoints_by_vector",
         _fake_vector,
+    )
+    monkeypatch.setattr(
+        "property_agent.checkpoint.retrieval.agent._FIRESTORE_CLIENT", None
     )
     monkeypatch.setattr(
         "google.cloud.firestore.Client",
@@ -135,3 +146,53 @@ def test_ask_checkpoints_retrieval_falls_back_to_vector_on_by_id_miss(
     assert vector_called["query_text"] == "Are there any issues in the garage?"
     assert len(out["checkpoints"]) == 1
     assert out["checkpoints"][0]["checkpointId"] == "ZCeYq22NbWJynQBmlmyt"
+
+
+def test_ask_checkpoints_retrieval_skips_refiner_when_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from property_agent.checkpoint.retrieval.agent import ask_checkpoints_retrieval
+
+    def _fake_vector(**_kwargs):
+        return [
+            {
+                "id": "c1",
+                "name": "Garage",
+                "location": "Garage",
+                "aiAnalysis": {"summary": "Paint chip", "issues": ["chipped paint"]},
+            }
+        ]
+
+    refiner_calls: list = []
+
+    monkeypatch.setattr(
+        "property_agent.checkpoint.retrieval.agent.search_checkpoints_by_vector",
+        _fake_vector,
+    )
+    monkeypatch.setattr(
+        "property_agent.checkpoint.retrieval.agent._FIRESTORE_CLIENT", None
+    )
+    monkeypatch.setattr("google.cloud.firestore.Client", lambda: SimpleNamespace())
+    monkeypatch.setattr(
+        "property_agent.checkpoint.retrieval.agent.refine_checkpoint_branch_search_intents",
+        lambda *a, **k: refiner_calls.append((a, k)),
+    )
+
+    state: dict = {"user_id": "u1"}
+    session = SimpleNamespace(user_id="u1")
+    tool_context = SimpleNamespace(
+        state=state, _invocation_context=SimpleNamespace(session=session)
+    )
+
+    out = ask_checkpoints_retrieval(
+        user_query="Summarize the issues for the selected checkpoint",
+        property_id="p1",
+        tool_context=tool_context,
+        refine_branch_intents=False,
+    )
+
+    assert refiner_calls == []
+    assert len(out["checkpoints"]) == 1
+    assert out["search_query"]
+    # Fallback intents must not clobber prior refined intents in session state.
+    assert "checkpoint_branch_search_intents" not in state
