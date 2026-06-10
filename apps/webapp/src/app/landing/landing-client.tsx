@@ -387,8 +387,8 @@ export default function LandingPageClient() {
                 <YouTubeModal
                   url={
                     isMobile
-                      ? "https://youtu.be/vn03juDFkss"
-                      : "https://youtu.be/3AM-hzbMOL4"
+                      ? "https://youtu.be/pO3jE97sqgw"
+                      : "https://youtu.be/pO3jE97sqgw"
                   }
                   trigger={
                     <button

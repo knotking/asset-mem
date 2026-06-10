@@ -72,17 +72,19 @@ export function YouTubeModal({ url, trigger, className }: YouTubeModalProps) {
       <DialogTrigger asChild className={className}>
         {trigger}
       </DialogTrigger>
-      <DialogContent className="max-w-5xl w-[95vw] p-0 bg-transparent border-none shadow-none [&>button]:absolute [&>button]:right-2 [&>button]:top-2 [&>button]:z-50 [&>button]:bg-white/90 [&>button]:hover:bg-white [&>button]:text-black [&>button]:rounded-full [&>button]:p-2 [&>button]:shadow-lg">
+      <DialogContent className="w-[95vw] max-w-[1680px] p-0 bg-transparent border-none shadow-none [&>button]:absolute [&>button]:right-2 [&>button]:top-2 [&>button]:z-50 [&>button]:bg-white/90 [&>button]:hover:bg-white [&>button]:text-black [&>button]:rounded-full [&>button]:p-2 [&>button]:shadow-lg">
         <DialogTitle className="sr-only">Watch Demo Video</DialogTitle>
         <div className="relative w-full rounded-lg overflow-hidden bg-black" style={{ paddingBottom: "56.25%" }}>
-          <iframe
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            title="YouTube video player"
-            className="absolute top-0 left-0 w-full h-full"
-          />
+          {open ? (
+            <iframe
+              src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title="YouTube video player"
+              className="absolute top-0 left-0 w-full h-full"
+            />
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>

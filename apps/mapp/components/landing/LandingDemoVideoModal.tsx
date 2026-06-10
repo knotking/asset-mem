@@ -1,11 +1,10 @@
 import React from 'react';
-import { Modal, Pressable, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, View, useWindowDimensions } from 'react-native';
 import { X } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { LazyYouTubePlayer } from '@/lib/lazy-youtube-player';
 import { AccordionMountContext } from '@/lib/accordion-mount-context';
-import { openExternalWebUrl } from '@/lib/open-external-url';
 
 const MODAL_COLORS = {
   overlay: 'rgba(0, 0, 0, 0.85)',
@@ -14,6 +13,19 @@ const MODAL_COLORS = {
   foreground: '#fafafa',
   mutedForeground: 'rgba(255, 255, 255, 0.65)',
 };
+
+/** Phones stay compact; tablets use a wider embed for higher YouTube auto quality. */
+const PHONE_MAX_PLAYER_WIDTH = 560;
+const TABLET_MIN_SHORT_EDGE = 600;
+const TABLET_MAX_PLAYER_WIDTH = 1680;
+
+function getDemoPlayerWidth(windowWidth: number, windowHeight: number): number {
+  const isTablet = Math.min(windowWidth, windowHeight) >= TABLET_MIN_SHORT_EDGE;
+  if (isTablet) {
+    return Math.min(windowWidth - 48, TABLET_MAX_PLAYER_WIDTH);
+  }
+  return Math.min(windowWidth - 32, PHONE_MAX_PLAYER_WIDTH);
+}
 
 type LandingDemoVideoModalProps = {
   visible: boolean;
@@ -26,8 +38,8 @@ export function LandingDemoVideoModal({
   onClose,
   videoUrl,
 }: LandingDemoVideoModalProps) {
-  const { width } = useWindowDimensions();
-  const playerWidth = Math.min(width - 32, 560);
+  const { width, height } = useWindowDimensions();
+  const playerWidth = getDemoPlayerWidth(width, height);
 
   return (
     <Modal
@@ -92,26 +104,6 @@ export function LandingDemoVideoModal({
                   testID="landing-demo-youtube"
                 />
               </AccordionMountContext.Provider>
-
-              <TouchableOpacity
-                onPress={() => {
-                  void openExternalWebUrl(videoUrl);
-                }}
-                style={{
-                  marginTop: 12,
-                  paddingVertical: 14,
-                  paddingHorizontal: 16,
-                  borderRadius: 10,
-                  borderWidth: 2,
-                  borderColor: MODAL_COLORS.border,
-                  alignItems: 'center',
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Watch on YouTube">
-                <Text style={{ fontSize: 14, fontWeight: '500', color: MODAL_COLORS.foreground }}>
-                  Watch on YouTube
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
         </Pressable>

@@ -145,7 +145,7 @@ const steps = [
 ];
 
 const WEB_APP_BASE = 'https://asset-mem.com';
-const DEMO_VIDEO_URL = 'https://youtu.be/vn03juDFkss';
+const DEMO_VIDEO_URL = 'https://youtu.be/pO3jE97sqgw';
 
 export default function LandingPage() {
   const { user, loading } = useAuth();
