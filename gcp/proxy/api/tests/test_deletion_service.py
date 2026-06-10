@@ -87,6 +87,29 @@ def test_can_retry_deletion_job():
     assert deletion_service.can_retry_deletion_job({"status": "completed"}) is False
 
 
+@patch("services.checkpoint_service.publish_checkpoint_metrics_rebuild", return_value="msg-1")
+@patch("services.deletion_service._delete_doc_with_retry")
+@patch("services.deletion_service._delete_gcs_prefix", return_value=(0, []))
+@patch("services.deletion_service._firebase_storage_bucket_name", return_value=None)
+def test_delete_checkpoint_asset_publishes_metrics_rebuild(
+    mock_bucket, mock_gcs, mock_del_doc, mock_rebuild
+):
+    db = MagicMock()
+    cp_ref = MagicMock()
+    cp_ref.get.return_value.exists = True
+    cp_ref.get.return_value.to_dict.return_value = {"media": []}
+    db.collection.return_value.document.return_value.collection.return_value.document.return_value.collection.return_value.document.return_value = cp_ref
+
+    result = deletion_service.delete_checkpoint_asset(db, "u1", "p1", "c1")
+
+    assert result["deleted"] is True
+    mock_rebuild.assert_called_once_with(
+        user_id="u1",
+        property_id="p1",
+        reason="checkpoint.deleted",
+    )
+
+
 @patch("services.deletion_service._commit_with_retry")
 def test_update_job_refreshes_heartbeat_when_running(mock_commit):
     db = MagicMock()

@@ -412,6 +412,8 @@ def delete_checkpoint_asset(
     user_id: str,
     property_id: str,
     checkpoint_id: str,
+    *,
+    rebuild_metrics: bool = True,
 ) -> dict[str, Any]:
     warnings: list[str] = []
     cp_ref = (
@@ -441,16 +443,24 @@ def delete_checkpoint_asset(
     if snap.exists:
         _delete_doc_with_retry(cp_ref)
 
-    metrics_ref = (
-        db.collection("users")
-        .document(user_id)
-        .collection("properties")
-        .document(property_id)
-        .collection("metrics")
-        .document("summary")
-    )
-    if metrics_ref.get().exists:
-        _delete_doc_with_retry(metrics_ref)
+    if rebuild_metrics:
+        from services.checkpoint_service import publish_checkpoint_metrics_rebuild
+
+        try:
+            publish_checkpoint_metrics_rebuild(
+                user_id=user_id,
+                property_id=property_id,
+                reason="checkpoint.deleted",
+            )
+        except Exception as exc:
+            logger.warning(
+                "Failed to publish metrics rebuild after checkpoint delete user=%s property=%s checkpoint=%s: %s",
+                user_id,
+                property_id,
+                checkpoint_id,
+                exc,
+            )
+            warnings.append(f"metrics rebuild: {exc}")
 
     return {"deleted": True, "warnings": warnings}
 
@@ -1528,10 +1538,29 @@ def delete_checkpoints_batch(
             property_id=property_id,
             batch_id=batch_id,
             skip_mark=True,
-            operation=lambda c=cid: delete_checkpoint_asset(db, user_id, property_id, c),
+            operation=lambda c=cid: delete_checkpoint_asset(
+                db, user_id, property_id, c, rebuild_metrics=False
+            ),
         )
         _merge_batch_results(result, partial)
     _finalize_stuck_deleting_refs(refs)
+    if checkpoint_ids:
+        from services.checkpoint_service import publish_checkpoint_metrics_rebuild
+
+        try:
+            publish_checkpoint_metrics_rebuild(
+                user_id=user_id,
+                property_id=property_id,
+                reason="checkpoint.batch_deleted",
+            )
+        except Exception as exc:
+            logger.warning(
+                "Failed to publish metrics rebuild after batch checkpoint delete user=%s property=%s: %s",
+                user_id,
+                property_id,
+                exc,
+            )
+            result["warnings"].append(f"metrics rebuild: {exc}")
     return result
 
 

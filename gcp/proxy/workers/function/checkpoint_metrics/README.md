@@ -43,7 +43,11 @@ python3 -m pytest
 
 ## Deletion behavior
 
-- **Single checkpoint delete** (client): removes `metrics/summary` so the next completed analysis can rebuild aggregates.
+- **Checkpoint delete** (proxy): publishes a **full** re-aggregation to this worker instead of deleting `metrics/summary`.
 - **Property delete** (server job via `POST /deletion/property`): deletes the entire `metrics` subcollection as part of the property cascade.
+
+## Score derivation
+
+When `condition_scores.overall` is missing, the aggregator derives a headline score from `issues_by_severity` or structured `issues` (same severity map as the checkpoint analysis worker).
 
 
