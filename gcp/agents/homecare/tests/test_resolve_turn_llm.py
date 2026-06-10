@@ -145,6 +145,25 @@ def test_sanitize_advisory_professional_not_service_analysis() -> None:
     assert out["user_goal"] == "answer_from_context"
 
 
+def test_apply_checkpoint_retrieval_plan_cold_session_requests_retrieval() -> None:
+    payload = {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "What checkpoints do I have and what is their current status?",
+        "retrieval_only": True,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+    }
+    out = _apply_checkpoint_retrieval_plan(
+        payload,
+        user_query="What checkpoints do I have and what is their current status?",
+        state={"property_id": "prop-1"},
+    )
+    assert out["retrieval_only"] is True
+    assert out["run_optional_agents"] == []
+    assert out["user_goal"] == "new_analysis"
+
+
 def test_apply_checkpoint_retrieval_plan_includes_service_from_query_text() -> None:
     payload = {
         "intent": "substantive",

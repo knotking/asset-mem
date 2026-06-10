@@ -13,11 +13,14 @@ from typing import Any, Dict, List, Optional
 
 from google.adk.tools import ToolContext
 from dotenv import load_dotenv
+from .firestore_checkpoint_list import list_recent_property_checkpoints
 from .firestore_vector_search import search_checkpoints_by_vector
 from property_agent.checkpoint.constants import (
     CHECKPOINT_BRANCH_SEARCH_INTENTS_KEY,
+    CHECKPOINT_INVENTORY_META_STATE_KEY,
     CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY,
 )
+from property_agent.routing.query_mode.heuristics import query_requests_checkpoint_inventory
 from .media_search_query_refiner import refine_checkpoint_branch_search_intents
 from property_agent.checkpoint.timing import record_retrieval_ms
 
@@ -76,10 +79,11 @@ def ask_checkpoints_retrieval(
         tool_context: Tool context containing user_id and session information
 
     Returns:
-        ``{"checkpoints": [...], "search_query": str}`` — checkpoints carry analysis fields;
-        ``search_query`` is a short phrase from locations and issue descriptions for
-        downstream YouTube / shopping search. On failure or no matches, ``checkpoints``
-        is empty and ``search_query`` is ``""``.
+        ``{"checkpoints": [...], "search_query": str, "inventory_meta": dict|None}`` —
+        checkpoints carry analysis fields; ``search_query`` is a short phrase from
+        locations and issue descriptions for downstream YouTube / shopping search;
+        ``inventory_meta`` is set for inventory list queries (recent N, with totals).
+        On failure or no matches, ``checkpoints`` is empty and ``search_query`` is ``""``.
     """
     t0 = time.monotonic()
 
@@ -91,7 +95,17 @@ def ask_checkpoints_retrieval(
             record_retrieval_ms(tool_context.state, _elapsed_ms())
 
     try:
-        ck_mode = "by_id" if checkpoint_ids and len(checkpoint_ids) > 0 else "vector"
+        inventory_query = bool(
+            not (checkpoint_ids and len(checkpoint_ids) > 0)
+            and query_requests_checkpoint_inventory(user_query or "")
+        )
+        if checkpoint_ids and len(checkpoint_ids) > 0:
+            ck_mode = "by_id"
+        elif inventory_query:
+            ck_mode = "inventory_recent"
+        else:
+            ck_mode = "vector"
+        inventory_meta: dict | None = None
         logger.info(
             "checkpoint_retrieval: start mode=%s property_id=%s "
             "user_query_len=%d location_set=%s checkpoint_id_count=%d",
@@ -111,7 +125,7 @@ def ask_checkpoints_retrieval(
         if tool_context is None:
             logger.error("checkpoint_retrieval: missing tool_context")
             _record_retrieval_timing()
-            return {"checkpoints": [], "search_query": ""}
+            return {"checkpoints": [], "search_query": "", "inventory_meta": None}
 
         # Get user_id from context
         user_id = (
@@ -134,7 +148,7 @@ def ask_checkpoints_retrieval(
                 _elapsed_ms(),
             )
             _record_retrieval_timing()
-            return {"checkpoints": [], "search_query": ""}
+            return {"checkpoints": [], "search_query": "", "inventory_meta": None}
 
         if not property_id:
             logger.error(
@@ -145,7 +159,7 @@ def ask_checkpoints_retrieval(
                 _elapsed_ms(),
             )
             _record_retrieval_timing()
-            return {"checkpoints": [], "search_query": ""}
+            return {"checkpoints": [], "search_query": "", "inventory_meta": None}
 
         logger.debug(
             "checkpoint_retrieval: resolved user_id=%s property_id=%s",
@@ -213,14 +227,64 @@ def ask_checkpoints_retrieval(
             )
             if not checkpoints:
                 logger.warning(
-                    f"None of the specified checkpoint IDs were found: {checkpoint_ids}"
+                    "None of the specified checkpoint IDs were found: %r; "
+                    "falling back to vector search",
+                    checkpoint_ids,
+                )
+                ck_mode = "vector"
+                _vs = time.monotonic()
+                checkpoints = search_checkpoints_by_vector(
+                    db=db,
+                    user_id=user_id,
+                    property_id=property_id,
+                    query_text=user_query,
+                    limit=5,
+                    location=location,
                 )
                 logger.info(
-                    "checkpoint_retrieval: end duration_ms=%d outcome=no_matches checkpoints=0",
+                    "checkpoint_retrieval: vector_search_after_by_id_miss "
+                    "duration_ms=%d returned=%d",
+                    int((time.monotonic() - _vs) * 1000),
+                    len(checkpoints),
+                )
+                if not checkpoints:
+                    logger.info(
+                        "checkpoint_retrieval: end duration_ms=%d "
+                        "outcome=no_matches checkpoints=0",
+                        _elapsed_ms(),
+                    )
+                    _record_retrieval_timing()
+                    return {
+                        "checkpoints": [],
+                        "search_query": "",
+                        "inventory_meta": None,
+                    }
+        elif inventory_query:
+            _inv = time.monotonic()
+            list_result = list_recent_property_checkpoints(
+                db,
+                user_id=user_id,
+                property_id=property_id,
+                location=location,
+            )
+            checkpoints = list_result.get("checkpoints") or []
+            raw_meta = list_result.get("inventory_meta")
+            inventory_meta = raw_meta if isinstance(raw_meta, dict) else None
+            if tool_context is not None and inventory_meta is not None:
+                tool_context.state[CHECKPOINT_INVENTORY_META_STATE_KEY] = inventory_meta
+            logger.info(
+                "checkpoint_retrieval: inventory_recent duration_ms=%d returned=%d truncated=%s",
+                int((time.monotonic() - _inv) * 1000),
+                len(checkpoints),
+                bool(inventory_meta and inventory_meta.get("truncated")),
+            )
+            if not checkpoints:
+                logger.info(
+                    "checkpoint_retrieval: end duration_ms=%d outcome=no_inventory checkpoints=0",
                     _elapsed_ms(),
                 )
                 _record_retrieval_timing()
-                return {"checkpoints": [], "search_query": ""}
+                return {"checkpoints": [], "search_query": "", "inventory_meta": inventory_meta}
         else:
             # Perform vector search when no specific checkpoint IDs provided
             _vs = time.monotonic()
@@ -254,7 +318,7 @@ def ask_checkpoints_retrieval(
                     _elapsed_ms(),
                 )
                 _record_retrieval_timing()
-                return {"checkpoints": [], "search_query": ""}
+                return {"checkpoints": [], "search_query": "", "inventory_meta": None}
 
         # Format checkpoints for agent consumption
         # Extract relevant information: summary, location, detected items, issues, etc.
@@ -279,9 +343,13 @@ def ask_checkpoints_retrieval(
             if ai_analysis.get("summary"):
                 summary_parts.append(f"Summary: {ai_analysis['summary']}")
 
-            location = checkpoint.get("location") or ai_analysis.get("detectedAsset")
-            if location:
-                summary_parts.append(f"Location/Asset: {location}")
+            cp_location = checkpoint.get("location") or ai_analysis.get("detectedAsset")
+            if cp_location:
+                summary_parts.append(f"Location/Asset: {cp_location}")
+
+            analysis_status = checkpoint.get("analysisStatus")
+            if analysis_status:
+                summary_parts.append(f"Status: {analysis_status}")
 
             detected_items = ai_analysis.get("detectedItems", [])
             if detected_items:
@@ -307,7 +375,7 @@ def ask_checkpoints_retrieval(
                 summary_parts.append(f"Conditions: {conditions_text}")
 
             # Get checkpoint name (prefer name, fallback to location or "Checkpoint")
-            checkpoint_name = checkpoint.get("name") or location or "Checkpoint"
+            checkpoint_name = checkpoint.get("name") or cp_location or "Checkpoint"
 
             # Include checkpoint name in the text summary for agent consumption
             if checkpoint_name and checkpoint_name != "Checkpoint":
@@ -320,7 +388,7 @@ def ask_checkpoints_retrieval(
                 "text": "\n".join(summary_parts)
                 if summary_parts
                 else "No summary available",
-                "location": location,
+                "location": cp_location,
                 "createdAt": checkpoint.get("createdAt"),
                 "summary": ai_analysis.get("summary", ""),
                 "detectedItems": detected_items,
@@ -373,7 +441,11 @@ def ask_checkpoints_retrieval(
             len(search_query or ""),
         )
         _record_retrieval_timing()
-        return {"checkpoints": formatted_results, "search_query": search_query}
+        return {
+            "checkpoints": formatted_results,
+            "search_query": search_query,
+            "inventory_meta": inventory_meta,
+        }
     except Exception as e:
         logger.error(f"Error retrieving checkpoints: {e}", exc_info=True)
         logger.info(
@@ -381,7 +453,7 @@ def ask_checkpoints_retrieval(
             _elapsed_ms(),
         )
         _record_retrieval_timing()
-        return {"checkpoints": [], "search_query": ""}
+        return {"checkpoints": [], "search_query": "", "inventory_meta": None}
 
 
 __all__ = ["ask_checkpoints_retrieval", "build_search_query_from_checkpoints"]

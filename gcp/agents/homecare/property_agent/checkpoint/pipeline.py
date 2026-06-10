@@ -15,6 +15,7 @@ from property_agent.checkpoint.analysis.assembler import (
     ensure_analysis_run_id,
     format_checkpoints_for_analysis_blob,
     merge_branch_result,
+    prepend_inventory_disclosure_to_blob,
     render_markdown,
     stash_checkpoint_analysis_in_state,
 )
@@ -23,7 +24,10 @@ from property_agent.shared.inputs import CheckpointOptionalAgent
 from property_agent.checkpoint.analysis.synthesis_runner import (
     synthesize_checkpoint_markdown,
 )
-from property_agent.checkpoint.constants import CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY
+from property_agent.checkpoint.constants import (
+    CHECKPOINT_INVENTORY_META_STATE_KEY,
+    CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY,
+)
 from property_agent.checkpoint.retrieval.agent import ask_checkpoints_retrieval
 from property_agent.checkpoint.analysis.parallel_runner import (
     BranchCompleteCallback,
@@ -162,6 +166,11 @@ async def run_checkpoint_pipeline(
         tool_context=tool_context,
     )
     checkpoints = retrieval.get("checkpoints") if isinstance(retrieval, dict) else []
+    inventory_meta = (
+        retrieval.get("inventory_meta") if isinstance(retrieval, dict) else None
+    )
+    if isinstance(inventory_meta, dict) and tool_context is not None:
+        tool_context.state[CHECKPOINT_INVENTORY_META_STATE_KEY] = inventory_meta
     if not checkpoints:
         summary = (
             "No matching checkpoints found for your query. "
@@ -176,6 +185,7 @@ async def run_checkpoint_pipeline(
         return summary
 
     blob = format_checkpoints_for_analysis_blob(checkpoints)
+    blob = prepend_inventory_disclosure_to_blob(blob, inventory_meta)
     tool_context.state["checkpoint_results"] = blob
     search_query = ""
     if isinstance(retrieval, dict):
@@ -201,6 +211,7 @@ async def run_checkpoint_pipeline(
         requested_branches=requested,
         property_address=property_address,
         retrieval_search_query=search_query or None,
+        inventory_meta=inventory_meta if isinstance(inventory_meta, dict) else None,
     )
     stash_checkpoint_analysis_in_state(tool_context.state, analysis)
     initial_patch = build_message_patch_from_analysis(

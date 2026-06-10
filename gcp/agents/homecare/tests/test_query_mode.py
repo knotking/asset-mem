@@ -501,6 +501,48 @@ def test_snapshot_survives_prune_simulation() -> None:
     assert "Up Right Garage Door Repair" in memory.get("service_providers_mentioned", [])
 
 
+def test_query_requests_checkpoint_inventory() -> None:
+    from property_agent.routing.query_mode import (
+        needs_fresh_checkpoint_retrieval,
+        query_requests_checkpoint_inventory,
+    )
+
+    q = "What checkpoints do I have and what is their current status?"
+    assert query_requests_checkpoint_inventory(q)
+    assert needs_fresh_checkpoint_retrieval(q)
+
+
+def test_query_requests_checkpoint_inventory_status_phrases() -> None:
+    from property_agent.routing.query_mode import query_requests_checkpoint_inventory
+
+    assert query_requests_checkpoint_inventory("What is my checkpoint status?")
+    assert query_requests_checkpoint_inventory("status of my checkpoints")
+    assert query_requests_checkpoint_inventory("list my checkpoints")
+
+
+def test_query_does_not_treat_area_status_as_checkpoint_inventory() -> None:
+    from property_agent.routing.query_mode import query_requests_checkpoint_inventory
+
+    assert not query_requests_checkpoint_inventory(
+        "What is the current status of the garage door?"
+    )
+    assert not query_requests_checkpoint_inventory("What is their current status?")
+
+
+def test_needs_fresh_checkpoint_retrieval_for_inventory_even_with_memory() -> None:
+    from property_agent.routing.query_mode import needs_fresh_checkpoint_retrieval
+
+    state = {
+        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
+            "checkpoint_summary": {"locations": ["Garage"], "checkpointsAnalyzed": 1},
+        }
+    }
+    assert needs_fresh_checkpoint_retrieval(
+        "What checkpoints do I have?",
+        state=state,
+    )
+
+
 def test_should_block_entity_detail_with_memory_without_provider_match() -> None:
     state = {
         SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {

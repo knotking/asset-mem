@@ -100,6 +100,21 @@ def render_analysis_markdown(analysis: Dict[str, Any]) -> str:
         prop_addr = str(cs.get("propertyAddress") or "").strip()
         if prop_addr:
             lines.append(f"- **Property**: {prop_addr}")
+        inv = cs.get("inventoryList")
+        if isinstance(inv, dict):
+            from property_agent.checkpoint.retrieval.firestore_checkpoint_list import (
+                format_checkpoint_inventory_disclosure,
+            )
+
+            disclosure = format_checkpoint_inventory_disclosure(
+                {
+                    "total_count": inv.get("totalCount"),
+                    "returned_count": inv.get("returnedCount"),
+                    "truncated": inv.get("truncated"),
+                }
+            )
+            if disclosure:
+                lines.append(f"- **Inventory**: {disclosure}")
         analyzed = cs.get("checkpointsAnalyzed")
         if analyzed is not None:
             lines.append(f"- **Checkpoints Analyzed**: {analyzed}")

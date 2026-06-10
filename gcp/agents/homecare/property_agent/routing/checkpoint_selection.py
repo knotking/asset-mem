@@ -8,7 +8,10 @@ from property_agent.routing.schema import SessionStateLike
 
 from property_agent.checkpoint.constants import CHECKPOINT_IDS_ANALYZED_STATE_KEY
 
-from .conversational_intent import prior_checkpoint_analysis_in_session
+from .conversational_intent import (
+    CHECKPOINT_LAST_RESPONSE_KIND_KEY,
+    prior_checkpoint_analysis_in_session,
+)
 
 _SESSION_SNAPSHOT_KEY = "session_working_memory_snapshot"
 
@@ -65,12 +68,19 @@ def _checkpoints_analyzed_count(state: SessionStateLike | None) -> int | None:
     return None
 
 
+def checkpoint_selection_cleared(state: SessionStateLike | None) -> bool:
+    """True when UI cleared checkpoint_ids after a prior analyzed selection."""
+    if not checkpoint_ids_from_state(state):
+        return bool(checkpoint_ids_last_analyzed(state))
+    return False
+
+
 def checkpoint_selection_changed(state: SessionStateLike | None) -> bool:
     """True when the client checkpoint_ids set differs from the last full analysis."""
     current = checkpoint_ids_from_state(state)
-    if not current:
-        return False
     prior = checkpoint_ids_last_analyzed(state)
+    if not current:
+        return checkpoint_selection_cleared(state)
     if prior:
         return current != prior
     if not prior_checkpoint_analysis_in_session(state):
@@ -104,6 +114,8 @@ def clear_stale_checkpoint_analysis_state(state: Any) -> bool:
         "checkpoint_analysis_progress",
         "checkpoint_results",
         "checkpoint_result",
+        CHECKPOINT_LAST_RESPONSE_KIND_KEY,
+        CHECKPOINT_IDS_ANALYZED_STATE_KEY,
     ):
         if hasattr(state, "__delitem__"):
             try:

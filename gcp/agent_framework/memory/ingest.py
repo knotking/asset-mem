@@ -16,11 +16,11 @@ def truthy_env(name: str, default: bool = False) -> bool:
 
 
 def memory_ingest_enabled() -> bool:
-    return truthy_env("ADK_MEMORY_INGEST_ENABLED", default=True)
+    return truthy_env("ADK_MEMORY_INGEST_ENABLED", default=False)
 
 
 def memory_preload_enabled() -> bool:
-    return truthy_env("ADK_MEMORY_PRELOAD_ENABLED", default=True)
+    return truthy_env("ADK_MEMORY_PRELOAD_ENABLED", default=False)
 
 
 def memory_force_flush() -> bool:

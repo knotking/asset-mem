@@ -51,6 +51,38 @@ def should_run_optional_analysis(state: Any, user_query: str) -> bool:
     return requests_checkpoint_optional_analysis(user_query, state=state)
 
 
+def checkpoint_ids_for_pipeline_from_state(state: Any) -> List[str]:
+    """UI-selected checkpoint document ids (Firestore), not executor-invented slugs."""
+    if not hasattr(state, "get"):
+        return []
+    raw = state.get("checkpoint_ids")
+    if not isinstance(raw, list):
+        return []
+    return [str(x).strip() for x in raw if x is not None and str(x).strip()]
+
+
+def apply_session_checkpoint_ids_to_tool_args(state: Any, args: Dict[str, Any]) -> None:
+    """Force ``run_checkpoint_pipeline`` ids to match session UI selection only."""
+    if not isinstance(args, dict):
+        return
+    session_ids = checkpoint_ids_for_pipeline_from_state(state)
+    executor_ids = args.get("checkpoint_ids")
+    if isinstance(executor_ids, list) and executor_ids:
+        executor_set = {
+            str(x).strip() for x in executor_ids if x is not None and str(x).strip()
+        }
+        session_set = set(session_ids)
+        if executor_set != session_set:
+            dropped = sorted(executor_set - session_set)
+            logger.info(
+                "before_tool: dropped executor checkpoint_ids not in UI selection "
+                "dropped=%r session_ids=%r",
+                dropped,
+                session_ids,
+            )
+    args["checkpoint_ids"] = session_ids or None
+
+
 def sync_checkpoint_tool_args_to_state(state: Any, args: Dict[str, Any]) -> None:
     from property_agent.checkpoint.constants import CHECKPOINT_SESSION_INPUT_KEYS
 

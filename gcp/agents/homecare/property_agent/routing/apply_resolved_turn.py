@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Optional
 
-from .checkpoint_selection import checkpoint_selection_changed
+from .checkpoint_selection import checkpoint_selection_changed, checkpoint_selection_cleared
 from .conversational_intent import (
     DEFAULT_CAPABILITY_OPTIONS,
     LAST_OFFERED_OPTIONS_KEY,
@@ -20,6 +20,7 @@ from .query_mode import (
     infer_query_mode,
     prior_analysis_branches_completed,
     query_looks_like_explain_follow_up,
+    query_requests_checkpoint_inventory,
     query_requests_fresh_external_data,
     should_answer_provider_from_context,
 )
@@ -123,23 +124,39 @@ def apply_checkpoint_retrieval_plan(payload: dict[str, Any], *, user_query: str,
         return {**payload, "retrieval_only": False, "run_optional_agents": [], "user_goal": "replay_deliverable"}
     if prior_checkpoint_analysis_in_session(state) and not checkpoint_selection_changed(state):
         return follow_up_from_resolver(payload, user_query=user_query, state=state)
-    if checkpoint_selection_changed(state) and prior_checkpoint_analysis_in_session(state):
-        requested = (
-            resolve_requested_optional_branches(expanded, state)
-            or resolve_requested_optional_branches(user_query, state)
-            or branches_from_resolver_menu_hints(payload, state)
-            or ui_optional_branches(state)
-        )
-        for branch in branches_mentioned_in_query(expanded) + branches_mentioned_in_query(user_query):
-            if branch not in requested:
-                requested.append(branch)
-        # If the UI changed which checkpoints are selected, we must re-run checkpoint
-        # retrieval/assembly even when the user only asks "are there issues?" (no
-        # optional branches). Otherwise we keep answering from stale session memory.
+    if checkpoint_selection_changed(state):
+        if checkpoint_selection_cleared(state):
+            return {
+                **payload,
+                "retrieval_only": True,
+                "run_optional_agents": [],
+                "user_goal": "new_analysis",
+            }
+        if prior_checkpoint_analysis_in_session(state):
+            requested = (
+                resolve_requested_optional_branches(expanded, state)
+                or resolve_requested_optional_branches(user_query, state)
+                or branches_from_resolver_menu_hints(payload, state)
+                or ui_optional_branches(state)
+            )
+            for branch in branches_mentioned_in_query(expanded) + branches_mentioned_in_query(
+                user_query
+            ):
+                if branch not in requested:
+                    requested.append(branch)
+            # If the UI changed which checkpoints are selected, we must re-run checkpoint
+            # retrieval/assembly even when the user only asks "are there issues?" (no
+            # optional branches). Otherwise we keep answering from stale session memory.
+            return {
+                **payload,
+                "retrieval_only": False,
+                "run_optional_agents": requested or ui_optional_branches(state),
+                "user_goal": "new_analysis",
+            }
         return {
             **payload,
-            "retrieval_only": False,
-            "run_optional_agents": requested or ui_optional_branches(state),
+            "retrieval_only": True,
+            "run_optional_agents": [],
             "user_goal": "new_analysis",
         }
     requested = resolve_requested_optional_branches(expanded, state) or resolve_requested_optional_branches(user_query, state) or branches_from_resolver_menu_hints(payload, state)
@@ -153,6 +170,22 @@ def apply_checkpoint_retrieval_plan(payload: dict[str, Any], *, user_query: str,
         if provider_ctx is not None:
             return provider_ctx
         return {**payload, "retrieval_only": False, "run_optional_agents": ui_optional_branches(state), "user_goal": "new_analysis"}
+    if query_requests_checkpoint_inventory(expanded) or query_requests_checkpoint_inventory(
+        user_query
+    ):
+        return {
+            **payload,
+            "retrieval_only": True,
+            "run_optional_agents": [],
+            "user_goal": "new_analysis",
+        }
+    if not prior_checkpoint_analysis_in_session(state):
+        return {
+            **payload,
+            "retrieval_only": True,
+            "run_optional_agents": [],
+            "user_goal": "new_analysis",
+        }
     return {**payload, "retrieval_only": True, "run_optional_agents": [], "user_goal": "answer_from_context"}
 
 

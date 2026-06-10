@@ -106,6 +106,41 @@ def analysis_status_for_branches(
     return status
 
 
+def apply_inventory_meta_to_checkpoint_summary(
+    analysis: Dict[str, Any],
+    inventory_meta: Optional[Dict[str, Any]],
+) -> None:
+    """Attach inventory list scope to checkpointSummary for markdown disclosure."""
+    if not inventory_meta:
+        return
+    cs = analysis.get("checkpointSummary")
+    if not isinstance(cs, dict):
+        cs = {}
+        analysis["checkpointSummary"] = cs
+    cs["inventoryList"] = {
+        "totalCount": int(inventory_meta.get("total_count") or 0),
+        "returnedCount": int(inventory_meta.get("returned_count") or 0),
+        "truncated": bool(inventory_meta.get("truncated")),
+        "scope": str(inventory_meta.get("scope") or "recent"),
+    }
+
+
+def prepend_inventory_disclosure_to_blob(
+    blob: str,
+    inventory_meta: Optional[Dict[str, Any]],
+) -> str:
+    from property_agent.checkpoint.retrieval.firestore_checkpoint_list import (
+        format_checkpoint_inventory_disclosure,
+    )
+
+    note = format_checkpoint_inventory_disclosure(inventory_meta or {})
+    if not note:
+        return blob
+    prefix = f"Inventory scope: {note}"
+    body = (blob or "").strip()
+    return f"{prefix}\n\n{body}" if body else prefix
+
+
 def build_initial_analysis(
     *,
     checkpoint_results: str,
@@ -113,6 +148,7 @@ def build_initial_analysis(
     requested_branches: Sequence[str],
     property_address: Optional[str] = None,
     retrieval_search_query: Optional[str] = None,
+    inventory_meta: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Phase-0 analysis object before optional branches start."""
     empty_parallel = {
@@ -139,6 +175,7 @@ def build_initial_analysis(
             completed=[],
             pending=list(requested_branches),
         )
+    apply_inventory_meta_to_checkpoint_summary(analysis, inventory_meta)
     return analysis
 
 

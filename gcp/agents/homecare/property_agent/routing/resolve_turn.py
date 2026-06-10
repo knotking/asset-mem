@@ -27,10 +27,26 @@ from property_agent.context.homecare_hydrator_v1 import (
 from .analysis_digest import focus_snippet_for_branch
 from .conversation_summary import conversation_summary_from_state
 from .nlu_first_resolve import nlu_first_resolve_enabled
+from .checkpoint_selection import (
+    checkpoint_selection_changed,
+    clear_stale_checkpoint_analysis_state,
+)
 from .query_mode import (
     SESSION_WORKING_MEMORY_SNAPSHOT_KEY,
+    query_requests_checkpoint_inventory,
+    session_has_checkpoint_answer_context,
     should_answer_provider_from_context,
     snapshot_session_analysis_context,
+)
+
+_CHECKPOINT_SNAPSHOT_KEYS = (
+    "checkpoint_summary",
+    "analysis_digest",
+    "analysis_title",
+    "branches_completed",
+    "checkpoint_ids_analyzed",
+    "analysis_run_id",
+    "last_response_kind",
 )
 RESOLVE_RECENT_DIALOGUE_STATE_KEY = "_resolve_recent_dialogue"
 
@@ -61,10 +77,15 @@ def resolve_turn(
     return resolve_turn_llm(ctx, llm_request=llm_request)
 
 
-def is_executor_conversational_turn(resolved: ResolvedTurn) -> bool:
+def is_executor_conversational_turn(
+    resolved: ResolvedTurn,
+    *,
+    state: Mapping[str, Any] | None = None,
+) -> bool:
     """True when routing tools should be blocked (plain-text executor only).
 
     ``route=none`` means no dedicated retrieval surface — not conversational by itself.
+    Context-only checkpoint turns require grounded session memory — not ``property_id`` alone.
     """
     if resolved.is_casual:
         return True
@@ -77,7 +98,12 @@ def is_executor_conversational_turn(resolved: ResolvedTurn) -> bool:
     if resolved.user_goal in ("new_analysis", "replay_deliverable") and not resolved.retrieval_only:
         return False
     if resolved.retrieval_only and resolved.user_goal == "answer_from_context":
-        return True
+        if resolved.discourse_act in ("explain_prior", "provider_detail"):
+            return True
+        expanded = str(resolved.expanded_user_query or "").strip()
+        if expanded and query_requests_checkpoint_inventory(expanded):
+            return False
+        return session_has_checkpoint_answer_context(state)
     return False
 
 
@@ -90,7 +116,16 @@ def apply_resolved_turn_to_state(state: Any, resolved: ResolvedTurn) -> None:
     if resolved.expanded_user_query:
         state["user_query"] = resolved.expanded_user_query
 
-    state[CONVERSATIONAL_TURN_STATE_KEY] = is_executor_conversational_turn(resolved)
+    state[CONVERSATIONAL_TURN_STATE_KEY] = is_executor_conversational_turn(
+        resolved, state=state
+    )
+
+    if resolved.route == "checkpoint" and checkpoint_selection_changed(state):
+        clear_stale_checkpoint_analysis_state(state)
+        snapshot = state.get(SESSION_WORKING_MEMORY_SNAPSHOT_KEY)
+        if isinstance(snapshot, dict):
+            for key in _CHECKPOINT_SNAPSHOT_KEYS:
+                snapshot.pop(key, None)
 
     if resolved.is_casual:
         state["_saved_checkpoint_optional_agents"] = state.get(

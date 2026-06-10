@@ -386,8 +386,8 @@ if memory_ingest_enabled():
 
 | Variable                     | Default | Meaning                         |
 | ---------------------------- | ------- | ------------------------------- |
-| `ADK_MEMORY_INGEST_ENABLED`  | `true`  | Write turns to Memory Bank      |
-| `ADK_MEMORY_PRELOAD_ENABLED` | `true`  | Attach `preload_memory_tool`    |
+| `ADK_MEMORY_INGEST_ENABLED`  | `false` | Write turns to Memory Bank      |
+| `ADK_MEMORY_PRELOAD_ENABLED` | `false` | Attach `preload_memory_tool`    |
 | `ADK_MEMORY_FORCE_FLUSH`     | `true`  | Force flush vs idle trigger     |
 | `ADK_MEMORY_STREAM_PREFIX`   | `""`    | Prefix for stream ids           |
 | `ADK_MEMORY_IDLE_DURATION`   | `60s`   | Idle flush when force flush off |

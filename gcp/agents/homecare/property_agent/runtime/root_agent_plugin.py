@@ -290,6 +290,11 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
                             branches.append(branch)
                 if branches:
                     args["checkpoint_optional_agents"] = branches
+            from property_agent.checkpoint.session_input import (
+                apply_session_checkpoint_ids_to_tool_args,
+            )
+
+            apply_session_checkpoint_ids_to_tool_args(tool_context.state, args)
             sync_checkpoint_tool_args_to_state(tool_context.state, args)
             logger.info(
                 "property_agent before_tool: synced checkpoint session fields optional_agents=%r",

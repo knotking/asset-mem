@@ -53,6 +53,11 @@ CHECKPOINT_SESSION_INPUT_KEYS: tuple[str, ...] = (
     "search_location",
 )
 
+# Max checkpoints returned for inventory/status list queries (recency-ordered).
+CHECKPOINT_INVENTORY_LIST_LIMIT = 20
+
+CHECKPOINT_INVENTORY_META_STATE_KEY = "checkpoint_inventory_meta"
+
 CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY = "checkpoint_retrieval_search_query"
 # Branch-specific search intents (youtube, shopping materials, service trade).
 CHECKPOINT_BRANCH_SEARCH_INTENTS_KEY = "checkpoint_branch_search_intents"
