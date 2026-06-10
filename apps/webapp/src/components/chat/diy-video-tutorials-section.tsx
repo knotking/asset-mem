@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import Image from "next/image";
 import { ChevronRight, Play, Youtube } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,7 +47,8 @@ function getYouTubeVideoId(url: string): string | null {
 }
 
 function getYouTubeThumbnailUrl(videoId: string): string {
-  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+  // mqdefault is 16:9 — hqdefault is 4:3 with letterboxing in a wide preview row.
+  return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
 }
 
 function getSheetVideoOrder(videos: DiyVideoTutorial[], focusIndex: number): DiyVideoTutorial[] {
@@ -82,21 +82,24 @@ function VideoPreviewRow({ video, index, onPress }: VideoPreviewRowProps) {
       className="flex w-full items-center gap-3 rounded-md border bg-muted/30 px-3 py-2 text-left transition-opacity hover:bg-muted/50 active:opacity-80"
     >
       {videoId ? (
-        <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-md bg-muted">
-          <Image
-            src={getYouTubeThumbnailUrl(videoId)}
-            alt=""
-            fill
-            sizes="96px"
-            className="object-cover"
-            unoptimized
-          />
-          <div className="absolute inset-0 flex items-center justify-center bg-black/35">
+        <div
+          className="relative shrink-0 overflow-hidden rounded-md bg-muted bg-cover bg-center"
+          style={{
+            width: 96,
+            height: 54,
+            backgroundImage: `url(${getYouTubeThumbnailUrl(videoId)})`,
+          }}
+          aria-hidden
+        >
+          <div className="flex size-full items-center justify-center bg-black/35">
             <Play className="h-5 w-5 fill-white text-white" />
           </div>
         </div>
       ) : (
-        <div className="flex h-14 w-24 shrink-0 items-center justify-center rounded-md bg-muted">
+        <div
+          className="flex shrink-0 items-center justify-center rounded-md bg-muted"
+          style={{ width: 96, height: 54 }}
+        >
           <Youtube className="h-5 w-5 text-muted-foreground" />
         </div>
       )}

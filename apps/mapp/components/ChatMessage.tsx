@@ -387,7 +387,7 @@ const ProductCard = React.memo(({ product }: { product: Product }) => {
       </View>
 
       {imageSrc && (
-        <View className="mb-2 h-32 w-full overflow-hidden rounded-md">
+        <View className="mb-2 aspect-[4/3] w-full overflow-hidden rounded-md bg-muted">
           {imageLoading && !imageError && (
             <View cssInterop={false} style={nativeStyles.productSkeletonOverlay}>
               <Skeleton className="h-6 w-full rounded" />
@@ -405,7 +405,7 @@ const ProductCard = React.memo(({ product }: { product: Product }) => {
             <Image
               source={{ uri: imageSrc }}
               style={{ width: '100%', height: '100%' }}
-              contentFit="cover"
+              contentFit="contain"
               priority="normal"
               cachePolicy="memory-disk"
               transition={200}
