@@ -33,7 +33,7 @@ def test_compute_metrics_handles_empty():
     assert metrics["deterioration"]["rate_points_per_day"] is None
 
 
-def test_compute_metrics_uses_issues_by_severity_when_present():
+def test_compute_metrics_derives_score_from_issues_by_severity_when_scores_missing():
     t1 = _FakeTimestamp(datetime(2025, 1, 1, tzinfo=timezone.utc))
     checkpoints = [
         {
@@ -44,10 +44,30 @@ def test_compute_metrics_uses_issues_by_severity_when_present():
         }
     ]
     metrics = compute_property_metrics_from_checkpoints(checkpoints)
-    assert metrics["status"] == "pending_analysis"
+    assert metrics["status"] == "ready"
+    assert metrics["window"]["checkpoints_with_score"] == 1
+    assert metrics["overall"]["headline"]["value"] == 40.0
     assert metrics["issues"]["total_by_severity"]["critical"] == 2
     assert metrics["issues"]["total"] == 6
     assert len(metrics["issues"]["recent"]) == 0
+
+
+def test_compute_metrics_derives_score_from_minor_issues_list():
+    t1 = _FakeTimestamp(datetime(2025, 1, 1, tzinfo=timezone.utc))
+    checkpoints = [
+        {
+            "id": "c1",
+            "createdAt": t1,
+            "analysisStatus": "completed",
+            "aiAnalysis": {
+                "condition_scores": {},
+                "issues": [{"description": "scuff", "severity": "minor"}],
+            },
+        }
+    ]
+    metrics = compute_property_metrics_from_checkpoints(checkpoints)
+    assert metrics["status"] == "ready"
+    assert metrics["overall"]["headline"]["value"] == 85.0
 
 
 def test_compute_metrics_builds_headline_and_trend():

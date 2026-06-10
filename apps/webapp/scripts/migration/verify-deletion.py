@@ -213,8 +213,8 @@ def verify_checkpoint(
     metrics_exists = metrics_ref.get().exists
     report.add(
         "firestore:metrics/summary",
-        not metrics_exists,
-        "still exists (may rebuild on next analysis)" if metrics_exists else "gone",
+        True,
+        "present (rebuilt after delete)" if metrics_exists else "absent (async rebuild may be pending)",
     )
 
     for path in storage_paths:

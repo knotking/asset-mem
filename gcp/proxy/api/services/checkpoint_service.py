@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 # Configuration
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 CHECKPOINT_ANALYSIS_TOPIC = os.environ.get("CHECKPOINT_ANALYSIS_TOPIC", "checkpoint-analysis-topic")
+CHECKPOINT_METRICS_TOPIC = os.environ.get("CHECKPOINT_METRICS_TOPIC", "checkpoint-metrics-topic")
 
 if not PROJECT_ID:
     logger.warning("GCP_PROJECT_ID not set, checkpoint analysis publishing may fail")
@@ -133,6 +134,45 @@ def publish_checkpoint_analysis(
     except Exception as e:
         logger.exception("Failed to publish checkpoint analysis to Pub/Sub: %s", e)
         raise
+
+
+def publish_checkpoint_metrics_rebuild(
+    *,
+    user_id: str,
+    property_id: str,
+    reason: str = "checkpoint.deleted",
+) -> str | None:
+    """Queue a full property metrics re-aggregation (e.g. after checkpoint delete)."""
+    if not PROJECT_ID or not CHECKPOINT_METRICS_TOPIC:
+        logger.warning(
+            "Skipping checkpoint metrics rebuild publish: GCP_PROJECT_ID or CHECKPOINT_METRICS_TOPIC not set"
+        )
+        return None
+    try:
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = publisher.topic_path(PROJECT_ID, CHECKPOINT_METRICS_TOPIC)
+        payload = pubsub_payload_with_correlation(
+            {
+                "userId": user_id,
+                "propertyId": property_id,
+                "reason": reason,
+                "mode": "full",
+            }
+        )
+        message_id = publisher.publish(topic_path, json.dumps(payload).encode("utf-8")).result()
+        logger.info(
+            "Published checkpoint metrics rebuild topic=%s message_id=%s userId=%s propertyId=%s reason=%s",
+            CHECKPOINT_METRICS_TOPIC,
+            message_id,
+            user_id,
+            property_id,
+            reason,
+        )
+        return message_id
+    except Exception as e:
+        logger.exception("Failed to publish checkpoint metrics rebuild: %s", e)
+        raise
+
 
 def compare_checkpoints(
     image1_url: str,

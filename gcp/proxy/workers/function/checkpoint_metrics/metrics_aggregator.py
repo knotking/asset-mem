@@ -11,6 +11,15 @@ MAX_CHECKPOINTS = 60
 TREND_POINTS = 12
 ISSUES_RECENT_MAX = 50
 
+# Align with checkpoint_analysis/condition_scores.py when Gemini omits numeric scores.
+_SEVERITY_OVERALL: Dict[str, float] = {
+    "critical": 40.0,
+    "major": 55.0,
+    "moderate": 70.0,
+    "minor": 85.0,
+}
+_NO_ISSUES_OVERALL = 90.0
+
 
 def _safe_float(v: Any) -> Optional[float]:
     try:
@@ -19,6 +28,47 @@ def _safe_float(v: Any) -> Optional[float]:
         return float(v)
     except Exception:
         return None
+
+
+def _overall_from_issues(ai_analysis: Dict[str, Any]) -> Optional[float]:
+    """Derive a headline score from issue severities when condition_scores are missing."""
+    issues_by_sev = ai_analysis.get("issues_by_severity")
+    if isinstance(issues_by_sev, dict):
+        rank = {"critical": 0, "major": 1, "moderate": 2, "minor": 3}
+        worst: Optional[str] = None
+        for sev, count in issues_by_sev.items():
+            try:
+                if int(count or 0) <= 0:
+                    continue
+            except (TypeError, ValueError):
+                continue
+            key = str(sev).lower()
+            if key not in rank:
+                key = "minor"
+            if worst is None or rank[key] < rank[worst]:
+                worst = key
+        if worst is None:
+            return _NO_ISSUES_OVERALL
+        return _SEVERITY_OVERALL.get(worst, _NO_ISSUES_OVERALL)
+
+    issues = ai_analysis.get("issues") or []
+    if not issues:
+        return None
+
+    rank = {"critical": 0, "major": 1, "moderate": 2, "minor": 3}
+    worst = None
+    for issue in issues:
+        if isinstance(issue, dict):
+            sev = (issue.get("severity") or "minor").lower()
+        else:
+            sev = "minor"
+        if sev not in rank:
+            sev = "minor"
+        if worst is None or rank[sev] < rank[worst]:
+            worst = sev
+    if worst is None:
+        return _NO_ISSUES_OVERALL
+    return _SEVERITY_OVERALL.get(worst, _NO_ISSUES_OVERALL)
 
 
 def _extract_overall_condition(ai_analysis: Dict[str, Any]) -> Optional[float]:
@@ -39,7 +89,7 @@ def _extract_overall_condition(ai_analysis: Dict[str, Any]) -> Optional[float]:
                 vals.append(fv)
     if vals:
         return sum(vals) / float(len(vals))
-    return None
+    return _overall_from_issues(ai_analysis)
 
 
 def _extract_issues_by_severity(ai_analysis: Dict[str, Any]) -> Dict[str, int]:

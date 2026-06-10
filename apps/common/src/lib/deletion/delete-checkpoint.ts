@@ -58,22 +58,6 @@ export async function deleteCheckpointWithMedia(
       message: err instanceof Error ? err.message : 'Firestore delete failed',
     });
   }
-  try {
-    await deleteDoc(
-      doc(
-        params.db,
-        'users',
-        params.userId,
-        'properties',
-        params.propertyId,
-        'metrics',
-        'summary'
-      )
-    );
-    result.deleted.push('firestore:metrics/summary');
-  } catch {
-    // metrics doc may not exist
-  }
   return mergeDeletionResults(storageResult, result);
 }
 
