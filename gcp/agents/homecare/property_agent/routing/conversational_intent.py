@@ -194,6 +194,7 @@ _TURN_PAYLOAD_STATE_KEYS = (
     "search_location",
     "correlation_id",
     "chat_intent",
+    "chip_action",
 )
 
 

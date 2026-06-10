@@ -13,9 +13,16 @@ import { CameraCaptureDialog } from "@/components/chat/camera-capture-dialog";
 import type {
   AnalysisOptionalAgent,
   CheckpointOptionalAgent,
+  ChipAction,
   PrimaryAgent,
   SearchLocationInput,
 } from "@/lib/types";
+
+export type ChatSendOptions = {
+  chatIntent?: "discuss_report" | "new_analysis" | "replay_report";
+  /** Structured chip tap — deterministic agent routing (no resolve LLM). */
+  chipAction?: ChipAction;
+};
 import {
   buildAgentRequestContext,
   buildMessageContextRefs,
@@ -110,7 +117,7 @@ function PropertyChatComposerInner(
   const runSendRef = React.useRef<
     (
       text: string,
-      options?: { chatIntent?: "discuss_report" | "new_analysis" | "replay_report" }
+      options?: ChatSendOptions
     ) => Promise<void>
   >(async () => {});
 
@@ -153,7 +160,7 @@ function PropertyChatComposerInner(
   const runSend = React.useCallback(
     async (
       content: string,
-      options?: { chatIntent?: "discuss_report" | "new_analysis" | "replay_report" }
+      options?: ChatSendOptions
     ) => {
       if (!user || props.isLoading) return;
 
@@ -252,6 +259,7 @@ function PropertyChatComposerInner(
           agentSessionId,
           userQuery: content.trim(),
           chatIntent: options?.chatIntent,
+          chipAction: options?.chipAction,
           contextDocURIs,
           checkpointIds: checkpointIds.length > 0 ? checkpointIds : undefined,
           reportIds: reportIds.length > 0 ? reportIds : undefined,
@@ -308,7 +316,7 @@ function PropertyChatComposerInner(
   React.useImperativeHandle(props.composerRef, () => ({
     send: (
       text: string,
-      options?: { chatIntent?: "discuss_report" | "new_analysis" | "replay_report" }
+      options?: ChatSendOptions
     ) => {
       void runSendRef.current(text, options);
     },
@@ -652,7 +660,7 @@ function PropertyChatComposerInner(
 export type PropertyChatComposerHandle = {
   send: (
     text: string,
-    options?: { chatIntent?: "discuss_report" | "new_analysis" | "replay_report" }
+    options?: ChatSendOptions
   ) => void;
 };
 

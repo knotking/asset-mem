@@ -176,6 +176,8 @@ export interface StreamAgentResponseParams {
   /** Firestore assistant message doc id (lifecycle + agentSteps persistence). */
   assistantMessageId?: string;
   chatIntent?: 'discuss_report' | 'new_analysis' | 'replay_report';
+  /** Structured chip tap — routes deterministically on the agent (no resolve LLM). */
+  chipAction?: import('@homeapp/common/lib/suggested-actions').ChipAction;
   onChunk?: (content: string) => void;
   onAgentStep?: (step: AgentStep) => void;
   onComplete?: (finalResponse: string, agentSteps: AgentStep[]) => void;
@@ -200,6 +202,7 @@ export async function streamAgentResponse({
   firebaseChatId,
   assistantMessageId,
   chatIntent,
+  chipAction,
   onChunk,
   onAgentStep,
   onComplete,
@@ -267,6 +270,10 @@ export async function streamAgentResponse({
 
     if (chatIntent) {
       requestBody.chat_intent = chatIntent;
+    }
+
+    if (chipAction) {
+      requestBody.chip_action = chipAction;
     }
 
     if (assistantMessageId) {

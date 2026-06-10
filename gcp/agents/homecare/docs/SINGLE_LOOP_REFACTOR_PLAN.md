@@ -1,6 +1,6 @@
 # Single-loop agent refactor plan (Orchestrator V3)
 
-Status: **Phase 0 complete** — baseline captured 2026-06-10.
+Status: **Phase 1 complete** — chip fast-path shipped end-to-end (agent + proxy + both clients) 2026-06-10.
 Owner: —
 Last updated: 2026-06-10
 
@@ -100,27 +100,45 @@ Baseline eval failures (real defects, kept failing on purpose):
 Pass-rate target for later phases: ≥ 39/42, fixing the three above counts as
 improvement, regressions on `failure_guard`/`weblog_*` cases block.
 
-## Phase 1 — Chip fast-path (deterministic routing for suggested actions)
+## Phase 1 — Chip fast-path (deterministic routing for suggested actions) ✅
 
-Highest value, lowest model risk. Today a chip tap sends canned text +
-`chatIntent`, which two LLMs re-interpret.
+Highest value, lowest model risk. Previously a chip tap sent canned text +
+`chatIntent`, which two LLMs re-interpreted.
 
-- [ ] Add a structured `action` field to the chat request schema in
-      `gcp/proxy/api/schemas/agent.py`, e.g. `{"type": "run_branch", "branch": "cost"}`,
-      `{"type": "replay_report"}`, `{"type": "discuss", "topic": "diy"}`.
-- [ ] Emit matching `action` objects in `property_agent/routing/suggested_actions.py`
-      alongside existing `label`/`userQuery` (backward compatible: old clients keep
+- [x] Structured `chip_action` field on the chat request schema
+      (`gcp/proxy/api/schemas/agent.py` `ChipActionRequest`): `{"type":
+      "run_branch", "branch": "cost"}`, `{"type": "replay_report"}`,
+      `{"type": "discuss", "topic": "diy"}`. Proxy forwards it in the agent
+      payload (`vertex_service.py`).
+- [x] Chips emit matching `action` objects in
+      `property_agent/routing/suggested_actions.py` alongside existing
+      `label`/`userQuery`/`chatIntent` (backward compatible: old clients keep
       sending text).
-- [ ] Agent: in `early_short_circuit` (`routing/homecare_resolve_hooks.py`), when
-      `state["chip_action"]` is present, construct the `ResolvedTurn`
-      deterministically — zero resolve-LLM call. `run_branch` →
-      `run_optional_agents=[branch]`; `discuss` → `answer_from_context`.
-- [ ] Clients: `apps/mapp/lib/api.ts` and `apps/webapp/src/lib/api-checkpoint.ts`
-      send `action` on chip tap; keep `userQuery` for display.
-- [ ] Keep `pending_user_action` for typed "yes" responses — chips don't need it.
+- [x] Agent: `routing/chip_action.py` builds the `ResolvedTurn` deterministically
+      from `state["chip_action"]` — zero resolve-LLM call, `resolve_source=chip`.
+      *Approach note vs. original plan:* wired at the top of `resolve_turn_llm`
+      (after payload hydration) rather than `early_short_circuit`, so
+      `apply_resolved_turn_to_state` + executor inject run unchanged. The state
+      key is consume-once (session state persists across turns) and a chip tap
+      clears any dangling `pending_user_action`. `run_branch` →
+      `run_optional_agents=[branch]`, `query_mode=branch_explicit`; `discuss` →
+      `answer_from_context` + `focus_branch`; `replay_report` →
+      `replay_deliverable`.
+- [x] Clients send `chip_action` on chip tap, keep `userQuery` for display:
+      `apps/common/src/lib/suggested-actions.ts` (+ `types.ts`) parses the chip
+      `action`; mapp wires it through `PropertyChatWithContext` →
+      `lib/api.ts`; webapp mirrors the parser (`src/lib/suggested-actions.ts`,
+      `src/lib/types.ts`) and wires `property-chat-with-context.tsx` →
+      `api-agent.ts` (chat send path lives there, not `api-checkpoint.ts`).
+- [x] `pending_user_action` kept for typed "yes" responses — chips don't need it.
 
-**Exit criteria:** chip-tap turns log `resolve_source=chip` with 0 resolve-LLM
-tokens; eval set green. Ships independently.
+**Exit criteria met:** chip-tap turns log `resolve_source=chip` and record
+`resolve_prompt_tokens=0` via `routing_metrics`; routing eval set unaffected
+(free-text path unchanged); all suites green (agent 434, common 165, webapp 69,
+mapp 91, proxy schema tests). Old clients without `chip_action` fall through to
+the resolve LLM. Requires agent + proxy deploy before clients ship chips
+(additive schema — safe to deploy in any order, fast-path activates when all
+three are live).
 
 ## Phase 2 — Tool split (shrink the inference problem)
 

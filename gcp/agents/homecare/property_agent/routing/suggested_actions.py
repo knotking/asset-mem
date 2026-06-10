@@ -42,12 +42,17 @@ def _branches_completed(analysis: dict[str, Any]) -> set[str]:
     return completed
 
 
-def build_suggested_actions_for_analysis(analysis: dict[str, Any]) -> list[dict[str, str]]:
-    """Deterministic chip suggestions from assembled analysis status."""
+def build_suggested_actions_for_analysis(analysis: dict[str, Any]) -> list[dict[str, Any]]:
+    """Deterministic chip suggestions from assembled analysis status.
+
+    Each chip carries a structured ``action`` object; clients echo it back as
+    ``chip_action`` for deterministic routing (zero resolve-LLM call). The
+    ``userQuery``/``chatIntent`` text path stays for older clients.
+    """
     if not isinstance(analysis, dict):
         return []
     completed = _branches_completed(analysis)
-    actions: list[dict[str, str]] = []
+    actions: list[dict[str, Any]] = []
 
     if "cost" in completed and "diy" in completed:
         actions.append(
@@ -55,6 +60,7 @@ def build_suggested_actions_for_analysis(analysis: dict[str, Any]) -> list[dict[
                 "label": "Why is pro so expensive?",
                 "userQuery": "Why is professional repair so expensive compared to DIY?",
                 "chatIntent": "discuss_report",
+                "action": {"type": "discuss", "topic": "cost"},
             }
         )
     elif "diy" in completed:
@@ -63,6 +69,7 @@ def build_suggested_actions_for_analysis(analysis: dict[str, Any]) -> list[dict[
                 "label": "Explain DIY steps",
                 "userQuery": "Can you explain the DIY steps in more detail?",
                 "chatIntent": "discuss_report",
+                "action": {"type": "discuss", "topic": "diy"},
             }
         )
     elif "cost" in completed:
@@ -71,6 +78,7 @@ def build_suggested_actions_for_analysis(analysis: dict[str, Any]) -> list[dict[
                 "label": "Explain cost estimate",
                 "userQuery": "Can you explain the cost estimate breakdown?",
                 "chatIntent": "discuss_report",
+                "action": {"type": "discuss", "topic": "cost"},
             }
         )
 
@@ -82,6 +90,7 @@ def build_suggested_actions_for_analysis(analysis: dict[str, Any]) -> list[dict[
                 "label": _BRANCH_LABELS.get(branch, f"Run {branch}"),
                 "userQuery": _BRANCH_QUERIES.get(branch, f"Run {branch} analysis"),
                 "chatIntent": "new_analysis",
+                "action": {"type": "run_branch", "branch": branch},
             }
         )
         if len(actions) >= 4:
@@ -93,6 +102,7 @@ def build_suggested_actions_for_analysis(analysis: dict[str, Any]) -> list[dict[
                 "label": "Show full report",
                 "userQuery": "Show me the full analysis report again",
                 "chatIntent": "replay_report",
+                "action": {"type": "replay_report"},
             }
         )
 

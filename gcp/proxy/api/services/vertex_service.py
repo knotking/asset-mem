@@ -1024,6 +1024,11 @@ async def stream_agent_answers(
         payload["chat_intent"] = chat_intent
         logger.info("Including chat_intent in payload: %s", chat_intent)
 
+    chip_action = getattr(request, "chip_action", None)
+    if chip_action is not None:
+        payload["chip_action"] = chip_action.model_dump(exclude_none=True)
+        logger.info("Including chip_action in payload: %s", payload["chip_action"])
+
     # property_address: identity/context only (which property, docs)
     if property_address:
         payload["property_address"] = property_address

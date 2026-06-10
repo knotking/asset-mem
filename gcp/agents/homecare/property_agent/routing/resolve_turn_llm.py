@@ -231,6 +231,11 @@ def resolve_turn_llm(ctx: Any, *, llm_request: Any = None) -> Any:
 
     state = getattr(ctx, "state", None) or {}
     user_query = hydrate_turn_state_from_context(ctx, llm_request=llm_request)
+    from .chip_action import resolve_turn_from_chip
+
+    chip_resolved = resolve_turn_from_chip(state, user_query=user_query)
+    if chip_resolved is not None:
+        return chip_resolved
     events = session_events(ctx)
     inv_id = invocation_id(ctx)
     if resolve_llm_disabled():

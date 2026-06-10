@@ -166,6 +166,7 @@ export default function PropertyChatSessionPage() {
   ) => {
     composerRef.current?.send(action.userQuery, {
       chatIntent: action.chatIntent,
+      chipAction: action.action,
     });
   };
 
