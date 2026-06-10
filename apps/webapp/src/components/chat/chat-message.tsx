@@ -565,16 +565,12 @@ const ProductCard = ({ product }: { product: Product }) => {
         </CardHeader>
         <CardContent className="flex-1 flex flex-col space-y-3">
             {imageSrc && (
-                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-md bg-muted">
-                    <Image
-                        src={imageSrc}
-                        alt={itemName}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 320px"
-                        className="object-contain"
-                        unoptimized
-                    />
-                </div>
+                <div
+                    role="img"
+                    aria-label={itemName}
+                    className="aspect-[4/3] w-full overflow-hidden rounded-md bg-muted bg-contain bg-center bg-no-repeat"
+                    style={{ backgroundImage: `url(${imageSrc})` }}
+                />
             )}
             <div className="text-sm space-y-2">
                 {(product.price || product.item_price) && (
