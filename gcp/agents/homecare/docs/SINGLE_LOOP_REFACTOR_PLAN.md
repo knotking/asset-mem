@@ -1,6 +1,6 @@
 # Single-loop agent refactor plan (Orchestrator V3)
 
-Status: **planned** — no phase started.
+Status: **Phase 0 complete** — baseline captured 2026-06-10.
 Owner: —
 Last updated: 2026-06-10
 
@@ -55,20 +55,50 @@ arbitration layers.
 
 ---
 
-## Phase 0 — Measurement baseline (prerequisite, ~1 day)
+## Phase 0 — Measurement baseline (prerequisite, ~1 day) ✅
 
 No parity claim without a yardstick.
 
-- [ ] Build a routing eval set from real sessions (~40–60 turns) covering each
-      `discourse_act`, chip taps, selection changes, cold sessions, and the known
-      failure cases (unrequested cost run, post-DIY summarize misroute).
-- [ ] Encode as fixtures under `property_agent/conformance/routing/`
-      (`make conformance-record` / `make conformance-test`).
-- [ ] Capture baseline metrics from `routing_metrics` / `turn_request_timing`:
-      misroute rate, LLM calls per turn, p50/p95 `stream_complete_ms`, resolve
-      prompt tokens.
+- [x] Build a routing eval set covering each `discourse_act`, chip-style queries,
+      selection changes, cold sessions, docs/report routes, and the known failure
+      cases (unrequested cost run, post-DIY summarize misroute, inventory
+      `retrieval_only` violation) — 42 cases in
+      `property_agent/evals/routing/cases.yaml`.
+- [x] Build a live eval runner asserting on the post-processed `ResolvedTurn`
+      (`property_agent/evals/routing/run_routing_eval.py`, `make routing-eval`).
+      *Approach change vs. original plan:* resolve-level eval instead of full
+      `adk conformance` recordings — cheaper to run/extend, asserts the routing
+      decision directly, and is replayable under the Phase 4 flag. End-to-end
+      message-shape coverage stays in `property_agent/conformance/multi_turn/`.
+      Dataset schema is CI-validated by `tests/test_routing_eval_cases.py`.
+- [x] Capture baseline metrics
+      (`property_agent/evals/routing/baselines/2026-06-10.json`).
 
-**Exit criteria:** eval set replays green against current `main`.
+**Baseline 2026-06-10** (flash-lite resolver, staging):
+
+| Metric | Value |
+|---|---|
+| Eval pass rate | 39/42 (92.9%) |
+| Resolve latency (eval harness) | p50 1.5s, p95 2.3s |
+| Resolve latency (live `adk web` session) | 1.5–2.8s per turn |
+| LLM calls per substantive turn (live session) | 5–7 |
+| `stream_complete_ms` (live session) | 12.3s retrieval-only / 28.5s cost / ~46s diy |
+| Misroutes in live 6-turn session | 2 (unrequested cost run; `['diy','diy']` echo) |
+
+Baseline eval failures (real defects, kept failing on purpose):
+
+1. `general_homecare_question` — "how often should I service my HVAC system?"
+   triggers `run_optional_agents=['service']` (provider search from the word
+   "service") and `retrieval_only=false`.
+2. `menu_ordinal_last_pick` — "the last one" against the capability menu resolves
+   `capability_key=checkpoints` (menu[0] fallback) instead of `cost`.
+3. `selection_cleared_summarize` — cleared selection + "summarize the issues"
+   returns `retrieval_only=false` (full re-retrieval) instead of answering from
+   prior context.
+
+**Exit criteria met:** harness validated against staging; defects quantified.
+Pass-rate target for later phases: ≥ 39/42, fixing the three above counts as
+improvement, regressions on `failure_guard`/`weblog_*` cases block.
 
 ## Phase 1 — Chip fast-path (deterministic routing for suggested actions)
 

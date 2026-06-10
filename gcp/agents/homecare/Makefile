@@ -100,6 +100,10 @@ conformance-test: ## Replay conformance tests (requires recordings + adk web)
 	$(call print_header,Running Conformance Tests)
 	uv run adk conformance test $(CONFORMANCE_DIR) --mode replay --streaming-mode none
 
+routing-eval: ## Live routing eval vs resolve LLM (requires Vertex creds; ARGS="--filter weblog")
+	$(call print_header,Running Routing Eval)
+	uv run python -m property_agent.evals.routing.run_routing_eval $(ARGS)
+
 deploy: ## Deploy the agent to Vertex AI
 	$(call print_header,Deploying Agent)
 	@if [ ! -f .env ]; then \
