@@ -565,12 +565,14 @@ const ProductCard = ({ product }: { product: Product }) => {
         </CardHeader>
         <CardContent className="flex-1 flex flex-col space-y-3">
             {imageSrc && (
-                <div className="relative w-full h-32 rounded-md overflow-hidden">
+                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-md bg-muted">
                     <Image
                         src={imageSrc}
                         alt={itemName}
                         fill
-                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 320px"
+                        className="object-contain"
+                        unoptimized
                     />
                 </div>
             )}

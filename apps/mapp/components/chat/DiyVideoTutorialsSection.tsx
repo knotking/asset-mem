@@ -61,7 +61,7 @@ function VideoPreviewRow({ video, index, onPress }: VideoPreviewRowProps) {
       accessibilityLabel={`Play video tutorial: ${title}`}
       className="flex-row items-center gap-3 rounded-md border border-border bg-muted/30 px-3 py-2 active:opacity-80">
       {thumbnailUri ? (
-        <View className="relative h-14 w-24 shrink-0 overflow-hidden rounded-md bg-muted">
+        <View className="relative aspect-video w-24 shrink-0 overflow-hidden rounded-md bg-muted">
           <Image
             source={{ uri: thumbnailUri }}
             style={{ width: '100%', height: '100%' }}
@@ -73,7 +73,7 @@ function VideoPreviewRow({ video, index, onPress }: VideoPreviewRowProps) {
           </View>
         </View>
       ) : (
-        <View className="h-14 w-24 shrink-0 items-center justify-center rounded-md bg-muted">
+        <View className="aspect-video w-24 shrink-0 items-center justify-center rounded-md bg-muted">
           <Icon as={Youtube} size={22} className="text-muted-foreground" />
         </View>
       )}
