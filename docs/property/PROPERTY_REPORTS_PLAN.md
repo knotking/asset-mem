@@ -663,5 +663,5 @@ Reviewed June 2026. Override only via explicit plan revision.
 - Checkpoint data model: `apps/common/src/types.ts` (`Checkpoint`, `PropertyCheckpointMetrics`)
 - Comparison pairing: `gcp/proxy/workers/function/checkpoint_analysis/comparison_service.py`
 - RAG import: `gcp/proxy/workers/function/user_docs/`
-- Shared link pattern: `apps/common/src/lib/shared-chat.ts`
+- Shared link paths: `buildSharedChatPath` / `buildSharedReportPath` in `apps/common/src/lib/shared-chat.ts` and `shared-report.ts` (`/share/chat/{id}`, `/share/report/{id}`)
 - Deletion: `gcp/proxy/api/services/deletion_service.py`, `docs/operations/DELETION_PLAN.md`

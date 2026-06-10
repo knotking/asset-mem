@@ -11,6 +11,7 @@ import {
   Share2,
   MoreHorizontal,
   Search,
+  Copy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +33,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/auth-context';
 import { useProperty } from '@/contexts/property-context';
@@ -64,7 +73,14 @@ import { reportComparisonDateRangeLabel } from '@/lib/report-wizard';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import { deleteReportViaProxy } from '@/lib/deletion/api-client';
 import { resourceDeletingLabel } from '@/lib/deletion/ux-copy';
+import { SHARED_REPORT_TTL_DAYS } from '@/lib/shared-report';
 import type { PropertyReport, PropertyReportPurpose, PropertyReportStatus } from '@/lib/types';
+
+type ReportShareState = 'idle' | 'creating' | 'refreshing' | 'done';
+
+function reportShareUrl(shareId: string): string {
+  return `${window.location.origin}/share/report/${shareId}`;
+}
 
 const REPORT_DOCS_CHAT_RAG_ENABLED = parseFeatureFlagEnv(
   process.env.NEXT_PUBLIC_REPORT_DOCS_CHAT_RAG
@@ -103,7 +119,10 @@ export function ReportsList({ onRegenerate }: ReportsListProps) {
   const [deleteTarget, setDeleteTarget] = useState<PropertyReport | null>(null);
   const [editTarget, setEditTarget] = useState<PropertyReport | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
-  const [sharingId, setSharingId] = useState<string | null>(null);
+  const [reportToShare, setReportToShare] = useState<PropertyReport | null>(null);
+  const [shareState, setShareState] = useState<ReportShareState>('idle');
+  const [sharedLink, setSharedLink] = useState<string | null>(null);
+  const [linkRefreshed, setLinkRefreshed] = useState(false);
   const [ragIndexId, setRagIndexId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [purposeFilter, setPurposeFilter] = useState<PropertyReportPurpose | 'all'>('all');
@@ -218,30 +237,58 @@ export function ReportsList({ onRegenerate }: ReportsListProps) {
     }
   };
 
-  const handleShare = async (report: PropertyReport) => {
-    if (!user || !property || report.status !== 'ready') return;
-    setSharingId(report.id);
+  const handleOpenShareDialog = (report: PropertyReport) => {
+    if (report.status !== 'ready') return;
+    setLinkRefreshed(false);
+    setReportToShare(report);
+    if (report.shareId) {
+      setSharedLink(reportShareUrl(report.shareId));
+      setShareState('done');
+    } else {
+      setSharedLink(null);
+      setShareState('idle');
+    }
+  };
+
+  const handleCloseShareDialog = () => {
+    if (shareState === 'creating' || shareState === 'refreshing') return;
+    setLinkRefreshed(false);
+    setReportToShare(null);
+    setTimeout(() => {
+      setShareState('idle');
+      setSharedLink(null);
+    }, 300);
+  };
+
+  const performShareAction = async (isRefresh: boolean) => {
+    if (!user || !property || !reportToShare || reportToShare.status !== 'ready') return;
+    setShareState(isRefresh ? 'refreshing' : 'creating');
     try {
       const { shareId } = await sharePropertyReport(getFirebaseIdTokenForProxy, {
         userId: user.uid,
         propertyId: property.id,
-        reportId: report.id,
+        reportId: reportToShare.id,
       });
-      const url = `${window.location.origin}/share/report/${shareId}`;
-      await navigator.clipboard.writeText(url);
-      toast({
-        title: 'Share link copied',
-        description: 'Anyone with the link can view this report until it expires.',
-      });
+      setSharedLink(reportShareUrl(shareId));
+      setShareState('done');
+      if (isRefresh) {
+        setLinkRefreshed(true);
+        window.setTimeout(() => setLinkRefreshed(false), 2000);
+      }
     } catch (err) {
       toast({
         variant: 'destructive',
         title: 'Could not share report',
         description: err instanceof Error ? err.message : 'Unknown error',
       });
-    } finally {
-      setSharingId(null);
+      setShareState(reportToShare.shareId ? 'done' : 'idle');
     }
+  };
+
+  const handleCopyShareLink = () => {
+    if (!sharedLink) return;
+    void navigator.clipboard.writeText(sharedLink);
+    toast({ title: 'Link Copied!' });
   };
 
   const handleConfirmDelete = () => {
@@ -410,7 +457,7 @@ export function ReportsList({ onRegenerate }: ReportsListProps) {
                             </DropdownMenuItem>
                           ) : null}
                           {report.status === 'ready' ? (
-                            <DropdownMenuItem onClick={() => void handleShare(report)}>
+                            <DropdownMenuItem onClick={() => handleOpenShareDialog(report)}>
                               <Share2 className="mr-2 h-4 w-4" />
                               Share link
                             </DropdownMenuItem>
@@ -478,6 +525,66 @@ export function ReportsList({ onRegenerate }: ReportsListProps) {
           if (!open) setEditTarget(null);
         }}
       />
+
+      <Dialog open={!!reportToShare} onOpenChange={(open) => !open && handleCloseShareDialog()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Share Report</DialogTitle>
+            <DialogDescription>
+              {shareState === 'done' || shareState === 'refreshing'
+                ? `Anyone with this link can view this report PDF. Links expire after ${SHARED_REPORT_TTL_DAYS} days (extended when you refresh the link).`
+                : `Create a public link for "${reportToShare?.title}"?`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex min-h-[60px] flex-col justify-center">
+            {shareState === 'done' || shareState === 'refreshing' ? (
+              <div className="flex items-center gap-2 pt-2">
+                <Input readOnly value={sharedLink ?? ''} className="h-9 min-w-0 flex-1 bg-muted" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => void performShareAction(true)}
+                  disabled={shareState === 'refreshing'}
+                >
+                  {shareState === 'refreshing' ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  {shareState === 'refreshing'
+                    ? 'Refreshing…'
+                    : linkRefreshed
+                      ? 'Refreshed!'
+                      : 'Refresh link'}
+                </Button>
+                <Button
+                  size="sm"
+                  className="shrink-0"
+                  onClick={handleCopyShareLink}
+                  disabled={shareState === 'refreshing'}
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy
+                </Button>
+              </div>
+            ) : (
+              <DialogFooter className="gap-2 pt-2 sm:justify-end">
+                <Button variant="outline" onClick={handleCloseShareDialog}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => void performShareAction(false)}
+                  disabled={shareState !== 'idle'}
+                >
+                  {shareState === 'creating' && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Create public link
+                </Button>
+              </DialogFooter>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
