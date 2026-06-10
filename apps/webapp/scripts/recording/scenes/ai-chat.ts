@@ -3,8 +3,10 @@ import { config } from "../config";
 import {
   SceneResult,
   delay,
+  enableCheckpointOptionalAgents,
   hasAgentResponseLoading,
-  messageLooksLikeAgentLoading,
+  isFullStructuredCheckpointAnalysisComplete,
+  openChatSettings,
 } from "../helpers";
 
 /**
@@ -39,7 +41,18 @@ export async function recordAIChat(page: Page): Promise<SceneResult> {
     const chatInput = page.locator(config.selectors.chat.messageInput).first();
     await chatInput.waitFor({ state: "visible", timeout: 10000 });
 
-    const question = "What maintenance does this property need?";
+    console.log("  ⚙️  Opening chat settings to enable optional agents...");
+    const settingsOpened = await openChatSettings(page);
+    if (settingsOpened) {
+      await enableCheckpointOptionalAgents(page);
+      await page.keyboard.press("Escape");
+      await delay(300);
+      console.log("  ✅ Chat settings closed");
+    } else {
+      console.log("  ⚠️  Could not open chat settings, continuing without optional agents");
+    }
+
+    const question = "Give me a complete analysis of my property's issues";
     console.log(`  💭 Asking: "${question}"`);
     await chatInput.click();
     await chatInput.fill(question);
@@ -52,36 +65,34 @@ export async function recordAIChat(page: Page): Promise<SceneResult> {
       await page.keyboard.press("Enter");
     }
 
-    console.log("  ⏳ Waiting for AI response...");
+    console.log("  ⏳ Waiting for structured checkpoint analysis...");
     const maxWaitTime = 300000;
+    const minWaitBeforeComplete = 5000;
     const loopStart = Date.now();
     let responseReceived = false;
 
+    // Let thinking strip / lifecycle UI appear before we accept any structured sections.
+    await delay(10000);
+
     while (!responseReceived && Date.now() - loopStart < maxWaitTime) {
+      if (Date.now() - loopStart < minWaitBeforeComplete) {
+        await delay(1000);
+        continue;
+      }
+
       if (await hasAgentResponseLoading(page)) {
         await delay(1000);
         continue;
       }
 
-      const assistantMessages = await page
-        .locator(
-          'div.flex.items-start:not(:has([class*="bg-secondary"]:has([class*="self-end"]))):not(:has([class*="justify-end"]))',
-        )
-        .all();
-
-      if (assistantMessages.length > 0) {
-        const last = assistantMessages[assistantMessages.length - 1];
-        const text = (await last.textContent().catch(() => "")) ?? "";
-        const hasSpinner = await last
-          .locator("[class*='animate-spin']")
-          .isVisible()
-          .catch(() => false);
-
-        if (!messageLooksLikeAgentLoading(text) && !hasSpinner && text.trim().length > 40) {
-          responseReceived = true;
-          console.log("  ✅ AI response received");
-          break;
-        }
+      const responseComplete = await isFullStructuredCheckpointAnalysisComplete(page);
+      if (responseComplete) {
+        responseReceived = true;
+        const elapsed = ((Date.now() - loopStart) / 1000).toFixed(1);
+        console.log(
+          `  ✅ Structured analysis complete (summary, optional branches, synthesis — ${elapsed}s)`,
+        );
+        break;
       }
 
       await delay(1000);

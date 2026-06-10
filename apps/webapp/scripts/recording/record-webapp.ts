@@ -2,6 +2,7 @@ import { chromium, Browser, BrowserContext, Page } from "playwright";
 import { config } from "./config";
 import { ensureOutputDir, authenticate, saveSession, delay } from "./helpers";
 import { recordLandingPage } from "./scenes/landing-page";
+import { recordLandingPageStatic } from "./scenes/landing-page-static";
 import { recordLogin } from "./scenes/login";
 import { recordDashboard } from "./scenes/dashboard";
 import { recordTimelineCheckpoint } from "./scenes/timeline-checkpoint";
@@ -26,6 +27,8 @@ import * as fs from "fs";
 const narrationTexts: Record<string, string> = {
   "Landing Page":
     "Welcome to AssetMem AI. Explore use cases, an integrated platform with timeline checkpoints, document chat, and My pros. Generate shareable PDF reports for showings, move-in/out, and insurance claims. Meet specialized AI agents, see timeline tracking, docs chat for inspection reports, and transparent pricing — all in one home care platform.",
+  "Landing Page Static":
+    "Welcome to AssetMem AI — your AI-powered home care platform. Track property condition with timeline checkpoints, chat with your documents, get repair guidance, and generate professional reports. Visit asset-mem.com to get started.",
   Login:
     "Access your personalized AssetMem AI dashboard with secure authentication. Once logged in, you'll unlock a world of intelligent home maintenance tools, from AI-powered diagnostics to comprehensive property tracking. Your journey to smarter home management begins here.",
   "Property Onboarding":
@@ -66,9 +69,10 @@ function promptSceneSelection(): Promise<Set<string>> {
     console.log("  6. Checkpoint Chat (Ask about checkpoints)");
     console.log("  7. Timeline Reports (PDF report wizard)");
     console.log("  8. Details (Property Details)");
-    console.log("  9. All of the above");
+    console.log("  9. Landing Page Static (10s hold, no interaction)");
+    console.log("  10. All of the above");
     console.log(
-      "\nEnter scene numbers (comma-separated, e.g., 1,2,3 or 9 for all):",
+      "\nEnter scene numbers (comma-separated, e.g., 1,2,3 or 10 for all):",
     );
 
     rl.question("> ", (answer) => {
@@ -77,7 +81,8 @@ function promptSceneSelection(): Promise<Set<string>> {
       const selected = new Set<string>();
       const input = answer.trim().toLowerCase();
 
-      if (input === "9" || input === "all") {
+      if (input === "10" || input === "all") {
+        selected.add("Landing Page Static");
         selected.add("Landing Page");
         selected.add("Property Onboarding");
         selected.add("Timeline Checkpoint");
@@ -116,6 +121,10 @@ function promptSceneSelection(): Promise<Set<string>> {
               selected.add("Details");
               break;
             case "9":
+              selected.add("Landing Page Static");
+              break;
+            case "10":
+              selected.add("Landing Page Static");
               selected.add("Landing Page");
               selected.add("Property Onboarding");
               selected.add("Timeline Checkpoint");
@@ -380,6 +389,13 @@ async function main() {
 
     // Build scenes array with prerequisites first
     const scenes: Array<{ name: string; fn: () => Promise<any> }> = [];
+
+    if (selectedScenes.has("Landing Page Static")) {
+      scenes.push({
+        name: "Landing Page Static",
+        fn: () => recordLandingPageStatic(page!),
+      });
+    }
 
     // Landing Page is optional - only add if selected
     if (selectedScenes.has("Landing Page")) {

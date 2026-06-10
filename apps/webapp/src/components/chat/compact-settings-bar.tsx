@@ -65,6 +65,7 @@ export function CompactSettingsBar({
         size="sm"
         title={agentAriaLabel}
         aria-label={agentAriaLabel}
+        data-testid="open-chat-settings-agent"
         className={cn(
           "h-10 w-10 shrink-0 gap-0 px-0 text-xs font-medium md:h-8 md:w-auto md:max-w-[9.5rem] md:gap-1.5 md:px-2.5",
           onAgentPress && "cursor-pointer"
@@ -109,6 +110,7 @@ export function CompactSettingsBar({
           variant="outline"
           size="icon"
           className="h-10 w-10 shrink-0 md:h-8 md:w-8"
+          data-testid="open-chat-settings"
           onClick={onOpenSettings}
           aria-label="Open chat settings"
         >

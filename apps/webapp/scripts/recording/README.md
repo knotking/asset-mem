@@ -122,6 +122,9 @@ The scripts record the following scenes (matching the demo guide):
    - Features section
    - CTA buttons
 
+1b. **Landing Page Static** (10s) — option `9` in `record:webapp`
+   - Loads the marketing landing page and holds on the hero with no scroll or clicks
+
 2. **Login** (15s)
    - Navigate to login
    - Fill credentials

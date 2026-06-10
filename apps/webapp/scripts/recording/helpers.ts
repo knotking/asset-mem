@@ -1877,9 +1877,250 @@ export async function processAllAccordions(
   }
 }
 
+const CHECKPOINT_OPTIONAL_AGENTS = [
+  { id: "coverage", label: "Coverage" },
+  { id: "diy", label: "DIY" },
+  { id: "service", label: "Service" },
+  { id: "cost", label: "Cost" },
+] as const;
+
+const PRIMARY_AGENT_LABELS: Record<string, string> = {
+  checkpoint: "Checkpoint",
+  docs: "Docs",
+  report: "Reports",
+};
+
+/** Locator for the open chat settings popover (test id + Radix fallback). */
+export function getChatSettingsPopoverLocator(page: Page) {
+  return page
+    .locator('[data-testid="chat-settings-popover"]')
+    .or(
+      page
+        .locator('[data-state="open"]')
+        .filter({ has: page.getByRole("heading", { name: "Chat Settings" }) })
+        .filter({ hasText: "Optional Agents" }),
+    )
+    .first();
+}
+
+async function isAgentToggleSelected(
+  button: ReturnType<Page["locator"]>,
+): Promise<boolean> {
+  return button
+    .evaluate((el) => el.classList.toString().includes("bg-primary"))
+    .catch(() => false);
+}
+
+/** Open the chat settings popover from the composer settings bar. */
+export async function openChatSettings(page: Page): Promise<boolean> {
+  const agentSettingsSelectors = [
+    '[data-testid="open-chat-settings"]',
+    'button[aria-label="Open chat settings"]',
+    'button[aria-label*="Open chat settings" i]',
+    '[data-testid="open-chat-settings-agent"]',
+  ];
+
+  for (const selector of agentSettingsSelectors) {
+    const settingsButton = page.locator(selector).first();
+    if (await settingsButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await settingsButton.scrollIntoViewIfNeeded();
+      await delay(300);
+      await settingsButton.click();
+      await delay(700);
+      const popover = getChatSettingsPopoverLocator(page);
+      if (await popover.isVisible({ timeout: 3000 }).catch(() => false)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/** Select a primary agent inside an open chat settings popover. */
+export async function selectPrimaryAgentInSettings(
+  page: Page,
+  agentId: keyof typeof PRIMARY_AGENT_LABELS,
+): Promise<boolean> {
+  const popover = getChatSettingsPopoverLocator(page);
+  await popover.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+
+  const label = PRIMARY_AGENT_LABELS[agentId];
+  let button = popover.locator(`[data-testid="primary-agent-${agentId}"]`).first();
+  if (!(await button.isVisible({ timeout: 1500 }).catch(() => false))) {
+    button = popover.getByRole("button", { name: label, exact: true }).first();
+  }
+
+  if (!(await button.isVisible({ timeout: 2000 }).catch(() => false))) {
+    console.log(`  ⚠️  Primary agent button not found: ${label}`);
+    return false;
+  }
+
+  if (!(await isAgentToggleSelected(button))) {
+    await button.scrollIntoViewIfNeeded();
+    await delay(200);
+    await button.click();
+    await delay(400);
+    console.log(`  ✅ Selected ${label} agent`);
+  } else {
+    console.log(`  ✅ ${label} agent already selected`);
+  }
+
+  return true;
+}
+
+export type CheckpointOptionalAgentId =
+  (typeof CHECKPOINT_OPTIONAL_AGENTS)[number]["id"];
+
+async function getOptionalAgentButton(
+  popover: ReturnType<Page["locator"]>,
+  id: CheckpointOptionalAgentId,
+  label: string,
+) {
+  let button = popover.locator(`[data-testid="optional-agent-${id}"]`).first();
+  if (!(await button.isVisible({ timeout: 1500 }).catch(() => false))) {
+    button = popover.getByRole("button", { name: label, exact: true }).first();
+  }
+  return button;
+}
+
+/** Set checkpoint optional agents in an open chat settings popover. */
+export async function enableCheckpointOptionalAgents(
+  page: Page,
+  enabledAgentIds: readonly CheckpointOptionalAgentId[] = CHECKPOINT_OPTIONAL_AGENTS.map(
+    (agent) => agent.id,
+  ),
+): Promise<void> {
+  const popover = getChatSettingsPopoverLocator(page);
+  const popoverVisible = await popover
+    .waitFor({ state: "visible", timeout: 5000 })
+    .then(() => true)
+    .catch(() => false);
+
+  if (!popoverVisible) {
+    console.log("  ⚠️  Chat settings popover is not visible");
+    return;
+  }
+
+  const enabledSet = new Set(enabledAgentIds);
+
+  for (const { id, label } of CHECKPOINT_OPTIONAL_AGENTS) {
+    const button = await getOptionalAgentButton(popover, id, label);
+
+    if (!(await button.isVisible({ timeout: 2000 }).catch(() => false))) {
+      console.log(`  ⚠️  Optional agent button not found: ${label}`);
+      continue;
+    }
+
+    const shouldEnable = enabledSet.has(id);
+    const isSelected = await isAgentToggleSelected(button);
+
+    if (shouldEnable === isSelected) {
+      console.log(`  ✅ ${label} already ${shouldEnable ? "enabled" : "disabled"}`);
+      continue;
+    }
+
+    await button.scrollIntoViewIfNeeded();
+    await delay(200);
+    await button.click();
+    await delay(300);
+    console.log(`  ✅ ${shouldEnable ? "Enabled" : "Disabled"} ${label}`);
+  }
+}
+
+/** Open the structured report sheet for the latest assistant message and scroll it. */
+export async function openFullChatReportSheetAndScroll(page: Page): Promise<void> {
+  console.log("  📄 Opening full report sheet...");
+  const openButton = page.getByRole("button", { name: "Open full report" }).last();
+
+  if (!(await openButton.isVisible({ timeout: 3000 }).catch(() => false))) {
+    await openButton.scrollIntoViewIfNeeded().catch(() => {});
+    await delay(400);
+  }
+
+  if (!(await openButton.isVisible({ timeout: 3000 }).catch(() => false))) {
+    console.log("  ⚠️  Open full report button not found");
+    return;
+  }
+
+  await openButton.click();
+  await delay(700);
+
+  const sheetScroll = page.locator('[role="dialog"] div.overflow-y-auto').last();
+  if (!(await sheetScroll.isVisible({ timeout: 3000 }).catch(() => false))) {
+    console.log("  ⚠️  Report sheet scroll area not found");
+    await delay(5000);
+    return;
+  }
+
+  console.log("  📜 Scrolling report sheet...");
+  const steps = 10;
+  for (let step = 1; step <= steps; step++) {
+    await sheetScroll.evaluate((el, ratio) => {
+      const maxScroll = el.scrollHeight - el.clientHeight;
+      el.scrollTop = maxScroll * ratio;
+    }, step / steps);
+    await delay(150);
+  }
+
+  console.log("  ⏸️  Waiting 5 seconds with report sheet open...");
+  await delay(5000);
+}
+
 /** In-flight agent status copy (keep in sync with apps/webapp/src/lib/agent-display.ts). */
 const AGENT_LOADING_TEXT =
-  /Working on it|Understanding your request|Analyzing your checkpoints|Writing your summary|Thinking|Executing/i;
+  /Working on it|Understanding your request|Analyzing your checkpoints|Writing your summary|Finishing your analysis|Loading your checkpoints|Thinking|Executing/i;
+
+/** Accordion section titles from StructuredResponse (checkpoint + all optional branches). */
+const STRUCTURED_CHECKPOINT_OPTIONAL_SECTION_LABELS = [
+  "Coverage Analysis",
+  "DIY Recommendations",
+  "Service Recommendations",
+  "Cost Estimates",
+] as const;
+
+function chatSendButtonLocator(page: Page) {
+  return page.getByRole("button", { name: "Send message" });
+}
+
+function chatStopButtonLocator(page: Page) {
+  return page.getByRole("button", { name: "Stop processing" });
+}
+
+/** Agent turn started: composer swaps Send for Stop. */
+export async function waitForChatProcessingToStart(
+  page: Page,
+  timeoutMs = 15000,
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await chatStopButtonLocator(page).isVisible().catch(() => false)) {
+      return true;
+    }
+    await delay(300);
+  }
+  return false;
+}
+
+/**
+ * Agent turn finished: Stop is hidden and Send is back.
+ * Note: Send may still be disabled when the textarea is empty after submit.
+ */
+export async function isChatComposerIdleAfterProcessing(page: Page): Promise<boolean> {
+  if (await chatStopButtonLocator(page).isVisible().catch(() => false)) {
+    return false;
+  }
+  return chatSendButtonLocator(page).isVisible().catch(() => false);
+}
+
+/** True when Send is visible and not disabled (requires non-empty input). */
+export async function isChatSendButtonEnabled(page: Page): Promise<boolean> {
+  const sendButton = chatSendButtonLocator(page).first();
+  if (!(await sendButton.isVisible().catch(() => false))) {
+    return false;
+  }
+  return sendButton.isEnabled().catch(() => false);
+}
 
 export async function hasAgentResponseLoading(page: Page): Promise<boolean> {
   const hasSpinner = (await page.locator("[class*='animate-spin']").count()) > 0;
@@ -1903,6 +2144,66 @@ export async function isCheckpointChatResponseComplete(
     .isVisible()
     .catch(() => false);
   return onPage || /Checkpoints Analyzed/i.test(messageText);
+}
+
+async function structuredCheckpointSummaryVisible(
+  page: Page,
+  messageText?: string | null,
+): Promise<boolean> {
+  if (/Checkpoints Analyzed/i.test(messageText ?? "")) return true;
+  if (await page.getByText(/Checkpoints Analyzed/i).isVisible().catch(() => false)) {
+    return true;
+  }
+  return page.getByText("Checkpoint Summary", { exact: true }).isVisible().catch(() => false);
+}
+
+async function structuredOptionalSectionVisible(
+  page: Page,
+  label: string,
+): Promise<boolean> {
+  return page
+    .getByRole("button", { name: label })
+    .first()
+    .isVisible()
+    .catch(() => false);
+}
+
+/**
+ * Full checkpoint StructuredResponse turn (summary + optional branches + synthesis).
+ * Matches apps/webapp StructuredResponse accordion titles and branch badges.
+ */
+export async function isFullStructuredCheckpointAnalysisComplete(
+  page: Page,
+  messageText?: string | null,
+): Promise<boolean> {
+  if (messageLooksLikeAgentLoading(messageText)) return false;
+  if (await hasAgentResponseLoading(page)) return false;
+
+  if (!(await structuredCheckpointSummaryVisible(page, messageText))) {
+    return false;
+  }
+
+  for (const label of STRUCTURED_CHECKPOINT_OPTIONAL_SECTION_LABELS) {
+    if (!(await structuredOptionalSectionVisible(page, label))) {
+      return false;
+    }
+  }
+
+  const synthesisVisible = await page
+    .getByRole("button", { name: /Summary & Next Steps/i })
+    .isVisible()
+    .catch(() => false);
+  if (!synthesisVisible) return false;
+
+  const analyzingBranch = await page
+    .getByText("Analyzing…", { exact: true })
+    .isVisible()
+    .catch(() => false);
+  const pendingBranch = await page
+    .getByText("Pending", { exact: true })
+    .isVisible()
+    .catch(() => false);
+  return !analyzingBranch && !pendingBranch;
 }
 
 /** Enter checkpoint compare selection mode (feature tip or Compare toolbar button). */

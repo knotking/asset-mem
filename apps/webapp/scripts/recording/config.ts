@@ -149,6 +149,19 @@ export const config: RecordingConfig = {
         'button[aria-label="Send message"], button:has-text("Send"), button[type="submit"]',
       documentDrawer: '[data-testid="document-drawer"], button:has-text("Documents")',
       sessionList: '[data-testid="session-list"], [aria-label*="session"]',
+      openSettingsButton:
+        '[data-testid="open-chat-settings"], button[aria-label="Open chat settings"]',
+      settingsPopover:
+        '[data-testid="chat-settings-popover"], [data-state="open"]:has(h3:text("Chat Settings"))',
+      optionalAgentButton: (agentId: string) => {
+        const labels: Record<string, string> = {
+          coverage: "Coverage",
+          diy: "DIY",
+          service: "Service",
+          cost: "Cost",
+        };
+        return `[data-testid="optional-agent-${agentId}"], button:text-is("${labels[agentId] ?? agentId}")`;
+      },
     },
     timeline: {
       checkpointList: '[data-testid="checkpoint-list"]',

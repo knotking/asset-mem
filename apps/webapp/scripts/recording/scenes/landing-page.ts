@@ -9,27 +9,10 @@ const GAP_BETWEEN_CLICKS_MS =
 
 /** Extra pause while each section is on screen (from Use Cases onward). */
 const SECTION_VIEW_DELAY_MS = 4000;
+const FEATURES_VIEW_DELAY_MS = SECTION_VIEW_DELAY_MS - 2000;
+const REPORTS_VIEW_DELAY_MS = 1000;
 const AI_AGENTS_EXTRA_DELAY_MS = 2000;
 const TIMELINE_EXTRA_DELAY_MS = 1000;
-
-async function panReportTypeCards(page: Page): Promise<void> {
-  const cards = page.locator("#reports .grid > div");
-  const count = await cards.count();
-  if (count === 0) {
-    await delay(SECTION_VIEW_DELAY_MS);
-    return;
-  }
-  console.log(`  📜 Panning through ${count} report type cards...`);
-  for (let i = 0; i < count; i++) {
-    try {
-      await cards.nth(i).scrollIntoViewIfNeeded({ timeout: 3000 });
-      await delay(800);
-    } catch {
-      await scrollPage(page, "down", 300);
-      await delay(600);
-    }
-  }
-}
 
 async function panUseCaseCards(page: Page): Promise<void> {
   const cards = page.locator("#use-cases .grid > div");
@@ -126,9 +109,11 @@ export async function recordLandingPage(page: Page): Promise<SceneResult> {
     await clickNavAnchor("#use-cases", "#use-cases", "Use Cases", {
       afterShow: panUseCaseCards,
     });
-    await clickNavAnchor("#features", "#features", "Features");
+    await clickNavAnchor("#features", "#features", "Features", {
+      viewDelayMs: FEATURES_VIEW_DELAY_MS,
+    });
     await clickNavAnchor("#reports", "#reports", "Reports", {
-      afterShow: panReportTypeCards,
+      viewDelayMs: REPORTS_VIEW_DELAY_MS,
     });
     await clickNavAnchor("#ai-agents", "#ai-agents", "AI Agents", {
       viewDelayMs: SECTION_VIEW_DELAY_MS + AI_AGENTS_EXTRA_DELAY_MS,

@@ -45,12 +45,13 @@ function SelectableChipButton({
   onClick,
   className,
   children,
+  ...props
 }: {
   selected: boolean;
   onClick: () => void;
   className?: string;
   children: ReactNode;
-}) {
+} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <Button
       type="button"
@@ -64,6 +65,7 @@ function SelectableChipButton({
           : "border-input bg-background",
         className,
       )}
+      {...props}
     >
       {children}
     </Button>
@@ -206,6 +208,7 @@ function ChatSettingsPanel({
                     selected={selected}
                     onClick={() => onPrimaryAgentChange(option.id)}
                     className="h-9 min-w-0 gap-1 px-1.5 text-xs sm:gap-1.5 sm:px-2 sm:text-sm"
+                    data-testid={`primary-agent-${option.id}`}
                   >
                     <Icon className="h-3.5 w-3.5 shrink-0" />
                     <span className="min-w-0 truncate">{option.label}</span>
@@ -283,6 +286,7 @@ function ChatSettingsPanel({
                           : onToggleOptionalAgent(option.id)
                       }
                       className="h-7 gap-1 px-2 text-xs md:h-9 md:gap-1.5 md:px-3 md:text-sm"
+                      data-testid={`optional-agent-${option.id}`}
                     >
                       <Icon className="h-3 w-3 shrink-0 md:h-3.5 md:w-3.5" />
                       <span>{option.label}</span>
@@ -577,6 +581,7 @@ export function ChatSettingsPopover({
         side="bottom"
         sideOffset={8}
         collisionPadding={12}
+        data-testid="chat-settings-popover"
       >
         <ChatSettingsPanel
           {...panelProps}

@@ -112,20 +112,55 @@ export async function recordTimelineReports(page: Page): Promise<SceneResult> {
     const previewLayout = page.locator('[role="dialog"] button:has-text("Preview layout")').first();
     if (await previewLayout.isVisible({ timeout: 5000 }).catch(() => false)) {
       await previewLayout.click();
-      await page
+
+      const previewDialog = page
         .locator('[role="dialog"]:has-text("Layout preview")')
-        .first()
-        .waitFor({ state: "visible", timeout: 30000 })
-        .catch(() => {});
-      console.log("  ⏸️  Showing layout preview for 8 seconds...");
-      await delay(8000);
+        .last();
+      await previewDialog.waitFor({ state: "visible", timeout: 30000 });
+
+      const previewIframe = previewDialog.locator(
+        'iframe[title="Report layout preview"]',
+      );
+      await previewIframe.waitFor({ state: "visible", timeout: 30000 });
+      console.log("  ✅ Layout preview visible");
+
+      console.log("  📜 Scrolling layout preview...");
+      const previewFrame = page
+        .frameLocator('[role="dialog"]:has-text("Layout preview") iframe')
+        .last();
+      const scrollSteps = 10;
+      for (let step = 1; step <= scrollSteps; step++) {
+        await previewFrame.locator("body").evaluate((_, ratio) => {
+          const maxScroll =
+            document.documentElement.scrollHeight - window.innerHeight;
+          window.scrollTo(0, maxScroll * ratio);
+        }, step / scrollSteps);
+        await delay(80);
+      }
+
+      await delay(1000);
+
       await page.keyboard.press("Escape");
       await delay(500);
+      console.log("  ✅ Closed layout preview");
     }
 
-    await page.keyboard.press("Escape");
-    await delay(500);
-    console.log("  ✅ Closed report wizard (no PDF submitted)");
+    const wizardDialog = page
+      .locator('[role="dialog"]')
+      .filter({ has: page.locator('button:has-text("Preview layout")') })
+      .first();
+    const createReportBtn = wizardDialog
+      .locator('button:has-text("Create Report")')
+      .last();
+
+    if (await createReportBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+      console.log("  🔘 Clicking Create Report...");
+      await createReportBtn.click();
+      console.log("  ⏸️  Waiting 10 seconds after Create Report...");
+      await delay(10000);
+    } else {
+      console.log("  ⚠️  Create Report button not found in wizard");
+    }
 
     const duration = Date.now() - startTime;
     console.log(`✅ Timeline Reports scene completed in ${(duration / 1000).toFixed(1)}s`);
