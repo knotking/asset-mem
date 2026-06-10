@@ -101,6 +101,15 @@ def test_invocation_used_orchestrator():
     assert invocation_used_orchestrator(events, "inv-2") is False
 
 
+def test_memory_flags_disabled_by_default(monkeypatch) -> None:
+    monkeypatch.delenv("ADK_MEMORY_INGEST_ENABLED", raising=False)
+    monkeypatch.delenv("ADK_MEMORY_PRELOAD_ENABLED", raising=False)
+    from agent_framework.memory.ingest import memory_ingest_enabled, memory_preload_enabled
+
+    assert memory_ingest_enabled() is False
+    assert memory_preload_enabled() is False
+
+
 @pytest.mark.asyncio
 async def test_ingest_skips_when_disabled(monkeypatch):
     monkeypatch.setenv("ADK_MEMORY_INGEST_ENABLED", "0")

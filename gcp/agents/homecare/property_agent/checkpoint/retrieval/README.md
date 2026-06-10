@@ -26,17 +26,26 @@ Authentication: Uses Application Default Credentials (ADC) for Firestore and Ver
 
 ## How it works
 
-1. **Query Embedding Generation**: User's natural language query is converted to a 768-dimensional vector using text-embedding-004
-2. **Vector Search**: Firestore `findNearest` API performs KNN search on checkpoint embeddings
-3. **Filtering**: Optional location filter narrows results to specific assets/locations
-4. **Result Formatting**: Retrieved checkpoints are formatted with summaries, detected items, conditions, and issues
+1. **By ID** (when UI `checkpoint_ids` are provided): direct Firestore document fetches. `before_tool` forces tool args to match session UI ids only — the executor cannot pass slug names like `garage`.
+2. **Inventory list** (when the query asks to list checkpoints or report live status): `order_by(createdAt desc)` with a cap of 20; disclosure notes when truncated (e.g. “20 most recent of 127”)
+3. **Vector search** (semantic queries with no UI chips, or after by-id miss): query embedding via text-embedding-004, then Firestore `findNearest` (top 5)
+4. **Result Formatting**: Retrieved checkpoints are formatted with summaries, status, detected items, conditions, and issues
 
 ## Firestore Index Requirements
 
-Requires a composite index on the `checkpoints` collection:
+Indexes on the `checkpoints` collection (see `apps/webapp/firestore.indexes.json`):
 
-- Fields: `location` (ASC), `createdAt` (DESC), `embedding` (vector, 768 dimensions)
-- The vector field (`embedding`) must be the last field in the index
+- **Inventory list**: `createdAt` (DESC) — single-field; optional `location` + `createdAt` composite when location filter is set
+- **Vector search**: `embedding` only (768-dim flat), or `location` + `createdAt` + `embedding` when location filter is set
+
+Embeddings must be stored as Firestore **`Vector`** values (not plain arrays). The checkpoint analysis worker writes `Vector(...)` on new runs. For checkpoints analyzed before that fix, run:
+
+```bash
+GCP_PROJECT_ID=homegeek-staging python gcp/proxy/workers/function/checkpoint_analysis/migrate_checkpoint_embeddings.py --dry-run
+GCP_PROJECT_ID=homegeek-staging python gcp/proxy/workers/function/checkpoint_analysis/migrate_checkpoint_embeddings.py
+```
+
+Optional scope: `--user-id UID --property-id PID`. Requires Application Default Credentials.
 
 ## Tool Function
 

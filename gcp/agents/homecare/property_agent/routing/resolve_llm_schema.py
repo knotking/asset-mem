@@ -104,6 +104,7 @@ discourse_act (required):
 - accept_offer: short yes/ok/sure when assistant offered an action OR pending_user_action is set.
 - explain_prior: clarify/compare existing analysis (why is pro expensive, explain DIY steps) — NO new branches.
 - new_work: fresh retrieval or optional branch run (find providers, run cost analysis, how about cost).
+  Checkpoint inventory/status ("what checkpoints do I have", "checkpoint status", "list my checkpoints") → new_work, route=checkpoint, user_goal=new_analysis, retrieval_only=true, run_optional_agents=[] — requires live retrieval; never answer_from_context when property_analysis is empty.
 - replay_report: show full prior structured report again.
 - provider_detail: more about a service provider already listed in prior analysis.
 
@@ -135,6 +136,7 @@ Critical NLU rules:
 - Never copy ui_optional_agents into run_optional_agents.
 - checkpoint_selection_changed=true → prefer new_work / new_analysis, not explain_prior.
 - analysis_digest shows branches_completed — do not re-run completed branches for explain_prior.
+- Empty property_analysis + checkpoint list/status question → new_work + new_analysis (retrieval), not explain_prior or answer_from_context.
 
 Intent (legacy, align with discourse_act):
 - greeting, capabilities, acknowledgment (closure maps to acknowledgment intent).

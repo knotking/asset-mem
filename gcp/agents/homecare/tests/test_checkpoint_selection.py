@@ -6,7 +6,13 @@ from property_agent.checkpoint.constants import CHECKPOINT_IDS_ANALYZED_STATE_KE
 from property_agent.routing.apply_resolved_turn import apply_checkpoint_retrieval_plan
 from property_agent.routing.checkpoint_selection import (
     checkpoint_selection_changed,
+    checkpoint_selection_cleared,
+    clear_stale_checkpoint_analysis_state,
     record_checkpoint_ids_analyzed,
+)
+from property_agent.routing.conversational_intent import (
+    CHECKPOINT_LAST_RESPONSE_KIND_KEY,
+    prior_checkpoint_analysis_in_session,
 )
 from property_agent.routing.turn_intent_llm import apply_turn_intent_guardrails
 
@@ -47,6 +53,27 @@ def test_checkpoint_selection_changed_when_id_added() -> None:
 def test_checkpoint_selection_unchanged() -> None:
     state = _prior_analysis_state(checkpoint_ids=["door-cp"])
     assert not checkpoint_selection_changed(state)
+
+
+def test_checkpoint_selection_cleared_when_ids_removed() -> None:
+    state = _prior_analysis_state(checkpoint_ids=[])
+    assert checkpoint_selection_cleared(state)
+    assert checkpoint_selection_changed(state)
+
+
+def test_cleared_selection_forces_retrieval_plan() -> None:
+    state = _prior_analysis_state(checkpoint_ids=[])
+    state.pop("checkpoint_analysis", None)
+    state["session_working_memory_snapshot"] = {
+        CHECKPOINT_IDS_ANALYZED_STATE_KEY: ["door-cp"],
+    }
+    out = apply_checkpoint_retrieval_plan(
+        _payload(),
+        user_query="What checkpoints do I have and what is their current status?",
+        state=state,
+    )
+    assert out["user_goal"] == "new_analysis"
+    assert out["retrieval_only"] is True
 
 
 def test_reanalysis_after_adding_checkpoint_runs_pipeline() -> None:
@@ -103,3 +130,16 @@ def test_record_checkpoint_ids_analyzed() -> None:
     state: dict = {"checkpoint_ids": ["a", "b"]}
     record_checkpoint_ids_analyzed(state)
     assert state[CHECKPOINT_IDS_ANALYZED_STATE_KEY] == ["a", "b"]
+
+
+def test_clear_stale_checkpoint_analysis_state_drops_lingering_flags() -> None:
+    state = _prior_analysis_state(checkpoint_ids=["door-cp", "car-cp"])
+    assert prior_checkpoint_analysis_in_session(state)
+
+    cleared = clear_stale_checkpoint_analysis_state(state)
+
+    assert cleared is True
+    assert CHECKPOINT_IDS_ANALYZED_STATE_KEY not in state
+    assert CHECKPOINT_LAST_RESPONSE_KIND_KEY not in state
+    assert "checkpoint_analysis" not in state
+    assert not prior_checkpoint_analysis_in_session(state)

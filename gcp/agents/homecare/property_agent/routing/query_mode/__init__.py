@@ -10,6 +10,7 @@ from .heuristics import (
     prior_analysis_branches_completed,
     query_asks_area_outside_memory,
     query_looks_like_explain_follow_up,
+    query_requests_checkpoint_inventory,
     query_requests_entity_detail,
     query_requests_fresh_external_data,
     should_answer_provider_from_context,
@@ -27,6 +28,7 @@ from .session_memory import (
     extract_known_service_providers,
     extract_service_provider_details,
     format_session_working_memory_block,
+    session_has_checkpoint_answer_context,
     snapshot_session_analysis_context,
 )
 
@@ -39,6 +41,7 @@ __all__ = [
     "extract_service_provider_details",
     "format_provider_context_answer",
     "format_session_working_memory_block",
+    "session_has_checkpoint_answer_context",
     "infer_query_mode",
     "needs_fresh_checkpoint_retrieval",
     "prior_analysis_branches_completed",
@@ -47,6 +50,7 @@ __all__ = [
     "query_asks_area_outside_memory",
     "query_looks_like_explain_follow_up",
     "query_references_known_provider",
+    "query_requests_checkpoint_inventory",
     "query_requests_entity_detail",
     "query_requests_fresh_external_data",
     "should_answer_provider_from_context",

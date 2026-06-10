@@ -319,9 +319,11 @@ def pubsub_checkpoint_analysis(request, context):
                         )
             
                         if embedding:
-                            # Update checkpoint with embedding
+                            from google.cloud.firestore_v1.vector import Vector
+
+                            # Firestore vector indexes require Vector type, not a plain list.
                             embedding_update = {
-                                "embedding": embedding,
+                                "embedding": Vector(embedding),
                                 "embeddingModel": "text-embedding-004",
                                 "embeddingGeneratedAt": firestore.SERVER_TIMESTAMP
                             }

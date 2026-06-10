@@ -38,7 +38,7 @@ Turn routing is distributed across three layers. **NLU-first resolve is on by de
 
 **NLU discourse acts:** `accept_offer`, `explain_prior`, `new_work`, `closure`, `provider_detail`, `replay_report`, plus casual `greeting` / `capabilities`. Pending offers: `pending_user_action` + `pending_offer_extract` (after-agent micro-LLM). Long sessions: `conversation_summary` (after-agent micro-LLM when dialogue grows). Client chips: `contentJson.suggestedActions` + optional `chat_intent` on send.
 
-**Tool blocking:** `conversational_turn` follows `is_executor_conversational_turn` (casual or context-only substantive turns) — not `route=none`. `accept_offer` with `run_optional_agents` keeps tools enabled; `normalize_substantive_route` promotes `route=checkpoint` when branch work is requested.
+**Tool blocking:** `conversational_turn` follows `is_executor_conversational_turn` (casual or context-only substantive turns) — not `route=none`. Context-only checkpoint turns (`answer_from_context`) require grounded session memory (`session_has_checkpoint_answer_context`); `property_id` alone keeps tools enabled. Cold sessions and checkpoint inventory/status queries resolve to `user_goal=new_analysis` so retrieval can run. Cleared UI selection is detected via `checkpoint_selection_cleared`. Vertex Memory Bank ingest/preload are **off by default** (`ADK_MEMORY_INGEST_ENABLED`, `ADK_MEMORY_PRELOAD_ENABLED`); set to `1` to opt in. `accept_offer` with `run_optional_agents` keeps tools enabled; `normalize_substantive_route` promotes `route=checkpoint` when branch work is requested.
 
 See [`docs/ORCHESTRATOR_V2_PLAN.md`](../docs/ORCHESTRATOR_V2_PLAN.md) for the end-to-end flow.
 

@@ -133,6 +133,59 @@ def test_report_route_substantive_allows_tools() -> None:
     assert state.get(CONVERSATIONAL_TURN_STATE_KEY) is False
 
 
+def test_answer_from_context_thin_memory_not_conversational() -> None:
+    inventory = ResolvedTurn(
+        intent="substantive",
+        route="checkpoint",
+        expanded_user_query="What checkpoints do I have and what is their current status?",
+        retrieval_only=True,
+        run_optional_agents=[],
+        user_goal="answer_from_context",
+        discourse_act="new_work",
+        query_mode="interpret_session",
+    )
+    thin_state = {
+        "property_id": "prop-1",
+        "session_working_memory_snapshot": {"property_id": "prop-1"},
+    }
+    assert is_executor_conversational_turn(inventory, state=thin_state) is False
+
+    rich_state = {
+        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
+            "checkpoint_summary": {"locations": ["Garage"], "checkpointsAnalyzed": 1},
+        }
+    }
+    follow_up = ResolvedTurn(
+        intent="substantive",
+        route="checkpoint",
+        expanded_user_query="Are there issues in the garage?",
+        retrieval_only=True,
+        run_optional_agents=[],
+        user_goal="answer_from_context",
+        discourse_act="explain_prior",
+        query_mode="interpret_session",
+    )
+    assert is_executor_conversational_turn(follow_up, state=rich_state) is True
+    assert is_executor_conversational_turn(inventory, state=rich_state) is False
+
+
+def test_apply_resolved_cold_session_inventory_enables_tools() -> None:
+    state = {"property_id": "prop-1", "checkpoint_optional_agents": ["cost"]}
+    apply_resolved_turn_to_state(
+        state,
+        ResolvedTurn(
+            intent="substantive",
+            route="checkpoint",
+            expanded_user_query="What checkpoints do I have and what is their current status?",
+            retrieval_only=True,
+            run_optional_agents=[],
+            user_goal="answer_from_context",
+            discourse_act="new_work",
+        ),
+    )
+    assert state.get(CONVERSATIONAL_TURN_STATE_KEY) is False
+
+
 def test_greeting_route_none_stays_conversational() -> None:
     resolved = ResolvedTurn(
         intent="greeting",

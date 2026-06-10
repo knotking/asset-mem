@@ -58,6 +58,30 @@ def test_state_take_works_without_pop() -> None:
     assert state["_saved_checkpoint_optional_agents"] is None
 
 
+def test_before_tool_allows_pipeline_on_cold_checkpoint_inventory_turn() -> None:
+    tool = SimpleNamespace(name="run_checkpoint_pipeline")
+    tool_context = MagicMock()
+    tool_context.state = {
+        "user_query": "What checkpoints do I have and what is their current status?",
+        "property_id": "prop-1",
+        RESOLVED_TURN_STATE_KEY: {
+            "intent": "substantive",
+            "route": "checkpoint",
+            "expanded_user_query": "What checkpoints do I have and what is their current status?",
+            "retrieval_only": True,
+            "run_optional_agents": [],
+            "user_goal": "new_analysis",
+            "query_mode": "interpret_session",
+            "discourse_act": "new_work",
+        },
+        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {"property_id": "prop-1"},
+    }
+
+    result = conversational_before_tool(tool, {}, tool_context)
+
+    assert result is None
+
+
 def test_before_tool_blocks_run_checkpoint_pipeline_when_conversational() -> None:
     tool = SimpleNamespace(name="run_checkpoint_pipeline")
     tool_context = MagicMock()
