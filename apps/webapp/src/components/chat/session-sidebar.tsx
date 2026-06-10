@@ -34,6 +34,7 @@ import { Plus, MessageSquare, Trash2, ChevronLeft, X, Share2, Copy, Loader2, Mor
 import type { Session } from '@/lib/types';
 import {
   SHARED_CHAT_TTL_DAYS,
+  buildSharedChatPath,
   sharedChatExpiresAtFromNow,
   deleteAllInCollection,
   writeSharedChatMessages,
@@ -443,7 +444,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
           if (!querySnapshot.empty) {
               const existingDoc = querySnapshot.docs[0];
               setExistingShareId(existingDoc.id);
-              setSharedLink(`${window.location.origin}/share/${existingDoc.id}`);
+              setSharedLink(`${window.location.origin}${buildSharedChatPath(existingDoc.id)}`);
               setShareState('prompt_update');
           } else {
               // No existing share found, proceed to create
@@ -505,7 +506,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
               await writeSharedChatMessages(db, sharedMessagesRef, messages);
           }
 
-          setSharedLink(`${window.location.origin}/share/${shareId}`);
+          setSharedLink(`${window.location.origin}${buildSharedChatPath(shareId)}`);
           setShareState('done');
 
       } catch (error) {

@@ -82,6 +82,10 @@ export async function deleteAllInCollection(
   }
 }
 
+export function buildSharedChatPath(shareId: string): string {
+  return `/share/chat/${shareId}`;
+}
+
 /** Write shared chat message snapshots in chunked batches. */
 export async function writeSharedChatMessages(
   db: Firestore,

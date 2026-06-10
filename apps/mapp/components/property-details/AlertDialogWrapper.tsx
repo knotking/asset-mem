@@ -72,13 +72,14 @@ export function AlertDialogWrapper({
             variant={confirmVariant}
             disabled={confirmLoading}
             onPress={() => {
-              if (confirmLoading || confirmLoadingRef.current) return;
-              confirmLoadingRef.current = true;
+              if (confirmLoading) return;
               if (onConfirm) {
+                if (confirmLoadingRef.current) return;
+                confirmLoadingRef.current = true;
                 onConfirm();
-              } else {
-                onOpenChange(false);
+                return;
               }
+              onOpenChange(false);
             }}>
             {confirmLoading ? (
               <View className="flex-row items-center gap-2">

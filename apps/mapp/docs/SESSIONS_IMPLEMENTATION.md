@@ -254,7 +254,7 @@ sharedChats/{shareId}/
 
 ### Share Links
 - Creates snapshot in `sharedChats` collection
-- Generates URL: `{webAppUrl}/share/{shareId}`
+- Generates URL: `{webAppUrl}/share/chat/{shareId}` (legacy `/share/{shareId}` redirects)
 - Read-only access for recipients
 - Can update existing shares with latest messages
 - Messages stored with ISO timestamp strings for sharing

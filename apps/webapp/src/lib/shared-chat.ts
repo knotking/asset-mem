@@ -52,6 +52,10 @@ export function isSharedChatExpired(
   return Number.isFinite(ms) && Date.now() > ms;
 }
 
+export function buildSharedChatPath(shareId: string): string {
+  return `/share/chat/${shareId}`;
+}
+
 /** Normalize a chat message for the public sharedChats/messages subcollection. */
 export function serializeSharedChatMessage(
   data: Record<string, unknown>

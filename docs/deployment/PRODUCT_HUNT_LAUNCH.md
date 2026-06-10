@@ -214,7 +214,7 @@ Run **48 hours before** PH on **staging**, then repeat on **prod** after final d
 ```text
 [ ] Wrong password → clear error on login
 [ ] Logout → /login; cannot access /home
-[ ] Shared chat link /share/[id] loads for public read (if promoting shares)
+[ ] Shared chat link /share/chat/[id] loads for public read (legacy /share/[id] redirects; if promoting shares)
 ```
 
 Record results in a thread or doc: date, environment, tester, pass/fail notes.

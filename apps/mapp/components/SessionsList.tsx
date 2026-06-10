@@ -8,6 +8,7 @@ import { MessageSquare, Plus, MoreVertical, Share2, Trash2, Copy, Loader2, Penci
 import type { Session, Message } from '@homeapp/common/types';
 import {
   SHARED_CHAT_TTL_DAYS,
+  buildSharedChatPath,
   sharedChatExpiresAtFromNow,
   deleteAllInCollection,
   writeSharedChatMessages,
@@ -225,6 +226,8 @@ export default function SessionsList({
   const [sessionToShare, setSessionToShare] = useState<Session | null>(null);
   const [shareState, setShareState] = useState<ShareState>('idle');
   const [sharedLink, setSharedLink] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const linkCopiedTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [existingShareId, setExistingShareId] = useState<string | null>(null);
 
   // Alert dialog state
@@ -484,6 +487,7 @@ export default function SessionsList({
   }, [sessionToDelete, markDeleting, runDeleteSession]);
 
   const handleOpenShareDialog = useCallback((session: Session) => {
+    setLinkCopied(false);
     setSessionToShare(session);
     setShareState('idle');
     setSharedLink(null);
@@ -492,6 +496,8 @@ export default function SessionsList({
 
   const handleCloseShareDialog = () => {
     if (shareState === 'creating' || shareState === 'updating' || shareState === 'checking') return;
+    setLinkCopied(false);
+    if (linkCopiedTimeoutRef.current) clearTimeout(linkCopiedTimeoutRef.current);
     setSessionToShare(null);
     setTimeout(() => {
       setShareState('idle');
@@ -516,7 +522,7 @@ export default function SessionsList({
       if (!querySnapshot.empty) {
         const existingDoc = querySnapshot.docs[0];
         setExistingShareId(existingDoc.id);
-        setSharedLink(`${WEB_APP_URL}/share/${existingDoc.id}`);
+        setSharedLink(`${WEB_APP_URL.replace(/\/$/, '')}${buildSharedChatPath(existingDoc.id)}`);
         setShareState('prompt_update');
       } else {
         // No existing share found, proceed to create
@@ -577,7 +583,7 @@ export default function SessionsList({
         await writeSharedChatMessages(db, sharedMessagesRef, messages);
       }
 
-      setSharedLink(`${WEB_APP_URL}/share/${shareId}`);
+      setSharedLink(`${WEB_APP_URL.replace(/\/$/, '')}${buildSharedChatPath(shareId)}`);
       setShareState('done');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
@@ -587,10 +593,11 @@ export default function SessionsList({
   };
 
   const handleCopyLink = async () => {
-    if (sharedLink) {
-      await Clipboard.setStringAsync(sharedLink);
-      showAlert('Success', 'Link copied to clipboard!');
-    }
+    if (!sharedLink) return;
+    await Clipboard.setStringAsync(sharedLink);
+    setLinkCopied(true);
+    if (linkCopiedTimeoutRef.current) clearTimeout(linkCopiedTimeoutRef.current);
+    linkCopiedTimeoutRef.current = setTimeout(() => setLinkCopied(false), 2000);
   };
 
 
@@ -806,7 +813,9 @@ export default function SessionsList({
                 </View>
                 <Button onPress={handleCopyLink} size="sm" className="flex-row items-center gap-2">
                   <Icon as={Copy} size={16} className="text-primary-foreground" />
-                  <Text className="text-sm text-primary-foreground">Copy Link</Text>
+                  <Text className="text-sm text-primary-foreground">
+                    {linkCopied ? 'Copied!' : 'Copy Link'}
+                  </Text>
                 </Button>
               </View>
             ) : shareState === 'prompt_update' ? (

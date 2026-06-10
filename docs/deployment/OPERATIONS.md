@@ -84,7 +84,7 @@ On Cloud Run scale-in or deploy, the proxy [`lifespan`](../../gcp/proxy/api/core
 ## Shared chat links (Phase 3.4)
 
 - New shares set `expiresAt` (**30 days**, extended on update) via [`@homeapp/common/lib/shared-chat`](../../apps/common/src/lib/shared-chat.ts).
-- Public page: [`apps/webapp/src/app/share/[shareId]/page.tsx`](../../apps/webapp/src/app/share/[shareId]/page.tsx) rejects expired links; [`share/layout.tsx`](../../apps/webapp/src/app/share/layout.tsx) sets `robots: noindex`.
+- Public page: [`apps/webapp/src/app/share/chat/[shareId]/page.tsx`](../../apps/webapp/src/app/share/chat/[shareId]/page.tsx) rejects expired links; legacy [`share/[shareId]/page.tsx`](../../apps/webapp/src/app/share/[shareId]/page.tsx) redirects to `/share/chat/…`; [`share/chat/layout.tsx`](../../apps/webapp/src/app/share/chat/layout.tsx) sets chat OG metadata and `robots: noindex`.
 - Firestore rules deny public read when `expiresAt` is in the past; owners can still list/read their own `sharedChats` docs (including expired) so share/update flows work. **Deploy rules** after merge: `firebase deploy --only firestore:rules`.
 - Composite index on `sharedChats` (`originalUserId`, `originalSessionId`) supports the existing-share lookup query. **Deploy indexes** after merge: `firebase deploy --only firestore:indexes`.
 

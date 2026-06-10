@@ -100,14 +100,12 @@ export function ThemedAlertProvider({ children }: { children: React.ReactNode })
         cancelText={state.cancelText}
         showCancel={state.showCancel}
         confirmVariant={state.confirmVariant}
-        onConfirm={
-          state.showCancel
-            ? () => {
-                state.onConfirm?.();
-                setState(closedState);
-              }
-            : undefined
-        }
+        onConfirm={() => {
+          if (state.showCancel) {
+            state.onConfirm?.();
+          }
+          setState(closedState);
+        }}
       />
     </ThemedAlertContext.Provider>
   );
