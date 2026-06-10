@@ -7,6 +7,7 @@ import { recordDashboard } from "./scenes/dashboard";
 import { recordTimelineCheckpoint } from "./scenes/timeline-checkpoint";
 import { recordTimelineCompare } from "./scenes/timeline-compare";
 import { recordTimelineInsights } from "./scenes/timeline-insights";
+import { recordTimelineReports } from "./scenes/timeline-reports";
 import { recordCheckpointChat } from "./scenes/checkpoint-chat";
 import { recordPropertyDetails } from "./scenes/property-details";
 import { recordPropertyOnboarding } from "./scenes/property-onboarding";
@@ -24,7 +25,7 @@ import * as fs from "fs";
 // Narration text for each scene (max 500 characters)
 const narrationTexts: Record<string, string> = {
   "Landing Page":
-    "Welcome to Asset Mem AI, your complete home care platform. Explore real-world use cases from property condition tracking to preventive maintenance planning. Discover integrated services: AI powered asset checkpoints analysis, checkpoints chat and service discovery. Meet our multi-agent AI system with specialized agents for checkpoint analysis, coverage, DIY, services and cost estimation. See property checkpoints with visual timelines and AI tracking. Experience intelligent checkpoint chat with instant answers.",
+    "Welcome to AssetMem AI. Explore use cases, an integrated platform with timeline checkpoints, document chat, and My pros. Generate shareable PDF reports for showings, move-in/out, and insurance claims. Meet specialized AI agents, see timeline tracking, docs chat for inspection reports, and transparent pricing — all in one home care platform.",
   Login:
     "Access your personalized AssetMem AI dashboard with secure authentication. Once logged in, you'll unlock a world of intelligent home maintenance tools, from AI-powered diagnostics to comprehensive property tracking. Your journey to smarter home management begins here.",
   "Property Onboarding":
@@ -37,6 +38,8 @@ const narrationTexts: Record<string, string> = {
     "Witness the power of side-by-side comparison! Select multiple checkpoints and watch our AI analyze the differences between them. The system highlights changes, detects deterioration, and provides intelligent insights about what's improved or needs attention. This visual comparison tool helps you make informed decisions about maintenance priorities and track property condition evolution over time.",
   "Timeline Insights":
     "Explore the insights dashboard, where data transforms into actionable intelligence. View comprehensive metrics, trends, and analytics about your property's condition. See patterns emerge, identify areas requiring attention, and gain predictive insights.",
+  "Timeline Reports":
+    "Turn checkpoint photos into branded PDF reports. Pick a purpose — showing snapshot, move-in/move-out comparison, or insurance documentation — preview sections and layout, then download or share a frozen-in-time report your contractors and adjusters can trust.",
   "Checkpoint Chat":
     "Engage with our AI assistant to get instant answers about your checkpoints. Simply ask questions like 'What checkpoints do I have?' or 'What's their current status?' and watch as the AI provides detailed, contextual responses. The assistant understands your property's history, analyzes checkpoint data, and delivers intelligent insights tailored to your specific situation.",
   Details:
@@ -61,10 +64,11 @@ function promptSceneSelection(): Promise<Set<string>> {
     console.log("  4. Timeline Compare (Compare Checkpoints)");
     console.log("  5. Timeline Insights (View Insights Dashboard)");
     console.log("  6. Checkpoint Chat (Ask about checkpoints)");
-    console.log("  7. Details (Property Details)");
-    console.log("  8. All of the above");
+    console.log("  7. Timeline Reports (PDF report wizard)");
+    console.log("  8. Details (Property Details)");
+    console.log("  9. All of the above");
     console.log(
-      "\nEnter scene numbers (comma-separated, e.g., 1,2,3 or 8 for all):",
+      "\nEnter scene numbers (comma-separated, e.g., 1,2,3 or 9 for all):",
     );
 
     rl.question("> ", (answer) => {
@@ -73,14 +77,14 @@ function promptSceneSelection(): Promise<Set<string>> {
       const selected = new Set<string>();
       const input = answer.trim().toLowerCase();
 
-      // If user enters 8 or "all", select all scenes
-      if (input === "8" || input === "all") {
+      if (input === "9" || input === "all") {
         selected.add("Landing Page");
         selected.add("Property Onboarding");
         selected.add("Timeline Checkpoint");
         selected.add("Timeline Compare");
         selected.add("Timeline Insights");
         selected.add("Checkpoint Chat");
+        selected.add("Timeline Reports");
         selected.add("Details");
       } else {
         // Parse comma-separated numbers
@@ -106,15 +110,19 @@ function promptSceneSelection(): Promise<Set<string>> {
               selected.add("Checkpoint Chat");
               break;
             case "7":
-              selected.add("Details");
+              selected.add("Timeline Reports");
               break;
             case "8":
+              selected.add("Details");
+              break;
+            case "9":
               selected.add("Landing Page");
               selected.add("Property Onboarding");
               selected.add("Timeline Checkpoint");
               selected.add("Timeline Compare");
               selected.add("Timeline Insights");
               selected.add("Checkpoint Chat");
+              selected.add("Timeline Reports");
               selected.add("Details");
               break;
           }
@@ -385,6 +393,7 @@ async function main() {
       "Timeline Compare",
       "Timeline Insights",
       "Checkpoint Chat",
+      "Timeline Reports",
       "Details",
     ];
     const hasScenesNeedingLogin = scenesNeedingLogin.some((sceneName) =>
@@ -412,6 +421,7 @@ async function main() {
       "Timeline Compare",
       "Timeline Insights",
       "Checkpoint Chat",
+      "Timeline Reports",
       "Details",
     ];
     const hasScenesNeedingDashboard = scenesNeedingDashboard.some((sceneName) =>
@@ -445,6 +455,12 @@ async function main() {
       scenes.push({
         name: "Timeline Insights",
         fn: () => recordTimelineInsights(page!),
+      });
+    }
+    if (selectedScenes.has("Timeline Reports")) {
+      scenes.push({
+        name: "Timeline Reports",
+        fn: () => recordTimelineReports(page!),
       });
     }
     if (selectedScenes.has("Checkpoint Chat")) {

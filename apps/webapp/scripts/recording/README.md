@@ -5,7 +5,8 @@ This directory contains Playwright-based automation scripts that automatically n
 ## Overview
 
 The recording scripts automate the entire demo video recording process:
-- Navigate through all key features of the webapp
+- Walk the full marketing landing page (use cases, features, reports, AI agents, timeline, docs chat, how it works, pricing)
+- Navigate through all key in-app features of the webapp
 - Record high-quality videos (1920x1080)
 - Support both desktop and mobile device emulation
 - Save and reuse authentication sessions
@@ -287,15 +288,21 @@ scripts/recording/
 ├── config.ts              # Configuration
 ├── helpers.ts             # Utility functions
 ├── scenes/
-│   ├── landing-page.ts    # Scene 1
-│   ├── login.ts           # Scene 2
-│   ├── dashboard.ts       # Scene 3
-│   ├── property-details.ts # Scene 4
-│   ├── ai-chat.ts         # Scene 5
-│   ├── timeline.ts        # Scene 6
-│   └── documents.ts       # Scene 7
-├── record-webapp.ts       # Webapp recorder
-├── record-mobile.ts       # Mobile recorder
+│   ├── landing-page.ts
+│   ├── login.ts
+│   ├── dashboard.ts
+│   ├── property-onboarding.ts
+│   ├── property-details.ts
+│   ├── ai-chat.ts         # Analysis chat (record-mobile.ts)
+│   ├── checkpoint-chat.ts # Checkpoint agent chat (record-webapp.ts)
+│   ├── timeline-checkpoint.ts
+│   ├── timeline-compare.ts
+│   ├── timeline-insights.ts
+│   ├── timeline-reports.ts # PDF report wizard (record-webapp.ts)
+│   ├── timeline.ts        # Combined timeline flow (record-mobile.ts)
+│   └── documents.ts
+├── record-webapp.ts       # Webapp recorder (interactive scene picker)
+├── record-mobile.ts       # Mobile viewport recorder
 ├── record-all.ts          # Orchestrator
 └── README.md              # This file
 ```

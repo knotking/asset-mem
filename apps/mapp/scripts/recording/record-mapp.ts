@@ -26,6 +26,8 @@ const narrationTexts: Record<string, string> = {
   Chat: "Engage with our AI assistant directly from your mobile device. Ask questions about your checkpoints and property history, then get guidance grounded in the latest condition changes and timeline context.",
   Timeline:
     "Track your property's condition over time with visual checkpoints. View historical maintenance records, compare different time periods, and monitor changes in your property's condition.",
+  Reports:
+    "Generate branded PDF reports from your checkpoint timeline — snapshots for showings, before-and-after comparisons for move-in/out, or insurance documentation. Preview purposes and layouts before sharing.",
 };
 
 /**
@@ -44,8 +46,9 @@ function promptSceneSelection(): Promise<Set<string>> {
     console.log('  3. Property Details');
     console.log('  4. Chat');
     console.log('  5. Timeline');
-    console.log('  6. All of the above');
-    console.log('\nEnter scene numbers (comma-separated, e.g., 1,2,3 or 6 for all):');
+    console.log('  6. Reports');
+    console.log('  7. All of the above');
+    console.log('\nEnter scene numbers (comma-separated, e.g., 1,2,3 or 7 for all):');
 
     rl.question('> ', (answer) => {
       rl.close();
@@ -53,12 +56,13 @@ function promptSceneSelection(): Promise<Set<string>> {
       const selected = new Set<string>();
       const input = answer.trim().toLowerCase();
 
-      if (input === '6' || input === 'all') {
+      if (input === '7' || input === 'all') {
         selected.add('Login');
         selected.add('Dashboard');
         selected.add('Property Details');
         selected.add('Chat');
         selected.add('Timeline');
+        selected.add('Reports');
       } else {
         const numbers = input.split(',').map((n) => n.trim());
         for (const num of numbers) {
@@ -77,6 +81,17 @@ function promptSceneSelection(): Promise<Set<string>> {
               break;
             case '5':
               selected.add('Timeline');
+              break;
+            case '6':
+              selected.add('Reports');
+              break;
+            case '7':
+              selected.add('Login');
+              selected.add('Dashboard');
+              selected.add('Property Details');
+              selected.add('Chat');
+              selected.add('Timeline');
+              selected.add('Reports');
               break;
           }
         }
@@ -283,6 +298,9 @@ async function main() {
     }
     if (selectedScenes.has('Timeline')) {
       scenes.push({ name: 'Timeline', flowFile: 'timeline.yaml' });
+    }
+    if (selectedScenes.has('Reports')) {
+      scenes.push({ name: 'Reports', flowFile: 'reports.yaml' });
     }
 
     // Run scenes

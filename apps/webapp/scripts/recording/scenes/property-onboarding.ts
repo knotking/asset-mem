@@ -32,7 +32,7 @@ export async function recordPropertyOnboarding(
     console.log("  ⏳ Waiting for dashboard to load...");
     try {
       await page.waitForSelector(
-        'div[class*="grid"], [data-testid="property-card"], div:has(button:has-text("Add New Property"))',
+        'div[class*="grid"], a[href*="/properties/"], button:has-text("Add New Property"), div:has-text("Add New Property")',
         {
           timeout: 10000,
           state: "visible",
@@ -57,8 +57,8 @@ export async function recordPropertyOnboarding(
           'button:has-text("Add New Property")',
           'a[href*="/new-property"]',
           'div:has-text("Add New Property")',
-          '[data-testid="add-property-card"]',
-          'button[aria-label*="Add New Property" i]',
+          'button:has-text("Add New Property")',
+          'div:has-text("Add New Property")',
         ];
 
         for (const selector of selectors) {
@@ -122,9 +122,8 @@ export async function recordPropertyOnboarding(
     const addPropertySelectors = [
       'button:has-text("Add New Property")',
       'a[href*="/new-property"]',
-      '[data-testid="add-property-card"]',
-      'button[aria-label*="Add New Property" i]',
-      'button[aria-label*="New Property" i]',
+      'button:has-text("Add New Property")',
+      'div:has-text("Add New Property")',
     ];
 
     let addPropertyClicked = false;

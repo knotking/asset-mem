@@ -1876,3 +1876,52 @@ export async function processAllAccordions(
     throw error;
   }
 }
+
+/** In-flight agent status copy (keep in sync with apps/webapp/src/lib/agent-display.ts). */
+const AGENT_LOADING_TEXT =
+  /Working on it|Understanding your request|Analyzing your checkpoints|Writing your summary|Thinking|Executing/i;
+
+export async function hasAgentResponseLoading(page: Page): Promise<boolean> {
+  const hasSpinner = (await page.locator("[class*='animate-spin']").count()) > 0;
+  const hasStatusText = (await page.getByText(AGENT_LOADING_TEXT).count()) > 0;
+  return hasSpinner || hasStatusText;
+}
+
+export function messageLooksLikeAgentLoading(text: string | null | undefined): boolean {
+  if (!text || text.trim().length <= 10) return true;
+  return AGENT_LOADING_TEXT.test(text);
+}
+
+/** Checkpoint-mode chat turn is done when summary copy appears and loaders are gone. */
+export async function isCheckpointChatResponseComplete(
+  page: Page,
+  messageText: string,
+): Promise<boolean> {
+  if (messageLooksLikeAgentLoading(messageText)) return false;
+  const onPage = await page
+    .getByText(/Checkpoints Analyzed/i)
+    .isVisible()
+    .catch(() => false);
+  return onPage || /Checkpoints Analyzed/i.test(messageText);
+}
+
+/** Enter checkpoint compare selection mode (feature tip or Compare toolbar button). */
+export async function activateCheckpointCompareMode(page: Page): Promise<boolean> {
+  const startCompare = page.locator('button:has-text("Start compare mode")').first();
+  if (await startCompare.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await enhancedClick(page, startCompare);
+    await delay(500);
+    return true;
+  }
+
+  const compareButton = page
+    .locator('button:has-text("Compare"), button:has([class*="ArrowRightLeft"])')
+    .first();
+  if (await compareButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await enhancedClick(page, compareButton);
+    await delay(500);
+    return true;
+  }
+
+  return false;
+}

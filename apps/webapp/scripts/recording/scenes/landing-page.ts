@@ -12,6 +12,25 @@ const SECTION_VIEW_DELAY_MS = 4000;
 const AI_AGENTS_EXTRA_DELAY_MS = 2000;
 const TIMELINE_EXTRA_DELAY_MS = 1000;
 
+async function panReportTypeCards(page: Page): Promise<void> {
+  const cards = page.locator("#reports .grid > div");
+  const count = await cards.count();
+  if (count === 0) {
+    await delay(SECTION_VIEW_DELAY_MS);
+    return;
+  }
+  console.log(`  📜 Panning through ${count} report type cards...`);
+  for (let i = 0; i < count; i++) {
+    try {
+      await cards.nth(i).scrollIntoViewIfNeeded({ timeout: 3000 });
+      await delay(800);
+    } catch {
+      await scrollPage(page, "down", 300);
+      await delay(600);
+    }
+  }
+}
+
 async function panUseCaseCards(page: Page): Promise<void> {
   const cards = page.locator("#use-cases .grid > div");
   const count = await cards.count();
@@ -108,13 +127,27 @@ export async function recordLandingPage(page: Page): Promise<SceneResult> {
       afterShow: panUseCaseCards,
     });
     await clickNavAnchor("#features", "#features", "Features");
+    await clickNavAnchor("#reports", "#reports", "Reports", {
+      afterShow: panReportTypeCards,
+    });
     await clickNavAnchor("#ai-agents", "#ai-agents", "AI Agents", {
       viewDelayMs: SECTION_VIEW_DELAY_MS + AI_AGENTS_EXTRA_DELAY_MS,
     });
     await clickNavAnchor("#timeline-feature", "#timeline-feature", "Timeline", {
       viewDelayMs: SECTION_VIEW_DELAY_MS + TIMELINE_EXTRA_DELAY_MS,
     });
+
+    console.log("  📜 Scrolling to Docs Chat showcase...");
+    await scrollSmoothly(page, "#docs-chat");
+    await delay(800);
+    console.log("  ⏸️  Showing Docs Chat section...");
+    await delay(SECTION_VIEW_DELAY_MS);
+    await waitForClickGap();
+
     await clickNavAnchor("#how-it-works", "#how-it-works", "How It Works");
+    await clickNavAnchor("#pricing", "#pricing", "Pricing", {
+      viewDelayMs: SECTION_VIEW_DELAY_MS + 1000,
+    });
 
     console.log("  📜 Scrolling to CTA section...");
     await scrollPage(page, "down", 600);

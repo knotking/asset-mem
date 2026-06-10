@@ -7,6 +7,8 @@ import {
   clickWithRetry,
   waitForVisible,
   scrollChatPartially,
+  hasAgentResponseLoading,
+  isCheckpointChatResponseComplete,
 } from "../helpers";
 
 export async function recordCheckpointChat(page: Page): Promise<SceneResult> {
@@ -315,12 +317,7 @@ export async function recordCheckpointChat(page: Page): Promise<SceneResult> {
       try {
         const elapsed = Date.now() - loopStartTime;
 
-        // Check for any loading indicators on the page first (Checkpoint Agent status,
-        // Thinking, Executing, spinners). Do not consider response complete while any are visible.
-        const hasPageLevelLoading =
-          (await page.locator("[class*='animate-spin']").count()) > 0 ||
-          (await page.getByText(/Thinking/i).count()) > 0 ||
-          (await page.getByText(/Executing/i).count()) > 0;
+        const hasPageLevelLoading = await hasAgentResponseLoading(page);
 
         // Track when spinner first appears, then wait 2s before starting cut timer
         if (hasPageLevelLoading && spinnerFirstSeen === null) {
@@ -366,42 +363,26 @@ export async function recordCheckpointChat(page: Page): Promise<SceneResult> {
             .textContent()
             .catch(() => "");
 
-          // Check if message has actual content (not just loading indicators)
-          const hasContent =
-            messageText &&
-            messageText.trim().length > 10 &&
-            !messageText.includes("Thinking") &&
-            !messageText.includes("Executing");
-
-          // Also check if there are no active spinners in the message itself
           const hasSpinnerInMessage = await lastAssistantMessage
             .locator("[class*='animate-spin']")
             .isVisible()
             .catch(() => false);
 
-          // Check for "Cost Estimates" text to ensure response is complete
-          // This appears at the end of the Checkpoint Agent response
-          const hasCostEstimates = await page
-            .getByText(/Cost Estimates/i)
-            .isVisible()
-            .catch(() => false);
+          const responseComplete = await isCheckpointChatResponseComplete(
+            page,
+            messageText ?? "",
+          );
 
-          // Also check in the message text itself as fallback
-          const hasCostEstimatesInText =
-            messageText && /Cost Estimates/i.test(messageText);
-
-          if (
-            hasContent &&
-            !hasSpinnerInMessage &&
-            (hasCostEstimates || hasCostEstimatesInText)
-          ) {
+          if (responseComplete && !hasSpinnerInMessage) {
             responseReceived = true;
             responseWaitEnd = Date.now();
             const effectiveStartTime = responseWaitStart || loopStartTime;
             const elapsed = ((Date.now() - effectiveStartTime) / 1000).toFixed(
               1
             );
-            console.log(`  ✅ AI response received (Cost Estimates found, after ${elapsed}s)`);
+            console.log(
+              `  ✅ AI response received (checkpoint summary found, after ${elapsed}s)`,
+            );
             break;
           }
         }

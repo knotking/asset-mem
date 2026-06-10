@@ -569,9 +569,8 @@ export async function recordPropertyDetails(page: Page): Promise<SceneResult> {
     }
     const signoutEndTime = Date.now();
 
-    // Navigate to homegeek.ai
-    console.log("  🌐 Navigating to http://homegeek.ai...");
-    await page.goto("http://homegeek.ai", {
+    console.log(`  🌐 Navigating to ${config.baseUrl}...`);
+    await page.goto(config.baseUrl, {
       waitUntil: "domcontentloaded",
       timeout: 15000,
     });

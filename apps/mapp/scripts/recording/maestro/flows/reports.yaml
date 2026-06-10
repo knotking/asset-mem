@@ -1,19 +1,20 @@
 appId: host.exp.Exponent
 ---
-# Timeline Flow
+# Timeline Reports sub-tab flow
 - assertVisible: "Properties"
 - waitForAnimationToEnd
-# Navigate to property details
 - tapOn:
     point: "50%,30%"
 - waitForAnimationToEnd
-# Timeline tab is center icon (Clock) — property tabs are icon-only, no text label
+# Timeline tab (center icon)
 - tapOn:
     point: "50%,22%"
 - waitForAnimationToEnd
+# Reports sub-tab (text label on mapp)
+- tapOn: "Reports"
+- waitForAnimationToEnd
 - assertVisible:
-    text: "Checkpoints|Insights|Reports|Property Timeline|No Checkpoints"
+    text: "Reports|No reports yet|Create Report"
     timeout: 8000
-# Scroll through checkpoints
 - scroll
 - waitForAnimationToEnd

@@ -7,6 +7,7 @@ import {
   waitForVisible,
   scrollSmoothly,
   enhancedClick,
+  activateCheckpointCompareMode,
 } from "../helpers";
 
 export async function recordTimelineCompare(
@@ -304,38 +305,26 @@ export async function recordTimelineCompare(
       );
     }
 
-    // Click on the Compare button in Timeline View
-    console.log("  🔄 Clicking Compare button...");
+    console.log("  🔄 Entering compare selection mode...");
     try {
-      // Find the Compare button (has ArrowRightLeft icon and text "Compare")
-      const compareButton = page
-        .locator(
-          'button:has-text("Compare"), button:has([class*="ArrowRightLeft"])'
-        )
-        .first();
-      if (await compareButton.isVisible({ timeout: 5000 })) {
-        await enhancedClick(page, compareButton);
-        await delay(500); // Wait for selection mode to activate
-        console.log(
-          "  ✅ Compare button clicked - selection mode activated"
-        );
+      if (await activateCheckpointCompareMode(page)) {
+        console.log("  ✅ Compare selection mode activated");
 
-        // Wait for selection mode banner to appear
         try {
           await page.waitForSelector(
-            'text="Select 2 checkpoints to compare", [class*="Badge"]:has-text("/ 2 selected"), text="0 / 2 selected"',
+            'text="Select checkpoints to delete or compare", text="Select 2 checkpoints to compare", [class*="Badge"]:has-text("/ 2 selected")',
             {
               timeout: 3000,
               state: "visible",
             }
           );
           console.log("  ✅ Selection mode banner is visible");
-          await delay(1000); // Wait for DOM to update after selection mode is activated
+          await delay(1000);
         } catch (error) {
           console.log(
             "  ⚠️  Selection mode banner may not be visible, continuing..."
           );
-          await delay(1000); // Wait anyway for DOM to stabilize
+          await delay(1000);
         }
 
         // Select the first 2 checkpoints
@@ -1381,11 +1370,11 @@ export async function recordTimelineCompare(
           );
         }
       } else {
-        console.log("  ⚠️  Compare button not found, continuing...");
+        console.log("  ⚠️  Compare selection mode not found, continuing...");
       }
     } catch (error) {
       console.log(
-        `  ⚠️  Error clicking Compare button: ${error instanceof Error ? error.message : String(error)}, continuing...`
+        `  ⚠️  Error entering compare mode: ${error instanceof Error ? error.message : String(error)}, continuing...`
       );
     }
 

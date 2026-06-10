@@ -51,7 +51,7 @@ export async function recordTimelineInsights(page: Page): Promise<SceneResult> {
     console.log("  ⏳ Waiting for Timeline page to load...");
     try {
       // Wait for tab navigation to be visible
-      const tabNav = page.locator('nav[aria-label="Checkpoint tabs"]').first();
+      const tabNav = page.locator('nav[aria-label="Timeline tabs"]').first();
       await tabNav.waitFor({ state: "visible", timeout: 10000 });
       await delay(1000);
       console.log("  ✅ Timeline page loaded");
@@ -79,7 +79,7 @@ export async function recordTimelineInsights(page: Page): Promise<SceneResult> {
       } else {
         // Try alternative selector - button that sets activeTab to 'insights'
         const insightsTabAlt = page
-          .locator('nav[aria-label="Checkpoint tabs"] button')
+          .locator('nav[aria-label="Timeline tabs"] button')
           .filter({ hasText: /Insights/i })
           .first();
         

@@ -46,6 +46,9 @@ export interface RecordingConfig {
       getStartedButton: string;
       loginButton: string;
       featuresSection: string;
+      reportsSection: string;
+      docsChatSection: string;
+      pricingSection: string;
     };
     login: {
       emailInput: string;
@@ -122,6 +125,9 @@ export const config: RecordingConfig = {
       getStartedButton: 'text="Get Started"',
       loginButton: 'text="Login"',
       featuresSection: '#features',
+      reportsSection: '#reports',
+      docsChatSection: '#docs-chat',
+      pricingSection: '#pricing',
     },
     login: {
       emailInput: '#email',
@@ -138,14 +144,16 @@ export const config: RecordingConfig = {
       detailsTab: 'a[href*="/details"]',
     },
     chat: {
-      messageInput: 'textarea, input[type="text"]',
-      sendButton: 'button:has-text("Send"), button[type="submit"]',
+      messageInput: 'textarea[aria-label="Chat input"], textarea, input[type="text"]',
+      sendButton:
+        'button[aria-label="Send message"], button:has-text("Send"), button[type="submit"]',
       documentDrawer: '[data-testid="document-drawer"], button:has-text("Documents")',
       sessionList: '[data-testid="session-list"], [aria-label*="session"]',
     },
     timeline: {
       checkpointList: '[data-testid="checkpoint-list"]',
-      createCheckpointButton: 'button:has-text("Create Checkpoint"), button:has-text("New Checkpoint")',
+      createCheckpointButton:
+        'button:has-text("Add Checkpoint"), button:has-text("Create Checkpoint"), button:has-text("New Checkpoint")',
       checkpointCard: '[data-testid="checkpoint-card"]',
     },
     documents: {
