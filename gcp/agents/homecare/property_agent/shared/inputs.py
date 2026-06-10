@@ -9,6 +9,22 @@ ChatIntentHint = Literal["discuss_report", "new_analysis", "replay_report"]
 DEFAULT_CHECKPOINT_OPTIONAL_AGENTS: List[CheckpointOptionalAgent] = []
 
 
+class ChipActionInput(BaseModel):
+    """Structured suggested-action chip tap (deterministic routing fast-path)."""
+
+    type: Literal["run_branch", "discuss", "replay_report"] = Field(
+        description="Chip action kind: run_branch, discuss, or replay_report.",
+    )
+    branch: Optional[CheckpointOptionalAgent] = Field(
+        default=None,
+        description="Optional branch to run (run_branch only).",
+    )
+    topic: Optional[str] = Field(
+        default=None,
+        description="Focus topic for discuss chips (e.g. cost, diy).",
+    )
+
+
 class SearchLocationCoordinates(BaseModel):
     lat: float = Field(..., description="Latitude")
     lng: float = Field(..., description="Longitude")
@@ -92,6 +108,13 @@ class DiagnosisInput(BaseModel):
             "Optional client hint for resolve: discuss_report biases explain_prior; "
             "new_analysis biases fresh branch work; replay_report biases full report replay. "
             "Resolve discourse_act still wins."
+        ),
+    )
+    chip_action: Optional[ChipActionInput] = Field(
+        default=None,
+        description=(
+            "Structured suggested-action chip tap. When present, routing is "
+            "deterministic (resolve LLM skipped, resolve_source=chip)."
         ),
     )
 

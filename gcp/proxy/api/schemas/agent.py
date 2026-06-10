@@ -28,6 +28,20 @@ class SearchLocationRequest(BaseModel):
         return v
 
 
+class ChipActionRequest(BaseModel):
+    """Structured suggested-action chip tap (deterministic agent routing)."""
+
+    type: Literal["run_branch", "discuss", "replay_report"]
+    branch: Optional[Literal["coverage", "diy", "service", "cost"]] = Field(
+        default=None,
+        description="Branch to run (run_branch only)",
+    )
+    topic: Optional[str] = Field(
+        default=None,
+        description="Focus topic for discuss chips (e.g. cost, diy)",
+    )
+
+
 class AgentRequest(BaseModel):
     user_id: str = Field(description="Unique identifier for the user")
     session_id: Optional[str] = Field(default="", description="Session ID for the conversation context")
@@ -67,6 +81,10 @@ class AgentRequest(BaseModel):
     chat_intent: Optional[Literal["discuss_report", "new_analysis", "replay_report"]] = Field(
         default=None,
         description="Optional client hint for resolve NLU (discuss_report, new_analysis, replay_report)",
+    )
+    chip_action: Optional[ChipActionRequest] = Field(
+        default=None,
+        description="Structured suggested-action chip tap; routes deterministically (resolve LLM skipped)",
     )
     # Deprecated: use search_location; kept for backward compatibility during client rollout
     location_type: Optional[Literal["address", "location"]] = Field(

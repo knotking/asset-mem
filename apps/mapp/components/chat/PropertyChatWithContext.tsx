@@ -153,7 +153,10 @@ function PropertyChatInner(props: Props) {
   const runSend = React.useCallback(
     async (
       text: string,
-      options?: { chatIntent?: 'discuss_report' | 'new_analysis' | 'replay_report' }
+      options?: {
+        chatIntent?: 'discuss_report' | 'new_analysis' | 'replay_report';
+        chipAction?: import('@homeapp/common/lib/suggested-actions').ChipAction;
+      }
     ) => {
       if (!userId || !sessionId || isSending) return;
 
@@ -240,6 +243,7 @@ function PropertyChatInner(props: Props) {
           agentSessionId,
           userQuery: text.trim(),
           chatIntent: options?.chatIntent,
+          chipAction: options?.chipAction,
           contextDocURIs,
           checkpointIds: checkpointIds.length > 0 ? checkpointIds : undefined,
           reportIds: reportIds.length > 0 ? reportIds : undefined,
@@ -313,7 +317,10 @@ function PropertyChatInner(props: Props) {
 
   const handleSuggestedAction = React.useCallback(
     (action: import('@homeapp/common/lib/suggested-actions').SuggestedAction) => {
-      void runSend(action.userQuery, { chatIntent: action.chatIntent });
+      void runSend(action.userQuery, {
+        chatIntent: action.chatIntent,
+        chipAction: action.action,
+      });
     },
     [runSend]
   );
