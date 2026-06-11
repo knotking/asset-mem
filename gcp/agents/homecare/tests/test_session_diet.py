@@ -59,11 +59,30 @@ def test_prune_removes_heavy_checkpoint_keys():
     assert state == {}
 
 
-def test_g4_compaction_defaults(monkeypatch):
+def test_g4_compaction_env_override(monkeypatch):
+    monkeypatch.setenv("ADK_COMPACTION_TOKEN_THRESHOLD", "100000")
+    monkeypatch.setenv("ADK_COMPACTION_EVENT_RETENTION_SIZE", "16")
     from property_agent.runtime import app_config
 
     importlib.reload(app_config)
     config = app_config.build_events_compaction_config()
     assert config is not None
-    assert config.token_threshold == 24_000
+    assert config.token_threshold == 100_000
+    assert config.event_retention_size == 16
+    importlib.reload(app_config)
+
+
+def test_g4_compaction_defaults(monkeypatch):
+    for key in (
+        "ADK_EVENTS_COMPACTION_DISABLED",
+        "ADK_COMPACTION_TOKEN_THRESHOLD",
+        "ADK_COMPACTION_EVENT_RETENTION_SIZE",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    from property_agent.runtime import app_config
+
+    importlib.reload(app_config)
+    config = app_config.build_events_compaction_config()
+    assert config is not None
+    assert config.token_threshold == 130_000
     importlib.reload(app_config)

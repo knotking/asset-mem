@@ -21,6 +21,8 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 
 **Why:** Single-loop orchestration — one non-lite Flash call per turn for tool selection; deterministic chip/accept routing skips any LLM hop.
 
+**Session compaction:** ADK compacts session events post-turn when estimated prompt tokens exceed **~130k** (~65% of ~200k effective context; override via `ADK_COMPACTION_TOKEN_THRESHOLD`). Keeps the last **32** raw events (`ADK_COMPACTION_EVENT_RETENTION_SIZE`).
+
 **Client:** Same `Gemini3` / `location=global` as `GLOBAL_GEMINI_MODEL`. The root executor must receive the **`SINGLE_LOOP_GEMINI_MODEL` object** (not the model name string) so ADK does not fall back to `GOOGLE_CLOUD_LOCATION` (e.g. `us-central1`), where newer Flash models may be unavailable.
 
 ## `LEGACY_API_GEMINI` (`gemini-2.5-flash`)

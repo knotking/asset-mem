@@ -33,9 +33,9 @@ def test_build_events_compaction_config_defaults(monkeypatch):
     config = app_config.build_events_compaction_config()
 
     assert config is not None
-    # G4 session-diet defaults on when unset, so compaction defaults are tightened.
-    assert config.token_threshold == 24_000
-    assert config.event_retention_size == 24
+    # G4 session-diet defaults: ~65% of 200k effective executor context.
+    assert config.token_threshold == 130_000
+    assert config.event_retention_size == 32
     assert config.compaction_interval == 10_000
 
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any, Mapping
 
 from property_agent.checkpoint.constants import CHECKPOINT_ANALYSIS_STATE_KEY
@@ -35,17 +36,27 @@ HEAVY_STATE_KEYS_TO_PRUNE_AFTER_TURN = frozenset(
     }
 )
 
-_G4_DEFAULT_TOKEN_THRESHOLD = 24_000
-_G4_DEFAULT_EVENT_RETENTION_SIZE = 24
+# ADK session compaction defaults for the gemini-3.5-flash executor (single-loop).
+# Advertised context is ~1M tokens; quality degrades well below that ("context rot").
+# Industry practice: compact at ~65–75% of the *effective* window, not at the API max.
+_G4_EXECUTOR_EFFECTIVE_CONTEXT_TOKENS = 200_000
+_G4_COMPACTION_THRESHOLD_RATIO = 0.65
+_G4_DEFAULT_TOKEN_THRESHOLD = int(
+    _G4_EXECUTOR_EFFECTIVE_CONTEXT_TOKENS * _G4_COMPACTION_THRESHOLD_RATIO
+)  # 130_000
+# Raw events kept after compaction (~2–3 substantive turns including tool calls).
+_G4_DEFAULT_EVENT_RETENTION_SIZE = 32
 
 
 def g4_compaction_token_threshold(default: int) -> int:
-    _ = default
+    if os.getenv("ADK_COMPACTION_TOKEN_THRESHOLD", "").strip():
+        return default
     return _G4_DEFAULT_TOKEN_THRESHOLD
 
 
 def g4_compaction_event_retention_size(default: int) -> int:
-    _ = default
+    if os.getenv("ADK_COMPACTION_EVENT_RETENTION_SIZE", "").strip():
+        return default
     return _G4_DEFAULT_EVENT_RETENTION_SIZE
 
 
