@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from property_agent.routing.pending_offer_extract import (
     _heuristic_pending_from_offer,
     maybe_set_pending_from_assistant_reply,
+    maybe_set_pending_from_suggested_actions,
     pending_offer_extract_enabled,
 )
 from property_agent.routing.pending_user_action import (
@@ -78,3 +79,25 @@ def test_maybe_set_pending_clears_on_success(monkeypatch) -> None:
     state: dict = {}
     maybe_set_pending_from_assistant_reply(state, assistant_text="Want **service**?")
     assert state.get(PENDING_USER_ACTION_KEY) is not None
+
+
+def test_maybe_set_pending_from_suggested_actions() -> None:
+    state = {
+        "contentJson": {
+            "suggestedActions": [
+                {
+                    "label": "Run coverage analysis",
+                    "action": {"type": "run_branch", "branch": "coverage"},
+                },
+                {
+                    "label": "Run cost analysis",
+                    "action": {"type": "run_branch", "branch": "cost"},
+                },
+            ],
+        },
+    }
+    assert maybe_set_pending_from_suggested_actions(state) is True
+    pending = get_pending_user_action(state)
+    assert pending is not None
+    assert pending.kind == "run_branch"
+    assert pending.run_optional_agents == ["coverage", "cost"]

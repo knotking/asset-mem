@@ -24,12 +24,14 @@ from property_agent.memory_bank import resolve_property_id
 
 from .chip_action import resolve_turn_from_chip
 from .conversational_intent import (
+    EXECUTOR_INVOCATION_STRUCTURED_ANALYSIS_KEY,
     build_conversational_reply,
     clear_executor_invocation_analysis_flag,
     hydrate_turn_state_from_context,
     normalize_user_query,
     resolve_property_address_from_state,
 )
+from .post_structured_analysis import brief_post_structured_analysis_reply
 from .constants import USER_DOCS_PASSTHROUGH_STATE_KEY
 from .optional_branches import OPTIONAL_CHECKPOINT_BRANCHES
 from .schema import IntentKind, ResolvedTurn, RouteKind, resolved_turn_from_state
@@ -287,6 +289,15 @@ def prepare_single_loop_before_model(
                         llm_request,
                         block=format_slim_session_context_block(state),
                     )
+            if state.get(EXECUTOR_INVOCATION_STRUCTURED_ANALYSIS_KEY):
+                brief = brief_post_structured_analysis_reply(state)
+                if brief:
+                    logger.info(
+                        "single_loop post-structured-analysis short-circuit "
+                        "invocation_id=%s",
+                        inv_id,
+                    )
+                    return plain_text_llm_response(brief)
             logger.debug(
                 "single_loop skip re-resolve invocation_id=%s",
                 inv_id,

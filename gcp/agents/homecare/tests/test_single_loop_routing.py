@@ -104,6 +104,41 @@ def test_prepare_single_loop_skips_re_resolve_same_invocation() -> None:
     )
 
 
+def test_prepare_single_loop_short_circuits_post_structured_analysis() -> None:
+    ctx = _ctx(
+        query="Run DIY analysis",
+        state={
+            RESOLVE_APPLIED_INVOCATION_KEY: "inv-1",
+            "_executor_invocation_structured_analysis": True,
+            "resolved_turn": minimal_substantive_resolved_turn(
+                {"primary_agent": "checkpoint", "checkpoint_optional_agents": ["diy"]},
+                user_query="Run DIY analysis",
+            ).to_dict(),
+            "contentJson": {
+                "suggestedActions": [
+                    {
+                        "label": "Run cost analysis",
+                        "action": {"type": "run_branch", "branch": "cost"},
+                    },
+                    {
+                        "label": "Find local providers",
+                        "action": {"type": "run_branch", "branch": "service"},
+                    },
+                ],
+            },
+        },
+    )
+    response = prepare_single_loop_before_model(
+        ctx, llm_request=SimpleNamespace(config=None)
+    )
+    assert response is not None
+    assert response.content is not None
+    text = response.content.parts[0].text or ""
+    assert "completed the analysis above" in text
+    assert "**cost**" in text
+    assert "**service**" in text
+
+
 def test_prepare_single_loop_chip_injects_resolved_turn() -> None:
     ctx = _ctx(
         query="Run coverage",

@@ -154,6 +154,22 @@ def _heuristic_pending_from_offer(assistant_text: str) -> Optional[PendingUserAc
     )
 
 
+def maybe_set_pending_from_suggested_actions(state: Any) -> bool:
+    """Set pending offer from contentJson chips when executor prose is absent."""
+    from .post_structured_analysis import pending_from_suggested_actions
+
+    pending = pending_from_suggested_actions(state)
+    if pending is None:
+        return False
+    set_pending_user_action(state, pending)
+    logger.info(
+        "pending_offer_extract: source=suggested_actions kind=%s branches=%r",
+        pending.kind,
+        pending.run_optional_agents,
+    )
+    return True
+
+
 def maybe_set_pending_from_assistant_reply(
     state: Any,
     *,
