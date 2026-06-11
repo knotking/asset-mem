@@ -15,13 +15,13 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 
 **Client:** ADK `Gemini3` wrapper with Vertex `location=global`.
 
-## `EXECUTOR_ONLY_GEMINI_MODEL` (`gemini-3.5-flash`)
+## `SINGLE_LOOP_GEMINI_MODEL` (`gemini-3.5-flash`)
 
 **Where:** Root `property_agent` executor only (`global_agent_gemini_model()`).
 
 **Why:** Single-loop orchestration (Orchestrator V3) — one non-lite Flash call per turn for tool selection; deterministic chip/accept routing skips any LLM hop.
 
-**Client:** Same `Gemini3` / `location=global` as `GLOBAL_GEMINI_MODEL`. The root executor must receive the **`EXECUTOR_ONLY_GEMINI_MODEL` object** (not the model name string) so ADK does not fall back to `GOOGLE_CLOUD_LOCATION` (e.g. `us-central1`), where newer Flash models may be unavailable.
+**Client:** Same `Gemini3` / `location=global` as `GLOBAL_GEMINI_MODEL`. The root executor must receive the **`SINGLE_LOOP_GEMINI_MODEL` object** (not the model name string) so ADK does not fall back to `GOOGLE_CLOUD_LOCATION` (e.g. `us-central1`), where newer Flash models may be unavailable.
 
 ## `LEGACY_API_GEMINI` (`gemini-2.5-flash`)
 
@@ -39,7 +39,7 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 | Need | Use |
 |------|-----|
 | New ADK sub-agent with tools / transfer | `GLOBAL_GEMINI_MODEL` |
-| Root orchestrator tool selection | `EXECUTOR_ONLY_GEMINI_MODEL` via `global_agent_gemini_model()` |
+| Root orchestrator tool selection | `SINGLE_LOOP_GEMINI_MODEL` via `global_agent_gemini_model()` |
 | New one-shot JSON from Python (`generate_content`) | `LEGACY_API_GEMINI` unless ADK migration is explicit |
 | Embeddings | `text-embedding-004` in `firestore_vector_search.py` (not chat models) |
 

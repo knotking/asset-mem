@@ -200,7 +200,7 @@ def test_load_reports_sync_uses_archived_revision() -> None:
 
 
 def test_primary_agent_report_routes_report() -> None:
-    from property_agent.routing.executor_only_routing import minimal_substantive_resolved_turn
+    from property_agent.routing.single_loop_routing import minimal_substantive_resolved_turn
 
     state = {
         "primary_agent": "report",

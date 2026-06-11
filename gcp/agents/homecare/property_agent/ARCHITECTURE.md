@@ -32,7 +32,7 @@ One executor LLM per substantive turn. Deterministic pre-routing for chips, acce
 
 | Layer | Owns | Key files |
 |-------|------|-----------|
-| **1 — Pre-routing** | Chip fast-path, accept-offer, casual regex, minimal `ResolvedTurn` for tool guards | `routing/executor_only_routing.py`, `routing/chip_action.py`, `routing/pending_user_action.py`, `routing/resolve_turn.py` |
+| **1 — Pre-routing** | Chip fast-path, accept-offer, casual regex, minimal `ResolvedTurn` for tool guards | `routing/single_loop_routing.py`, `routing/chip_action.py`, `routing/pending_user_action.py`, `routing/resolve_turn.py` |
 | **2 — Executor** | Tool choice (`list_checkpoints`, `analyze_checkpoints(branches)`, docs, report) | `prompts.py`, `registry.py`, `checkpoint/executor_tools.py` |
 | **3 — Guards** | Tool-boundary invariants (ids, dedupe, idempotency, pending-offer, report mode) | `checkpoint/tool_guards.py`, `routing/conversational_callbacks.py` |
 

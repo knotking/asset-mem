@@ -68,7 +68,7 @@ class ResolvedTurn:
     capability_key: Optional[str] = None
     discourse_act: Optional[DiscourseActKind] = None
     focus_branch: Optional[FocusBranchKind] = None
-    resolve_source: str = "executor_only"
+    resolve_source: str = "single_loop"
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -119,6 +119,9 @@ def resolved_turn_from_state(state: SessionStateLike | None) -> Optional[Resolve
                 "checkpoint", "coverage", "diy", "service", "cost", "documents",
             ) else None
         )
+        raw_source = str(raw.get("resolve_source") or "single_loop")
+        if raw_source == "executor_only":
+            raw_source = "single_loop"
         return ResolvedTurn(
             intent=raw.get("intent", "substantive"),
             route=raw.get("route", "checkpoint"),
@@ -131,7 +134,7 @@ def resolved_turn_from_state(state: SessionStateLike | None) -> Optional[Resolve
             capability_key=raw.get("capability_key"),
             discourse_act=discourse_act,
             focus_branch=focus_branch,
-            resolve_source=str(raw.get("resolve_source") or "executor_only"),
+            resolve_source=raw_source,
         )
     except (TypeError, ValueError):
         return None

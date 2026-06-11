@@ -12,13 +12,13 @@ Use this runbook when shipping coordinated **proxy + agent** deploys after Prope
 |---|------|---------------|-------|
 | 1 | Schema validation | `cd gcp/proxy/api && bash run_tests.sh` — `test_message_schema_validation`, `test_message_patch_contract` green | Eng |
 | 2 | Legacy import guard | `cd gcp/agents/homecare && make test` — `test_no_legacy_checkpoint_imports` green | Eng |
-| 3 | Reliability matrix | `test_orchestrator_v2_reliability`, `test_patch_ordering_integration` green | Eng |
+| 3 | Reliability matrix | `test_message_patch_reliability`, `test_patch_ordering_integration` green | Eng |
 | 4 | Staging smoke — full optional branches | `uv run adk web` → `property_agent`: checkpoint + `["coverage","diy","service","cost"]`; Firestore message has `contentSchemaVersion: 2`, `contentJson.analysis`, `contentMarkdown` | QA |
 | 5 | Staging smoke — follow-up | Second turn “explain DIY steps”; new message markdown-only; prior message retains accordions | QA |
 | 6 | Client parity | mapp + webapp render via `resolveMessageContentParts`; no fence parse hot path | QA |
-| 7 | Observability baseline | Logs/metrics: `orchestrator_v2_routing`, `orchestrator_v2_ttf_structured_patch_ms`, `orchestrator.v2.message.*` visible on staging | Ops |
+| 7 | Observability baseline | Logs/metrics: `orchestrator_routing`, `agent_message_ttf_structured_patch_ms`, `orchestrator.message.*` visible on staging | Ops |
 
-**No-go if:** fenced JSON reappears in `contentMarkdown`, `contentSchemaVersion != 2` on new assistant messages, or stale-patch storms (`orchestrator.v2.message.stale_revision_rejects` spike without explanation).
+**No-go if:** fenced JSON reappears in `contentMarkdown`, `contentSchemaVersion != 2` on new assistant messages, or stale-patch storms (`orchestrator.message.stale_revision_rejects` spike without explanation).
 
 ---
 
@@ -65,14 +65,14 @@ Complete before marking Property Agent Architecture closed in prod (see also §1
 
 | Signal | Log / metric | Target (staging baseline) |
 |--------|--------------|---------------------------|
-| Resolve calls / turn | `orchestrator.v2.routing.resolve_calls` | ~1 per turn |
-| Follow-up prompt size | `orchestrator.v2.routing.resolve_prompt_tokens` | Context-only turns &lt; 4k estimated tokens |
-| Time to first structured patch | `orchestrator.v2.message.ttf_structured_patch_ms` | Establish P95 after deploy |
-| Stale writes | `orchestrator.v2.message.stale_revision_rejects` | Low; spikes only under retry storms |
-| Patch rate | `orchestrator.v2.message.patch_applies` | Matches throttled persist cadence |
-| Fence strips | `orchestrator.v2.message.fence_strips` | Trend → 0 (synthesis markdown-only) |
+| Resolve calls / turn | `orchestrator.routing.resolve_calls` | ~1 per turn |
+| Follow-up prompt size | `orchestrator.routing.resolve_prompt_tokens` | Context-only turns &lt; 4k estimated tokens |
+| Time to first structured patch | `orchestrator.message.ttf_structured_patch_ms` | Establish P95 after deploy |
+| Stale writes | `orchestrator.message.stale_revision_rejects` | Low; spikes only under retry storms |
+| Patch rate | `orchestrator.message.patch_applies` | Matches throttled persist cadence |
+| Fence strips | `orchestrator.message.fence_strips` | Trend → 0 (synthesis markdown-only) |
 
-Disable metrics locally: `ORCHESTRATOR_V2_METRICS=0`.
+Disable metrics locally: `AGENT_MESSAGE_METRICS=0`.
 
 ---
 

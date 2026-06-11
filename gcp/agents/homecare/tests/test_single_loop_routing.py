@@ -1,4 +1,4 @@
-"""Phase 4 executor-only routing experiment."""
+"""Single-loop routing tests."""
 
 from __future__ import annotations
 
@@ -11,17 +11,17 @@ from google.genai import types
 
 from agent_framework.routing.resolved_turn import RESOLVE_APPLIED_INVOCATION_KEY
 from property_agent.model_config import (
-    EXECUTOR_ONLY_GEMINI_MODEL,
+    SINGLE_LOOP_GEMINI_MODEL,
     GLOBAL_GEMINI_MODEL,
     global_agent_gemini_model,
 )
 from property_agent.routing.conversational_intent import CONVERSATIONAL_TURN_STATE_KEY
-from property_agent.routing.executor_only_routing import (
+from property_agent.routing.single_loop_routing import (
     bare_casual_intent,
     format_slim_session_context_block,
     inject_slim_session_context_into_llm_request,
     minimal_substantive_resolved_turn,
-    prepare_executor_only_before_model,
+    prepare_single_loop_before_model,
     resolve_turn_from_pending_offer,
 )
 from property_agent.routing.pending_user_action import (
@@ -60,8 +60,8 @@ def test_bare_casual_intent(query: str, expected: str | None) -> None:
 
 
 def test_global_agent_gemini_model_uses_flash() -> None:
-    assert EXECUTOR_ONLY_GEMINI_MODEL.model == "gemini-3.5-flash"
-    assert global_agent_gemini_model() is EXECUTOR_ONLY_GEMINI_MODEL
+    assert SINGLE_LOOP_GEMINI_MODEL.model == "gemini-3.5-flash"
+    assert global_agent_gemini_model() is SINGLE_LOOP_GEMINI_MODEL
 
 
 def test_prepare_before_model_turn_uses_single_loop_path() -> None:
@@ -73,16 +73,16 @@ def test_prepare_before_model_turn_uses_single_loop_path() -> None:
     )
 
 
-def test_prepare_executor_only_casual_short_circuit() -> None:
+def test_prepare_single_loop_casual_short_circuit() -> None:
     ctx = _ctx(query="hey")
-    response = prepare_executor_only_before_model(
+    response = prepare_single_loop_before_model(
         ctx, llm_request=SimpleNamespace(config=None)
     )
     assert response is not None
     assert ctx.state.get(CONVERSATIONAL_TURN_STATE_KEY) is True
 
 
-def test_prepare_executor_only_skips_re_resolve_same_invocation() -> None:
+def test_prepare_single_loop_skips_re_resolve_same_invocation() -> None:
     ctx = _ctx(
         query="analyse cost",
         state={
@@ -95,16 +95,16 @@ def test_prepare_executor_only_skips_re_resolve_same_invocation() -> None:
     )
     llm_request = SimpleNamespace(config=None)
     with patch(
-        "property_agent.routing.executor_only_routing.hydrate_turn_state_from_context"
+        "property_agent.routing.single_loop_routing.hydrate_turn_state_from_context"
     ) as mock_hydrate:
-        assert prepare_executor_only_before_model(ctx, llm_request=llm_request) is None
+        assert prepare_single_loop_before_model(ctx, llm_request=llm_request) is None
         mock_hydrate.assert_not_called()
     assert "[SESSION_CONTEXT]" in str(
         getattr(llm_request.config, "system_instruction", "")
     )
 
 
-def test_prepare_executor_only_chip_injects_resolved_turn() -> None:
+def test_prepare_single_loop_chip_injects_resolved_turn() -> None:
     ctx = _ctx(
         query="Run coverage",
         state={
@@ -113,7 +113,7 @@ def test_prepare_executor_only_chip_injects_resolved_turn() -> None:
         },
     )
     llm_request = SimpleNamespace(config=None)
-    assert prepare_executor_only_before_model(ctx, llm_request=llm_request) is None
+    assert prepare_single_loop_before_model(ctx, llm_request=llm_request) is None
     si = getattr(llm_request.config, "system_instruction", "")
     assert "[RESOLVED_TURN]" in str(si)
     assert ctx.state.get("chip_action") is None
@@ -152,7 +152,7 @@ def test_resolve_turn_from_pending_offer_ignores_thanks() -> None:
     assert state.get(PENDING_USER_ACTION_KEY) is not None
 
 
-def test_prepare_executor_only_accept_offer_injects_resolved_turn() -> None:
+def test_prepare_single_loop_accept_offer_injects_resolved_turn() -> None:
     ctx = _ctx(
         query="yes",
         state={
@@ -166,7 +166,7 @@ def test_prepare_executor_only_accept_offer_injects_resolved_turn() -> None:
         },
     )
     llm_request = SimpleNamespace(config=None)
-    assert prepare_executor_only_before_model(ctx, llm_request=llm_request) is None
+    assert prepare_single_loop_before_model(ctx, llm_request=llm_request) is None
     si = str(getattr(llm_request.config, "system_instruction", ""))
     assert "[RESOLVED_TURN]" in si
     resolved = ctx.state["resolved_turn"]
@@ -195,7 +195,7 @@ def test_format_slim_session_context_block() -> None:
     assert "routing_mode" in block
 
 
-def test_prepare_executor_only_clears_stale_ui_toggles() -> None:
+def test_prepare_single_loop_clears_stale_ui_toggles() -> None:
     """Persisted toggles from a prior turn must not leak into this turn's resolved turn."""
     ctx = _ctx(
         query="what should I do about the leak",
@@ -205,7 +205,7 @@ def test_prepare_executor_only_clears_stale_ui_toggles() -> None:
         },
     )
     assert (
-        prepare_executor_only_before_model(ctx, llm_request=SimpleNamespace(config=None))
+        prepare_single_loop_before_model(ctx, llm_request=SimpleNamespace(config=None))
         is None
     )
     assert ctx.state["checkpoint_optional_agents"] == []

@@ -2,7 +2,7 @@
 Extract routing-eval and conformance drafts from ``adk web`` stdout captures.
 
 Parses local ``web-log*`` files for:
-- ``executor_only substantive`` / ``resolve_turn chip`` routing lines
+- ``single_loop substantive`` / ``resolve_turn chip`` routing lines
 - ``[RESOLVED_TURN]`` JSON blocks (when present)
 - User turn payloads in LLM ``Contents:`` sections
 
@@ -27,8 +27,8 @@ import yaml
 
 _PACKAGE_ROOT = Path(__file__).resolve().parents[3]
 
-EXECUTOR_ONLY_RE = re.compile(
-    r"executor_only substantive route=(?P<route>\w+) "
+SINGLE_LOOP_RE = re.compile(
+    r"(?:single_loop|executor_only) substantive route=(?P<route>\w+) "
     r"retrieval_only=(?P<retrieval_only>True|False) "
     r"optional=(?P<optional>\[[^\]]*\]) "
     r"query='(?P<query>.*?)'"
@@ -263,11 +263,11 @@ def parse_weblog(path: Path) -> list[WeblogTurn]:
             next_resolved = next(resolved_iter, None)
             continue
 
-        m_exec = EXECUTOR_ONLY_RE.search(line)
+        m_exec = SINGLE_LOOP_RE.search(line)
         if m_exec:
             flush_turn()
             pending_routing = {
-                "kind": "executor_only",
+                "kind": "single_loop",
                 "route": m_exec.group("route"),
                 "retrieval_only": m_exec.group("retrieval_only") == "True",
                 "optional": _parse_optional_branches(m_exec.group("optional")),
@@ -405,7 +405,7 @@ def write_routing_yaml(cases: list[dict[str, Any]], out_path: Path) -> None:
         c = {k: v for k, v in case.items() if v is not None}
         cleaned.append(c)
     payload = {
-        "#": "Draft routing eval cases — review, merge into executor_only/cases.yaml",
+        "#": "Draft routing eval cases — review, merge into single_loop/cases.yaml",
         "cases": cleaned,
     }
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -504,7 +504,7 @@ def main(argv: list[str] | None = None) -> int:
     write_routing_yaml(all_cases, args.out.resolve())
     print(f"Wrote {len(all_cases)} routing case draft(s) -> {args.out}")
     print(
-        "Next: review drafts, merge into executor_only/cases.yaml, "
+        "Next: review drafts, merge into single_loop/cases.yaml, "
         'run: make routing-eval ARGS="--filter weblog"'
     )
     return 0

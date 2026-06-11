@@ -186,8 +186,8 @@ def test_apply_resolved_cold_session_inventory_enables_tools() -> None:
     assert state.get(CONVERSATIONAL_TURN_STATE_KEY) is False
 
 
-def test_executor_only_minimal_turn_never_blocks_tools() -> None:
-    """The minimal executor-only resolved turn is a placeholder, not a decision —
+def test_single_loop_minimal_turn_never_blocks_tools() -> None:
+    """The minimal single-loop resolved turn is a placeholder, not a decision —
     it must not trip the conversational_turn tool block even with rich session memory."""
     rich_state = {
         SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
@@ -202,18 +202,18 @@ def test_executor_only_minimal_turn_never_blocks_tools() -> None:
         run_optional_agents=[],
         user_goal="answer_from_context",
         query_mode="interpret_session",
-        resolve_source="executor_only",
+        resolve_source="single_loop",
     )
     assert is_executor_conversational_turn(minimal, state=rich_state) is False
 
 
-def test_executor_only_casual_turn_still_conversational() -> None:
+def test_single_loop_casual_turn_still_conversational() -> None:
     resolved = ResolvedTurn(
         intent="greeting",
         route="none",
         expanded_user_query="hello",
         retrieval_only=True,
-        resolve_source="executor_only",
+        resolve_source="single_loop",
     )
     assert is_executor_conversational_turn(resolved) is True
 

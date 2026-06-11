@@ -31,7 +31,7 @@ from utils.message_patch_state import (
     next_revision,
     normalize_revision,
 )
-from utils.orchestrator_v2_metrics import (
+from utils.message_patch_metrics import (
     StreamPatchTracker,
     record_fence_strip,
     record_patch_apply,

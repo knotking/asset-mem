@@ -63,7 +63,7 @@ No parity claim without a yardstick.
       selection changes, cold sessions, docs/report routes, and the known failure
       cases (unrequested cost run, post-DIY summarize misroute, inventory
       `retrieval_only` violation) — 42 cases in
-      `property_agent/evals/routing/executor_only/cases.yaml` (resolve-LLM cases removed).
+      `property_agent/evals/routing/single_loop/cases.yaml` (resolve-LLM cases removed).
 - [x] Build a live eval runner asserting on the post-processed `ResolvedTurn`
       (`property_agent/evals/routing/run_routing_eval.py`, `make routing-eval`).
       *Approach change vs. original plan:* resolve-level eval instead of full
@@ -187,16 +187,16 @@ enforced in `before_tool` regardless of which router produced the call:
       (`seed_client_decided_branches`): chip taps and `accept_offer` branches are
       unioned into the tool `branches` arg so they don't depend on the executor
       LLM copying `run_optional_agents` out of the `[RESOLVED_TURN]` block;
-      executor-only UI toggles are seeded for their first run only (completed
+      single-loop UI toggles are seeded for their first run only (completed
       branches fall back to the idempotency guard, not a re-run).
 
 **Exit criteria met:** `tests/test_checkpoint_tool_guards.py` (10 cases) + existing
-callback tests; guards are router-agnostic (chip/resolve/executor-only ready).
+callback tests; guards are router-agnostic (chip/resolve/single-loop ready).
 
-## Phase 4 — Executor-only routing experiment (the big switch, behind a flag)
+## Phase 4 — Single-loop routing experiment (the big switch, behind a flag)
 
 - [x] Add `HOMEAPP_EXECUTOR_ONLY_ROUTING=1`: skip `resolve_turn_llm` entirely;
-      `prepare_before_model_turn` → `executor_only_routing.prepare_executor_only_before_model`
+      `prepare_before_model_turn` → `single_loop_routing.prepare_single_loop_before_model`
       injects only a slim `[SESSION_CONTEXT]` block (property address, checkpoint/doc/report
       counts, this turn's UI optional toggles — not full `[RESOLVED_TURN]` + working-memory
       hydration). Chip fast-path still injects `[RESOLVED_TURN]`; minimal `ResolvedTurn` kept
@@ -208,7 +208,7 @@ callback tests; guards are router-agnostic (chip/resolve/executor-only ready).
 - [x] Accept-offer fast-path: short replies (`yes`, `ok`, …) with `pending_user_action`
       build `discourse_act=accept_offer` + inject `[RESOLVED_TURN]` (same as chip path;
       tool guards seed branches via `seed_client_decided_branches`).
-- [x] Pending-offer extraction after agent turns runs under executor-only as well as
+- [x] Pending-offer extraction after agent turns runs under single-loop as well as
       NLU-first; uses full assistant reply text (not `recent_dialogue` 350-char truncation)
       plus heuristic fallback when micro-LLM extract misses trailing offer questions.
 - [x] Context-only guard does not block `analyze_checkpoints` when `discourse_act=accept_offer`.
@@ -216,16 +216,16 @@ callback tests; guards are router-agnostic (chip/resolve/executor-only ready).
 - [x] Staging Agent Engine deploy pushes `HOMEAPP_EXECUTOR_ONLY_ROUTING=1` via
       `deployment/deploy.py` (`runtime_env_defaults`; prod unchanged).
 - [x] Weblog smoke sessions (`web-log-session-*`) extracted and merged into
-      `executor_only/cases.yaml` (18 weblog + 15 hand-authored cases).
+      `single_loop/cases.yaml` (18 weblog + 15 hand-authored cases).
 - [x] Deterministic routing baseline captured:
-      `property_agent/evals/routing/executor_only/baselines/2026-06-11.json`
+      `property_agent/evals/routing/single_loop/baselines/2026-06-11.json`
       — **33/33 pass** (chip, accept-offer, casual regex, minimal-substantive;
       no resolve LLM, sub-ms per case). Resolve-LLM baseline for comparison:
       `evals/routing/baselines/2026-06-10.json` (39/42, p50 resolve 1.5s).
 - [x] Full-turn A/B from `adk web` log captures (`web-log-session-*` vs
       `web-log-legacy-*`, 33 turns). Summarizer:
       `property_agent/evals/routing/summarize_weblog_ab.py` (`make weblog-summarize`).
-      Report: `executor_only/baselines/weblog-ab-2026-06-11.json`.
+      Report: `single_loop/baselines/weblog-ab-2026-06-11.json`.
       *Findings:* **0 misroutes** in executor logs; resolve LLM eliminated
       (~2s p50 per turn); paired session-1 comparable turns show mixed latency
       (follow-up/context turns faster, e.g. −31.6% on “Which areas are affected?”;
@@ -235,7 +235,7 @@ callback tests; guards are router-agnostic (chip/resolve/executor-only ready).
 - [ ] Prod enable + one-sprint soak (not live yet; staging-only).
 - [ ] Iterate on tool descriptions only if prod/staging QA surfaces new gaps.
 
-**Exit criteria:** executor-only ≥ parity on **live** misroute rate ✅ (0 observed
+**Exit criteria:** single-loop ≥ parity on **live** misroute rate ✅ (0 observed
 in weblog A/B), meaningful latency win on common paths ✅ (resolve overhead removed;
 follow-up turns faster). Aggregate ≥30% p50 on all substantive turns: **not met**
 on paired session-1 (−13% p50) but not blocking staging soak. **If misroutes
@@ -243,7 +243,7 @@ appear in prod, roll back via redeploy** — Phases 1–3 already delivered most
 
 ## Phase 5 — Deletion and docs ✅
 
-Executor-only is unconditional (no `HOMEAPP_EXECUTOR_ONLY_ROUTING` flag).
+Single-loop is unconditional (no `HOMEAPP_EXECUTOR_ONLY_ROUTING` flag).
 
 - [x] Delete: `resolve_turn_llm.py`, `resolve_llm_schema.py`,
       `nlu_first_resolve.py`, `homecare_resolve_hooks.py`, `turn_intent_llm.py`,
@@ -279,7 +279,7 @@ Executor-only is unconditional (no `HOMEAPP_EXECUTOR_ONLY_ROUTING` flag).
 | 1 | Chip fast-path | low | yes |
 | 2 | Tool split | low-med | yes |
 | 3 | Guard consolidation | low | yes |
-| 4 | Executor-only routing (flag) | med | A/B only |
+| 4 | Single-loop routing (flag) | med | A/B only |
 | 5 | Delete resolve layer | low (post-validation) | yes |
 
 ## Success criterion

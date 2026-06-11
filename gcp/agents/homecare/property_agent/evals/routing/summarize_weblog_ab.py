@@ -1,14 +1,14 @@
 """
 Summarize full-turn A/B metrics from local ``adk web`` stdout captures.
 
-Compares resolve-LLM logs (``web-log-legacy*``) vs executor-only
+Compares resolve-LLM logs (``web-log-legacy*``) vs single-loop
 (``web-log-session*``, ``web-log``) using ``engine_turn_timing`` lines,
 routing log lines, and tool function-call names per turn.
 
 Usage:
     uv run python -m property_agent.evals.routing.summarize_weblog_ab web-log*
     uv run python -m property_agent.evals.routing.summarize_weblog_ab \\
-        --out property_agent/evals/routing/executor_only/baselines/weblog-ab-2026-06-11.json
+        --out property_agent/evals/routing/single_loop/baselines/weblog-ab-2026-06-11.json
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ TOOL_NAME_RE = re.compile(
     r'"name":"(analyze_checkpoints|list_checkpoints|search_user_docs|get_report|run_checkpoint_pipeline)"'
 )
 ROUTING_KIND_RE = re.compile(
-    r"(executor_only substantive|executor_only accept_offer|resolve_turn chip|"
+    r"((?:single_loop|executor_only) substantive|(?:single_loop|executor_only) accept_offer|resolve_turn chip|"
     r"resolve_turn_llm|resolve_turn casual|resolve_turn substantive)"
 )
 
@@ -74,7 +74,7 @@ def _routing_mode_for_log(path: Path) -> str:
     name = path.name
     if "legacy" in name:
         return "resolve_llm"
-    return "executor_only"
+    return "single_loop"
 
 
 def _percentile(values: list[int], pct: float) -> int:
@@ -230,11 +230,11 @@ def build_ab_report(log_paths: list[Path]) -> dict[str, Any]:
         all_turns.extend(turns)
 
     legacy_turns = [t for t in all_turns if t.routing_mode == "resolve_llm"]
-    executor_turns = [t for t in all_turns if t.routing_mode == "executor_only"]
+    executor_turns = [t for t in all_turns if t.routing_mode == "single_loop"]
 
     legacy_summary = summarize_group(legacy_turns, label="resolve_llm (web-log-legacy*)")
     executor_summary = summarize_group(
-        executor_turns, label="executor_only (web-log-session*, web-log)"
+        executor_turns, label="single_loop (web-log-session*, web-log)"
     )
 
     paired: list[dict[str, Any]] = []
@@ -260,7 +260,7 @@ def build_ab_report(log_paths: list[Path]) -> dict[str, Any]:
         "source_logs": sorted(by_log.keys()),
         "total_turns": len(all_turns),
         "resolve_llm": legacy_summary,
-        "executor_only": executor_summary,
+        "single_loop": executor_summary,
         "paired_session_1": paired,
         "comparison_notes": {
             "2026_06_10_resolve_baseline_stream_ms": {
@@ -319,7 +319,7 @@ def main(argv: list[str] | None = None) -> int:
     notes = report["comparison_notes"]
     print(
         f"\nTurns: {report['total_turns']} "
-        f"(legacy {report['resolve_llm']['turns']}, executor {report['executor_only']['turns']})"
+        f"(legacy {report['resolve_llm']['turns']}, single_loop {report['single_loop']['turns']})"
     )
     print(
         f"Paired session-1 comparable turns: {len(report['paired_session_1'])}; "
