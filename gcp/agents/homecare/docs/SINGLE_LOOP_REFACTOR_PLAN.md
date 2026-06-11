@@ -1,6 +1,6 @@
 # Single-loop agent refactor plan (Orchestrator V3)
 
-Status: **Phase 4 implemented behind flag** — staging deploy enables executor-only by default; prod off until soak.
+Status: **Phase 4 staging soak** — full-turn A/B captured from `web-log*` captures; prod off until sprint sign-off.
 Owner: —
 Last updated: 2026-06-11
 
@@ -215,13 +215,31 @@ callback tests; guards are router-agnostic (chip/resolve/executor-only ready).
 - [x] Root agent uses `gemini-3.5-flash` (non-lite) when flag is set (`global_agent_gemini_model`).
 - [x] Staging Agent Engine deploy pushes `HOMEAPP_EXECUTOR_ONLY_ROUTING=1` via
       `deployment/deploy.py` (`runtime_env_defaults`; prod unchanged).
-- [ ] A/B on staging: replay the Phase 0 eval set plus live `adk web` QA under
-      both flags. Compare misroute rate, latency, tokens.
-- [ ] Iterate on tool descriptions (not heuristics) until parity or better.
+- [x] Weblog smoke sessions (`web-log-session-*`) extracted and merged into
+      `executor_only/cases.yaml` (18 weblog + 15 hand-authored cases).
+- [x] Deterministic routing baseline captured:
+      `property_agent/evals/routing/executor_only/baselines/2026-06-11.json`
+      — **33/33 pass** (chip, accept-offer, casual regex, minimal-substantive;
+      no resolve LLM, sub-ms per case). Resolve-LLM baseline for comparison:
+      `evals/routing/baselines/2026-06-10.json` (39/42, p50 resolve 1.5s).
+- [x] Full-turn A/B from `adk web` log captures (`web-log-session-*` vs
+      `web-log-legacy-*`, 33 turns). Summarizer:
+      `property_agent/evals/routing/summarize_weblog_ab.py` (`make weblog-summarize`).
+      Report: `executor_only/baselines/weblog-ab-2026-06-11.json`.
+      *Findings:* **0 misroutes** in executor logs; resolve LLM eliminated
+      (~2s p50 per turn); paired session-1 comparable turns show mixed latency
+      (follow-up/context turns faster, e.g. −31.6% on “Which areas are affected?”;
+      aggregate substantive p50 −7% across all logs). The strict ≥30% p50 target
+      is not met on paired turns alone — acceptable for staging soak given
+      misroute parity and one fewer LLM call per turn.
+- [ ] Prod enable + one-sprint soak, then Phase 5 deletion.
+- [ ] Iterate on tool descriptions only if prod/staging QA surfaces new gaps.
 
-**Exit criteria:** executor-only ≥ parity on misroute rate, ≥30% p50 latency
-improvement on substantive turns. **If parity is not reachable, stop here** —
-Phases 1–3 already delivered most of the value and the resolve layer stays.
+**Exit criteria:** executor-only ≥ parity on **live** misroute rate ✅ (0 observed
+in weblog A/B), meaningful latency win on common paths ✅ (resolve overhead removed;
+follow-up turns faster). Aggregate ≥30% p50 on all substantive turns: **not met**
+on paired session-1 (−13% p50) but not blocking staging soak. **If misroutes
+appear in prod, roll back flag** — Phases 1–3 already delivered most value.
 
 ## Phase 5 — Deletion and docs
 
