@@ -16,7 +16,7 @@ Use this runbook when shipping coordinated **proxy + agent** deploys after Prope
 | 4 | Staging smoke — full optional branches | `uv run adk web` → `property_agent`: checkpoint + `["coverage","diy","service","cost"]`; Firestore message has `contentSchemaVersion: 2`, `contentJson.analysis`, `contentMarkdown` | QA |
 | 5 | Staging smoke — follow-up | Second turn “explain DIY steps”; new message markdown-only; prior message retains accordions | QA |
 | 6 | Client parity | mapp + webapp render via `resolveMessageContentParts`; no fence parse hot path | QA |
-| 7 | Observability baseline | Logs/metrics: `orchestrator_routing`, `agent_message_ttf_structured_patch_ms`, `orchestrator.message.*` visible on staging | Ops |
+| 7 | Observability baseline | Logs/metrics: `orchestrator_routing`, `adk_session_compaction`, `agent_message_ttf_structured_patch_ms`, `orchestrator.message.*` visible on staging | Ops |
 
 **No-go if:** fenced JSON reappears in `contentMarkdown`, `contentSchemaVersion != 2` on new assistant messages, or stale-patch storms (`orchestrator.message.stale_revision_rejects` spike without explanation).
 
@@ -68,6 +68,7 @@ Complete before marking Property Agent Architecture closed in prod (see also §1
 | Routing decisions / turn | `orchestrator.routing.calls` | 1 per turn (deterministic; no routing LLM) |
 | Session context inject size | `orchestrator.routing.prompt_tokens` | 0 for chip/casual; slim `[SESSION_CONTEXT]` for free text |
 | Executor skipped (casual) | `orchestrator.routing.executor_skipped` | Greetings / chip-only turns |
+| Session event compaction | Log `adk_session_compaction applied` | Fires when prompt tokens cross threshold (default 24k) |
 | Time to first structured patch | `orchestrator.message.ttf_structured_patch_ms` | Establish P95 after deploy |
 | Stale writes | `orchestrator.message.stale_revision_rejects` | Low; spikes only under retry storms |
 | Patch rate | `orchestrator.message.patch_applies` | Matches throttled persist cadence |
