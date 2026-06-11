@@ -224,6 +224,9 @@ def should_block_checkpoint_pipeline_for_context_turn(
     if tool in ("analyze_checkpoints", "run_checkpoint_pipeline") and route == "report":
         return True
 
+    if discourse_act == "accept_offer":
+        return False
+
     if nlu_first_resolve_enabled() and discourse_act in (
         "explain_prior",
         "provider_detail",

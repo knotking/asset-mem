@@ -72,8 +72,24 @@ def last_assistant_ended_with_question(
     *,
     current_invocation_id: Optional[str] = None,
 ) -> bool:
+    return bool(
+        last_assistant_reply_text(
+            session_events,
+            current_invocation_id=current_invocation_id,
+            require_question=True,
+        )
+    )
+
+
+def last_assistant_reply_text(
+    session_events: Sequence[Any] | None,
+    *,
+    current_invocation_id: Optional[str] = None,
+    require_question: bool = False,
+) -> str:
+    """Full text of the latest assistant turn (not truncated like ``recent_dialogue``)."""
     if not session_events:
-        return False
+        return ""
     for event in reversed(list(session_events)):
         inv_id = getattr(event, "invocation_id", None)
         if current_invocation_id and inv_id == current_invocation_id:
@@ -85,5 +101,7 @@ def last_assistant_ended_with_question(
         if not text or is_heavy_dialogue_for_resolve(text):
             continue
         stripped = text.rstrip()
-        return stripped.endswith("?")
-    return False
+        if require_question and not stripped.endswith("?"):
+            continue
+        return text
+    return ""

@@ -195,30 +195,25 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
         )
 
     def _maybe_extract_pending_offer(self, callback_context: CallbackContext) -> None:
-        from property_agent.routing.nlu_first_resolve import nlu_first_resolve_enabled
         from property_agent.routing.pending_offer_extract import (
             maybe_set_pending_from_assistant_reply,
+            pending_offer_extract_enabled,
         )
-        from property_agent.routing.recent_dialogue import recent_dialogue
+        from property_agent.routing.recent_dialogue import last_assistant_reply_text
         from agent_framework.routing.resolved_turn import session_events
 
-        if not nlu_first_resolve_enabled():
+        if not pending_offer_extract_enabled():
             return
         events = session_events(callback_context)
-        dialogue = recent_dialogue(events, max_chars=1200)
-        if not dialogue:
-            return
-        assistant_lines = [
-            line[11:].strip()
-            for line in dialogue.splitlines()
-            if line.startswith("assistant:")
-        ]
-        if not assistant_lines:
+        assistant_text = last_assistant_reply_text(events, require_question=True)
+        if not assistant_text:
+            assistant_text = last_assistant_reply_text(events)
+        if not assistant_text:
             return
         uq = resolve_user_query_from_state(callback_context.state)
         maybe_set_pending_from_assistant_reply(
             callback_context.state,
-            assistant_text=assistant_lines[-1],
+            assistant_text=assistant_text,
             user_query=uq,
         )
 

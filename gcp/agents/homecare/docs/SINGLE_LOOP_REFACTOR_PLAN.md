@@ -208,6 +208,10 @@ callback tests; guards are router-agnostic (chip/resolve/executor-only ready).
 - [x] Accept-offer fast-path: short replies (`yes`, `ok`, …) with `pending_user_action`
       build `discourse_act=accept_offer` + inject `[RESOLVED_TURN]` (same as chip path;
       tool guards seed branches via `seed_client_decided_branches`).
+- [x] Pending-offer extraction after agent turns runs under executor-only as well as
+      NLU-first; uses full assistant reply text (not `recent_dialogue` 350-char truncation)
+      plus heuristic fallback when micro-LLM extract misses trailing offer questions.
+- [x] Context-only guard does not block `analyze_checkpoints` when `discourse_act=accept_offer`.
 - [x] Root agent uses `gemini-3.5-flash` (non-lite) when flag is set (`global_agent_gemini_model`).
 - [ ] A/B on staging: replay the Phase 0 eval set plus live `adk web` QA under
       both flags. Compare misroute rate, latency, tokens.

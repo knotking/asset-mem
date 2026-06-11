@@ -15,6 +15,14 @@ from .pending_user_action import PendingUserAction, set_pending_user_action
 
 logger = logging.getLogger(__name__)
 
+
+def pending_offer_extract_enabled() -> bool:
+    """Run after-agent offer extraction for NLU-first and executor-only routing."""
+    from .executor_only_routing import executor_only_routing_enabled
+    from .nlu_first_resolve import nlu_first_resolve_enabled
+
+    return nlu_first_resolve_enabled() or executor_only_routing_enabled()
+
 _EXTRACT_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
@@ -123,6 +131,32 @@ def extract_pending_offer_from_text(
     )
 
 
+def _heuristic_pending_from_offer(assistant_text: str) -> Optional[PendingUserAction]:
+    """Fallback when micro-LLM extract misses a trailing offer question."""
+    text = (assistant_text or "").strip()
+    if not text or "?" not in text:
+        return None
+    tail = text[-500:].lower()
+    branches: list[str] = []
+    for branch in OPTIONAL_CHECKPOINT_BRANCHES:
+        if branch in tail or f"**{branch}**" in text[-500:].lower():
+            branches.append(branch)
+    if not branches:
+        if "provider" in tail or "shop" in tail or "professional" in tail:
+            branches.append("service")
+        if "diy" in tail or "step" in tail or "material" in tail:
+            if "diy" not in branches:
+                branches.append("diy")
+    if not branches:
+        return None
+    expanded = f"Run {', '.join(branches)} analysis."
+    return PendingUserAction(
+        kind="run_branch",
+        expanded_user_query=expanded,
+        run_optional_agents=branches,
+    )
+
+
 def maybe_set_pending_from_assistant_reply(
     state: Any,
     *,
@@ -130,10 +164,15 @@ def maybe_set_pending_from_assistant_reply(
     user_query: str = "",
 ) -> None:
     pending = extract_pending_offer_from_text(assistant_text, user_query=user_query)
+    source = "llm"
+    if pending is None:
+        pending = _heuristic_pending_from_offer(assistant_text)
+        source = "heuristic"
     if pending is not None:
         set_pending_user_action(state, pending)
         logger.info(
-            "pending_offer_extract: kind=%s branches=%r",
+            "pending_offer_extract: source=%s kind=%s branches=%r",
+            source,
             pending.kind,
             pending.run_optional_agents,
         )
