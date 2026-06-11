@@ -1,6 +1,6 @@
 # Single-loop agent refactor plan (Orchestrator V3)
 
-Status: **Phase 4 implemented behind flag** — staging A/B pending 2026-06-11.
+Status: **Phase 4 implemented behind flag** — staging deploy enables executor-only by default; prod off until soak.
 Owner: —
 Last updated: 2026-06-11
 
@@ -213,6 +213,8 @@ callback tests; guards are router-agnostic (chip/resolve/executor-only ready).
       plus heuristic fallback when micro-LLM extract misses trailing offer questions.
 - [x] Context-only guard does not block `analyze_checkpoints` when `discourse_act=accept_offer`.
 - [x] Root agent uses `gemini-3.5-flash` (non-lite) when flag is set (`global_agent_gemini_model`).
+- [x] Staging Agent Engine deploy pushes `HOMEAPP_EXECUTOR_ONLY_ROUTING=1` via
+      `deployment/deploy.py` (`runtime_env_defaults`; prod unchanged).
 - [ ] A/B on staging: replay the Phase 0 eval set plus live `adk web` QA under
       both flags. Compare misroute rate, latency, tokens.
 - [ ] Iterate on tool descriptions (not heuristics) until parity or better.
