@@ -185,8 +185,11 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
 
     def _maybe_update_conversation_summary(self, callback_context: CallbackContext) -> None:
         from property_agent.routing.conversation_summary import (
+            conversation_summary_enabled,
             maybe_update_conversation_summary,
         )
+        if not conversation_summary_enabled():
+            return
         from agent_framework.routing.resolved_turn import session_events
 
         maybe_update_conversation_summary(
