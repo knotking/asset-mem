@@ -1,5 +1,5 @@
 import React, { useContext, useMemo, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { Platform, View, StyleSheet } from 'react-native';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import { AccordionMountContext } from '@/lib/accordion-mount-context';
 import { getYouTubeVideoId } from '@/lib/youtube-utils';
@@ -53,10 +53,19 @@ export function LazyYouTubePlayer({
         <View testID={testID} style={styles.playerWrap}>
           <YoutubePlayer
             height={playerHeight}
+            width={containerWidth}
             videoId={videoId}
             play={autoPlay}
+            webViewStyle={{ opacity: 0.99 }}
             webViewProps={{
               androidLayerType: 'hardware',
+              allowsInlineMediaPlayback: true,
+              mediaPlaybackRequiresUserAction: false,
+              nestedScrollEnabled: true,
+              scrollEnabled: false,
+              ...(Platform.OS === 'android'
+                ? { renderToHardwareTextureAndroid: true }
+                : null),
             }}
           />
         </View>
