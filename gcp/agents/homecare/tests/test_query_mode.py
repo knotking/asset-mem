@@ -1,4 +1,4 @@
-"""Tests for ChatGPT-style query modes and session working memory."""
+"""Tests for session working memory and retained query-mode helpers."""
 
 from __future__ import annotations
 
@@ -6,21 +6,17 @@ import json
 
 from property_agent.routing.query_mode import (
     SESSION_WORKING_MEMORY_SNAPSHOT_KEY,
-    branches_mentioned_in_query,
     build_session_working_memory,
     extract_known_service_providers,
-    format_provider_context_answer,
-    needs_fresh_checkpoint_retrieval,
-    query_asks_area_outside_memory,
-    query_references_known_provider,
-    should_answer_provider_from_context,
-    should_block_checkpoint_pipeline_for_context_turn,
     snapshot_session_analysis_context,
 )
 from property_agent.routing.resolve_turn import ResolvedTurn, apply_resolved_turn_to_state
 from property_agent.checkpoint.analysis.search_query import (
     resolve_optional_branch_user_query,
     resolve_service_branch_user_query,
+)
+from property_agent.checkpoint.retrieval.inventory_query import (
+    query_requests_checkpoint_inventory,
 )
 
 
@@ -40,27 +36,6 @@ def test_extract_known_service_providers_from_parallel_results() -> None:
     state = {"checkpoint_parallel_results": _service_parallel_json("Right Way Garage Doors")}
     names = extract_known_service_providers(state)
     assert "Right Way Garage Doors" in names
-
-
-def test_should_answer_provider_from_context() -> None:
-    state = {"checkpoint_parallel_results": _service_parallel_json("Right Way Garage Doors")}
-    assert should_answer_provider_from_context(
-        "Get more details about Right Way Garage Doors",
-        state=state,
-    )
-
-
-def test_query_references_known_provider_partial_name() -> None:
-    state = {
-        "checkpoint_parallel_results": _service_parallel_json(
-            "Bay Area Garage Door Repair Brentwood"
-        ),
-    }
-    match = query_references_known_provider(
-        "get me more details on Bay Area Garage Door Repair",
-        state,
-    )
-    assert match == "Bay Area Garage Door Repair Brentwood"
 
 
 def test_resolve_optional_branch_user_query_entity_uses_turn_text() -> None:
@@ -132,22 +107,6 @@ def test_build_session_working_memory_includes_providers() -> None:
     assert "Acme Door Co" in memory.get("service_providers_mentioned", [])
 
 
-def test_query_references_known_provider() -> None:
-    state = {"checkpoint_parallel_results": _service_parallel_json("Magic Garage Repair")}
-    match = query_references_known_provider(
-        "What do you know about Magic Garage Repair?",
-        state,
-    )
-    assert match == "Magic Garage Repair"
-
-
-def test_branches_mentioned_in_query_includes_service() -> None:
-    branches = branches_mentioned_in_query(
-        "analyse my checkpoints for coverage, diy, service, and cost"
-    )
-    assert branches == ["coverage", "diy", "service", "cost"]
-
-
 def test_snapshot_survives_answer_from_context_apply() -> None:
     state = {
         "checkpoint_parallel_results": _service_parallel_json("OneHandyPro"),
@@ -182,181 +141,6 @@ def test_snapshot_survives_answer_from_context_apply() -> None:
     assert isinstance(state.get(SESSION_WORKING_MEMORY_SNAPSHOT_KEY), dict)
     memory = build_session_working_memory(state)
     assert "OneHandyPro" in memory.get("service_providers_mentioned", [])
-
-
-def test_should_block_provider_follow_up_not_kitchen() -> None:
-    state = {"checkpoint_parallel_results": _service_parallel_json("OneHandyPro")}
-    snapshot_session_analysis_context(state)
-    assert should_block_checkpoint_pipeline_for_context_turn(
-        user_query="Get more details on OneHandyPro",
-        state=state,
-        user_goal="answer_from_context",
-        query_mode="interpret_session",
-    )
-    assert not needs_fresh_checkpoint_retrieval(
-        "Get more details on OneHandyPro",
-        state=state,
-    )
-
-
-def test_kitchen_outside_memory_uses_context_not_fresh_retrieval() -> None:
-    state = {
-        "checkpoint_parallel_results": _service_parallel_json("OneHandyPro"),
-        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
-            "checkpoint_summary": {
-                "locations": ["Garage"],
-                "checkpointsAnalyzed": 2,
-            },
-        },
-    }
-    assert query_asks_area_outside_memory(
-        "Are there issues in the kitchen?",
-        state,
-    )
-    assert not needs_fresh_checkpoint_retrieval(
-        "Are there issues in the kitchen?",
-        state=state,
-    )
-    assert should_block_checkpoint_pipeline_for_context_turn(
-        user_query="Are there issues in the kitchen?",
-        state=state,
-        user_goal="answer_from_context",
-        query_mode="interpret_session",
-    )
-
-
-def test_query_references_ace_handyman_not_handyman_reed() -> None:
-    state = {
-        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
-            "service_providers_mentioned": [
-                "Ace Handyman Services Brentwood",
-                "Handyman Reed",
-            ],
-            "service_provider_details": {
-                "Ace Handyman Services Brentwood": {
-                    "name": "Ace Handyman Services Brentwood",
-                    "website": "https://acehandymanservices.com",
-                },
-                "Handyman Reed": {
-                    "name": "Handyman Reed",
-                    "website": "https://handymanreed.com",
-                },
-            },
-        },
-    }
-    match = query_references_known_provider(
-        "Get more details on Ace Handyman services for the garage door repairs",
-        state,
-    )
-    assert match == "Ace Handyman Services Brentwood"
-
-
-def test_format_provider_context_answer_includes_numeric_rating() -> None:
-    state = {
-        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
-            "service_providers_mentioned": ["Brentwood Pro Painters"],
-            "service_provider_details": {
-                "Brentwood Pro Painters": {
-                    "name": "Brentwood Pro Painters",
-                    "rating": 4.8,
-                },
-            },
-        },
-    }
-    text = format_provider_context_answer(
-        "get me more details on Brentwood Pro painters",
-        state,
-    )
-    assert text is not None
-    assert "4.8" in text
-    assert "**Rating:**" in text
-
-
-def test_format_provider_context_answer_synthesis_service_field() -> None:
-    """Synthesis often uses ``service`` (singular) on serpAPIResults items."""
-    inner = json.dumps(
-        {
-            "analysis": {
-                "serviceResults": {
-                    "localPros": {
-                        "serpAPIResults": [
-                            {
-                                "name": "Precision Door Service",
-                                "service": "Full Inspection & Maintenance",
-                            },
-                            {
-                                "name": "Brentwood Garage Door Pros",
-                                "service": "Garage door repair",
-                            },
-                        ]
-                    }
-                }
-            }
-        }
-    )
-    state = {"checkpoint_analysis": json.loads(inner)}
-    match = query_references_known_provider(
-        "get more details on Precision Door Service",
-        state,
-    )
-    assert match == "Precision Door Service"
-    text = format_provider_context_answer(
-        "get more details on Precision Door Service",
-        state,
-    )
-    assert text is not None
-    assert "Precision Door Service" in text
-    assert "Full Inspection" in text
-
-
-def test_format_provider_context_answer_name_only_not_none() -> None:
-    state = {
-        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
-            "service_providers_mentioned": ["Precision Door Service"],
-            "service_provider_details": {
-                "Precision Door Service": {"name": "Precision Door Service"},
-            },
-        },
-    }
-    text = format_provider_context_answer(
-        "get more details on Precision Door Service",
-        state,
-    )
-    assert text is not None
-    assert "Precision Door Service" in text
-    assert "previous **Service results**" in text
-    assert "limited details saved" in text
-    assert "fresh provider search" in text
-    assert "bathroom" not in text.lower()
-
-
-def test_format_provider_context_answer() -> None:
-    inner = json.dumps(
-        {
-            "serviceResults": {
-                "localPros": {
-                    "serpAPIResults": [
-                        {
-                            "name": "OneHandyPro",
-                            "notes": "CSLB licensed",
-                            "website": "https://onehandypro.com",
-                            "services": ["Garage door repair"],
-                        }
-                    ]
-                }
-            }
-        }
-    )
-    state = {
-        "checkpoint_parallel_results": json.dumps(
-            {"checkpoint_parallel_service_result": inner}
-        )
-    }
-    text = format_provider_context_answer("More about OneHandyPro", state)
-    assert text is not None
-    assert "previous **Service results**" in text
-    assert "OneHandyPro" in text
-    assert "CSLB licensed" in text
 
 
 def test_snapshot_from_parallel_only_service_branch() -> None:
@@ -437,131 +221,21 @@ def test_snapshot_survives_prune_simulation() -> None:
 
 
 def test_query_requests_checkpoint_inventory() -> None:
-    from property_agent.routing.query_mode import (
-        needs_fresh_checkpoint_retrieval,
-        query_requests_checkpoint_inventory,
-    )
-
     q = "What checkpoints do I have and what is their current status?"
     assert query_requests_checkpoint_inventory(q)
-    assert needs_fresh_checkpoint_retrieval(q)
 
 
 def test_query_requests_checkpoint_inventory_status_phrases() -> None:
-    from property_agent.routing.query_mode import query_requests_checkpoint_inventory
-
     assert query_requests_checkpoint_inventory("What is my checkpoint status?")
     assert query_requests_checkpoint_inventory("status of my checkpoints")
     assert query_requests_checkpoint_inventory("list my checkpoints")
 
 
 def test_query_does_not_treat_area_status_as_checkpoint_inventory() -> None:
-    from property_agent.routing.query_mode import query_requests_checkpoint_inventory
-
     assert not query_requests_checkpoint_inventory(
         "What is the current status of the garage door?"
     )
     assert not query_requests_checkpoint_inventory("What is their current status?")
-
-
-def test_needs_fresh_checkpoint_retrieval_for_inventory_even_with_memory() -> None:
-    from property_agent.routing.query_mode import needs_fresh_checkpoint_retrieval
-
-    state = {
-        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
-            "checkpoint_summary": {"locations": ["Garage"], "checkpointsAnalyzed": 1},
-        }
-    }
-    assert needs_fresh_checkpoint_retrieval(
-        "What checkpoints do I have?",
-        state=state,
-    )
-
-
-def test_should_block_entity_detail_with_memory_without_provider_match() -> None:
-    state = {
-        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
-            "checkpoint_summary": {"locations": ["Garage"], "checkpointsAnalyzed": 1},
-            "service_providers_mentioned": ["Ace Handyman Services Brentwood"],
-        }
-    }
-    assert should_block_checkpoint_pipeline_for_context_turn(
-        user_query="get me more details on Ace Handyman",
-        state=state,
-        user_goal="answer_from_context",
-        query_mode="interpret_session",
-        tool_name="user_docs_retrieval",
-    )
-
-
-def test_should_not_block_user_docs_on_user_docs_route() -> None:
-    state = {
-        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
-            "checkpoint_summary": {"locations": ["Garage"], "checkpointsAnalyzed": 1},
-        }
-    }
-    assert not should_block_checkpoint_pipeline_for_context_turn(
-        user_query="What does section 4.5 of the lease say?",
-        state=state,
-        user_goal="answer_from_context",
-        query_mode="interpret_session",
-        resolved_route="user_docs",
-        tool_name="user_docs_retrieval",
-    )
-
-
-def test_should_block_run_checkpoint_pipeline_on_report_route() -> None:
-    assert should_block_checkpoint_pipeline_for_context_turn(
-        user_query="cost analysis for vehicle exterior damage",
-        state={"report_ids": ["report-1"]},
-        user_goal="answer_from_context",
-        query_mode="interpret_session",
-        resolved_route="report",
-        tool_name="analyze_checkpoints",
-    )
-
-
-def test_should_not_block_analyze_checkpoints_on_accept_offer() -> None:
-    state = {
-        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
-            "checkpoint_summary": {"locations": ["Vehicle - Exterior"], "checkpointsAnalyzed": 1},
-            "branches_completed": ["cost"],
-        }
-    }
-    assert not should_block_checkpoint_pipeline_for_context_turn(
-        user_query="yes",
-        state=state,
-        user_goal="answer_from_context",
-        query_mode="interpret_session",
-        resolved_route="checkpoint",
-        tool_name="analyze_checkpoints",
-        discourse_act="accept_offer",
-    )
-
-
-def test_should_not_block_report_retrieval_on_report_route_with_session_cache() -> None:
-    from property_agent.reports.retrieval import (
-        REPORT_RETRIEVAL_CACHE_FP_KEY,
-        REPORT_RETRIEVAL_CACHE_TEXT_KEY,
-        report_retrieval_fingerprint,
-    )
-
-    state = {
-        "report_ids": ["report-1"],
-        REPORT_RETRIEVAL_CACHE_FP_KEY: report_retrieval_fingerprint(["report-1"]),
-        REPORT_RETRIEVAL_CACHE_TEXT_KEY: "cached report body",
-        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
-            "checkpoint_summary": {"locations": ["Garage"], "checkpointsAnalyzed": 1},
-        },
-    }
-    assert not should_block_checkpoint_pipeline_for_context_turn(
-        user_query="summarize the report",
-        state=state,
-        user_goal="answer_from_context",
-        query_mode="interpret_session",
-        resolved_route="report",
-        tool_name="report_retrieval",
-    )
 
 
 def test_provider_entry_normalizes_ratings_and_reviews_from_serp_shape() -> None:

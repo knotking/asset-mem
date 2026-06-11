@@ -28,7 +28,7 @@ from property_agent.routing.pending_user_action import get_pending_user_action
 from property_agent.routing.property_analysis_routing import (
     filter_optional_branches_for_orchestrator,
 )
-from property_agent.routing.query_mode import (
+from property_agent.routing.query_mode.branch_analysis import (
     branches_mentioned_in_query,
     prior_analysis_branches_completed,
     query_requests_fresh_external_data,

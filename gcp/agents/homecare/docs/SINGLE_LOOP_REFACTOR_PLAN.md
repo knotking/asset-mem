@@ -283,12 +283,16 @@ Single-loop is unconditional (no `HOMEAPP_EXECUTOR_ONLY_ROUTING` flag).
 | 4 | Single-loop routing (flag) | med | A/B only |
 | 5 | Delete resolve layer | low (post-validation) | yes |
 
-## Success criterion
+## Success criterion ✅
 
 A turn like *"Summarize the issues for the selected checkpoints"* costs one LLM
 call, one Firestore batch read, and zero heuristic arbitration — and the
 `['diy','diy']` class of bug is structurally impossible because there is exactly
 one place where branch decisions are made.
+
+**Met:** `routing/query_mode/{heuristics,provider_context}.py` deleted; context-only
+block guard removed from `conversational_callbacks.py`; executor prompt is the sole
+authority over `analyze_checkpoints` on follow-up turns.
 
 ## Related work
 

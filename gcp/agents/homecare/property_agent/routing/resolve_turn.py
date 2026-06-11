@@ -21,9 +21,6 @@ from .checkpoint_selection import (
 )
 from .query_mode import (
     SESSION_WORKING_MEMORY_SNAPSHOT_KEY,
-    query_requests_checkpoint_inventory,
-    session_has_checkpoint_answer_context,
-    should_answer_provider_from_context,
     snapshot_session_analysis_context,
 )
 
@@ -56,25 +53,20 @@ def is_executor_conversational_turn(
     *,
     state: Mapping[str, Any] | None = None,
 ) -> bool:
-    """True when routing tools should be blocked (plain-text executor only)."""
+    """True when routing tools should be blocked (plain-text executor only).
+
+    Under single-loop routing all substantive turns return False — the executor
+    is the sole authority over tool calls. Casual turns (greeting, capabilities)
+    always block tools. Chip-sourced explain_prior / provider_detail turns
+    still block tools since those are deterministic chip fast-path decisions.
+    """
     if resolved.is_casual:
         return True
     # "executor_only" is normalized to "single_loop" in ResolvedTurn.from_dict.
     if resolved.resolve_source == "single_loop":
         return False
-    if resolved.route in ("report", "user_docs"):
-        return False
-    if resolved.run_optional_agents:
-        return False
-    if resolved.user_goal in ("new_analysis", "replay_deliverable") and not resolved.retrieval_only:
-        return False
-    if resolved.retrieval_only and resolved.user_goal == "answer_from_context":
-        if resolved.discourse_act in ("explain_prior", "provider_detail"):
-            return True
-        expanded = str(resolved.expanded_user_query or "").strip()
-        if expanded and query_requests_checkpoint_inventory(expanded):
-            return False
-        return session_has_checkpoint_answer_context(state)
+    if resolved.discourse_act in ("explain_prior", "provider_detail"):
+        return True
     return False
 
 
@@ -116,17 +108,6 @@ def apply_resolved_turn_to_state(state: Any, resolved: ResolvedTurn) -> None:
         return
 
     if resolved.run_optional_agents:
-        session_query = str(
-            state.get("user_query") or resolved.expanded_user_query or ""
-        )
-        if should_answer_provider_from_context(session_query, state=state):
-            snapshot_session_analysis_context(state)
-            if state.get("checkpoint_optional_agents"):
-                state["_checkpoint_optional_agents_ui"] = state.get(
-                    "checkpoint_optional_agents"
-                )
-            state["checkpoint_optional_agents"] = []
-            return
         _clear_checkpoint_passthrough_stash(state)
         if hasattr(state, "__setitem__"):
             state["checkpoint_parallel_results"] = None

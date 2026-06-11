@@ -132,23 +132,8 @@ def test_report_route_substantive_allows_tools() -> None:
     assert state.get(CONVERSATIONAL_TURN_STATE_KEY) is False
 
 
-def test_answer_from_context_thin_memory_not_conversational() -> None:
-    inventory = ResolvedTurn(
-        intent="substantive",
-        route="checkpoint",
-        expanded_user_query="What checkpoints do I have and what is their current status?",
-        retrieval_only=True,
-        run_optional_agents=[],
-        user_goal="answer_from_context",
-        discourse_act="new_work",
-        query_mode="interpret_session",
-    )
-    thin_state = {
-        "property_id": "prop-1",
-        "session_working_memory_snapshot": {"property_id": "prop-1"},
-    }
-    assert is_executor_conversational_turn(inventory, state=thin_state) is False
-
+def test_explain_prior_chip_is_conversational() -> None:
+    """Chip-sourced explain_prior turns block tools (deterministic fast-path decision)."""
     rich_state = {
         SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
             "checkpoint_summary": {"locations": ["Garage"], "checkpointsAnalyzed": 1},
@@ -166,24 +151,28 @@ def test_answer_from_context_thin_memory_not_conversational() -> None:
         resolve_source="chip",
     )
     assert is_executor_conversational_turn(follow_up, state=rich_state) is True
-    assert is_executor_conversational_turn(inventory, state=rich_state) is False
 
 
-def test_apply_resolved_cold_session_inventory_enables_tools() -> None:
-    state = {"property_id": "prop-1", "checkpoint_optional_agents": ["cost"]}
-    apply_resolved_turn_to_state(
-        state,
-        ResolvedTurn(
-            intent="substantive",
-            route="checkpoint",
-            expanded_user_query="What checkpoints do I have and what is their current status?",
-            retrieval_only=True,
-            run_optional_agents=[],
-            user_goal="answer_from_context",
-            discourse_act="new_work",
-        ),
+def test_substantive_checkpoint_turn_never_blocks_tools() -> None:
+    """All non-casual, non-explain_prior/provider_detail turns allow tools."""
+    inventory = ResolvedTurn(
+        intent="substantive",
+        route="checkpoint",
+        expanded_user_query="What checkpoints do I have and what is their current status?",
+        retrieval_only=True,
+        run_optional_agents=[],
+        user_goal="answer_from_context",
+        discourse_act="new_work",
+        query_mode="interpret_session",
     )
-    assert state.get(CONVERSATIONAL_TURN_STATE_KEY) is False
+    thin_state = {"property_id": "prop-1"}
+    rich_state = {
+        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
+            "checkpoint_summary": {"locations": ["Garage"], "checkpointsAnalyzed": 1},
+        }
+    }
+    assert is_executor_conversational_turn(inventory, state=thin_state) is False
+    assert is_executor_conversational_turn(inventory, state=rich_state) is False
 
 
 def test_single_loop_minimal_turn_never_blocks_tools() -> None:
@@ -242,47 +231,6 @@ def test_apply_resolved_sets_optional_branches() -> None:
         ),
     )
     assert state["checkpoint_optional_agents"] == ["cost"]
-
-
-def test_apply_resolved_preserves_stash_when_optional_misroutes_provider_follow_up() -> (
-    None
-):
-    state = {
-        "checkpoint_parallel_results": json.dumps(
-            {
-                "checkpoint_parallel_service_result": json.dumps(
-                    {
-                        "serviceResults": {
-                            "localPros": {
-                                "serpAPIResults": [
-                                    {
-                                        "name": "Bay Area Garage Door Repair Brentwood",
-                                        "contact": "(925) 234-4255",
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                )
-            }
-        ),
-        "checkpoint_analysis": {"title": "Garage", "serviceResults": {}},
-        "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"],
-        "user_query": "get me more details on Bay Area Garage Door Repair",
-    }
-    apply_resolved_turn_to_state(
-        state,
-        ResolvedTurn(
-            intent="substantive",
-            route="checkpoint",
-            expanded_user_query="get me more details on Bay Area Garage Door Repair",
-            retrieval_only=False,
-            run_optional_agents=["service"],
-            user_goal="new_analysis",
-        ),
-    )
-    assert state["checkpoint_analysis"]["title"] == "Garage"
-    assert state["checkpoint_optional_agents"] == []
 
 
 def test_apply_resolved_clears_stale_analysis_on_new_optional_run() -> None:
