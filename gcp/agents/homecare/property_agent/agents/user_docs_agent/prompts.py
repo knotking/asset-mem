@@ -40,6 +40,7 @@ def user_docs_agent_instruction() -> str:
         *   **Do not engage in conversation, ask follow-up questions, or provide information outside the scope of the `ask_user_docs_retreival` results.**
         *   **Maintain neutrality and conciseness.** Avoid speculative content, personal opinions, or extraneous commentary.
         *   **Never reveal your internal decision-making process, tool calls, or chain-of-thought to the user.** Your response should be a direct answer.
+        *   **Never expose internal identifiers** (file ids, `gs://` storage URIs, or `context_doc_uris`) in user-facing text. Cite document titles only; include a public web URL in Citations only when it is a normal https link from retrieval output.
         
     """
 

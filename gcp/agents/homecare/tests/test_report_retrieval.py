@@ -7,11 +7,28 @@ import pytest
 from property_agent.reports.retrieval import (
     REPORT_RETRIEVAL_CACHE_FP_KEY,
     REPORT_RETRIEVAL_CACHE_TEXT_KEY,
+    _format_report_block,
     _load_reports_sync,
     report_retrieval,
     report_retrieval_cache_hit,
     report_retrieval_fingerprint,
 )
+
+
+def test_format_report_block_omits_internal_report_id() -> None:
+    text = _format_report_block(
+        "7cd731b992974f02b0442660cb879ac7",
+        {
+            "title": "Move-out comparison report",
+            "revision": 2,
+            "status": "ready",
+            "chatMarkdown": "Baseline &amp; Comparison period: June 2026",
+        },
+    )
+    assert "7cd731b992974f02b0442660cb879ac7" not in text
+    assert "Move-out comparison report (v2)" in text
+    assert "Baseline & Comparison period: June 2026" in text
+    assert "&amp;" not in text
 
 
 def test_load_reports_sync_returns_chat_markdown() -> None:
@@ -48,6 +65,7 @@ def test_load_reports_sync_returns_chat_markdown() -> None:
     assert "Kitchen" in text
     assert "Minor scuff" in text
     assert "do not add roofing" in text
+    assert "report-1" not in text
 
 
 @pytest.mark.asyncio

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import html
 import json
 import logging
 from typing import Any, Mapping, Optional
@@ -155,32 +156,43 @@ def _store_report_retrieval_cache(
     state[REPORT_RETRIEVAL_CACHE_FP_KEY] = fingerprint
 
 
+def _report_heading(title: str, revision: int | str) -> str:
+    """User-facing report section title for LLM context (no internal ids)."""
+    return f"### {title} (v{revision})"
+
+
+def _normalize_report_markdown(text: str) -> str:
+    """Decode HTML entities in stored markdown so the model does not echo &amp; etc."""
+    return html.unescape((text or "").strip())
+
+
 def _format_report_block(report_id: str, data: dict[str, Any]) -> str:
     title = str(data.get("title") or "Report").strip()
     revision = data.get("revision") or 1
     status = str(data.get("status") or "unknown")
+    heading = _report_heading(title, revision)
     if status != "ready":
         return (
-            f"### {title} (v{revision}, id={report_id})\n"
+            f"{heading}\n"
             f"Status: {status} — this report is not ready for Q&A.\n"
         )
 
-    chat_md = (data.get("chatMarkdown") or "").strip()
+    chat_md = _normalize_report_markdown(data.get("chatMarkdown") or "")
     if chat_md:
-        return f"### {title} (v{revision}, id={report_id})\n\n{chat_md}\n"
+        return f"{heading}\n\n{chat_md}\n"
 
     snapshot = data.get("contentSnapshot")
     if isinstance(snapshot, dict):
         try:
             return (
-                f"### {title} (v{revision}, id={report_id})\n\n"
+                f"{heading}\n\n"
                 f"```json\n{json.dumps(snapshot, indent=2, default=str)}\n```\n"
             )
         except (TypeError, ValueError):
             pass
 
     return (
-        f"### {title} (v{revision}, id={report_id})\n"
+        f"{heading}\n"
         "No chatMarkdown or contentSnapshot found on this report.\n"
     )
 
@@ -249,17 +261,18 @@ def _load_reports_sync(
     if not blocks:
         return (
             "No saved reports could be loaded. "
-            f"Requested ids: {report_ids}. Missing or inaccessible: {missing or report_ids}."
+            "The attached report(s) may be missing or inaccessible."
         )
 
     header = (
         "Frozen property report context. List ONLY the sections and issues below — "
         "do not add roofing, HVAC, plumbing, or other systems not named here. "
-        "Not live checkpoints.\n\n"
+        "Not live checkpoints. "
+        "Do not mention internal report ids, file ids, or storage URIs in your answer.\n\n"
     )
     body = "\n".join(blocks)
     if missing:
-        body += f"\n\nNote: could not load report ids: {missing}."
+        body += "\n\nNote: one or more attached reports could not be loaded."
     return header + body
 
 
