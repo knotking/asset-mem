@@ -135,7 +135,7 @@ class DiagnosisInput(BaseModel):
    - Vertex AI RAG over the user upload corpus
    - Scoped by `context_doc_uris` when provided (includes chat attachments)
 
-**Tool selection:** Orchestrator instructions in `property_agent/prompts.py`; resolve output in session state guides casual vs follow-up vs new analysis.
+**Tool selection:** Executor instructions in `property_agent/prompts.py`; deterministic pre-routing (chips, accept-offer, casual regex) plus tool-boundary guards (`checkpoint/tool_guards.py`) decide casual vs follow-up vs new analysis — there is no separate resolve LLM.
 
 **Branch modules (invoked inside `run_checkpoint_pipeline`, not separate root routes):**
 

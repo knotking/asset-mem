@@ -291,9 +291,14 @@ def main(argv: list[str] | None = None) -> int:
     print(json.dumps(summary, indent=2))
 
     if args.out:
+        # Relative to the homecare package so baselines are machine-portable.
+        try:
+            cases_file = str(args.cases.resolve().relative_to(_PACKAGE_ROOT))
+        except ValueError:
+            cases_file = str(args.cases)
         payload = {
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-            "cases_file": str(args.cases),
+            "cases_file": cases_file,
             "filter": args.filter or None,
             "repeat": args.repeat,
             "summary": summary,

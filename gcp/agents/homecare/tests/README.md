@@ -4,7 +4,7 @@ Tests live under `gcp/agents/homecare/tests/` and mirror `property_agent/` layou
 
 | Area | Test modules |
 |------|----------------|
-| Routing / pre-routing | `test_single_loop_routing.py`, `test_resolve_turn*.py`, `test_query_mode.py`, `test_conversational_*.py` |
+| Routing / pre-routing | `test_single_loop_routing.py`, `test_resolve_turn.py`, `test_chip_action.py`, `test_post_structured_analysis.py`, `test_pending_offer_extract.py`, `test_query_mode.py`, `test_conversational_*.py` |
 | Checkpoint pipeline | `test_checkpoint_parallel_runner.py`, `test_session_diet.py` |
 | Leaf agents | `test_diy_agent.py`, `test_coverage_agent.py`, … |
 | Platform boundary | `test_platform_boundaries.py` (delegates to `gcp/agent_framework/tests/`) |

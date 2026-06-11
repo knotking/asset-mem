@@ -153,6 +153,7 @@ def resolve_turn_from_chip(
             prompt_text="",
             elapsed_ms=0.0,
             executor_skipped=False,
+            resolve_source="chip",
         )
     except Exception:
         logger.debug("chip resolve metrics skipped", exc_info=True)

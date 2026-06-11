@@ -59,7 +59,8 @@ def is_executor_conversational_turn(
     """True when routing tools should be blocked (plain-text executor only)."""
     if resolved.is_casual:
         return True
-    if resolved.resolve_source in ("single_loop", "executor_only"):
+    # "executor_only" is normalized to "single_loop" in ResolvedTurn.from_dict.
+    if resolved.resolve_source == "single_loop":
         return False
     if resolved.route in ("report", "user_docs"):
         return False
