@@ -40,15 +40,16 @@ def _synthesis_model() -> str:
 
 
 def _web_search_model() -> str:
-    return LEGACY_API_GEMINI.model
+    """Model for web grounding: gemini-3.5-flash for faster latency."""
+    return "gemini-3.5-flash"
 
 
 def _web_grounding_max_output_tokens() -> int:
-    raw = os.getenv("DIY_WEB_GROUNDING_MAX_OUTPUT_TOKENS", "1536").strip()
+    raw = os.getenv("DIY_WEB_GROUNDING_MAX_OUTPUT_TOKENS", "1024").strip()
     try:
         n = int(raw)
     except ValueError:
-        return 1536
+        return 1024
     return max(256, min(n, 4096))
 
 

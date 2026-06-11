@@ -63,24 +63,25 @@ _DIY_STEPS_ONLY_JSON_SCHEMA: Dict[str, Any] = {
 
 
 def _synthesis_model() -> str:
-    return LEGACY_API_GEMINI.model
+    """Model for steps synthesis: gemini-3.5-flash for faster latency."""
+    return "gemini-3.5-flash"
 
 
 def _steps_llm_max_output_tokens() -> int:
-    raw = os.getenv("DIY_STEPS_LLM_MAX_OUTPUT_TOKENS", "3072").strip()
+    raw = os.getenv("DIY_STEPS_LLM_MAX_OUTPUT_TOKENS", "2048").strip()
     try:
         n = int(raw)
     except ValueError:
-        return 3072
+        return 2048
     return max(512, min(n, 4096))
 
 
 def _steps_web_excerpt_chars() -> int:
-    raw = os.getenv("DIY_STEPS_WEB_EXCERPT_CHARS", "2200").strip()
+    raw = os.getenv("DIY_STEPS_WEB_EXCERPT_CHARS", "1500").strip()
     try:
         n = int(raw)
     except ValueError:
-        return 2200
+        return 1500
     return max(400, min(n, 6000))
 
 
