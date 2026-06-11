@@ -586,6 +586,24 @@ def test_should_block_run_checkpoint_pipeline_on_report_route() -> None:
     )
 
 
+def test_should_not_block_analyze_checkpoints_on_accept_offer() -> None:
+    state = {
+        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
+            "checkpoint_summary": {"locations": ["Vehicle - Exterior"], "checkpointsAnalyzed": 1},
+            "branches_completed": ["cost"],
+        }
+    }
+    assert not should_block_checkpoint_pipeline_for_context_turn(
+        user_query="yes",
+        state=state,
+        user_goal="answer_from_context",
+        query_mode="interpret_session",
+        resolved_route="checkpoint",
+        tool_name="analyze_checkpoints",
+        discourse_act="accept_offer",
+    )
+
+
 def test_should_not_block_report_retrieval_on_report_route_with_session_cache() -> None:
     from property_agent.reports.retrieval import (
         REPORT_RETRIEVAL_CACHE_FP_KEY,
