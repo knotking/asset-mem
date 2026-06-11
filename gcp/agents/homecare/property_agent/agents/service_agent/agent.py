@@ -49,13 +49,21 @@ def _append_serpapi_fallback_hint(
 ) -> str:
     if not any(marker in result for marker in _SERPAPI_FAILURE_MARKERS):
         return result
-    stem = _retrieval_search_stem_from_context(tool_context, fallback_query=query)
-    if not stem:
-        return result
+    state = tool_context.state if tool_context is not None else None
+    from property_agent.checkpoint.analysis.service_providers import (
+        local_google_search_query_from_tool_state,
+    )
+
+    google_q = local_google_search_query_from_tool_state(state)
+    if not google_q:
+        stem = _retrieval_search_stem_from_context(tool_context, fallback_query=query)
+        if not stem:
+            return result
+        google_q = f"{stem} local repair professionals near me"
     return (
         f"{result}\n\n"
-        "SERPAPI_FALLBACK_HINT: Use google_search only with problem-focused queries "
-        f'derived from the repair issue (e.g. "{stem} local repair professionals"). '
+        "SERPAPI_FALLBACK_HINT: SerpAPI Maps failed. Call google_search using ONLY this "
+        f'exact query: "{google_q}". '
         "Do NOT search for home inspection, property checkpoint audits, lease compliance, "
         "or generic property maintenance unless user_query explicitly requests those."
     )
@@ -180,7 +188,8 @@ def _run_serpapi_maps_search(
     }
     params.update(maps_lat_lon_params(search_location))
     logger.info(
-        "serpapi_search: google_maps q_len=%d lat=%.4f lon=%.4f z=%s nearby=true source=%s",
+        "serpapi_search: google_maps q=%r q_len=%d lat=%.4f lon=%.4f z=%s nearby=true source=%s",
+        clean_q[:120],
         len(clean_q),
         search_location.coordinates.lat,
         search_location.coordinates.lng,
@@ -207,6 +216,23 @@ def _run_serpapi_web_fallback(query: str) -> str:
     return wrapper.run(query)
 
 
+def _resolve_maps_search_query(
+    query: str,
+    tool_context: ToolContext | None,
+) -> str:
+    """Prefer checkpoint trade/stem queries over LLM-supplied SerpAPI text."""
+    if tool_context is not None:
+        state = getattr(tool_context, "state", None)
+        if state is not None and hasattr(state, "get"):
+            trade = state.get("checkpoint_service_trade_query")
+            if isinstance(trade, str) and trade.strip():
+                return trade.strip()
+            stem = state.get("checkpoint_retrieval_search_query")
+            if isinstance(stem, str) and stem.strip():
+                return stem.strip()
+    return strip_embedded_geo_from_query(query) or (query or "").strip()
+
+
 async def serpapi_search(
     query: str,
     search_location: Optional[dict] = None,
@@ -230,15 +256,16 @@ async def serpapi_search(
             property_address,
             state_sl,
         )
+    maps_query = _resolve_maps_search_query(query, tool_context)
     if resolved is not None:
         maps_result = await to_thread(
-            _run_serpapi_maps_search, query, resolved, property_address
+            _run_serpapi_maps_search, maps_query, resolved, property_address
         )
         return _append_serpapi_fallback_hint(
-            maps_result, query=query, tool_context=tool_context
+            maps_result, query=maps_query, tool_context=tool_context
         )
 
-    q = (query or "").strip()
+    q = maps_query
     if not q:
         return "Service provider search not available (empty query)."
     logger.info("serpapi_search: web fallback q_len=%d (no coordinates)", len(q))

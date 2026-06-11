@@ -52,6 +52,11 @@ from property_agent.agents.coverage_agent.agent import coverage_agent
 from property_agent.agents.diy_agent.agent import diy_agent
 from property_agent.agents.diy_agent.orchestrator import run_diy_pipeline
 from property_agent.agents.service_agent.agent import service_agent
+from property_agent.checkpoint.analysis.service_providers import (
+    apply_prefetched_serp_to_branch_result,
+    prefetch_service_maps_providers,
+    seed_service_branch_tool_state,
+)
 from property_agent.checkpoint.branch_search_intents import BranchSearchIntents
 from property_agent.agents.cost_agent.agent import _cost_estimation_sync, cost_agent
 from .search_query import (
@@ -447,17 +452,28 @@ async def run_checkpoint_optional_agents_parallel(
 
     async def _run_named_branch(name: str) -> Tuple[str, str]:
         branch_payload = payload
+        prefetched_serp: List[Dict[str, Any]] = []
         if name == "service":
             service_payload = {**payload, "user_query": service_user_query}
             trade_q = (payload.get("checkpoint_service_trade_query") or "").strip()
             if trade_q:
                 service_payload["checkpoint_service_trade_query"] = trade_q
+            prefetched_serp = await to_thread(
+                prefetch_service_maps_providers, service_payload
+            )
+            if prefetched_serp:
+                service_payload["checkpoint_prefetched_serp_providers"] = prefetched_serp
+            seed_service_branch_tool_state(
+                tool_context, service_payload, prefetched=prefetched_serp
+            )
             branch_payload = service_payload
         if name in _GROUNDING_CONSUMER_BRANCHES:
             branch_payload = await _payload_with_grounding_summary(branch_payload)
         value = await _run_single_optional_agent_async(
             name, branch_payload, tool_context
         )
+        if name == "service" and prefetched_serp:
+            value = apply_prefetched_serp_to_branch_result(value, prefetched_serp)
         return name, value
 
     async def _on_branch_complete(name: str, pair: tuple[str, str]) -> None:
