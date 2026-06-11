@@ -25,7 +25,7 @@ import {
 } from "@/lib/chat-send-context";
 
 export type ChatSendOptions = {
-  chatIntent?: "discuss_report" | "new_analysis" | "replay_report";
+  chatIntent?: "discuss_analysis" | "new_analysis" | "replay_analysis";
   /** Structured chip tap — deterministic agent routing (single-loop pre-routing). */
   chipAction?: ChipAction;
 };

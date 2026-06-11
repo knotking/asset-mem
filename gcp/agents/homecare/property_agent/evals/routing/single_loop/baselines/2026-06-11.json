@@ -557,7 +557,7 @@
       }
     },
     {
-      "case_id": "weblog_session_3_t5_chip_replay_report",
+      "case_id": "weblog_session_3_t5_chip_replay_analysis",
       "passed": true,
       "elapsed_ms": 0,
       "mismatches": {},
@@ -565,14 +565,14 @@
       "resolved": {
         "intent": "substantive",
         "route": "checkpoint",
-        "expanded_user_query": "Show me the full analysis report again",
+        "expanded_user_query": "Show me the full analysis again",
         "retrieval_only": true,
         "run_optional_agents": [],
         "user_goal": "replay_deliverable",
         "query_mode": "interpret_session",
         "menu_index": null,
         "capability_key": null,
-        "discourse_act": "replay_report",
+        "discourse_act": "replay_analysis",
         "focus_branch": null,
         "resolve_source": "chip"
       }

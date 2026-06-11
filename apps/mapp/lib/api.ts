@@ -175,7 +175,7 @@ export interface StreamAgentResponseParams {
   firebaseChatId?: string;
   /** Firestore assistant message doc id (lifecycle + agentSteps persistence). */
   assistantMessageId?: string;
-  chatIntent?: 'discuss_report' | 'new_analysis' | 'replay_report';
+  chatIntent?: 'discuss_analysis' | 'new_analysis' | 'replay_analysis';
   /** Structured chip tap — routes deterministically on the agent (single-loop pre-routing). */
   chipAction?: import('@homeapp/common/lib/suggested-actions').ChipAction;
   onChunk?: (content: string) => void;

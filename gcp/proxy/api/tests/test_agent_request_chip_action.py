@@ -42,6 +42,6 @@ def test_chip_action_run_branch_requires_branch():
         _base_request(chip_action={"type": "run_branch"})
 
 
-def test_chip_action_replay_report_and_discuss_without_branch_ok():
-    assert _base_request(chip_action={"type": "replay_report"}).chip_action.branch is None
+def test_chip_action_replay_analysis_and_discuss_without_branch_ok():
+    assert _base_request(chip_action={"type": "replay_analysis"}).chip_action.branch is None
     assert _base_request(chip_action={"type": "discuss"}).chip_action.topic is None

@@ -27,15 +27,15 @@ describe("getSuggestedActionsFromContentJson", () => {
           action: { type: "discuss", topic: "cost" },
         },
         {
-          label: "Show full report",
-          userQuery: "Show me the full report",
-          action: { type: "replay_report" },
+          label: "Show full analysis",
+          userQuery: "Show me the full analysis again",
+          action: { type: "replay_analysis" },
         },
       ],
     });
     expect(actions[0].action).toEqual({ type: "run_branch", branch: "cost" });
     expect(actions[1].action).toEqual({ type: "discuss", topic: "cost" });
-    expect(actions[2].action).toEqual({ type: "replay_report" });
+    expect(actions[2].action).toEqual({ type: "replay_analysis" });
   });
 
   it("drops malformed chip actions but keeps the chip", () => {

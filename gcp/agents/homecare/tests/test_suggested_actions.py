@@ -40,7 +40,7 @@ def test_every_chip_carries_structured_action() -> None:
     for chip in actions:
         action = chip.get("action")
         assert isinstance(action, dict), chip["label"]
-        assert action.get("type") in ("run_branch", "discuss", "replay_report")
+        assert action.get("type") in ("run_branch", "discuss", "replay_analysis")
         if action["type"] == "run_branch":
             assert action.get("branch") in ("coverage", "diy", "service", "cost")
 

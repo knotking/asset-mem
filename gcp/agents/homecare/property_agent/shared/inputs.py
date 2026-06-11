@@ -4,7 +4,7 @@ from typing import List, Optional, Literal
 CheckpointOptionalAgent = Literal["coverage", "diy", "service", "cost"]
 PrimaryAgent = Literal["checkpoint", "docs", "report"]
 SearchLocationSource = Literal["property_address", "device_gps"]
-ChatIntentHint = Literal["discuss_report", "new_analysis", "replay_report"]
+ChatIntentHint = Literal["discuss_analysis", "new_analysis", "replay_analysis"]
 
 DEFAULT_CHECKPOINT_OPTIONAL_AGENTS: List[CheckpointOptionalAgent] = []
 
@@ -12,8 +12,8 @@ DEFAULT_CHECKPOINT_OPTIONAL_AGENTS: List[CheckpointOptionalAgent] = []
 class ChipActionInput(BaseModel):
     """Structured suggested-action chip tap (deterministic routing fast-path)."""
 
-    type: Literal["run_branch", "discuss", "replay_report"] = Field(
-        description="Chip action kind: run_branch, discuss, or replay_report.",
+    type: Literal["run_branch", "discuss", "replay_analysis"] = Field(
+        description="Chip action kind: run_branch, discuss, or replay_analysis.",
     )
     branch: Optional[CheckpointOptionalAgent] = Field(
         default=None,
@@ -105,8 +105,8 @@ class DiagnosisInput(BaseModel):
     chat_intent: Optional[ChatIntentHint] = Field(
         default=None,
         description=(
-            "Optional client hint: discuss_report biases explain_prior; "
-            "new_analysis biases fresh branch work; replay_report biases full report replay."
+            "Optional client hint: discuss_analysis biases explain_prior; "
+            "new_analysis biases fresh branch work; replay_analysis biases full checkpoint analysis replay."
         ),
     )
     chip_action: Optional[ChipActionInput] = Field(

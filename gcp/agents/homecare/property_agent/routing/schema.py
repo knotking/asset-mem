@@ -15,7 +15,7 @@ DiscourseActKind = Literal[
     "accept_offer",
     "explain_prior",
     "new_work",
-    "replay_report",
+    "replay_analysis",
     "provider_detail",
 ]
 FocusBranchKind = Literal[
@@ -43,7 +43,7 @@ DISCOURSE_ACTS: frozenset[str] = frozenset(
         "accept_offer",
         "explain_prior",
         "new_work",
-        "replay_report",
+        "replay_analysis",
         "provider_detail",
     }
 )
@@ -110,7 +110,7 @@ def resolved_turn_from_state(state: SessionStateLike | None) -> Optional[Resolve
         discourse_act: DiscourseActKind | None = (
             raw_discourse if raw_discourse in (
                 "greeting", "capabilities", "closure", "accept_offer",
-                "explain_prior", "new_work", "replay_report", "provider_detail",
+                "explain_prior", "new_work", "replay_analysis", "provider_detail",
             ) else None
         )
         raw_focus = raw.get("focus_branch")
