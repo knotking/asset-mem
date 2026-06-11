@@ -68,7 +68,7 @@ Complete before marking Property Agent Architecture closed in prod (see also §1
 | Routing decisions / turn | `orchestrator.routing.calls` | 1 per turn (deterministic; no routing LLM) |
 | Session context inject size | `orchestrator.routing.prompt_tokens` | 0 for chip/casual; slim `[SESSION_CONTEXT]` for free text |
 | Executor skipped (casual) | `orchestrator.routing.executor_skipped` | Greetings / chip-only turns |
-| Session event compaction | Log `adk_session_compaction applied` | Fires when prompt tokens cross threshold (default 24k) |
+| Session event compaction | Log `adk_session_compaction applied` | Fires when prompt tokens cross threshold (default 130k, ~65% of effective context) |
 | Time to first structured patch | `orchestrator.message.ttf_structured_patch_ms` | Establish P95 after deploy |
 | Stale writes | `orchestrator.message.stale_revision_rejects` | Low; spikes only under retry storms |
 | Patch rate | `orchestrator.message.patch_applies` | Matches throttled persist cadence |
