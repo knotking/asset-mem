@@ -22,7 +22,9 @@ REPORT_MODE_EXECUTOR_NOTE = (
     "Never call analyze_checkpoints and never offer to run cost/DIY/service/coverage "
     "analysis from report chat, even when the user asks for those details. "
     "Instead, state what the snapshot contains and that repair costs or branch analysis "
-    "are not part of this saved report.\n"
+    "are not part of this saved report. "
+    "Never expose internal identifiers (report ids, checkpoint ids, file ids, gs:// URIs, "
+    "or context_doc_uris) in user-facing text — cite report title and date/period only.\n"
     "[/REPORT_MODE]"
 )
 
