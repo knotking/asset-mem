@@ -1,0 +1,416 @@
+'#': Draft routing eval cases — review, merge into single_loop/cases.yaml
+cases:
+- id: weblog_session-1_t1_summarize_the_issues_for_the_selected_ch
+  tags:
+  - weblog
+  - session_1
+  - weblog_session_1
+  query: Summarize the issues for the selected checkpoints
+  state:
+    primary_agent: checkpoint
+    checkpoint_ids:
+    - CKPT0000000000000001
+    checkpoint_optional_agents: []
+  expect:
+    route: checkpoint
+    retrieval_only: true
+    run_optional_agents: []
+    user_goal: answer_from_context
+    discourse_act:
+    - new_work
+    - explain_prior
+  _comment: '# from web-log-session-1 turn 1'
+- id: weblog_session-1_t2_which_areas_are_affected
+  tags:
+  - weblog
+  - session_1
+  - weblog_session_1
+  query: Which areas are affected?
+  state:
+    primary_agent: checkpoint
+    checkpoint_ids:
+    - CKPT0000000000000001
+    checkpoint_optional_agents: []
+  expect:
+    route: checkpoint
+    retrieval_only: true
+    run_optional_agents: []
+    user_goal: answer_from_context
+    discourse_act:
+    - new_work
+    - explain_prior
+  _comment: '# from web-log-session-1 turn 2'
+- id: weblog_session-1_t3_what_checkpoints_do_i_have_for_this_prop
+  tags:
+  - weblog
+  - session_1
+  - weblog_session_1
+  query: What checkpoints do I have for this property?
+  state:
+    primary_agent: checkpoint
+    checkpoint_ids:
+    - CKPT0000000000000001
+    checkpoint_optional_agents: []
+  expect:
+    route: checkpoint
+    retrieval_only: true
+    run_optional_agents: []
+    user_goal: answer_from_context
+    discourse_act:
+    - new_work
+    - explain_prior
+  _comment: '# from web-log-session-1 turn 3'
+- id: weblog_session-1_t4_run_diy_analysis_for_the_selected_checkp
+  tags:
+  - weblog
+  - session_1
+  - weblog_session_1
+  query: Run DIY analysis for the selected checkpoint
+  state:
+    primary_agent: checkpoint
+    checkpoint_ids:
+    - CKPT0000000000000001
+    checkpoint_optional_agents: []
+  expect:
+    route: checkpoint
+    retrieval_only: false
+    run_optional_agents:
+    - diy
+    user_goal: new_analysis
+    discourse_act: new_work
+  _comment: '# from web-log-session-1 turn 4'
+- id: weblog_session-1_t5_summarize_issues_across_all_selected_che
+  tags:
+  - weblog
+  - session_1
+  - weblog_session_1
+  query: Summarize issues across all selected checkpoints
+  state:
+    primary_agent: checkpoint
+    checkpoint_ids:
+    - CKPT0000000000000001
+    checkpoint_optional_agents: []
+  expect:
+    route: checkpoint
+    retrieval_only: true
+    run_optional_agents: []
+    user_goal: answer_from_context
+    discourse_act:
+    - new_work
+    - explain_prior
+  _comment: '# from web-log-session-1 turn 5'
+- id: weblog_session-2_t1_run_cost_analysis
+  tags:
+  - weblog
+  - session_2
+  - weblog_session_2
+  - chip
+  query: Run cost analysis
+  state:
+    primary_agent: checkpoint
+    checkpoint_ids:
+    - CKPT0000000000000001
+    checkpoint_optional_agents: []
+    chip_action:
+      type: run_branch
+      branch: cost
+  expect:
+    discourse_act: new_work
+    intent: substantive
+    route: checkpoint
+    user_goal: new_analysis
+    retrieval_only: false
+    focus_branch: cost
+    query_mode: branch_explicit
+    run_optional_agents:
+    - cost
+  _comment: '# from web-log-session-2 turn 1'
+- id: weblog_session-3_t1_run_coverage_analysis_for_this_issue
+  tags:
+  - weblog
+  - session_3
+  - weblog_session_3
+  - chip
+  query: Run coverage analysis for this issue
+  state:
+    primary_agent: checkpoint
+    checkpoint_ids:
+    - CKPT0000000000000001
+    checkpoint_optional_agents: []
+    chip_action:
+      type: run_branch
+      branch: coverage
+  expect:
+    discourse_act: new_work
+    intent: substantive
+    route: checkpoint
+    user_goal: new_analysis
+    retrieval_only: false
+    focus_branch: coverage
+    query_mode: branch_explicit
+    run_optional_agents:
+    - coverage
+  _comment: '# from web-log-session-3 turn 1'
+- id: weblog_session-3_t2_find_local_service_providers_for_this_re
+  tags:
+  - weblog
+  - session_3
+  - weblog_session_3
+  - chip
+  query: Find local service providers for this repair
+  state:
+    primary_agent: checkpoint
+    checkpoint_ids:
+    - CKPT0000000000000001
+    checkpoint_optional_agents: []
+    chip_action:
+      type: run_branch
+      branch: coverage
+  expect:
+    discourse_act: new_work
+    intent: substantive
+    route: checkpoint
+    user_goal: new_analysis
+    retrieval_only: false
+    focus_branch: service
+    query_mode: branch_explicit
+    run_optional_agents:
+    - service
+  _comment: '# from web-log-session-3 turn 2'
+- id: weblog_session-3_t3_what_are_the_diy_steps_for_this_repair
+  tags:
+  - weblog
+  - session_3
+  - weblog_session_3
+  - chip
+  query: What are the DIY steps for this repair?
+  state:
+    primary_agent: checkpoint
+    checkpoint_ids:
+    - CKPT0000000000000001
+    checkpoint_optional_agents: []
+    chip_action:
+      type: run_branch
+      branch: coverage
+  expect:
+    discourse_act: new_work
+    intent: substantive
+    route: checkpoint
+    user_goal: new_analysis
+    retrieval_only: false
+    focus_branch: diy
+    query_mode: branch_explicit
+    run_optional_agents:
+    - diy
+  _comment: '# from web-log-session-3 turn 3'
+- id: weblog_session-3_t4_can_you_explain_the_cost_estimate_breakd
+  tags:
+  - weblog
+  - session_3
+  - weblog_session_3
+  - chip
+  query: Can you explain the cost estimate breakdown?
+  state:
+    primary_agent: checkpoint
+    checkpoint_ids:
+    - CKPT0000000000000001
+    checkpoint_optional_agents: []
+    chip_action:
+      type: run_branch
+      branch: coverage
+  expect:
+    discourse_act: explain_prior
+    intent: substantive
+    route: checkpoint
+    user_goal: answer_from_context
+    retrieval_only: true
+    focus_branch: cost
+    query_mode: interpret_session
+    run_optional_agents: []
+  _comment: '# from web-log-session-3 turn 4'
+- id: weblog_session-3_t5_show_me_the_full_analysis_report_again
+  tags:
+  - weblog
+  - session_3
+  - weblog_session_3
+  query: Show me the full analysis report again
+  state:
+    primary_agent: checkpoint
+    checkpoint_ids:
+    - CKPT0000000000000001
+    checkpoint_optional_agents: []
+  expect:
+    discourse_act: explain_prior
+    intent: substantive
+    route: checkpoint
+    user_goal: answer_from_context
+    retrieval_only: true
+    focus_branch: cost
+    query_mode: interpret_session
+    run_optional_agents: []
+  _comment: '# from web-log-session-3 turn 5'
+- id: weblog_session-4_t1_how_often_should_i_service_my_hvac_syste
+  tags:
+  - weblog
+  - session_4
+  - weblog_session_4
+  query: how often should I service my HVAC system?
+  state:
+    primary_agent: checkpoint
+    checkpoint_ids:
+    - CKPT0000000000000001
+    checkpoint_optional_agents: []
+  expect:
+    route: checkpoint
+    retrieval_only: true
+    run_optional_agents: []
+    user_goal: answer_from_context
+    discourse_act:
+    - new_work
+    - explain_prior
+  _comment: '# from web-log-session-4 turn 1'
+- id: weblog_session-5_t1_does_my_home_policy_cover_water_damage
+  tags:
+  - weblog
+  - session_5
+  - weblog_session_5
+  query: Does my home policy cover water damage?
+  state:
+    primary_agent: docs
+    checkpoint_ids: []
+    checkpoint_optional_agents: []
+    context_doc_uris:
+    - gs://homegeek-staging.firebasestorage.app/documents/NHnSq8V6BsWpREpm56tpCheADsr1/1780909522154_HomePolicyDocument.pdf
+  expect:
+    route: user_docs
+    retrieval_only: true
+    run_optional_agents: []
+    user_goal: answer_from_context
+    discourse_act:
+    - new_work
+    - explain_prior
+  _comment: '# from web-log-session-5 turn 1'
+- id: weblog_session-5_t2_what_is_my_car_insurance_deductible
+  tags:
+  - weblog
+  - session_5
+  - weblog_session_5
+  query: What is my car insurance deductible?
+  state:
+    primary_agent: docs
+    checkpoint_ids: []
+    checkpoint_optional_agents: []
+    context_doc_uris:
+    - gs://homegeek-staging.firebasestorage.app/documents/NHnSq8V6BsWpREpm56tpCheADsr1/1780909522154_HomePolicyDocument.pdf
+  expect:
+    route: user_docs
+    retrieval_only: true
+    run_optional_agents: []
+    user_goal: answer_from_context
+    discourse_act:
+    - new_work
+    - explain_prior
+  _comment: '# from web-log-session-5 turn 2'
+- id: weblog_session-6_t1_summarize_the_saved_property_report
+  tags:
+  - weblog
+  - session_6
+  - weblog_session_6
+  query: Summarize the saved property report
+  state:
+    primary_agent: report
+    checkpoint_ids: []
+    checkpoint_optional_agents: []
+    report_ids:
+    - 117ba28fd1124c67aee0c4b30c6ee7e7
+  expect:
+    route: report
+    retrieval_only: true
+    run_optional_agents: []
+    user_goal: answer_from_context
+    discourse_act:
+    - new_work
+    - explain_prior
+  _comment: '# from web-log-session-6 turn 1'
+- id: weblog_session-6_t2_what_issues_were_flagged_in_the_report
+  tags:
+  - weblog
+  - session_6
+  - weblog_session_6
+  query: What issues were flagged in the report?
+  state:
+    primary_agent: report
+    checkpoint_ids: []
+    checkpoint_optional_agents: []
+    report_ids:
+    - 117ba28fd1124c67aee0c4b30c6ee7e7
+  expect:
+    route: report
+    retrieval_only: true
+    run_optional_agents: []
+    user_goal: answer_from_context
+    discourse_act:
+    - new_work
+    - explain_prior
+  _comment: '# from web-log-session-6 turn 2'
+- id: weblog_session-7_t1_run_cost_analysis_for_the_selected_check
+  tags:
+  - weblog
+  - session_7
+  - weblog_session_7
+  query: Run cost analysis for the selected checkpoint
+  state:
+    primary_agent: checkpoint
+    checkpoint_ids:
+    - CKPT0000000000000001
+    checkpoint_optional_agents:
+    - cost
+  expect:
+    route: checkpoint
+    retrieval_only: false
+    run_optional_agents:
+    - cost
+    user_goal: new_analysis
+    discourse_act: new_work
+  _comment: '# from web-log-session-7 turn 1'
+- id: weblog_session-7_t2_run_cost_analysis_again
+  tags:
+  - weblog
+  - session_7
+  - weblog_session_7
+  query: Run cost analysis again
+  state:
+    primary_agent: checkpoint
+    checkpoint_ids:
+    - CKPT0000000000000001
+    checkpoint_optional_agents:
+    - cost
+  expect:
+    route: checkpoint
+    retrieval_only: false
+    run_optional_agents:
+    - cost
+    user_goal: new_analysis
+    discourse_act: new_work
+  _comment: '# from web-log-session-7 turn 2'
+- id: weblog_session-7_t3_summarize_the_issues
+  tags:
+  - weblog
+  - session_7
+  - weblog_session_7
+  query: Summarize the issues
+  state:
+    primary_agent: checkpoint
+    checkpoint_ids:
+    - CKPT0000000000000001
+    checkpoint_optional_agents:
+    - cost
+  expect:
+    route: checkpoint
+    retrieval_only: true
+    run_optional_agents: []
+    user_goal: answer_from_context
+    discourse_act:
+    - new_work
+    - explain_prior
+  _comment: '# from web-log-session-7 turn 3'
