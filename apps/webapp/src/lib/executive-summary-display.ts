@@ -28,6 +28,7 @@ function trailingProseAfterCheckpointSummarySection(section: string): string {
   if (/^#{2,3}\s+/.test((lines[0] ?? "").trim())) {
     index = 1;
   }
+  let skippedSummaryBullets = false;
   while (index < lines.length) {
     const line = lines[index].trim();
     if (!line) {
@@ -35,10 +36,15 @@ function trailingProseAfterCheckpointSummarySection(section: string): string {
       continue;
     }
     if (line.startsWith("- ") || line.startsWith("* ")) {
+      skippedSummaryBullets = true;
       index += 1;
       continue;
     }
     break;
+  }
+  // Heading-only or prose-only checkpoint summary sections duplicate contentJson.
+  if (!skippedSummaryBullets) {
+    return "";
   }
   return lines.slice(index).join("\n").trim();
 }

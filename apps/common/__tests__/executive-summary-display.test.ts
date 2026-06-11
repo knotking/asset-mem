@@ -54,6 +54,22 @@ Following the inspection, paint chipping was found on the garage door.
     expect(narrative).toContain("### Next Steps");
   });
 
+  it("drops prose-only checkpoint summary when omitting duplicate summary", () => {
+    const md = `# Roof leak assessment
+
+## Overview
+Patch soon.
+
+## Checkpoint Summary
+Duplicate prose.`;
+
+    const narrative = extractExecutiveSummaryNarrative(md, {
+      omitCheckpointSummaryMarkdown: true,
+    });
+    expect(narrative).toContain("Patch soon.");
+    expect(narrative).not.toContain("Duplicate prose.");
+  });
+
   it("keeps executor prose after checkpoint summary when omitting duplicate summary", () => {
     const md = `# Checkpoint analysis
 
