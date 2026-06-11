@@ -2,7 +2,7 @@
 
 **Status:** Phase 1 shipped; Phase 2 in progress; **architecture decisions locked** (see [Locked decisions](#locked-decisions))  
 **Last updated:** June 2026  
-**Related:** [Checkpoint README](../checkpoint/README.md), [DELETION_PLAN](../operations/DELETION_PLAN.md), [DOCS_CHAT_OVERVIEW](../docs_chat/DOCS_CHAT_OVERVIEW.md), [ORCHESTRATOR_V2_PLAN](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md)
+**Related:** [Checkpoint README](../checkpoint/README.md), [DELETION_PLAN](../operations/DELETION_PLAN.md), [DOCS_CHAT_OVERVIEW](../docs_chat/DOCS_CHAT_OVERVIEW.md), [Property Agent Architecture](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md)
 
 ---
 
@@ -408,7 +408,7 @@ Implementation notes:
 - Persist `contextRefs.reports` on user messages.
 - UI must show **Reports mode** so users know answers come from frozen snapshots, not live checkpoints.
 
-**Orchestrator flow (aligned with [ORCHESTRATOR_V2_PLAN](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md)):**
+**Orchestrator flow (aligned with [Property Agent Architecture](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md)):**
 
 ```
 primary_agent=report → resolve route=report → report_retrieval → synthesis LLM → contentMarkdown / contentJson patches

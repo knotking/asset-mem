@@ -6,9 +6,6 @@ import json
 from typing import Any, Mapping, Optional
 
 from agent_framework.context.memory_merge import merge_memory_maps
-from agent_framework.context.prompt.session_memory import (
-    format_session_working_memory_block_from_memory,
-)
 
 from property_agent.checkpoint.constants import CHECKPOINT_IDS_ANALYZED_STATE_KEY
 
@@ -485,40 +482,6 @@ def snapshot_session_analysis_context(state: Any) -> None:
     state[SESSION_WORKING_MEMORY_SNAPSHOT_KEY] = memory
 
 
-def _format_provider_lines(memory: Mapping[str, Any]) -> list[str]:
-    details = memory.get("service_provider_details")
-    if not isinstance(details, dict) or not details:
-        names = memory.get("service_providers_mentioned")
-        if not isinstance(names, list):
-            return []
-        return [f"- {name}" for name in names[:12] if isinstance(name, str) and name.strip()]
-    lines: list[str] = ["**Service providers (from prior analysis):**"]
-    for name, detail in list(details.items())[:12]:
-        if not isinstance(detail, dict):
-            lines.append(f"- **{name}**")
-            continue
-        parts = [f"**{name}**"]
-        for label, key in (
-            ("phone", "phone"),
-            ("contact", "contact_info"),
-            ("location", "location"),
-            ("website", "website"),
-        ):
-            val = detail.get(key)
-            if val is not None and str(val).strip():
-                parts.append(f"{label}: {val}")
-        rating = detail.get("rating")
-        if rating is None:
-            rating = detail.get("ratings")
-        if rating is not None and str(rating).strip():
-            parts.append(f"rating: {rating}")
-        reviews = detail.get("reviews")
-        if reviews is not None and str(reviews).strip():
-            parts.append(f"reviews: {reviews}")
-        lines.append("- " + " | ".join(parts))
-    return lines
-
-
 def session_has_checkpoint_answer_context(state: Mapping[str, Any] | None) -> bool:
     """True when session memory or live analysis can ground a checkpoint follow-up."""
     if not state:
@@ -551,24 +514,3 @@ def build_session_working_memory(state: Mapping[str, Any] | None) -> dict[str, A
         memory.update(snapshot)
     live = _build_session_working_memory_from_live(state)
     return merge_memory_maps(memory, live, list_union_keys=("service_providers_mentioned",), dict_merge_keys=("service_provider_details",))
-
-
-def format_session_working_memory_block(
-    state: Mapping[str, Any] | None,
-    *,
-    max_chars: int | None = None,
-) -> str:
-    memory = build_session_working_memory(state)
-    if not memory:
-        return ""
-    provider_lines = _format_provider_lines(memory)
-    kwargs: dict[str, int] = {}
-    if max_chars is not None:
-        kwargs["max_chars"] = max_chars
-    base = format_session_working_memory_block_from_memory(memory, **kwargs)
-    if not provider_lines:
-        return base
-    prefix = "\n".join(provider_lines) + "\n\n"
-    if not base:
-        return prefix.strip()
-    return prefix + base

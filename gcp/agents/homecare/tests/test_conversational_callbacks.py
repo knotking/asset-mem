@@ -230,7 +230,7 @@ def test_before_tool_blocks_user_docs_on_checkpoint_memory_follow_up() -> None:
     result = conversational_before_tool(tool, {}, tool_context)
 
     assert result is not None
-    assert "SESSION_WORKING_MEMORY" in result.get("result", "")
+    assert "prior messages" in result.get("result", "")
 
 
 def test_before_tool_blocks_analyze_checkpoints_on_report_route() -> None:

@@ -1,15 +1,12 @@
-"""Query-mode heuristics and routing inference."""
+"""Query-mode heuristics for tool guards and retrieval planning."""
 
 from __future__ import annotations
 
 import re
-from typing import Literal
 
 from property_agent.routing.schema import SessionStateLike
 
-from ..conversational_intent import resolve_requested_optional_branches
 from ..optional_branches import (
-    EXPLICIT_BRANCH_RE,
     HOW_ABOUT_OPTIONAL_BRANCH_RE,
     MEAN_OPTIONAL_BRANCH_RE,
     OPTIONAL_CHECKPOINT_BRANCHES,
@@ -25,13 +22,6 @@ from .session_memory import (
     _branch_payload_has_content,
     build_session_working_memory,
 )
-
-QueryModeKind = Literal[
-    "interpret_session",
-    "branch_issue_search",
-    "branch_entity_search",
-    "branch_explicit",
-]
 
 _ENTITY_DETAIL_RE = re.compile(
     r"\b("
@@ -273,23 +263,3 @@ def branches_mentioned_in_query(user_query: str) -> list[str]:
                 picked.append(branch)
     return picked
 
-
-def infer_query_mode(
-    *,
-    user_goal: str,
-    expanded_user_query: str,
-    run_optional_agents: list[str],
-    state: SessionStateLike | None = None,
-) -> QueryModeKind:
-    if user_goal == "answer_from_context":
-        return "interpret_session"
-    expanded = (expanded_user_query or "").strip()
-    if user_goal != "new_analysis" or not run_optional_agents:
-        return "interpret_session"
-    if query_references_known_provider(expanded, state) and query_requests_entity_detail(expanded):
-        return "branch_entity_search"
-    if query_requests_entity_detail(expanded) and not EXPLICIT_BRANCH_RE.search(expanded):
-        return "branch_entity_search"
-    if EXPLICIT_BRANCH_RE.search(expanded) or resolve_requested_optional_branches(expanded, state):
-        return "branch_explicit"
-    return "branch_issue_search"

@@ -1,7 +1,7 @@
-# Executor-only routing eval (HOMEAPP_EXECUTOR_ONLY_ROUTING=1 / staging).
+# Single-loop routing eval (deterministic pre-routing + minimal ResolvedTurn).
 #
 # Asserts ResolvedTurn from chip, pending-offer, bare casual regex, or
-# minimal_substantive_resolved_turn — no resolve LLM.
+# minimal_substantive_resolved_turn.
 #
 # Expectation rules: see run_routing_eval.py
 

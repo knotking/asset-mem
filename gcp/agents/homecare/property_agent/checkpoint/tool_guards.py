@@ -79,8 +79,7 @@ def seed_client_decided_branches(
 
     Guards only *filter* the executor's ``branches`` arg; without this, a chip
     tap ("run cost") or accepted offer would depend on the executor LLM copying
-    ``run_optional_agents`` out of the [RESOLVED_TURN] block. UI optional
-    toggles (executor-only mode) are seeded for their first run only — repeat
+    ``run_optional_agents`` from session state. UI optional toggles are seeded for their first run only — repeat
     turns with a sticky toggle fall back to the idempotency guard's cached
     answer instead of re-running.
     """

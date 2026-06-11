@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from property_agent.routing.schema import QueryModeKind
+
 from .heuristics import (
-    QueryModeKind,
     branches_mentioned_in_query,
-    infer_query_mode,
     needs_fresh_checkpoint_retrieval,
     prior_analysis_branches_completed,
     query_asks_area_outside_memory,
@@ -27,7 +27,6 @@ from .session_memory import (
     build_session_working_memory,
     extract_known_service_providers,
     extract_service_provider_details,
-    format_session_working_memory_block,
     session_has_checkpoint_answer_context,
     snapshot_session_analysis_context,
 )
@@ -40,9 +39,7 @@ __all__ = [
     "extract_known_service_providers",
     "extract_service_provider_details",
     "format_provider_context_answer",
-    "format_session_working_memory_block",
     "session_has_checkpoint_answer_context",
-    "infer_query_mode",
     "needs_fresh_checkpoint_retrieval",
     "prior_analysis_branches_completed",
     "prior_analysis_has_service_results",

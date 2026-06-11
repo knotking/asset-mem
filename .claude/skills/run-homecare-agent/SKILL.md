@@ -15,7 +15,7 @@ The agent lives at `gcp/agents/homecare/` and is built on Google's Agent Develop
 - `user_docs_retrieval` — RAG over user uploads (`context_doc_uris`)
 - Leaf agents (`diy_agent`, `service_agent`, `cost_agent`, `shopping_agent`) — invoked inside the checkpoint pipeline, not as root routes
 
-Tool registration: `property_agent/registry.py` + `manifest.py`. Canonical V2 contract: `gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md`.
+Tool registration: `property_agent/registry.py` + `manifest.py`. Canonical V2 contract: `gcp/agents/homecare/property_agent/ARCHITECTURE.md`.
 
 **ADK dev streaming:** `HomecareRunner` + `checkpoint/progress_stream.py` multiplex progress text events while `run_checkpoint_pipeline` runs (see `property_agent/ARCHITECTURE.md`). Set `HOMEAPP_CHECKPOINT_PROGRESS_RUNNER=0` for stock ADK `Runner`.
 

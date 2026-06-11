@@ -1,8 +1,8 @@
-# Orchestrator V2 cutover — go/no-go, rollback, and UX parity
+# Property Agent Architecture cutover — go/no-go, rollback, and UX parity
 
-Use this runbook when shipping coordinated **proxy + agent** deploys after Orchestrator V2 message SSOT cutover.
+Use this runbook when shipping coordinated **proxy + agent** deploys after Property Agent Architecture message SSOT cutover.
 
-**Canonical architecture:** [`gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md`](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md)
+**Canonical architecture:** [`gcp/agents/homecare/property_agent/ARCHITECTURE.md`](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md)
 
 ---
 
@@ -48,7 +48,7 @@ Escalation: [proxy-down.md](./proxy-down.md), [vertex-outage.md](./vertex-outage
 
 ## Progress UX parity sign-off
 
-Complete before marking Orchestrator V2 closed in prod (see also §12 in canonical doc):
+Complete before marking Property Agent Architecture closed in prod (see also §12 in canonical doc):
 
 | UX element | Expected | Sign-off |
 |------------|----------|----------|

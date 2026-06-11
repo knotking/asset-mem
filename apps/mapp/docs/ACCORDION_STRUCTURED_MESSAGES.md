@@ -150,7 +150,7 @@ The ChatMessage component includes comprehensive parsing and rendering capabilit
 
 #### A. Structured Data Source
 
-Orchestrator V2 uses persisted `contentJson` as the single source for structured UI.
+Property Agent Architecture uses persisted `contentJson` as the single source for structured UI.
 
 **Current behavior:**
 - Proxy persists `contentJson` + `contentMarkdown`
@@ -614,7 +614,7 @@ The `getProvidersArray` function searches for provider arrays in:
 ## Features Implemented
 
 ✅ Accordion component with smooth animations
-✅ Orchestrator V2 `contentMarkdown` / `contentJson` message contract
+✅ Property Agent Architecture `contentMarkdown` / `contentJson` message contract
 ✅ Structured response display with 5 sections
 ✅ Service provider cards with normalization
 ✅ Product cards with image loading

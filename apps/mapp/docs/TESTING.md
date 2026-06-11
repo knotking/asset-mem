@@ -28,7 +28,7 @@ npm run test:watch
 | [`lib/gifted-chat-utils.ts`](../lib/gifted-chat-utils.ts) | GiftedChat transform + `transformMessagesToGiftedChatCached` |
 | [`apps/common/src/lib/merge-messages-snapshot.ts`](../../common/src/lib/merge-messages-snapshot.ts) | Incremental Firestore snapshot merge |
 | [`__tests__/gifted-chat-utils.cached.test.ts`](../__tests__/gifted-chat-utils.cached.test.ts) | Cached transform reference reuse |
-| [`lib/chat-content-parse.ts`](../lib/chat-content-parse.ts) | `getMessageDisplayParts`, visibility helpers for Orchestrator V2 fields |
+| [`lib/chat-content-parse.ts`](../lib/chat-content-parse.ts) | `getMessageDisplayParts`, visibility helpers for Property Agent Architecture fields |
 | [`lib/css-theme-tokens.ts`](../lib/css-theme-tokens.ts) | HSL tokens aligned with `global.css` for native chat styles |
 | [`lib/chat-message-native-styles.ts`](../lib/chat-message-native-styles.ts) | StyleSheet bypass for NativeWind opacity/shadow interop issues |
 | [`lib/lazy-youtube-player.tsx`](../lib/lazy-youtube-player.tsx) | Defers Youtube WebView until accordion expanded + layout |

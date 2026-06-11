@@ -7,8 +7,6 @@ from typing import Any, Optional
 
 from property_agent.routing.schema import SessionStateLike
 
-from property_agent.routing.optional_branches import OPTIONAL_CHECKPOINT_BRANCHES
-
 from .session_memory import (
     extract_known_service_providers,
     extract_service_provider_details,
@@ -128,16 +126,6 @@ def _provider_token_overlap_score(query_tokens: set[str], name_tokens: set[str])
     if len(overlap) == 1 and len(next(iter(overlap))) >= 6:
         return 0.6
     return 0.0
-
-
-def branches_mentioned_in_query(user_query: str) -> list[str]:
-    normalized = (user_query or "").lower()
-    picked: list[str] = []
-    for branch in OPTIONAL_CHECKPOINT_BRANCHES:
-        if re.search(rf"\b{re.escape(branch)}\b", normalized):
-            if branch not in picked:
-                picked.append(branch)
-    return picked
 
 
 def _provider_name_substring_match(entity: str, providers: list[str]) -> Optional[str]:

@@ -10,8 +10,6 @@ from property_agent.routing.query_mode import (
     build_session_working_memory,
     extract_known_service_providers,
     format_provider_context_answer,
-    format_session_working_memory_block,
-    infer_query_mode,
     needs_fresh_checkpoint_retrieval,
     query_asks_area_outside_memory,
     query_references_known_provider,
@@ -20,9 +18,6 @@ from property_agent.routing.query_mode import (
     snapshot_session_analysis_context,
 )
 from property_agent.routing.resolve_turn import ResolvedTurn, apply_resolved_turn_to_state
-from property_agent.routing.apply_resolved_turn import (
-    apply_checkpoint_retrieval_plan as _apply_checkpoint_retrieval_plan,
-)
 from property_agent.checkpoint.analysis.search_query import (
     resolve_optional_branch_user_query,
     resolve_service_branch_user_query,
@@ -66,66 +61,6 @@ def test_query_references_known_provider_partial_name() -> None:
         state,
     )
     assert match == "Bay Area Garage Door Repair Brentwood"
-
-
-def test_apply_checkpoint_retrieval_plan_ignores_menu_index_for_provider() -> None:
-    state = {
-        "checkpoint_parallel_results": _service_parallel_json(
-            "Bay Area Garage Door Repair Brentwood"
-        ),
-    }
-    payload = {
-        "intent": "substantive",
-        "route": "checkpoint",
-        "expanded_user_query": (
-            "get me more details on Bay Area Garage Door Repair "
-            "for the property at 1982 Helena Way"
-        ),
-        "retrieval_only": False,
-        "run_optional_agents": ["service"],
-        "menu_index": 4,
-        "capability_key": "service",
-    }
-    out = _apply_checkpoint_retrieval_plan(
-        payload,
-        user_query="get me more details on Bay Area Garage Door Repair",
-        state=state,
-    )
-    assert out["user_goal"] == "answer_from_context"
-    assert out["retrieval_only"] is True
-    assert out["run_optional_agents"] == []
-
-
-def test_apply_checkpoint_retrieval_plan_coerces_known_provider_follow_up() -> None:
-    state = {
-        "checkpoint_parallel_results": _service_parallel_json("Right Way Garage Doors"),
-    }
-    payload = {
-        "intent": "substantive",
-        "route": "checkpoint",
-        "expanded_user_query": "Tell me more about Right Way Garage Doors",
-        "retrieval_only": False,
-        "run_optional_agents": ["service"],
-    }
-    out = _apply_checkpoint_retrieval_plan(
-        payload,
-        user_query="tell me more about right way garage doors",
-        state=state,
-    )
-    assert out["user_goal"] == "answer_from_context"
-    assert out["retrieval_only"] is True
-    assert out["run_optional_agents"] == []
-
-
-def test_infer_query_mode_entity_search() -> None:
-    assert (
-        infer_query_mode(
-            user_goal="new_analysis",
-            expanded_user_query="More details on Precision Garage Door",
-            run_optional_agents=["service"],
-        )
-        == "branch_entity_search"
-    )
 
 
 def test_resolve_optional_branch_user_query_entity_uses_turn_text() -> None:
@@ -627,28 +562,6 @@ def test_should_not_block_report_retrieval_on_report_route_with_session_cache() 
         resolved_route="report",
         tool_name="report_retrieval",
     )
-
-
-def test_format_session_memory_includes_provider_lines() -> None:
-    state = {
-        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
-            "service_provider_details": {
-                "Up Right Garage Door Repair Brentwood": {
-                    "name": "Up Right Garage Door Repair Brentwood",
-                    "phone": "(925) 293-8232",
-                    "ratings": "4.9",
-                    "reviews": "94",
-                    "location": "8375 Brentwood Blvd, Brentwood, CA 94513",
-                }
-            }
-        }
-    }
-    block = format_session_working_memory_block(state)
-    assert "Service providers (from prior analysis)" in block
-    assert "925" in block
-    assert "rating: 4.9" in block
-    assert "reviews: 94" in block
-    assert "SESSION_WORKING_MEMORY" in block
 
 
 def test_provider_entry_normalizes_ratings_and_reviews_from_serp_shape() -> None:

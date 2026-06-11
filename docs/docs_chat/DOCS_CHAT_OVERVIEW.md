@@ -351,7 +351,7 @@ Return to user
 - [Docs Chat API Integration](DOCS_CHAT_API_INTEGRATION.md)
 - [User Docs Agent README](../../gcp/agents/homecare/property_agent/agents/user_docs_agent/README.md)
 - [Property Agent README](../../gcp/agents/homecare/property_agent/README.md)
-- [Orchestrator V2 Plan](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md)
+- [Property Agent Architecture](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md)
 
 ## Support
 

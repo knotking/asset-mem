@@ -51,11 +51,6 @@ _BARE_CAPABILITIES_RE = re.compile(
 )
 
 
-def executor_only_routing_enabled() -> bool:
-    """Single-loop routing is always on (legacy resolve LLM removed in Phase 5)."""
-    return True
-
-
 def bare_casual_intent(user_query: str) -> Optional[IntentKind]:
     """Cheap regex for obvious casual turns; None → fail-open to executor."""
     normalized = normalize_user_query(user_query)

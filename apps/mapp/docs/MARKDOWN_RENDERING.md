@@ -613,5 +613,5 @@ const { colorScheme } = useColorScheme();
 - Links are automatically tappable and open in the system browser
 - YouTube videos are automatically embedded when standalone links are detected
 - The feature works identically across iOS and Android
-- Content is read from persisted `contentMarkdown` / `contentJson` fields (Orchestrator V2 contract)
+- Content is read from persisted `contentMarkdown` / `contentJson` fields (Property Agent Architecture contract)
 - Supports both nested (`analysis.*`) and flat structured data formats

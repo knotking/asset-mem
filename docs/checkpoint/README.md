@@ -1,6 +1,6 @@
 # Checkpoint Documentation
 
-Serving code lives under `gcp/agents/homecare/property_agent/checkpoint/` (`run_checkpoint_pipeline`, retrieval, optional-branch analysis). See [`property_agent/ARCHITECTURE.md`](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md) and [`ORCHESTRATOR_V2_PLAN.md`](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+Serving code lives under `gcp/agents/homecare/property_agent/checkpoint/` (`run_checkpoint_pipeline`, retrieval, optional-branch analysis). See [`property_agent/ARCHITECTURE.md`](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md).
 
 ## Overview
 
@@ -11,7 +11,7 @@ The Checkpoint feature allows users to capture and track property condition over
 ### Core Features
 
 - **[Property Reports Plan](../property/PROPERTY_REPORTS_PLAN.md)** - Snapshot/comparison PDF reports from checkpoints; optional Reports chat mode and Docs RAG
-- **[Orchestrator V2 Plan](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md)** - Canonical checkpoint chat analysis contract (`contentJson` / `contentMarkdown`)
+- **[Property Agent Architecture](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md)** - Canonical checkpoint chat analysis contract (`contentJson` / `contentMarkdown`)
 - **[Checkpoint Feature Plan](./CHECKPOINT_FEATURE_PLAN.md)** - Complete implementation plan and roadmap
 - **[Checkpoint Chat Integration](./CHECKPOINT_CHAT_INTEGRATION.md)** - Integration with AI chat interface
 - **[Checkpoint Analysis API](./CHECKPOINT_ANALYSIS_API.md)** - API reference for checkpoint analysis
@@ -199,5 +199,5 @@ Optimize by:
 ## Related Documentation
 
 - [Property Agent README](../../gcp/agents/homecare/property_agent/README.md)
-- [Orchestrator V2 Plan](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md)
+- [Property Agent Architecture](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md)
 - [Architecture Diagram](../ARCHITECTURE_DIAGRAM.md)

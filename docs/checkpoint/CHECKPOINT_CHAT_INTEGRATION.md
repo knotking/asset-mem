@@ -1,4 +1,4 @@
-> **Archived (May 2026):** Historical checkpoint docs. Current behavior: `gcp/agents/homecare/property_agent/checkpoint/` and [ORCHESTRATOR_V2_PLAN.md](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+> **Archived (May 2026):** Historical checkpoint docs. Current behavior: `gcp/agents/homecare/property_agent/checkpoint/` and [property_agent/ARCHITECTURE.md](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md).
 
 # Checkpoint Integration in AI Chat
 
@@ -146,7 +146,7 @@ The checkpoint chat integration has been extended with comprehensive analysis ca
 - **Service Providers**: Find local professionals for detected issues
 - **Cost Estimates**: Compare DIY vs professional repair costs
 
-See [Orchestrator V2 Plan](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md) and [Checkpoint Analysis API](./CHECKPOINT_ANALYSIS_API.md) for complete details.
+See [Property Agent Architecture](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md) and [Checkpoint Analysis API](./CHECKPOINT_ANALYSIS_API.md) for complete details.
 
 ## Notes
 - Implementation matches mobile app patterns for consistency

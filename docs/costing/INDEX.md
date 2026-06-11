@@ -158,7 +158,7 @@
 ## Related Systems
 
 ### Property Agent (checkpoint pipeline)
-- **Docs**: [`gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md`](../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md), [`docs/checkpoint/`](../checkpoint/)
+- **Docs**: [`gcp/agents/homecare/property_agent/ARCHITECTURE.md`](../gcp/agents/homecare/property_agent/ARCHITECTURE.md), [`docs/checkpoint/`](../checkpoint/)
 - **Integration**: Cost branch runs inside `run_checkpoint_pipeline` when `checkpoint_optional_agents` includes `cost`
 - **Relationship**: Provides DIY vs professional cost estimates for checkpoint-detected issues
 

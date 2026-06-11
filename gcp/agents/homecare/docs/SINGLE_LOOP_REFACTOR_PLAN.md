@@ -246,19 +246,18 @@ appear in prod, roll back via redeploy** — Phases 1–3 already delivered most
 Executor-only is unconditional (no `HOMEAPP_EXECUTOR_ONLY_ROUTING` flag).
 
 - [x] Delete: `resolve_turn_llm.py`, `resolve_llm_schema.py`,
-      `nlu_first_resolve.py`, `homecare_resolve_hooks.py`, `turn_intent_llm.py`;
-      slim `apply_resolved_turn.py` to checkpoint retrieval-plan helpers only;
-      removed resolve-LLM post-processing and working-memory inject from
-      `format_resolved_turn_block` (chip/accept still inject `[RESOLVED_TURN]`).
+      `nlu_first_resolve.py`, `homecare_resolve_hooks.py`, `turn_intent_llm.py`,
+      `apply_resolved_turn.py`, `context/homecare_hydrator_v1.py`;
+      removed working-memory inject from `format_resolved_turn_block`
+      (chip/accept still inject `[RESOLVED_TURN]`).
 - [x] Keep `pending_offer_extract.py` (accept-offer fast-path).
 - [x] Keep `conversation_summary` for long-session aid (ADK compaction primary).
 - [x] Root agent always `gemini-3.5-flash` via `global_agent_gemini_model()`.
 - [x] `DISCOURSE_ACTS` moved to `routing/schema.py`; deploy no longer sets
       `HOMEAPP_EXECUTOR_ONLY_ROUTING`.
-- [x] Tests: 463 passed (removed `test_resolve_turn_llm`, `test_nlu_first_resolve`,
-      `test_turn_intent_llm`).
-- [ ] Update `property_agent/ARCHITECTURE.md`, `docs/ORCHESTRATOR_V2_PLAN.md` when
-      those docs are next touched (historical V2 diagrams still reference resolve hop).
+- [x] Post-cleanup: removed test-only `infer_query_mode`, `property_analysis_routing_blob`,
+      `executor_only_routing_enabled()` stub, duplicate `branches_mentioned_in_query`,
+      resolve-LLM baseline JSON, stale conftest fixture, and legacy `ORCHESTRATOR_V2_PLAN.md`.
 
 ---
 
