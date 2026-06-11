@@ -1,5 +1,12 @@
-import React from 'react';
-import { Modal, Pressable, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  InteractionManager,
+  Modal,
+  Pressable,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { X } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -11,7 +18,7 @@ const MODAL_COLORS = {
   card: '#14141c',
   border: 'rgba(255, 255, 255, 0.08)',
   foreground: '#fafafa',
-  mutedForeground: 'rgba(255, 255, 255, 0.65)',
+  playerPlaceholder: '#0a0a0f',
 };
 
 /** Phones stay compact; tablets use a wider embed for higher YouTube auto quality. */
@@ -40,63 +47,51 @@ export function LandingDemoVideoModal({
 }: LandingDemoVideoModalProps) {
   const { width, height } = useWindowDimensions();
   const playerWidth = getDemoPlayerWidth(width, height);
+  const [mountPlayer, setMountPlayer] = useState(false);
+
+  useEffect(() => {
+    if (!visible) {
+      setMountPlayer(false);
+      return;
+    }
+
+    const task = InteractionManager.runAfterInteractions(() => {
+      setMountPlayer(true);
+    });
+
+    return () => task.cancel();
+  }, [visible]);
 
   return (
     <Modal
       visible={visible}
       animationType="fade"
       transparent
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
       onRequestClose={onClose}
       accessibilityViewIsModal>
-      <Pressable
-        style={{
-          flex: 1,
-          backgroundColor: MODAL_COLORS.overlay,
-          justifyContent: 'center',
-          paddingHorizontal: 16,
-        }}
-        onPress={onClose}
-        accessibilityRole="button"
-        accessibilityLabel="Close demo video">
+      <View style={styles.overlay} pointerEvents="box-none">
         <Pressable
-          style={{ width: playerWidth, alignSelf: 'center' }}
-          onPress={(event) => event.stopPropagation()}>
-          <View
-            style={{
-              borderRadius: 12,
-              overflow: 'hidden',
-              backgroundColor: MODAL_COLORS.card,
-              borderWidth: 1,
-              borderColor: MODAL_COLORS.border,
-            }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                borderBottomWidth: 1,
-                borderBottomColor: MODAL_COLORS.border,
-              }}>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: '600',
-                  color: MODAL_COLORS.foreground,
-                }}>
-                Watch Demo
-              </Text>
-              <Pressable
-                onPress={onClose}
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel="Close demo video">
-                <Icon as={X} size={20} className="text-foreground" />
-              </Pressable>
-            </View>
+          style={StyleSheet.absoluteFillObject}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Close demo video"
+        />
+        <View style={[styles.card, { width: playerWidth }]}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Watch Demo</Text>
+            <Pressable
+              onPress={onClose}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Close demo video">
+              <Icon as={X} size={20} className="text-foreground" />
+            </Pressable>
+          </View>
 
-            <View style={{ padding: 12 }}>
+          <View style={styles.playerContainer}>
+            {mountPlayer ? (
               <AccordionMountContext.Provider value={true}>
                 <LazyYouTubePlayer
                   videoUrl={videoUrl}
@@ -104,10 +99,53 @@ export function LandingDemoVideoModal({
                   testID="landing-demo-youtube"
                 />
               </AccordionMountContext.Provider>
-            </View>
+            ) : (
+              <View style={styles.playerPlaceholder} />
+            )}
           </View>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    backgroundColor: MODAL_COLORS.overlay,
+  },
+  card: {
+    alignSelf: 'center',
+    zIndex: 1,
+    elevation: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: MODAL_COLORS.card,
+    borderWidth: 1,
+    borderColor: MODAL_COLORS.border,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: MODAL_COLORS.border,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: MODAL_COLORS.foreground,
+  },
+  playerContainer: {
+    padding: 12,
+  },
+  playerPlaceholder: {
+    aspectRatio: 16 / 9,
+    borderRadius: 8,
+    backgroundColor: MODAL_COLORS.playerPlaceholder,
+  },
+});
