@@ -1,10 +1,13 @@
 """
-AI-powered cost estimation using Gemini with Google Search grounding.
+AI-powered cost estimation using Gemini with structured JSON output.
 
-This module provides dynamic, location-aware cost estimation that replaces
-hardcoded values with real-time market data and AI-driven complexity analysis.
+This module provides dynamic, location-aware cost estimation. Gemini is asked
+to return a structured JSON object with integer cost fields so no regex parsing
+of prose is needed and validation is trivial numeric comparison.
 """
 
+import datetime
+import json
 import logging
 import re
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
@@ -14,7 +17,6 @@ from google.genai import types
 
 from agent_framework.execution.thread_context import executor_submit
 from ...model_config import LEGACY_API_GEMINI
-from property_agent.shared.google_search_grounding import google_search_grounding_tool
 from .config import CostEstimationConfig
 
 logger = logging.getLogger(__name__)
@@ -22,15 +24,16 @@ logger = logging.getLogger(__name__)
 
 _COORD_PAIR_RE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$")
 
+# Kept for backward-compat and the regex-prose fallback path only.
+_INLINE_RANGE_RE = re.compile(r"\$(\d+)\s*[-–—]\s*(\d+)")
+_DOLLAR_AMOUNT_RE = re.compile(r"\$(\d+)")
+
 
 def _extract_location_info(
     property_address: Optional[str],
 ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """
     Extract city, state, and full location string from property address.
-
-    Args:
-        property_address: Full property address string
 
     Returns:
         Tuple of (city, state, location_string)
@@ -45,17 +48,12 @@ def _extract_location_info(
         location_string = f"{lat:.4f},{lng:.4f}"
         return None, None, location_string
 
-    # Try to parse common address formats
-    # Format: "123 Main St, San Francisco, CA 94102"
-    # Format: "123 Main St, City, State"
     parts = [p.strip() for p in property_address.split(",")]
-
     city = None
     state = None
 
     if len(parts) >= 3:
         city = parts[-2].strip()
-        # Extract state (first 2 letters before zip if present)
         state_part = parts[-1].strip()
         state_match = re.match(r"^([A-Z]{2})", state_part)
         if state_match:
@@ -72,79 +70,51 @@ def _extract_location_info(
 
 def _extract_repair_details(diagnosis: str) -> Dict[str, Any]:
     """
-    Extract key repair details from diagnosis text.
-
-    Args:
-        diagnosis: Triage diagnosis text
-
-    Returns:
-        Dictionary with repair_type, severity, materials, and complexity indicators
+    Keyword-based repair categorisation — kept for backward-compat and
+    logging only.  The main estimation path no longer uses this for prompt
+    injection; Gemini classifies the repair type itself from the full
+    diagnosis text.
     """
     diagnosis_lower = diagnosis.lower()
 
-    # Identify repair category
     repair_type = "General repair"
-    if any(
-        word in diagnosis_lower
-        for word in ["plumb", "leak", "pipe", "drain", "faucet", "toilet"]
-    ):
+    if any(word in diagnosis_lower for word in ["plumb", "leak", "pipe", "drain", "faucet", "toilet"]):
         repair_type = "Plumbing"
-    elif any(
-        word in diagnosis_lower
-        for word in ["electric", "outlet", "switch", "wiring", "circuit"]
-    ):
+    elif any(word in diagnosis_lower for word in ["electric", "outlet", "switch", "wiring", "circuit"]):
         repair_type = "Electrical"
-    elif any(
-        word in diagnosis_lower
-        for word in ["hvac", "ac", "air condition", "furnace", "heat"]
-    ):
+    elif any(word in diagnosis_lower for word in ["hvac", "ac", "air condition", "furnace", "heat"]):
         repair_type = "HVAC"
     elif any(word in diagnosis_lower for word in ["roof", "shingle", "gutter"]):
         repair_type = "Roofing"
     elif any(
-        word in diagnosis_lower for word in ["drywall", "wall", "ceiling", "paint"]
-    ):
-        repair_type = "Drywall/Painting"
-    elif any(
         word in diagnosis_lower
-        for word in ["appliance", "washer", "dryer", "refrigerator", "dishwasher"]
+        for word in ["car", "vehicle", "automotive", "dent", "scratch",
+                     "bumper", "quarter panel", "fender", "hood", "paint transfer"]
     ):
-        repair_type = "Appliance"
-    elif any(
-        word in diagnosis_lower
-        for word in ["pest", "termite", "rodent", "insect", "bug"]
-    ):
-        repair_type = "Pest Control"
-    elif any(
-        word in diagnosis_lower
-        for word in ["car", "vehicle", "automotive", "dent", "scratch"]
-    ):
+        # Automotive checked before drywall/painting to prevent "paint transfer"
+        # matching the "paint" keyword in the drywall branch.
         repair_type = "Automotive"
+    elif any(word in diagnosis_lower for word in ["drywall", "wall", "ceiling", "paint"]):
+        repair_type = "Drywall/Painting"
+    elif any(word in diagnosis_lower for word in ["appliance", "washer", "dryer", "refrigerator", "dishwasher"]):
+        repair_type = "Appliance"
+    elif any(word in diagnosis_lower for word in ["pest", "termite", "rodent", "insect", "bug"]):
+        repair_type = "Pest Control"
 
-    # Assess severity
     severity = "moderate"
-    if any(
-        word in diagnosis_lower
-        for word in ["emergency", "urgent", "severe", "major", "extensive"]
-    ):
+    if any(word in diagnosis_lower for word in ["emergency", "urgent", "severe", "major", "extensive"]):
         severity = "high"
     elif any(word in diagnosis_lower for word in ["minor", "small", "simple", "easy"]):
         severity = "low"
 
-    # Identify complexity factors
     complexity_factors = []
-    if any(
-        word in diagnosis_lower
-        for word in ["difficult access", "hard to reach", "confined space"]
-    ):
+    if any(word in diagnosis_lower for word in ["difficult access", "hard to reach", "confined space"]):
         complexity_factors.append("difficult access")
     if any(word in diagnosis_lower for word in ["permit", "code", "inspection"]):
         complexity_factors.append("permits required")
     if any(word in diagnosis_lower for word in ["safety", "hazard", "dangerous"]):
         complexity_factors.append("safety concerns")
-    if any(
-        word in diagnosis_lower for word in ["structural", "foundation", "load-bearing"]
-    ):
+    if any(word in diagnosis_lower for word in ["structural", "foundation", "load-bearing"]):
         complexity_factors.append("structural work")
 
     return {
@@ -158,111 +128,154 @@ def _extract_repair_details(diagnosis: str) -> Dict[str, Any]:
 def _build_cost_estimation_prompt(
     diagnosis: str,
     location: Optional[str],
-    repair_details: Dict[str, Any],
     *,
     web_context: Optional[str] = None,
 ) -> str:
     """
-    Build a structured prompt for AI cost estimation.
+    Build a prompt that requests a structured JSON cost estimate.
 
-    Args:
-        diagnosis: Triage diagnosis
-        location: Location string (city, state)
-        repair_details: Extracted repair details
-
-    Returns:
-        Formatted prompt string
+    The prompt no longer injects heuristic repair_type / severity labels.
+    Gemini classifies the repair from the full diagnosis text, which is more
+    accurate than substring keyword matching.
     """
     location_context = f" in {location}" if location else ""
     web_block = ""
     if web_context and web_context.strip():
         web_block = (
-            "\n**Web research (already retrieved; do not request another search):**\n"
+            "\n**Web research (pre-fetched; do not request another search):**\n"
             f"{web_context.strip()[:6000]}\n"
         )
 
-    prompt = f"""You are a home repair cost estimation expert. Provide accurate, current cost estimates for the following repair{location_context}.
+    current_year = datetime.date.today().year
+    return f"""You are a repair and home-care cost estimation expert. Provide accurate, current ({current_year}) cost estimates for the repair described below{location_context}.
 
-**Repair Diagnosis:** {diagnosis}
-{web_block}
+**Repair Diagnosis:** {diagnosis}{web_block}
 
-**Repair Type:** {repair_details['repair_type']}
-**Severity:** {repair_details['severity']}
-**Complexity Factors:** {', '.join(repair_details['complexity_factors']) if repair_details['complexity_factors'] else 'Standard'}
+Respond with ONLY a valid JSON object — no prose, no markdown fences. Use these exact fields:
 
-Please provide cost estimates in the following format:
+{{
+  "repair_type": "<short category, e.g. Automotive / Plumbing / Drywall>",
+  "diy_cost_low": <integer USD — materials-only lower bound>,
+  "diy_cost_high": <integer USD — materials-only upper bound>,
+  "diy_includes": ["<item>", "<item>", "<item>"],
+  "diy_savings": "<% savings vs professional, one phrase>",
+  "pro_cost_low": <integer USD — labor+materials{location_context} lower bound>,
+  "pro_cost_high": <integer USD — labor+materials{location_context} upper bound>,
+  "pro_includes": ["<item>", "<item>", "<item>"],
+  "comparison_notes": "<one sentence comparing DIY vs professional>",
+  "recommendation": "<one sentence: when to choose DIY vs professional>",
+  "next_steps": "<one sentence of practical next steps for the homeowner>"
+}}
 
-1. **DIY Cost Estimate:**
-   - Cost range (materials only, in 2026 dollars)
-   - What's included (specific materials, tools needed)
-   - Time estimate
-   - Skill level required
-   - Potential savings vs professional
+Rules:
+- Use realistic {current_year} pricing{location_context if location else ""}.
+- diy_cost_low MUST be strictly less than diy_cost_high.
+- pro_cost_low MUST be strictly less than pro_cost_high.
+- All cost values are plain integers (no $ signs, no commas).
+- Provide 3–5 items in diy_includes and pro_includes."""
 
-2. **Professional Service Cost Estimate:**
-   - Cost range (labor + materials{location_context}, in 2026 dollars)
-   - What's included (labor, materials, warranty, permits if needed)
-   - Typical duration
-   - Benefits of professional service
 
-3. **Cost Comparison:**
-   - DIY savings percentage
-   - Professional benefits (safety, warranty, expertise)
-   - Important considerations (complexity, safety, code compliance)
+def _validate_structured_costs(data: Dict[str, Any]) -> Optional[str]:
+    """
+    Validate the integer cost fields from a structured Gemini response.
 
-4. **Recommendations:**
-   - When DIY is appropriate
-   - When professional service is recommended
-   - Next steps for the homeowner
+    Returns:
+        None if valid, or an error description string.
+    """
+    try:
+        diy_low = int(data.get("diy_cost_low", 0))
+        diy_high = int(data.get("diy_cost_high", 0))
+        pro_low = int(data.get("pro_cost_low", 0))
+        pro_high = int(data.get("pro_cost_high", 0))
+    except (TypeError, ValueError) as exc:
+        return f"cost fields are not integers: {exc}"
 
-**Important:** 
-- Use current 2026 pricing
-- Consider regional cost variations{location_context if location else ""}
-- Be specific about materials and labor
-- Account for complexity factors: {', '.join(repair_details['complexity_factors']) if repair_details['complexity_factors'] else 'none'}
-- Provide realistic ranges, not single point estimates
+    if diy_low >= diy_high:
+        return f"diy_cost_low ({diy_low}) >= diy_cost_high ({diy_high})"
+    if pro_low >= pro_high:
+        return f"pro_cost_low ({pro_low}) >= pro_cost_high ({pro_high})"
+    if diy_low < 5 or pro_low < 5:
+        return f"cost unrealistically low (diy_low={diy_low}, pro_low={pro_low})"
+    if diy_high > 50_000 or pro_high > 50_000:
+        return f"cost unrealistically high (diy_high={diy_high}, pro_high={pro_high})"
+    return None
 
-Return your response in a structured format that can be parsed into JSON."""
 
-    return prompt
+def _parse_structured_cost_json(data: Dict[str, Any], diagnosis: str) -> Dict[str, Any]:
+    """
+    Convert a validated structured JSON dict from Gemini into the
+    costEstimates format consumed by the rest of the cost pipeline.
+    """
+    diy_low = int(data["diy_cost_low"])
+    diy_high = int(data["diy_cost_high"])
+    pro_low = int(data["pro_cost_low"])
+    pro_high = int(data["pro_cost_high"])
+
+    diy_includes = (data.get("diy_includes") or [])[:5]
+    pro_includes = (data.get("pro_includes") or [])[:5]
+    if not diy_includes:
+        diy_includes = ["Materials and supplies", "Basic tools", "2-6 hours of work"]
+    if not pro_includes:
+        pro_includes = ["Professional labor", "Materials", "Warranty coverage"]
+
+    repair_type = str(data.get("repair_type") or diagnosis[:80])
+
+    return {
+        "costEstimates": {
+            "repair_type": repair_type,
+            "DIY": {
+                "cost_range": f"${diy_low}-{diy_high}",
+                "includes": diy_includes,
+                "savings": str(data.get("diy_savings") or "Typically 40-70% vs. professional service")[:200],
+                "complexity": "Assess your skill level and safety risks before proceeding",
+            },
+            "Service": {
+                "cost_range": f"${pro_low}-{pro_high}",
+                "includes": pro_includes,
+                "benefits": "Licensed expertise, warranty coverage, code compliance",
+                "complexity": "Professional service recommended for safety and quality assurance",
+            },
+            "comparison": {
+                "diy_savings": str(data.get("comparison_notes") or "Savings primarily from avoided labor costs")[:200],
+                "professional_benefits": "Peace of mind, accountability, faster completion, warranty protection",
+                "considerations": "Factor in tool costs, time investment, skill requirements, and safety concerns",
+            },
+            "recommendation": {
+                "notes": str(data.get("recommendation") or "Consider your skill level, available time, and safety requirements.")[:300],
+                "next_steps": str(data.get("next_steps") or "Obtain multiple local quotes for professional service.")[:300],
+            },
+        }
+    }
+
+
+def _extract_cost_range_from_text(text: str, fallback: str) -> str:
+    """
+    Extract the first plausible cost range from a prose text block.
+
+    Used only by the legacy regex-prose fallback path in
+    _parse_ai_response_to_json.  The structured JSON path never calls this.
+    """
+    for m in _INLINE_RANGE_RE.finditer(text):
+        a, b = int(m.group(1)), int(m.group(2))
+        if a > 0 and b > 0 and a != b:
+            return f"${min(a, b)}-{max(a, b)}"
+
+    amounts = sorted(
+        {int(m.group(1)) for m in _DOLLAR_AMOUNT_RE.finditer(text) if 5 <= int(m.group(1)) <= 50000}
+    )
+    if len(amounts) >= 2:
+        return f"${amounts[0]}-{amounts[-1]}"
+
+    return fallback
 
 
 def _parse_ai_response_to_json(
     ai_response: str, diagnosis: str, repair_details: Dict[str, Any]
 ) -> Dict[str, Any]:
     """
-    Parse AI response text into structured JSON format.
-
-    Args:
-        ai_response: Raw AI response text
-        diagnosis: Original diagnosis
-        repair_details: Extracted repair details
-
-    Returns:
-        Structured cost estimate dictionary
+    Legacy prose-to-dict parser — only used when the structured JSON path
+    fails (e.g. model returned text despite JSON mode being requested).
     """
-    # Extract cost ranges using regex
-    diy_cost_match = re.search(
-        r"DIY.*?[\$](\d+)[^\d]*[\$](\d+)", ai_response, re.IGNORECASE | re.DOTALL
-    )
-    pro_cost_match = re.search(
-        r"Professional.*?[\$](\d+)[^\d]*[\$](\d+)",
-        ai_response,
-        re.IGNORECASE | re.DOTALL,
-    )
-
-    diy_cost_range = (
-        f"${diy_cost_match.group(1)}-{diy_cost_match.group(2)}"
-        if diy_cost_match
-        else "$50-300"
-    )
-    pro_cost_range = (
-        f"${pro_cost_match.group(1)}-{pro_cost_match.group(2)}"
-        if pro_cost_match
-        else "$200-800"
-    )
-
-    # Extract key sections
     diy_section = ""
     pro_section = ""
     comparison_section = ""
@@ -279,81 +292,64 @@ def _parse_ai_response_to_json(
         elif "Recommendation" in section[:50]:
             recommendations_section = section
 
-    # Extract DIY includes
-    diy_includes = []
+    diy_cost_range = _extract_cost_range_from_text(diy_section or ai_response[:500], "$50-300")
+    pro_cost_range = _extract_cost_range_from_text(pro_section or ai_response, "$200-800")
+
+    diy_includes: list = []
     diy_includes_match = re.search(
         r"What.*?included[:\s]+(.*?)(?:\n\s*[-•]|\n\n|Time estimate)",
-        diy_section,
-        re.IGNORECASE | re.DOTALL,
+        diy_section, re.IGNORECASE | re.DOTALL,
     )
     if diy_includes_match:
-        includes_text = diy_includes_match.group(1)
         diy_includes = [
             item.strip("- •\n\r")
-            for item in re.findall(r"[-•]\s*([^\n]+)", includes_text)
+            for item in re.findall(r"[-•]\s*([^\n]+)", diy_includes_match.group(1))
         ]
-
     if not diy_includes:
         diy_includes = ["Materials and supplies", "Basic tools", "2-6 hours of work"]
 
-    # Extract professional includes
-    service_includes = []
+    service_includes: list = []
     service_includes_match = re.search(
         r"What.*?included[:\s]+(.*?)(?:\n\s*[-•]|\n\n|Typical duration)",
-        pro_section,
-        re.IGNORECASE | re.DOTALL,
+        pro_section, re.IGNORECASE | re.DOTALL,
     )
     if service_includes_match:
-        includes_text = service_includes_match.group(1)
         service_includes = [
             item.strip("- •\n\r")
-            for item in re.findall(r"[-•]\s*([^\n]+)", includes_text)
+            for item in re.findall(r"[-•]\s*([^\n]+)", service_includes_match.group(1))
         ]
-
     if not service_includes:
         service_includes = ["Professional labor", "Materials", "Warranty coverage"]
 
-    # Extract savings info
-    savings_match = re.search(
-        r"savings[:\s]+([^.\n]+)", comparison_section, re.IGNORECASE
-    )
-    savings = (
-        savings_match.group(1).strip()
-        if savings_match
-        else "Typically 40-70% vs. professional service"
-    )
+    savings_match = re.search(r"savings[:\s]+([^.\n]+)", comparison_section, re.IGNORECASE)
+    savings = savings_match.group(1).strip() if savings_match else "Typically 40-70% vs. professional service"
 
-    # Extract complexity assessment
     complexity_diy = "Assess your skill level and safety risks before proceeding"
-    if repair_details["complexity_factors"]:
+    if repair_details.get("complexity_factors"):
         complexity_diy = f"Moderate to high complexity due to: {', '.join(repair_details['complexity_factors'])}"
-    elif repair_details["severity"] == "low":
+    elif repair_details.get("severity") == "low":
         complexity_diy = "Low to moderate complexity for DIY with basic skills"
 
     complexity_pro = "Professional service recommended for safety and quality assurance"
-    if repair_details["complexity_factors"]:
+    if repair_details.get("complexity_factors"):
         complexity_pro = f"Professional expertise required due to: {', '.join(repair_details['complexity_factors'])}"
 
-    # Extract recommendations
     notes_match = re.search(
         r"When DIY is appropriate[:\s]+(.*?)(?:\n\s*[-•]|When professional)",
-        recommendations_section,
-        re.IGNORECASE | re.DOTALL,
+        recommendations_section, re.IGNORECASE | re.DOTALL,
     )
     notes = (
-        notes_match.group(1).strip()
-        if notes_match
-        else "Consider your skill level, available time, and safety requirements when deciding between DIY and professional service."
+        notes_match.group(1).strip() if notes_match
+        else "Consider your skill level, available time, and safety requirements when deciding."
     )
 
-    # Build structured response
-    response = {
+    return {
         "costEstimates": {
-            "repair_type": diagnosis[:100],  # Use diagnosis as repair type
+            "repair_type": diagnosis[:100],
             "DIY": {
                 "cost_range": diy_cost_range,
-                "includes": diy_includes[:5],  # Limit to 5 items
-                "savings": savings[:200],  # Limit length
+                "includes": diy_includes[:5],
+                "savings": savings[:200],
                 "complexity": complexity_diy[:200],
             },
             "Service": {
@@ -369,12 +365,10 @@ def _parse_ai_response_to_json(
             },
             "recommendation": {
                 "notes": notes[:300],
-                "next_steps": "Obtain multiple local quotes for professional service. For DIY, research thoroughly and ensure you have necessary skills and tools.",
+                "next_steps": "Obtain multiple local quotes for professional service.",
             },
         }
     }
-
-    return response
 
 
 def _generate_cost_estimate_content(
@@ -383,10 +377,16 @@ def _generate_cost_estimate_content(
     *,
     web_context: Optional[str] = None,
 ):
-    """Sync Vertex generate_content call (run in a thread for timeout)."""
+    """
+    Sync Vertex generate_content call (run in a thread for timeout).
+
+    JSON mode (response_mime_type="application/json") is always used so the
+    response can be parsed with json.loads rather than regex.  Google Search
+    grounding is intentionally not used here: it is incompatible with JSON
+    mode, and the model's built-in knowledge is sufficient for cost estimation.
+    If live market data is needed, pass it pre-fetched via `web_context`.
+    """
     ai_cfg = CostEstimationConfig.get_ai_config()
-    use_grounding = not (web_context or "").strip()
-    tools = [google_search_grounding_tool()] if use_grounding else None
     return client.models.generate_content(
         model=ai_cfg["model"],
         contents=prompt,
@@ -395,8 +395,7 @@ def _generate_cost_estimate_content(
             top_p=0.8,
             top_k=40,
             max_output_tokens=ai_cfg["max_output_tokens"],
-            response_modalities=["TEXT"],
-            tools=tools,  # type: ignore[arg-type]
+            response_mime_type="application/json",
         ),
     )
 
@@ -410,34 +409,24 @@ def estimate_costs_with_ai(
     web_context: Optional[str] = None,
 ) -> Tuple[Optional[Dict[str, Any]], float]:
     """
-    Estimate repair costs using AI with Google Search grounding.
-
-    Args:
-        diagnosis: Triage diagnosis text
-        property_address: Property address for location-aware pricing
-        service_provider_data: Optional pricing data from service providers
-        client: Optional genai.Client instance (will create if not provided)
+    Estimate repair costs using AI with structured JSON output.
 
     Returns:
-        Tuple of (cost_estimate_dict, confidence_score)
-        Returns (None, 0.0) if estimation fails
+        Tuple of (cost_estimate_dict, confidence_score).
+        Returns (None, 0.0) if estimation fails.
     """
     try:
-        # Extract location information
         city, state, location_string = _extract_location_info(property_address)
 
-        # Extract repair details
-        repair_details = _extract_repair_details(diagnosis)
-
         logger.info(
-            f"AI cost estimation for: {repair_details['repair_type']} in {location_string or 'unspecified location'}"
+            "AI cost estimation for: %s in %s",
+            diagnosis[:80],
+            location_string or "unspecified location",
         )
 
-        # Build prompt
         prompt = _build_cost_estimation_prompt(
             diagnosis,
             location_string,
-            repair_details,
             web_context=web_context,
         )
 
@@ -459,114 +448,110 @@ def estimate_costs_with_ai(
                 logger.warning("AI cost estimation timed out after %ss", timeout_s)
                 return None, 0.0
 
-        # Extract response text
         if not response or not response.text:
             logger.warning("AI cost estimation returned empty response")
             return None, 0.0
 
-        ai_response_text = response.text
-        logger.debug(f"AI response: {ai_response_text[:500]}...")
+        response_text = response.text.strip()
+        logger.debug("AI raw response: %s…", response_text[:300])
 
-        # Parse response into structured JSON
-        cost_estimate = _parse_ai_response_to_json(
-            ai_response_text, diagnosis, repair_details
-        )
+        # --- Primary path: parse structured JSON ---
+        try:
+            data = json.loads(response_text)
+        except json.JSONDecodeError as exc:
+            logger.warning("AI response is not valid JSON (%s) — falling back to prose parser", exc)
+            # Fall back to legacy regex parser so a non-JSON response doesn't
+            # hard-fail; _extract_repair_details provides legacy context.
+            repair_details = _extract_repair_details(diagnosis)
+            cost_estimate = _parse_ai_response_to_json(response_text, diagnosis, repair_details)
+            confidence = 0.7 + (0.1 if location_string else 0.0) + (0.1 if service_provider_data else 0.0)
+            logger.info("AI cost estimation completed via prose fallback, confidence: %.2f", confidence)
+            return cost_estimate, min(confidence, 1.0)
 
-        # Calculate confidence score based on response quality
-        confidence = 0.7  # Base confidence
+        # Validate numeric fields before building the output dict
+        validation_error = _validate_structured_costs(data)
+        if validation_error:
+            logger.warning("AI structured cost response invalid: %s", validation_error)
+            return None, 0.0
 
-        # Increase confidence if location was provided
+        cost_estimate = _parse_structured_cost_json(data, diagnosis)
+
+        # Confidence: base + bonuses for location and provider data
+        confidence = 0.8  # Higher base — structured output is more reliable
         if location_string:
             confidence += 0.1
-
-        # Increase confidence if service provider data is available
         if service_provider_data:
             confidence += 0.1
+        confidence = min(confidence, 1.0)
 
-        # Increase confidence if cost ranges were successfully extracted
-        if (
-            "$" in cost_estimate["costEstimates"]["DIY"]["cost_range"]
-            and "$" in cost_estimate["costEstimates"]["Service"]["cost_range"]
-        ):
-            confidence += 0.1
-
-        confidence = min(confidence, 1.0)  # Cap at 1.0
-
-        logger.info(f"AI cost estimation completed with confidence: {confidence}")
-
+        logger.info(
+            "AI cost estimation completed (structured JSON) repair_type=%r confidence=%.2f",
+            data.get("repair_type", "?"),
+            confidence,
+        )
         return cost_estimate, confidence
 
-    except Exception as e:
-        logger.error(f"AI cost estimation failed: {str(e)}", exc_info=True)
+    except Exception as exc:
+        logger.error("AI cost estimation failed: %s", exc, exc_info=True)
         return None, 0.0
 
 
 def validate_cost_ranges(cost_estimate: Dict[str, Any]) -> bool:
     """
-    Validate that cost ranges are reasonable and properly formatted.
+    Validate that the costEstimates dict has sensible $LOW-HIGH string ranges.
 
-    Args:
-        cost_estimate: Cost estimate dictionary
-
-    Returns:
-        True if valid, False otherwise
+    Used as a final safety net after estimate_costs_with_ai returns.
     """
     try:
         cost_estimates = cost_estimate.get("costEstimates", {})
-
-        # Extract DIY and Service cost ranges
         diy_range = cost_estimates.get("DIY", {}).get("cost_range", "")
         service_range = cost_estimates.get("Service", {}).get("cost_range", "")
 
-        # Check format: $XX-YY
         if not re.match(r"\$\d+[-–]\d+", diy_range) or not re.match(
             r"\$\d+[-–]\d+", service_range
         ):
-            logger.warning("Cost ranges not in expected format")
+            logger.warning("Cost ranges not in expected format (diy=%r, service=%r)", diy_range, service_range)
             return False
 
-        # Extract numeric values
         diy_match = re.search(r"\$(\d+)[-–](\d+)", diy_range)
         service_match = re.search(r"\$(\d+)[-–](\d+)", service_range)
-
         if not diy_match or not service_match:
             return False
 
         diy_low, diy_high = int(diy_match.group(1)), int(diy_match.group(2))
-        service_low, service_high = (
-            int(service_match.group(1)),
-            int(service_match.group(2)),
-        )
+        service_low, service_high = int(service_match.group(1)), int(service_match.group(2))
 
-        # Validate ranges are sensible
         if diy_low >= diy_high or service_low >= service_high:
-            logger.warning("Invalid cost range: low >= high")
+            logger.warning(
+                "Invalid cost range: low >= high (diy=%s, service=%s)",
+                diy_range,
+                service_range,
+            )
             return False
 
-        # DIY should generally be cheaper than professional
         if diy_high > service_high:
-            logger.warning(
-                "DIY cost higher than professional - unusual but not invalid"
-            )
+            logger.warning("DIY cost higher than professional - unusual but not invalid")
 
-        # Check for unreasonably high costs (> $50,000)
-        if diy_high > 50000 or service_high > 50000:
+        if diy_high > 50_000 or service_high > 50_000:
             logger.warning("Cost estimate exceeds $50,000 - may be unrealistic")
             return False
 
-        # Check for unreasonably low costs (< $5)
         if diy_low < 5 or service_low < 5:
             logger.warning("Cost estimate below $5 - may be unrealistic")
             return False
 
         return True
 
-    except Exception as e:
-        logger.exception("Cost validation failed: %s", e)
+    except Exception as exc:
+        logger.exception("Cost validation failed: %s", exc)
         return False
 
 
 __all__ = [
     "estimate_costs_with_ai",
     "validate_cost_ranges",
+    "_extract_cost_range_from_text",
+    "_extract_repair_details",
+    "_validate_structured_costs",
+    "_parse_structured_cost_json",
 ]

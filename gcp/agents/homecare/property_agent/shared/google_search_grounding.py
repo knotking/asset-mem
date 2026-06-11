@@ -3,8 +3,43 @@
 from __future__ import annotations
 
 import os
+from typing import Any
 
 from google.genai import types
+
+
+def text_from_generate_content_response(response: Any) -> str:
+    """
+    Extract prose from a ``google.genai`` ``generate_content`` response.
+
+    Grounded calls sometimes leave ``response.text`` empty while text lives in
+    ``candidates[].content.parts`` (same issue ADK warns about for function_call
+    parts). Concatenate all text parts across candidates.
+    """
+    if response is None:
+        return ""
+
+    direct = getattr(response, "text", None)
+    if isinstance(direct, str) and direct.strip():
+        return direct.strip()
+
+    chunks: list[str] = []
+    for candidate in getattr(response, "candidates", None) or []:
+        content = getattr(candidate, "content", None)
+        if content is None:
+            continue
+        for part in getattr(content, "parts", None) or []:
+            part_text = getattr(part, "text", None)
+            if isinstance(part_text, str) and part_text:
+                chunks.append(part_text)
+
+    joined = "".join(chunks).strip()
+    if joined:
+        return joined
+
+    if isinstance(direct, str):
+        return direct.strip()
+    return ""
 
 
 def uses_vertex_ai() -> bool:

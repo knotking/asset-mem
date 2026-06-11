@@ -5,6 +5,7 @@ This module contains structured prompts for different aspects of cost estimation
 including location-aware pricing, material costs, complexity analysis, and market trends.
 """
 
+import datetime
 from typing import Optional
 
 
@@ -19,7 +20,8 @@ def get_location_pricing_prompt(trade: str, location: str) -> str:
     Returns:
         Formatted prompt string
     """
-    return f"""What are the typical hourly labor rates for {trade} services in {location} in 2026?
+    year = datetime.date.today().year
+    return f"""What are the typical hourly labor rates for {trade} services in {location} in {year}?
 
 Please provide:
 1. Average hourly rate range
@@ -27,7 +29,7 @@ Please provide:
 3. Typical service call fees or minimum charges
 4. How these rates compare to national averages
 
-Focus on current 2026 pricing data."""
+Focus on current {year} pricing data."""
 
 
 def get_material_cost_prompt(
@@ -45,8 +47,9 @@ def get_material_cost_prompt(
         Formatted prompt string
     """
     location_context = f" in {location}" if location else ""
+    year = datetime.date.today().year
 
-    return f"""What is the current cost of materials for {repair_type}{location_context} in 2026?
+    return f"""What is the current cost of materials for {repair_type}{location_context} in {year}?
 
 Materials needed: {materials}
 
@@ -56,7 +59,7 @@ Please provide:
 3. Where these materials are typically purchased (home improvement stores, specialty suppliers)
 4. Any seasonal price variations or current market trends affecting costs
 
-Use current 2026 pricing."""
+Use current {year} pricing."""
 
 
 def get_complexity_analysis_prompt(diagnosis: str) -> str:
@@ -120,8 +123,9 @@ def get_market_trends_prompt(repair_type: str, location: Optional[str] = None) -
         Formatted prompt string
     """
     location_context = f" in {location}" if location else ""
+    year = datetime.date.today().year
 
-    return f"""What are the current pricing trends for {repair_type} services{location_context} in 2026?
+    return f"""What are the current pricing trends for {repair_type} services{location_context} in {year}?
 
 Please provide:
 
@@ -150,7 +154,7 @@ Please provide:
    - Local market conditions affecting pricing
    - Regional cost-of-living adjustments
 
-Focus on current 2026 data and trends."""
+Focus on current {year} data and trends."""
 
 
 def get_comprehensive_cost_estimate_prompt(
@@ -182,6 +186,7 @@ def get_comprehensive_cost_estimate_prompt(
             f"\n**Complexity Factors:** {', '.join(complexity_factors)}"
         )
 
+    year = datetime.date.today().year
     return f"""You are a home repair cost estimation expert. Provide accurate, detailed cost estimates for the following repair{location_context}.
 
 **Repair Diagnosis:** {diagnosis}{repair_context}{severity_context}{complexity_context}
@@ -190,7 +195,7 @@ Please provide comprehensive cost estimates in the following structure:
 
 ## 1. DIY Cost Estimate
 
-**Cost Range:** [Provide range in 2026 dollars, materials only]
+**Cost Range:** [Provide range in {year} dollars, materials only]
 
 **What's Included:**
 - Specific materials needed with approximate costs
@@ -212,7 +217,7 @@ Please provide comprehensive cost estimates in the following structure:
 
 ## 2. Professional Service Cost Estimate
 
-**Cost Range:** [Provide range in 2026 dollars, labor + materials{location_context}]
+**Cost Range:** [Provide range in {year} dollars, labor + materials{location_context}]
 
 **What's Included:**
 - Professional labor (specify hourly rate or flat fee)
@@ -262,7 +267,7 @@ Please provide comprehensive cost estimates in the following structure:
 ---
 
 **Requirements:**
-- Use current 2026 pricing data
+- Use current {year} pricing data
 - Consider regional cost variations{location_context if location else ""}
 - Account for all complexity factors{': ' + ', '.join(complexity_factors) if complexity_factors else ""}
 - Provide realistic ranges, not single point estimates
@@ -290,6 +295,7 @@ def get_cost_validation_prompt(
         Validation prompt
     """
     location_context = f" in {location}" if location else ""
+    year = datetime.date.today().year
 
     return f"""Please validate and refine these cost estimates for accuracy:
 
@@ -302,7 +308,7 @@ def get_cost_validation_prompt(
 
 **Validation Questions:**
 
-1. Are these cost ranges realistic for 2026{location_context}?
+1. Are these cost ranges realistic for {year}{location_context}?
 2. Do the ranges properly account for:
    - Current material costs
    - Regional labor rates

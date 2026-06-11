@@ -1,9 +1,11 @@
+import datetime
 import json
 import logging
 import re
 from typing import Any, Dict, List, Optional
 
 from google.adk.agents import Agent
+from google.genai import types
 from pydantic import BaseModel, Field
 
 from agent_framework.execution.thread_context import to_thread
@@ -15,7 +17,11 @@ from .service_pricing_extractor import (
     calibrate_ai_estimate_with_provider_data,
 )
 from property_agent.shared.inputs import CheckpointOptionalAgent
-from ...model_config import GLOBAL_GEMINI_MODEL
+from ...model_config import GLOBAL_GEMINI_MODEL, LEGACY_API_GEMINI
+from ...shared.google_search_grounding import (
+    google_search_grounding_tool,
+    text_from_generate_content_response,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -346,6 +352,57 @@ def _extract_grounding_web_summary_from_query(query: str) -> Optional[str]:
     return None
 
 
+def _fetch_market_pricing_context(
+    diagnosis: str,
+    location: Optional[str],
+) -> Optional[str]:
+    """
+    Pre-fetch live market pricing via a Google Search grounding call.
+
+    Same pattern as DIY ``_diy_web_search_grounded``: direct ``generate_content``
+    on ``LEGACY_API_GEMINI`` (``gemini-2.5-flash`` on regional Vertex). Grounding
+    tools are incompatible with JSON mode, so this prose summary becomes
+    ``web_context`` for the structured cost call.
+
+    Runs in the calling thread (already a worker thread inside ``to_thread``).
+    Returns None gracefully on failure.
+    """
+    if not config.should_use_market_pricing_search():
+        return None
+
+    location_ctx = f" in {location}" if location else " not provided"
+    year = datetime.date.today().year
+    prompt = (
+        f"Repair issue:\n{diagnosis[:4000]}\n\n"
+        f"Market location:{location_ctx}\n\n"
+        f"What are current {year} repair costs for this issue? "
+        "Summarize typical DIY material costs and professional service rates with dollar ranges. "
+        "Be concise (under 500 words)."
+    )
+
+    try:
+        response = LEGACY_API_GEMINI.api_client.models.generate_content(
+            model=LEGACY_API_GEMINI.model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.1,
+                top_p=0.9,
+                max_output_tokens=500,
+                response_modalities=["TEXT"],
+                tools=[google_search_grounding_tool()],
+            ),
+        )
+        text = text_from_generate_content_response(response) or None
+        if text:
+            logger.info("Market pricing context fetched len=%d", len(text))
+        else:
+            logger.info("Market pricing web search returned empty text")
+        return text
+    except Exception as exc:
+        logger.warning("Market pricing web search failed (non-fatal): %s", exc)
+        return None
+
+
 def _estimate_with_ai(
     diagnosis: str,
     property_address: Optional[str] = None,
@@ -374,19 +431,35 @@ def _estimate_with_ai(
         return None, 0.0, "invalid_input"
 
     try:
-        # Extract service provider pricing data if available
+        # --- Step 1: extract provider pricing and check quality ---
         provider_pricing = None
+        has_good_provider_data = False
         if service_results and config.should_calibrate_with_provider_data():
             provider_pricing = extract_and_combine_all_pricing(service_results)
+            has_good_provider_data = (
+                provider_pricing is not None
+                and provider_pricing.get("confidence", 0) >= config.MIN_PROVIDER_DATA_CONFIDENCE
+            )
 
-        # Call AI cost estimator (client created inside estimate_costs_with_ai when needed)
+        # --- Step 2: cascade to live web search when no adequate provider data ---
+        # If a pre-fetched web_context was already passed in (e.g. from the
+        # checkpoint pipeline), skip the search to avoid a redundant call.
+        if not has_good_provider_data and not (web_context or "").strip():
+            logger.info(
+                "No adequate provider pricing data; fetching live market pricing context"
+            )
+            web_context = _fetch_market_pricing_context(diagnosis, property_address)
+
+        # --- Step 3: call AI cost estimator ---
         from agent_framework.observability.log_redaction import safe_text_preview
 
         logger.info(
-            "Calling AI cost estimator diagnosis_len=%d preview=%r shared_web_context=%s",
+            "Calling AI cost estimator diagnosis_len=%d preview=%r "
+            "shared_web_context=%s has_good_provider_data=%s",
             len(diagnosis or ""),
             safe_text_preview(diagnosis, max_len=80),
             bool((web_context or "").strip()),
+            has_good_provider_data,
         )
         ai_estimate, confidence = estimate_costs_with_ai(
             diagnosis=diagnosis,
@@ -413,11 +486,7 @@ def _estimate_with_ai(
 
         # Calibrate with provider data if available and confidence is sufficient
         source = "ai"
-        if (
-            provider_pricing
-            and provider_pricing.get("confidence", 0)
-            >= config.MIN_PROVIDER_DATA_CONFIDENCE
-        ):
+        if has_good_provider_data and provider_pricing:
             logger.info("Calibrating AI estimate with provider pricing data")
             ai_estimate = calibrate_ai_estimate_with_provider_data(
                 ai_estimate,
@@ -642,6 +711,8 @@ def cost_estimation_diy_from_library(query: str) -> str:
         return json.dumps(_diy_only_error_response(query))
 
 
+_CURRENT_YEAR = datetime.date.today().year
+
 cost_agent = Agent(
     model=GLOBAL_GEMINI_MODEL,
     name="cost_agent",
@@ -664,7 +735,7 @@ cost_agent = Agent(
         "\n"
         "The cost estimates consider:\n"
         "- Regional labor rates and cost-of-living adjustments\n"
-        "- Current 2026 material and service costs from real-time data\n"
+        f"- Current {_CURRENT_YEAR} material and service costs from real-time data\n"
         "- Repair complexity and safety factors\n"
         "- Local service provider pricing when available\n"
         "\n"
