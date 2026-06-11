@@ -35,3 +35,13 @@ def test_chip_action_rejects_unknown_type_and_branch():
         _base_request(chip_action={"type": "self_destruct"})
     with pytest.raises(ValidationError):
         _base_request(chip_action={"type": "run_branch", "branch": "bogus"})
+
+
+def test_chip_action_run_branch_requires_branch():
+    with pytest.raises(ValidationError):
+        _base_request(chip_action={"type": "run_branch"})
+
+
+def test_chip_action_replay_report_and_discuss_without_branch_ok():
+    assert _base_request(chip_action={"type": "replay_report"}).chip_action.branch is None
+    assert _base_request(chip_action={"type": "discuss"}).chip_action.topic is None

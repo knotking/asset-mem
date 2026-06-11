@@ -31,9 +31,9 @@ from property_agent.routing.conversational_intent import (
     mark_executor_invocation_structured_analysis,
     resolve_user_query_from_state,
 )
+from property_agent.routing.post_structured_analysis import structured_analysis_ran
 from property_agent.routing.query_mode import snapshot_session_analysis_context
 from property_agent.routing.constants import USER_DOCS_PASSTHROUGH_STATE_KEY
-from property_agent.routing.resolve_turn import requests_optional_analysis_from_resolved
 from property_agent.observability.lifecycle_events import (
     PHASE_ENGINE_BEFORE_MODEL,
     emit_lifecycle_from_callback,
@@ -162,7 +162,7 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
         from property_agent.checkpoint.constants import CHECKPOINT_ANALYSIS_TOOL
 
         if tool_name == CHECKPOINT_ANALYSIS_TOOL:
-            if requests_optional_analysis_from_resolved(tool_context.state):
+            if structured_analysis_ran(args, tool_response, tool_context.state):
                 mark_executor_invocation_structured_analysis(tool_context.state)
             if tool_context.state.get("checkpoint_analysis") or tool_context.state.get(
                 "checkpoint_parallel_results"

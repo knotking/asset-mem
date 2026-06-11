@@ -8,6 +8,27 @@ from .optional_branches import OPTIONAL_CHECKPOINT_BRANCHES
 from .pending_user_action import PendingUserAction
 
 
+def structured_analysis_ran(
+    args: Mapping[str, Any] | None,
+    tool_response: Any,
+    state: Any,
+) -> bool:
+    """True when ``analyze_checkpoints`` actually executed optional branches.
+
+    Keyed on the post-guard tool args and pipeline output, not resolved intent:
+    tool guards may filter the requested branches to ``[]`` (retrieval-only run)
+    or short-circuit with a ``Skipped:``/blocked result, in which case the
+    post-synthesis executor hop must still run.
+    """
+    if not isinstance(args, Mapping) or not args.get("branches"):
+        return False
+    if isinstance(tool_response, Mapping):
+        result = tool_response.get("result")
+        if isinstance(result, str) and result.startswith("Skipped:"):
+            return False
+    return bool(state and state.get("checkpoint_parallel_results"))
+
+
 def run_branch_names_from_content_json(
     content_json: Mapping[str, Any] | None,
 ) -> list[str]:
