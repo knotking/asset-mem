@@ -1,16 +1,14 @@
-"""Executor-only routing experiment (Phase 4 single-loop refactor).
+"""Single-loop routing (Orchestrator V3).
 
-When ``HOMEAPP_EXECUTOR_ONLY_ROUTING=1``, skip ``resolve_turn_llm`` and let the
-root executor choose tools. Injects a slim ``[SESSION_CONTEXT]`` block instead of
-full ``[RESOLVED_TURN]`` + working-memory hydration. Bare greetings short-circuit
-via cheap regex (fail-open to the executor for everything else).
+Skips the resolve LLM; the root executor chooses tools. Injects a slim
+``[SESSION_CONTEXT]`` block instead of full ``[RESOLVED_TURN]`` + working-memory
+hydration. Bare greetings short-circuit via cheap regex (fail-open to the executor).
 """
 
 from __future__ import annotations
 
 import json
 import logging
-import os
 import re
 from typing import Any, Mapping, Optional
 
@@ -54,8 +52,8 @@ _BARE_CAPABILITIES_RE = re.compile(
 
 
 def executor_only_routing_enabled() -> bool:
-    raw = (os.getenv("HOMEAPP_EXECUTOR_ONLY_ROUTING") or "").strip().lower()
-    return raw in ("1", "true", "yes", "on")
+    """Single-loop routing is always on (legacy resolve LLM removed in Phase 5)."""
+    return True
 
 
 def bare_casual_intent(user_query: str) -> Optional[IntentKind]:

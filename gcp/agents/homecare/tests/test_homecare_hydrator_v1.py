@@ -101,5 +101,5 @@ def test_resolve_turn_block_unchanged_with_hydrator() -> None:
         ),
         state=state,
     )
-    assert "[SESSION_WORKING_MEMORY]" in block
-    assert "Hetcho" in block
+    assert "[RESOLVED_TURN]" in block
+    assert "[SESSION_WORKING_MEMORY]" not in block

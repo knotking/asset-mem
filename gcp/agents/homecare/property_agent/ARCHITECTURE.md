@@ -8,7 +8,7 @@ Three layers inside the `property_agent` Python package. Generic ADK plumbing li
 |-------|----------------|------------|----------|
 | `runtime/` | ADK shell, app config, deploy entrypoints | `manifest`, `routing` (callback registration only) | Business logic bodies |
 | `routing/` | Turn control plane: resolve, guards, session memory | `agent_framework.*`, `shared.*`, `checkpoint.*` public APIs | `agents/*/orchestrator` internals; private `_` symbols from siblings |
-| `checkpoint/` | Retrieval, `run_checkpoint_pipeline`, assembler, parallel analysis, progress streaming | `routing/schema`, `shared/inputs`, leaf `agents/*` for branches | Heavy imports from `routing/resolve_turn_llm` (use lazy imports in pipeline helpers) |
+| `checkpoint/` | Retrieval, `run_checkpoint_pipeline`, assembler, parallel analysis, progress streaming | `routing/schema`, `shared/inputs`, leaf `agents/*` for branches | Heavy eager imports from deleted resolve stack |
 | `agents/*` | Leaf specialists (user_docs, kb, coverage, diy, …) | `shared`, `geo`, `routing` public helpers | — |
 | `shared/` | Cross-cutting homecare types | stdlib, `agent_framework` | `routing` resolve internals |
 
@@ -17,7 +17,7 @@ Three layers inside the `property_agent` Python package. Generic ADK plumbing li
 | Need | Import from |
 |------|-------------|
 | Platform resolve pipeline, compaction, memory | `agent_framework.*` |
-| `ResolvedTurn`, resolve LLM, conversational copy | `property_agent.routing.*` |
+| `ResolvedTurn`, single-loop routing, conversational copy | `property_agent.routing.*` |
 | Checkpoint pipeline, retrieval, assembler, analysis | `property_agent.checkpoint.*` |
 | Optional-branch regex / constants | `property_agent.routing.optional_branches` |
 | Shared input schema | `property_agent.shared.inputs` |
@@ -26,17 +26,17 @@ Three layers inside the `property_agent` Python package. Generic ADK plumbing li
 
 **Boundary:** `agent_framework` must never import `property_agent`.
 
-## Routing control plane
+## Routing control plane (single-loop, Orchestrator V3)
 
-Turn routing is distributed across three layers. **NLU-first resolve is on by default** (`discourse_act` is the semantic SSOT); set `HOMEAPP_NLU_FIRST_RESOLVE=0` to use legacy regex post-processing.
+One executor LLM per substantive turn. Deterministic pre-routing for chips, accept-offer, and bare greetings; slim `[SESSION_CONTEXT]` inject for free text.
 
 | Layer | Owns | Key files |
 |-------|------|-----------|
-| **1 — Resolve** | `discourse_act`, `focus_branch`, intent, route, `user_goal`, casual short-circuit, `[RESOLVED_TURN]` + `[RECENT_DIALOGUE]` / `[FOCUS_SNIPPET]` inject | `routing/resolve_turn_llm.py`, `routing/resolve_llm_schema.py`, `routing/nlu_first_resolve.py`, `routing/pending_user_action.py`, `routing/resolve_turn.py` |
-| **2 — Executor** | History-first markdown vs tool call (`list_checkpoints`, `analyze_checkpoints(branches)`, docs, report) | `prompts.py`, `registry.py`, `checkpoint/executor_tools.py` |
-| **3 — Guards** | Block tools on casual/context turns; checkpoint tool-boundary invariants (ids, dedupe, idempotency, pending-offer, report mode) | `checkpoint/tool_guards.py`, `routing/conversational_callbacks.py`, `runtime/root_agent_plugin.py` |
+| **1 — Pre-routing** | Chip fast-path, accept-offer, casual regex, minimal `ResolvedTurn` for tool guards | `routing/executor_only_routing.py`, `routing/chip_action.py`, `routing/pending_user_action.py`, `routing/resolve_turn.py` |
+| **2 — Executor** | Tool choice (`list_checkpoints`, `analyze_checkpoints(branches)`, docs, report) | `prompts.py`, `registry.py`, `checkpoint/executor_tools.py` |
+| **3 — Guards** | Tool-boundary invariants (ids, dedupe, idempotency, pending-offer, report mode) | `checkpoint/tool_guards.py`, `routing/conversational_callbacks.py` |
 
-**NLU discourse acts:** `accept_offer`, `explain_prior`, `new_work`, `closure`, `provider_detail`, `replay_report`, plus casual `greeting` / `capabilities`. Pending offers: `pending_user_action` + `pending_offer_extract` (after-agent micro-LLM). Long sessions: `conversation_summary` (after-agent micro-LLM when dialogue grows). Client chips: `contentJson.suggestedActions` carries a structured `action` object alongside `userQuery`/`chatIntent`; clients echo it back as `chip_action` and `routing/chip_action.py` builds the `ResolvedTurn` deterministically (`resolve_source=chip`, zero resolve-LLM call, consume-once state key, clears any pending offer). Free-text turns still go through the resolve LLM.
+Pending offers: `pending_user_action` + `pending_offer_extract` (after-agent micro-LLM). Long sessions: ADK compaction primary; optional `conversation_summary` refresh. Client chips: structured `chip_action` → `resolve_source=chip`.
 
 **Tool blocking:** `conversational_turn` follows `is_executor_conversational_turn` (casual or context-only substantive turns) — not `route=none`. Context-only checkpoint turns (`answer_from_context`) require grounded session memory (`session_has_checkpoint_answer_context`); `property_id` alone keeps tools enabled. Cold sessions and checkpoint inventory/status queries resolve to `user_goal=new_analysis` so retrieval can run. Cleared UI selection is detected via `checkpoint_selection_cleared`. Vertex Memory Bank ingest/preload are **off by default** (`ADK_MEMORY_INGEST_ENABLED`, `ADK_MEMORY_PRELOAD_ENABLED`); set to `1` to opt in. `accept_offer` with `run_optional_agents` keeps tools enabled; `normalize_substantive_route` promotes `route=checkpoint` when branch work is requested.
 
@@ -58,7 +58,7 @@ Orchestration waves and `depends_on` edges: `agent_framework/registry/orchestrat
 ## Naming
 
 - **Plugin** — `manifest.PropertyPlugin`, `PropertyRootAgentPlugin`
-- **Hooks** — `ResolveTurnHooks` in `routing/homecare_resolve_hooks.py`
+- **Hooks** — removed (`ResolveTurnHooks` / resolve LLM pipeline deleted in Phase 5)
 - **Callbacks** — ADK `before_model` / `after_model` / `before_tool` only
 
 ## State keys
@@ -96,7 +96,7 @@ Do not remove these mappings without a client/proxy migration plan. Do not reint
 
 1. **New executor tool** — add `ToolSpec` in `registry.py` (lazy factory); register in `manifest.py` if needed.
 2. **New optional checkpoint branch** — update `routing/optional_branches.py`, `checkpoint/constants.py`, analysis `parallel_runner.py`.
-3. **New routing intent** — extend `routing/schema.py` and `resolve_turn_llm.py` (homecare-specific).
+3. **New routing intent** — extend `routing/schema.py`, tool descriptions in `prompts.py`, and eval cases.
 
 ## Entrypoints
 

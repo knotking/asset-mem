@@ -60,17 +60,8 @@ def test_maybe_set_pending_heuristic_fallback(monkeypatch) -> None:
     assert pending.run_optional_agents == ["cost"]
 
 
-def test_pending_offer_extract_enabled_executor_only(monkeypatch) -> None:
-    monkeypatch.delenv("HOMEAPP_NLU_FIRST_RESOLVE", raising=False)
-    monkeypatch.setenv("HOMEAPP_NLU_FIRST_RESOLVE", "0")
-    monkeypatch.setenv("HOMEAPP_EXECUTOR_ONLY_ROUTING", "1")
+def test_pending_offer_extract_enabled() -> None:
     assert pending_offer_extract_enabled() is True
-
-
-def test_pending_offer_extract_disabled_when_both_off(monkeypatch) -> None:
-    monkeypatch.setenv("HOMEAPP_NLU_FIRST_RESOLVE", "0")
-    monkeypatch.setenv("HOMEAPP_EXECUTOR_ONLY_ROUTING", "0")
-    assert pending_offer_extract_enabled() is False
 
 
 def test_maybe_set_pending_clears_on_success(monkeypatch) -> None:

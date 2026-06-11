@@ -12,10 +12,8 @@ from property_agent.routing.query_mode import SESSION_WORKING_MEMORY_SNAPSHOT_KE
 from property_agent.routing.resolve_turn import (
     RESOLVED_TURN_STATE_KEY,
     ResolvedTurn,
-    _should_inject_session_working_memory,
     apply_resolved_turn_to_state,
     format_resolved_turn_block,
-    format_resolved_turn_block_with_memory,
     inject_resolved_turn_into_llm_request,
     is_executor_conversational_turn,
 )
@@ -110,6 +108,7 @@ def test_explain_prior_route_none_stays_conversational() -> None:
         user_goal="answer_from_context",
         discourse_act="explain_prior",
         focus_branch="cost",
+        resolve_source="chip",
     )
     assert is_executor_conversational_turn(resolved) is True
     apply_resolved_turn_to_state(state, resolved)
@@ -164,6 +163,7 @@ def test_answer_from_context_thin_memory_not_conversational() -> None:
         user_goal="answer_from_context",
         discourse_act="explain_prior",
         query_mode="interpret_session",
+        resolve_source="chip",
     )
     assert is_executor_conversational_turn(follow_up, state=rich_state) is True
     assert is_executor_conversational_turn(inventory, state=rich_state) is False
@@ -335,9 +335,7 @@ def test_format_resolved_turn_block() -> None:
     assert "ui_context_note" in block
 
 
-def test_format_resolved_turn_block_injects_working_memory_when_snapshot() -> None:
-    from property_agent.routing.query_mode import SESSION_WORKING_MEMORY_SNAPSHOT_KEY
-
+def test_format_resolved_turn_block_chip_path_only() -> None:
     block = format_resolved_turn_block(
         ResolvedTurn(
             intent="substantive",
@@ -353,29 +351,12 @@ def test_format_resolved_turn_block_injects_working_memory_when_snapshot() -> No
             }
         },
     )
-    assert "[SESSION_WORKING_MEMORY]" in block
-    assert "Hetcho" in block
-
-
-def test_report_route_skips_session_working_memory() -> None:
-    resolved = ResolvedTurn(
-        intent="substantive",
-        route="report",
-        expanded_user_query="summarize the report",
-        retrieval_only=True,
-        user_goal="answer_from_context",
-        query_mode="interpret_session",
-    )
-    state = {
-        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
-            "checkpoint_summary": {"locations": ["Roof"], "checkpointsAnalyzed": 3},
-        }
-    }
-    assert _should_inject_session_working_memory(resolved, state) is False
+    assert "[RESOLVED_TURN]" in block
+    assert "[SESSION_WORKING_MEMORY]" not in block
 
 
 def test_format_resolved_turn_block_injects_report_mode_note() -> None:
-    block = format_resolved_turn_block_with_memory(
+    block = format_resolved_turn_block(
         ResolvedTurn(
             intent="substantive",
             route="report",

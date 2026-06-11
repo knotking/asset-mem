@@ -35,6 +35,19 @@ QueryModeKind = Literal[
 
 CASUAL_INTENTS = frozenset({"greeting", "capabilities", "acknowledgment"})
 
+DISCOURSE_ACTS: frozenset[str] = frozenset(
+    {
+        "greeting",
+        "capabilities",
+        "closure",
+        "accept_offer",
+        "explain_prior",
+        "new_work",
+        "replay_report",
+        "provider_detail",
+    }
+)
+
 
 # ADK ``State``, plain mappings, and resolver payloads share dict-like access.
 SessionStateLike = Any
@@ -55,7 +68,7 @@ class ResolvedTurn:
     capability_key: Optional[str] = None
     discourse_act: Optional[DiscourseActKind] = None
     focus_branch: Optional[FocusBranchKind] = None
-    resolve_source: str = "llm"
+    resolve_source: str = "executor_only"
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -118,7 +131,7 @@ def resolved_turn_from_state(state: SessionStateLike | None) -> Optional[Resolve
             capability_key=raw.get("capability_key"),
             discourse_act=discourse_act,
             focus_branch=focus_branch,
-            resolve_source=str(raw.get("resolve_source") or "llm"),
+            resolve_source=str(raw.get("resolve_source") or "executor_only"),
         )
     except (TypeError, ValueError):
         return None

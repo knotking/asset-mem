@@ -131,8 +131,6 @@ def main():
         "HOMEAPP_CHECKPOINT_PROGRESS_RUNNER": "1",
         "CHECKPOINT_TIMING_METRICS": "1",
     }
-    if environment == "staging":
-        runtime_env_defaults["HOMEAPP_EXECUTOR_ONLY_ROUTING"] = "1"
     for name, default in runtime_env_defaults.items():
         os.environ.setdefault(name, default)
     runtime_env_vars = list(runtime_env_defaults.keys())

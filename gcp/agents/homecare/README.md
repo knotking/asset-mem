@@ -4,7 +4,7 @@
 
 This is a comprehensive AI agent system designed for home care and vehicle diagnostics. It provides multimodal analysis, research capabilities, service provider discovery, and product recommendations through a sophisticated multi-agent architecture.
 
-The system uses a two-hop orchestrator (`resolve_turn_llm` then executor LLM) with a flat tool registry; checkpoint optional branches run inside `run_checkpoint_pipeline`.
+The system uses a **single-loop orchestrator** (one executor LLM on `gemini-3.5-flash` plus deterministic chip/accept-offer routing) with a flat tool registry; checkpoint optional branches run inside `analyze_checkpoints` / `run_checkpoint_pipeline`.
 
 ## Quick Start
 
@@ -33,7 +33,7 @@ For detailed usage, see sections below.
 
 ### Main Orchestrator Agent (`root_agent`)
 
-The **property agent** (`property_agent`) is the root orchestrator: it resolves each turn (`resolve_turn_llm`), then the orchestrator LLM invokes **`run_checkpoint_pipeline`** or user-document RAG via a **flat tool registry** (no nested checkpoint hop). Optional checkpoint analysis (coverage, DIY, service, cost) runs inside the pipeline when `checkpoint_optional_agents` is set. Structured output is emitted as `state_delta` patches for the proxy to persist as `contentJson` + `contentMarkdown` on Firestore messages.
+The **property agent** (`property_agent`) is the root orchestrator: deterministic pre-routing (chips, accept-offer, casual), then the executor LLM invokes **`analyze_checkpoints`**, **`list_checkpoints`**, or user-document/report tools via a **flat tool registry**.
 
 ### Sub-Agents (leaf modules and checkpoint pipeline)
 

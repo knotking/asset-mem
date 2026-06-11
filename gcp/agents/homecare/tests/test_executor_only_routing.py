@@ -45,10 +45,7 @@ def _ctx(*, query: str = "hello", state: dict | None = None) -> SimpleNamespace:
 
 
 def test_executor_only_routing_enabled() -> None:
-    with patch.dict(os.environ, {"HOMEAPP_EXECUTOR_ONLY_ROUTING": "1"}):
-        assert executor_only_routing_enabled() is True
-    with patch.dict(os.environ, {}, clear=True):
-        assert executor_only_routing_enabled() is False
+    assert executor_only_routing_enabled() is True
 
 
 @pytest.mark.parametrize(
@@ -67,23 +64,15 @@ def test_bare_casual_intent(query: str, expected: str | None) -> None:
     assert bare_casual_intent(query) == expected
 
 
-def test_global_agent_gemini_model_switches_on_flag() -> None:
+def test_global_agent_gemini_model_uses_flash() -> None:
     assert EXECUTOR_ONLY_GEMINI_MODEL.model == "gemini-3.5-flash"
-    with patch.dict(os.environ, {"HOMEAPP_EXECUTOR_ONLY_ROUTING": "1"}):
-        assert global_agent_gemini_model() is EXECUTOR_ONLY_GEMINI_MODEL
-    with patch.dict(os.environ, {}, clear=True):
-        assert global_agent_gemini_model() is GLOBAL_GEMINI_MODEL
+    assert global_agent_gemini_model() is EXECUTOR_ONLY_GEMINI_MODEL
 
 
-def test_prepare_before_model_turn_uses_executor_only_path() -> None:
+def test_prepare_before_model_turn_uses_single_loop_path() -> None:
     ctx = _ctx(query="list checkpoints")
     llm_request = SimpleNamespace(config=None)
-    with patch.dict(os.environ, {"HOMEAPP_EXECUTOR_ONLY_ROUTING": "1"}):
-        with patch(
-            "property_agent.routing.resolve_turn.run_resolve_before_model"
-        ) as mock_pipeline:
-            assert prepare_before_model_turn(ctx, llm_request=llm_request) is None
-            mock_pipeline.assert_not_called()
+    assert prepare_before_model_turn(ctx, llm_request=llm_request) is None
     assert "[SESSION_CONTEXT]" in str(
         getattr(llm_request.config, "system_instruction", "")
     )
