@@ -32,6 +32,36 @@ export function isProxyLifecyclePhase(phase: string | undefined | null): boolean
 
 export const PHASE_ENGINE_BEFORE_MODEL = "engine.before_model";
 
+/** Monotonic ordering for lifecycle UI (late out-of-order persist must not regress). */
+export const LIFECYCLE_PHASE_RANK: Record<string, number> = {
+  "proxy.request_accepted": 10,
+  "proxy.engine_invoke": 20,
+  "engine.turn_started": 30,
+  "engine.runner_exec": 40,
+  "engine.before_model": 50,
+};
+
+export function lifecyclePhaseRank(phase: string | undefined | null): number {
+  if (!phase) {
+    return -1;
+  }
+  return LIFECYCLE_PHASE_RANK[phase] ?? 0;
+}
+
+/** Higher-ranked phase wins (e.g. keep `before_model` when `runner_exec` arrives late). */
+export function maxLifecyclePhase(
+  a: string | undefined | null,
+  b: string | undefined | null,
+): string | null {
+  if (!a) {
+    return b ?? null;
+  }
+  if (!b) {
+    return a;
+  }
+  return lifecyclePhaseRank(a) >= lifecyclePhaseRank(b) ? a : b;
+}
+
 /** Follow-up bubble wave through proxy + early engine; strip starts at `before_model`. */
 export const PRE_BEFORE_MODEL_LIFECYCLE_PHASES = new Set<string>([
   ...PROXY_LIFECYCLE_PHASES,

@@ -8,6 +8,8 @@ import {
   isBeforeModelLifecyclePhase,
   isPreBeforeModelLifecyclePhase,
   isProxyLifecyclePhase,
+  LIFECYCLE_PHASE_MESSAGES,
+  maxLifecyclePhase,
   thinkingStatusFromLifecycle,
 } from "@/lib/agent-lifecycle";
 import type { ThinkingStatus } from "@/lib/agent-display";
@@ -59,7 +61,34 @@ export type ResolveAssistantLoadingUiInput = {
   priorAssistantTurnCount: number;
   /** From `useFollowUpLifecycleStripDelay` — always true on first assistant turn. */
   followUpStripReady: boolean;
+  /** Highest lifecycle phase seen this turn (`useAssistantLoadingUi`). */
+  peakLifecyclePhase?: string | null;
 };
+
+export function effectiveLifecyclePhase(
+  current: string | undefined | null,
+  peak: string | undefined | null,
+): string | undefined {
+  const merged = maxLifecyclePhase(current, peak);
+  return merged ?? current ?? undefined;
+}
+
+export function agentLifecycleAtPhase(
+  lifecycle: AgentLifecycle | null | undefined,
+  phase: string | undefined,
+): AgentLifecycle | null | undefined {
+  if (!lifecycle || !phase) {
+    return lifecycle;
+  }
+  if (lifecycle.phase === phase) {
+    return lifecycle;
+  }
+  return {
+    ...lifecycle,
+    phase,
+    message: LIFECYCLE_PHASE_MESSAGES[phase] ?? lifecycle.message,
+  };
+}
 
 export type AssistantLoadingUiState = {
   showTypingIndicator: boolean;
@@ -87,6 +116,7 @@ export function resolveAssistantLoadingUi(
     isActiveLoading,
     priorAssistantTurnCount,
     followUpStripReady,
+    peakLifecyclePhase,
   } = input;
 
   const empty: AssistantLoadingUiState = {
@@ -109,10 +139,14 @@ export function resolveAssistantLoadingUi(
     return empty;
   }
 
-  const phase = agentLifecycle?.phase;
+  const phase = effectiveLifecyclePhase(
+    agentLifecycle?.phase,
+    peakLifecyclePhase,
+  );
+  const lifecycleForUi = agentLifecycleAtPhase(agentLifecycle, phase);
   const isProxyPhase = isProxyLifecyclePhase(phase);
   const isFirstTurn = priorAssistantTurnCount === 0;
-  const lifecycleStatus = thinkingStatusFromLifecycle(agentLifecycle);
+  const lifecycleStatus = thinkingStatusFromLifecycle(lifecycleForUi);
   const hasAgentSteps = agentStepCount > 0;
   const hasLifecycleData = !!lifecycleStatus && !hasAgentSteps;
 

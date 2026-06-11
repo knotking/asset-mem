@@ -31,7 +31,8 @@ Webapp does **not** import `@homeapp/common` at runtime. Keep these in sync with
 | `src/lib/message-display-parts.ts` | `apps/mapp/lib/chat-content-parse.ts` |
 | `src/lib/agent-display.ts` | `apps/common/src/lib/agent-display.ts` |
 | `src/lib/agent-lifecycle.ts` | `apps/common/src/lib/agent-lifecycle-stream.ts` |
-| `src/lib/agent-lifecycle-ui.ts` | `apps/common/src/lib/agent-lifecycle-ui.ts` |
+| `src/lib/agent-lifecycle-ui.ts` | `apps/common/src/lib/agent-lifecycle-ui.ts` (includes peak phase rank + `effectiveLifecyclePhase` so late `engine.runner_exec` does not regress follow-up UI) |
+| `src/hooks/use-assistant-loading-ui.ts` | `apps/common/src/hooks/use-assistant-loading-ui.ts` |
 | `src/hooks/use-follow-up-lifecycle-strip-delay.ts` | `apps/common/src/hooks/use-follow-up-lifecycle-strip-delay.ts` |
 | `src/hooks/use-assistant-loading-ui.ts` | `apps/common/src/hooks/use-assistant-loading-ui.ts` |
 | `src/lib/checkpoint-branch-progress.ts` | `apps/common/src/lib/checkpoint-branch-progress.ts` |
