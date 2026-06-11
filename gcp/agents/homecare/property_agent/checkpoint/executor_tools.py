@@ -138,22 +138,16 @@ async def analyze_checkpoints(
     """
     normalized_branches = normalize_checkpoint_optional_agents(branches or [])
     if tool_context is not None:
+        # temp:-scoped — visible for the rest of this invocation, never persisted.
         tool_context.state[CHECKPOINT_EXPLICIT_BRANCHES_KEY] = True
         tool_context.state["checkpoint_optional_agents"] = normalized_branches
-    try:
-        return await run_checkpoint_pipeline(
-            user_query=user_query,
-            property_id=property_id,
-            checkpoint_ids=checkpoint_ids,
-            checkpoint_optional_agents=normalized_branches or None,
-            context_doc_uris=context_doc_uris,
-            property_address=property_address,
-            search_location=search_location,
-            tool_context=tool_context,
-        )
-    finally:
-        if tool_context is not None and hasattr(tool_context.state, "__delitem__"):
-            try:
-                del tool_context.state[CHECKPOINT_EXPLICIT_BRANCHES_KEY]
-            except KeyError:
-                pass
+    return await run_checkpoint_pipeline(
+        user_query=user_query,
+        property_id=property_id,
+        checkpoint_ids=checkpoint_ids,
+        checkpoint_optional_agents=normalized_branches or None,
+        context_doc_uris=context_doc_uris,
+        property_address=property_address,
+        search_location=search_location,
+        tool_context=tool_context,
+    )

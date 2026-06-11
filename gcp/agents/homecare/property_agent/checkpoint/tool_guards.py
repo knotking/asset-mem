@@ -21,15 +21,13 @@ from property_agent.checkpoint.session_input import (
 )
 from property_agent.routing.constants import REPORT_MODE_CHECKPOINT_PIPELINE_BLOCKED
 from property_agent.routing.conversational_intent import (
+    prior_checkpoint_analysis_in_session,
     resolve_explicit_optional_branches,
     resolve_user_query_from_state,
 )
 from property_agent.routing.pending_user_action import get_pending_user_action
 from property_agent.routing.property_analysis_routing import (
     filter_optional_branches_for_orchestrator,
-)
-from property_agent.routing.conversational_intent import (
-    prior_checkpoint_analysis_in_session,
 )
 from property_agent.routing.query_mode import (
     branches_mentioned_in_query,
@@ -44,6 +42,7 @@ __all__ = [
     "block_checkpoint_tools_in_report_mode",
     "prepare_analyze_checkpoints_tool",
     "prepare_list_checkpoints_tool",
+    "seed_client_decided_branches",
     "strip_dangling_pending_offer_branches",
     "user_requested_branches",
 ]
@@ -70,6 +69,44 @@ def user_requested_branches(
             if pending is not None:
                 requested.update(pending.run_optional_agents or [])
     return frozenset(requested)
+
+
+def seed_client_decided_branches(
+    branches: list[str],
+    state: Mapping[str, Any] | None,
+) -> list[str]:
+    """Union branches the client decided deterministically into the tool args.
+
+    Guards only *filter* the executor's ``branches`` arg; without this, a chip
+    tap ("run cost") or accepted offer would depend on the executor LLM copying
+    ``run_optional_agents`` out of the [RESOLVED_TURN] block. UI optional
+    toggles (executor-only mode) are seeded for their first run only — repeat
+    turns with a sticky toggle fall back to the idempotency guard's cached
+    answer instead of re-running.
+    """
+    resolved = resolved_turn_from_state(state)
+    if resolved is None or not resolved.run_optional_agents:
+        return branches
+    decided = normalize_checkpoint_optional_agents(list(resolved.run_optional_agents))
+    if not decided:
+        return branches
+    if resolved.resolve_source == "chip" or resolved.discourse_act == "accept_offer":
+        merged = list(dict.fromkeys([*branches, *decided]))
+    elif resolved.resolve_source == "executor_only":
+        completed = prior_analysis_branches_completed(state)
+        merged = list(
+            dict.fromkeys([*branches, *(b for b in decided if b not in completed)])
+        )
+    else:
+        return branches
+    if merged != branches:
+        logger.info(
+            "tool_guards: seeded client-decided branches %r -> %r source=%s",
+            branches,
+            merged,
+            resolved.resolve_source,
+        )
+    return merged
 
 
 def strip_dangling_pending_offer_branches(
@@ -200,6 +237,7 @@ def prepare_analyze_checkpoints_tool(
         args.get("user_query") or ""
     )
     branches = normalize_checkpoint_optional_agents(args.get("branches") or [])
+    branches = seed_client_decided_branches(branches, state)
     branches = strip_dangling_pending_offer_branches(
         branches, user_query=uq, state=state
     )

@@ -82,7 +82,10 @@ async def test_analyze_checkpoints_empty_branches_wraps_pipeline(
     pipeline.assert_awaited_once()
     call_kwargs = pipeline.await_args.kwargs
     assert call_kwargs["checkpoint_optional_agents"] is None
-    assert CHECKPOINT_EXPLICIT_BRANCHES_KEY not in state
+    # temp:-scoped: ADK never persists it, so no cleanup needed (or possible —
+    # ADK State has no __delitem__).
+    assert CHECKPOINT_EXPLICIT_BRANCHES_KEY.startswith("temp:")
+    assert state[CHECKPOINT_EXPLICIT_BRANCHES_KEY] is True
 
 
 @pytest.mark.asyncio

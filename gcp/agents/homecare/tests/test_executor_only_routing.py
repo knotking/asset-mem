@@ -137,12 +137,33 @@ def test_format_slim_session_context_block() -> None:
             "checkpoint_ids": ["cp-1", "cp-2"],
             "context_doc_uris": [],
             "report_ids": ["r-1"],
+            "checkpoint_optional_agents": ["cost"],
         }
     )
     assert "[SESSION_CONTEXT]" in block
     assert "checkpoint_ids_count" in block
     assert '"checkpoint_ids_count": 2' in block
+    assert '"cost"' in block
     assert "routing_mode" in block
+
+
+def test_prepare_executor_only_clears_stale_ui_toggles() -> None:
+    """Persisted toggles from a prior turn must not leak into this turn's resolved turn."""
+    ctx = _ctx(
+        query="what should I do about the leak",
+        state={
+            "primary_agent": "checkpoint",
+            "checkpoint_optional_agents": ["cost"],
+        },
+    )
+    assert (
+        prepare_executor_only_before_model(ctx, llm_request=SimpleNamespace(config=None))
+        is None
+    )
+    assert ctx.state["checkpoint_optional_agents"] == []
+    resolved = ctx.state["resolved_turn"]
+    assert resolved["run_optional_agents"] == []
+    assert resolved["retrieval_only"] is True
 
 
 def test_inject_slim_session_context_strips_resolved_turn() -> None:
