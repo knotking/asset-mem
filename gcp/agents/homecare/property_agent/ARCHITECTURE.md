@@ -40,7 +40,7 @@ Pending offers: `pending_user_action` + `pending_offer_extract` (after-agent mic
 
 **Tool blocking:** `conversational_turn` follows `is_executor_conversational_turn` (casual or context-only substantive turns) — not `route=none`. Context-only checkpoint turns (`answer_from_context`) require grounded session memory (`session_has_checkpoint_answer_context`); `property_id` alone keeps tools enabled. Cold sessions and checkpoint inventory/status queries resolve to `user_goal=new_analysis` so retrieval can run. Cleared UI selection is detected via `checkpoint_selection_cleared`. Vertex Memory Bank ingest/preload are **off by default** (`ADK_MEMORY_INGEST_ENABLED`, `ADK_MEMORY_PRELOAD_ENABLED`); set to `1` to opt in. `accept_offer` with `run_optional_agents` keeps tools enabled; `normalize_substantive_route` promotes `route=checkpoint` when branch work is requested.
 
-See [`docs/ORCHESTRATOR_V2_PLAN.md`](../docs/ORCHESTRATOR_V2_PLAN.md) for the end-to-end flow.
+See [`docs/SINGLE_LOOP_REFACTOR_PLAN.md`](../docs/SINGLE_LOOP_REFACTOR_PLAN.md) for the migration history and eval baselines.
 
 ## Checkpoint optional branch invocation
 
@@ -63,7 +63,7 @@ Orchestration waves and `depends_on` edges: `agent_framework/registry/orchestrat
 
 ## State keys
 
-Legacy session keys `checkpoint_progress_*` are retained (no rename). V2 message patches use `contentMarkdown` / `contentJson` on `state_delta` (see `docs/ORCHESTRATOR_V2_PLAN.md`).
+Legacy session keys `checkpoint_progress_*` are retained (no rename). Message patches use `contentMarkdown` / `contentJson` on `state_delta`.
 
 ### ADK web vs production streaming
 

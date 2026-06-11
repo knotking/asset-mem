@@ -222,7 +222,7 @@ Comprehensive testing guide with test cases and procedures.
 
 ### Related Features
 - [Property Agent](../../gcp/agents/homecare/property_agent/README.md)
-- [Orchestrator V2 Plan](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md)
+- [Property Agent Architecture](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md)
 - [Checkpoint features](../checkpoint/README.md)
 - [Architecture Diagram](../ARCHITECTURE_DIAGRAM.md)
 - [Tech Stack](../TECH_STACK.md)

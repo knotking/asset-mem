@@ -1,4 +1,4 @@
-> **Archived (May 2026):** Historical checkpoint docs. Current behavior: `gcp/agents/homecare/property_agent/checkpoint/` and [ORCHESTRATOR_V2_PLAN.md](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+> **Archived (May 2026):** Historical checkpoint docs. Current behavior: `gcp/agents/homecare/property_agent/checkpoint/` and [property_agent/ARCHITECTURE.md](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md).
 
 # Checkpoint Tab Feature Implementation Plan
 
@@ -51,7 +51,7 @@ Implemented comprehensive analysis capabilities for checkpoint agent, enabling u
 - **Cost Estimates**: Compare DIY vs professional repair costs
 
 **Documentation**:
-- [Orchestrator V2 Plan](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md) - Canonical serving-path contract
+- [Property Agent Architecture](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md) - Canonical serving-path contract
 - [Checkpoint Analysis API](./CHECKPOINT_ANALYSIS_API.md) - Complete API reference
 
 **Key Features**:

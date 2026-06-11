@@ -18,7 +18,6 @@ from property_agent.model_config import (
 from property_agent.routing.conversational_intent import CONVERSATIONAL_TURN_STATE_KEY
 from property_agent.routing.executor_only_routing import (
     bare_casual_intent,
-    executor_only_routing_enabled,
     format_slim_session_context_block,
     inject_slim_session_context_into_llm_request,
     minimal_substantive_resolved_turn,
@@ -42,10 +41,6 @@ def _ctx(*, query: str = "hello", state: dict | None = None) -> SimpleNamespace:
             session=SimpleNamespace(events=[]),
         ),
     )
-
-
-def test_executor_only_routing_enabled() -> None:
-    assert executor_only_routing_enabled() is True
 
 
 @pytest.mark.parametrize(

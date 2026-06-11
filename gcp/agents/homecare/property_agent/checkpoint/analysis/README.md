@@ -4,7 +4,7 @@
 
 Checkpoint analysis runs **inside** `run_checkpoint_pipeline` (`checkpoint/pipeline.py`). It coordinates retrieval results with optional leaf agents (coverage, DIY, service, cost), assembles structured UI data in code, and runs a narrow synthesis LLM for markdown prose only.
 
-Canonical contract: [`docs/ORCHESTRATOR_V2_PLAN.md`](../../../docs/ORCHESTRATOR_V2_PLAN.md).
+Canonical contract: [`property_agent/ARCHITECTURE.md`](../../../property_agent/ARCHITECTURE.md).
 
 ## Purpose
 

@@ -75,7 +75,7 @@ Script: [`.github/scripts/apply-monitoring-alerts.sh`](../../.github/scripts/app
 | Proxy / API down, 5xx, auth failures | [runbooks/proxy-down.md](./runbooks/proxy-down.md) |
 | Vertex / Reasoning Engine outage | [runbooks/vertex-outage.md](./runbooks/vertex-outage.md) |
 | Worker backlog, DLQ growth, stuck checkpoints | [runbooks/worker-backlog.md](./runbooks/worker-backlog.md) |
-| Orchestrator V2 message SSOT cutover / rollback | [runbooks/orchestrator-v2-cutover.md](./runbooks/orchestrator-v2-cutover.md) |
+| Property Agent Architecture message SSOT cutover / rollback | [runbooks/orchestrator-v2-cutover.md](./runbooks/orchestrator-v2-cutover.md) |
 
 ## Proxy Pub/Sub listener shutdown
 

@@ -90,22 +90,21 @@ A sophisticated multi-agent AI system deployed on Vertex AI Reasoning Engine tha
 
 **Location:** `gcp/agents/homecare/property_agent/`
 
-**Purpose:** Two-hop orchestrator: `resolve_turn_llm` classifies each turn, then the executor LLM calls a flat tool registry (`run_checkpoint_pipeline`, RAG tools); optional checkpoint branches run inside the pipeline.
+**Purpose:** Single-loop orchestrator (Orchestrator V3): deterministic pre-routing (chips, accept-offer, casual regex), then one executor LLM per substantive turn calling a flat tool registry (`run_checkpoint_pipeline`, RAG tools); optional checkpoint branches run inside the pipeline.
 
 **Key Responsibilities:**
-- Runs **`resolve_turn_llm`** each turn (intent, route, optional branches) and applies state
-- Answers **casual** turns with canned text (no orchestrator LLM / tools)
-- On substantive turns, the **orchestrator LLM** calls flat registry tools (checkpoint pipeline, RAG)
+- **Pre-routing** for chips, pending-offer accept, and bare greetings (no executor LLM)
+- On substantive turns, the **orchestrator LLM** (`gemini-3.5-flash`) calls flat registry tools (checkpoint pipeline, RAG)
 - Emits **`state_delta`** patches (`contentMarkdown`, `contentJson`, `analysisRunId`, `agentSteps`) for the proxy to merge into Firestore messages
 
 **Routing Logic:**
 1. **Casual** (greeting, capabilities, thanks): canned reply before orchestrator
-2. **Follow-up** from prior analysis: orchestrator answers from session memory / prior message `contentJson` digests — markdown only
+2. **Follow-up** from prior analysis: orchestrator answers from session history / prior message `contentJson` digests — markdown only
 3. **New checkpoint work:** orchestrator calls **`run_checkpoint_pipeline`** (retrieval + optional parallel branches + assembler + synthesis)
-4. **`route=user_docs`:** `user_docs_retrieval` AgentTool; **`route=none` (substantive):** orchestrator markdown only
-5. Client `primary_agent`, `checkpoint_ids`, and UI optional toggles are **context** for resolve, not sole routing authority
+4. **`route=user_docs`:** `user_docs_retrieval` AgentTool; **`route=report`:** `report_retrieval`
+5. Client `primary_agent`, `checkpoint_ids`, and UI optional toggles seed `[SESSION_CONTEXT]` and tool guards — not sole routing authority
 
-See [`gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md`](../agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md) for the canonical V2 contract.
+See [`gcp/agents/homecare/property_agent/ARCHITECTURE.md`](../agents/homecare/property_agent/ARCHITECTURE.md) for the canonical contract.
 
 **Input Schema:**
 ```python

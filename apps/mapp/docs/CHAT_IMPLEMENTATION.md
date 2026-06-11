@@ -240,7 +240,7 @@ Section content includes:
    - What's included in each option
 
 **Message Content Extraction:**
-The component uses the strict Orchestrator V2 message contract:
+The component uses the strict Property Agent Architecture message contract:
 - Renders prose from `contentMarkdown`
 - Renders structured UI from `contentJson` (inline rows + sheets; accordion in full-report sheet only)
 - Does not parse structured JSON from message text in the hot path

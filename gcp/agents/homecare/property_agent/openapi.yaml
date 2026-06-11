@@ -3,10 +3,10 @@ info:
   title: Property Agent API
   version: 2.0.0
   description: |
-    OpenAPI schema for the Property Agent (Orchestrator V2).
+    OpenAPI schema for the Property Agent (single-loop orchestrator).
     
-    **Two-hop orchestration:** `resolve_turn_llm` classifies each turn; the executor LLM
-    calls a flat tool registry (or returns markdown from session history).
+    **Single-loop orchestration:** deterministic pre-routing (chips, accept-offer,
+    casual regex) then one executor LLM call per substantive turn for tool selection.
     
     **Root executor tools (3):**
     - `run_checkpoint_pipeline` — retrieval + optional coverage/DIY/service/cost + assembler + synthesis

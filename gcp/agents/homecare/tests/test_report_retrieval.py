@@ -200,24 +200,16 @@ def test_load_reports_sync_uses_archived_revision() -> None:
 
 
 def test_primary_agent_report_routes_report() -> None:
-    from property_agent.routing.apply_resolved_turn import apply_primary_agent_constraints
+    from property_agent.routing.executor_only_routing import minimal_substantive_resolved_turn
 
-    payload = {
-        "intent": "substantive",
-        "route": "checkpoint",
-        "expanded_user_query": "What did the move-out report say about the kitchen?",
-        "retrieval_only": False,
-        "run_optional_agents": ["coverage"],
-    }
     state = {
         "primary_agent": "report",
         "report_ids": ["report-1"],
     }
-    out = apply_primary_agent_constraints(
-        payload,
-        state=state,
+    resolved = minimal_substantive_resolved_turn(
+        state,
         user_query="What did the move-out report say about the kitchen?",
     )
-    assert out["route"] == "report"
-    assert out["retrieval_only"] is True
-    assert out["run_optional_agents"] == []
+    assert resolved.route == "report"
+    assert resolved.retrieval_only is True
+    assert resolved.run_optional_agents == []

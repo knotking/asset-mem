@@ -1,4 +1,4 @@
-"""Orchestrator V2 routing observability (resolve hop)."""
+"""Orchestrator routing observability (deterministic + chip paths)."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ def _estimate_tokens(text: str) -> int:
     return max(1, len(stripped) // 4)
 
 
-def record_resolve_turn(
+def record_routing_turn(
     *,
     intent: str,
     route: str,
@@ -41,7 +41,7 @@ def record_resolve_turn(
 ) -> None:
     prompt_tokens = _estimate_tokens(prompt_text)
     logger.info(
-        "orchestrator_v2_routing intent=%s route=%s resolve_prompt_tokens=%s "
+        "orchestrator_routing intent=%s route=%s routing_prompt_tokens=%s "
         "elapsed_ms=%.0f executor_skipped=%s",
         intent,
         route,
@@ -61,20 +61,20 @@ def record_resolve_turn(
         METRIC_RESOLVE_CALLS,
         1,
         attributes=attrs,
-        description="Orchestrator V2 resolve_turn_llm calls per turn",
+        description="Orchestrator routing decisions per turn (chip or legacy resolve)",
     )
     record_histogram(
         METRIC_RESOLVE_PROMPT_TOKENS,
         float(prompt_tokens),
         attributes=attrs,
-        description="Estimated resolve prompt tokens",
+        description="Estimated routing prompt tokens (0 for chip/deterministic)",
         unit="1",
     )
     record_histogram(
         "orchestrator.v2.routing.resolve_duration_ms",
         elapsed_ms,
         attributes=attrs,
-        description="resolve_turn_llm latency",
+        description="Routing decision latency",
         unit="ms",
     )
     if executor_skipped:
@@ -82,5 +82,9 @@ def record_resolve_turn(
             METRIC_EXECUTOR_SKIPPED,
             1,
             attributes=attrs,
-            description="Casual resolve short-circuits (executor not invoked)",
+            description="Casual routing short-circuits (executor not invoked)",
         )
+
+
+# Back-compat alias for any external importers.
+record_resolve_turn = record_routing_turn

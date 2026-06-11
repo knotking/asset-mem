@@ -264,7 +264,7 @@ black .
 - [Workers Documentation](../../gcp/proxy/workers/README.md) - Background workers
 - [Checkpoint features](../checkpoint/) - Checkpoint feature docs
 - [Property Agent](../../gcp/agents/homecare/property_agent/README.md) - Root orchestrator
-- [Orchestrator V2](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md) - Chat SSOT contract
+- [Property Agent Architecture](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md) - Chat SSOT contract
 
 ### External Resources
 

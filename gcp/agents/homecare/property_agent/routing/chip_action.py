@@ -1,9 +1,8 @@
-"""Deterministic ResolvedTurn from client chip taps — zero resolve-LLM call.
+"""Deterministic ResolvedTurn from client chip taps.
 
-Phase 1 of the single-loop refactor (docs/SINGLE_LOOP_REFACTOR_PLAN.md):
-suggested-action chips carry a structured ``action`` object; clients echo it
+Suggested-action chips carry a structured ``action`` object; clients echo it
 back as ``chip_action`` in the chat request. When present, routing is fully
-deterministic — the resolve LLM is skipped and ``resolve_source="chip"``.
+deterministic with ``resolve_source="chip"``.
 
 Free-text turns (including typed "yes" replies to offers) are unaffected.
 """
@@ -146,12 +145,12 @@ def resolve_turn_from_chip(
         (user_query or "")[:80],
     )
     try:
-        from property_agent.metrics.routing_metrics import record_resolve_turn
+        from property_agent.metrics.routing_metrics import record_routing_turn
 
-        record_resolve_turn(
+        record_routing_turn(
             intent=resolved.intent,
             route=resolved.route,
-            prompt_text="",  # zero resolve-LLM tokens
+            prompt_text="",
             elapsed_ms=0.0,
             executor_skipped=False,
         )

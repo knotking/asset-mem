@@ -1,8 +1,8 @@
 """
-Executor-only routing eval: replay executor_only/cases.yaml and score routing.
+Single-loop routing eval: replay executor_only/cases.yaml and score routing.
 
-Matches staging ``HOMEAPP_EXECUTOR_ONLY_ROUTING=1`` — chip, pending-offer,
-casual regex, or ``minimal_substantive_resolved_turn``. No resolve LLM, no Vertex.
+Deterministic paths only — chip, pending-offer, casual regex, or
+``minimal_substantive_resolved_turn``. No Vertex LLM.
 
 Schema validation: ``tests/test_routing_eval_cases.py``.
 

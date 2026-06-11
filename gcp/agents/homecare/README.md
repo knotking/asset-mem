@@ -131,7 +131,7 @@ The system accepts various input types:
 
 ## Agent Architecture
 
-See [property_agent/ARCHITECTURE.md](property_agent/ARCHITECTURE.md) and [docs/ORCHESTRATOR_V2_PLAN.md](docs/ORCHESTRATOR_V2_PLAN.md).
+See [property_agent/ARCHITECTURE.md](property_agent/ARCHITECTURE.md) and [docs/SINGLE_LOOP_REFACTOR_PLAN.md](docs/SINGLE_LOOP_REFACTOR_PLAN.md).
 
 ### Key Features
 

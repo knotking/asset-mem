@@ -96,7 +96,7 @@ On each throttled persist during `POST /firebase-agent-stream`, `services/vertex
 2. **Merges** patches with monotonic `revision` and schema validation (`contentSchemaVersion: 2`)
 3. Enforces size limits via `utils/message_patch_state.constrain_content_json_size`
 
-Clients (mapp / webapp) listen to Firestore and render via `@homeapp/common` `resolveMessageContentParts`. Canonical contract: [`gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md`](../../agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+Clients (mapp / webapp) listen to Firestore and render via `@homeapp/common` `resolveMessageContentParts`. Canonical contract: [`gcp/agents/homecare/property_agent/ARCHITECTURE.md`](../../agents/homecare/property_agent/ARCHITECTURE.md).
 
 ### Token quota (rate limit)
 

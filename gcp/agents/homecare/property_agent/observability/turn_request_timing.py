@@ -81,7 +81,7 @@ def mark(phase: str) -> None:
 
 
 def record_duration_ms(phase: str, duration_ms: float) -> None:
-    """Store an explicit duration (e.g. resolve_turn_llm internal timing)."""
+    """Store an explicit duration for a routing or tool phase."""
     data = _TIMING_CTX.get()
     if not data or not turn_timing_enabled():
         return

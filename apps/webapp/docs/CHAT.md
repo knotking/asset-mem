@@ -1,6 +1,6 @@
-# Webapp chat UI — Orchestrator V2 message contract
+# Webapp chat UI — Property Agent Architecture message contract
 
-How the Next.js webapp renders Firestore chat messages after the Orchestrator V2 cutover (`contentMarkdown` + `contentJson`). Aligned with mapp; see `apps/mapp/docs/CHAT_IMPLEMENTATION.md` for mobile-specific GiftedChat details.
+How the Next.js webapp renders Firestore chat messages after the Property Agent Architecture cutover (`contentMarkdown` + `contentJson`). Aligned with mapp; see `apps/mapp/docs/CHAT_IMPLEMENTATION.md` for mobile-specific GiftedChat details.
 
 ## Message fields
 

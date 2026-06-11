@@ -85,9 +85,9 @@ class DiagnosisInput(BaseModel):
     primary_agent: Optional[PrimaryAgent] = Field(
         default=None,
         description=(
-            "Client UI tab hint: 'checkpoint', 'docs', or 'report'. Passed to resolve_turn_llm as context "
-            "(with checkpoint_ids and checkpoint_optional_agents); the orchestrator still "
-            "chooses tools via resolve output, not this field alone."
+            "Client UI tab hint: 'checkpoint', 'docs', or 'report'. Seeds executor "
+            "session context and tool-guard route hints together with checkpoint_ids "
+            "and checkpoint_optional_agents; the executor still chooses tools."
         ),
     )
     checkpoint_optional_agents: Optional[List[CheckpointOptionalAgent]] = Field(
@@ -105,16 +105,15 @@ class DiagnosisInput(BaseModel):
     chat_intent: Optional[ChatIntentHint] = Field(
         default=None,
         description=(
-            "Optional client hint for resolve: discuss_report biases explain_prior; "
-            "new_analysis biases fresh branch work; replay_report biases full report replay. "
-            "Resolve discourse_act still wins."
+            "Optional client hint: discuss_report biases explain_prior; "
+            "new_analysis biases fresh branch work; replay_report biases full report replay."
         ),
     )
     chip_action: Optional[ChipActionInput] = Field(
         default=None,
         description=(
             "Structured suggested-action chip tap. When present, routing is "
-            "deterministic (resolve LLM skipped, resolve_source=chip)."
+            "deterministic (resolve_source=chip)."
         ),
     )
 

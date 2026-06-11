@@ -93,4 +93,4 @@ When `checkpoint_optional_agents` is non-empty, the pipeline continues to parall
 
 ## Response format (V2)
 
-Structured UI data is assembled into **`contentJson`** on the Firestore chat message. Prose lives in **`contentMarkdown`**. See [`docs/ORCHESTRATOR_V2_PLAN.md`](../../../docs/ORCHESTRATOR_V2_PLAN.md).
+Structured UI data is assembled into **`contentJson`** on the Firestore chat message. Prose lives in **`contentMarkdown`**. See [`property_agent/ARCHITECTURE.md`](../../../property_agent/ARCHITECTURE.md).

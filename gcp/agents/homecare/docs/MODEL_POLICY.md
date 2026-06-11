@@ -4,24 +4,24 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 
 ## `GLOBAL_GEMINI_MODEL` (`gemini-3.1-flash-lite`)
 
-**Where:** All ADK `Agent` definitions wired through `property_agent/model_config.py`:
+**Where:** ADK sub-agents wired through `property_agent/model_config.py`:
 
-- Root `property_agent` (executor + resolve LLM, pending-offer extract, conversation summary) and checkpoint analysis sub-agents
-- Checkpoint agent, coverage / service / shopping ADK agents
+- Checkpoint analysis sub-agents, coverage / service / shopping ADK agents
 - Checkpoint progress workflow (parallel runner is Python-only; **synthesis** uses this model)
 - Media search-query refiner and other small ADK tool agents
+- Pending-offer extract and conversation summary helpers on the root agent
 
-**Why:** Low latency, streaming-friendly routing and synthesis; most turns are orchestration or separate `contentJson` / `contentMarkdown` fields via `state_delta`.
+**Why:** Low latency, streaming-friendly synthesis; most turns are orchestration or separate `contentJson` / `contentMarkdown` fields via `state_delta`.
 
-**Client:** ADK `Gemini3` wrapper with Vertex `location=global`. The root executor must receive the **`GLOBAL_GEMINI_MODEL` object** (not the model name string) so ADK does not fall back to `GOOGLE_CLOUD_LOCATION` (e.g. `us-central1`), where `gemini-3.1-flash-lite` may be unavailable.
+**Client:** ADK `Gemini3` wrapper with Vertex `location=global`.
 
 ## `EXECUTOR_ONLY_GEMINI_MODEL` (`gemini-3.5-flash`)
 
-**Where:** Root `property_agent` only, when `HOMEAPP_EXECUTOR_ONLY_ROUTING=1` (`global_agent_gemini_model()`).
+**Where:** Root `property_agent` executor only (`global_agent_gemini_model()`).
 
-**Why:** Phase 4 single-loop experiment — one non-lite Flash call for tool selection instead of flash-lite resolve + flash-lite executor.
+**Why:** Single-loop orchestration (Orchestrator V3) — one non-lite Flash call per turn for tool selection; deterministic chip/accept routing skips any LLM hop.
 
-**Client:** Same `Gemini3` / `location=global` as `GLOBAL_GEMINI_MODEL`.
+**Client:** Same `Gemini3` / `location=global` as `GLOBAL_GEMINI_MODEL`. The root executor must receive the **`EXECUTOR_ONLY_GEMINI_MODEL` object** (not the model name string) so ADK does not fall back to `GOOGLE_CLOUD_LOCATION` (e.g. `us-central1`), where newer Flash models may be unavailable.
 
 ## `LEGACY_API_GEMINI` (`gemini-2.5-flash`)
 
@@ -39,7 +39,8 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 | Need | Use |
 |------|-----|
 | New ADK sub-agent with tools / transfer | `GLOBAL_GEMINI_MODEL` |
-| New one-shot JSON from Python (`generate_content`) | `LEGACY_API_GEMINI` unless ADK migration is explicit (routing micro-LLMs use `global_flash_lite_client_and_model()` → same global `gemini-3.1-flash-lite`) |
+| Root orchestrator tool selection | `EXECUTOR_ONLY_GEMINI_MODEL` via `global_agent_gemini_model()` |
+| New one-shot JSON from Python (`generate_content`) | `LEGACY_API_GEMINI` unless ADK migration is explicit |
 | Embeddings | `text-embedding-004` in `firestore_vector_search.py` (not chat models) |
 
 Changing the default chat model for ADK agents: edit `Gemini3(model=...)` in `model_config.py`, run `make test`, and exercise key flows via `adk web` on staging.

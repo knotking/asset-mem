@@ -420,7 +420,7 @@ AGENT  AGENT   AGENT                   │
 
 ### Agent Responsibilities
 
-#### Root Property Agent (Orchestrator V2)
+#### Root Property Agent (Property Agent Architecture)
 
 - **Role**: Two-hop orchestrator (`resolve_turn_llm` + executor LLM)
 - **Flat executor tools**:
@@ -428,7 +428,7 @@ AGENT  AGENT   AGENT                   │
   - `user_docs_retrieval` — user document RAG
 - **Casual turns**: canned markdown before executor runs
 
-See [Orchestrator V2 Plan](../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+See [Property Agent Architecture](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md).
 
 ### Agent Workflow
 

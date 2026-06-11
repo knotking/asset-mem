@@ -51,8 +51,8 @@ _BLOCKED_ROUTING_TOOLS_ON_CASUAL = frozenset(
 _CONTEXT_ONLY_BLOCKED_TOOLS = _BLOCKED_ROUTING_TOOLS_ON_CASUAL
 
 _CONTEXT_ONLY_FALLBACK = (
-    "Answer from [SESSION_WORKING_MEMORY] and prior messages in this "
-    "conversation. Do not call checkpoint or retrieval tools again for this turn."
+    "Answer from prior messages in this conversation and session context. "
+    "Do not call checkpoint or retrieval tools again for this turn."
 )
 
 _CONVERSATIONAL_TOOL_RESULT = (

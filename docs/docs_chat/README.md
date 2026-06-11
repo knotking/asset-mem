@@ -134,7 +134,7 @@ docs/docs_chat/
 ## Related Features
 
 - **[Property Agent](../../gcp/agents/homecare/property_agent/README.md)** - Root orchestrator (checkpoint pipeline, docs/KB RAG)
-- **[Orchestrator V2](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md)** - Canonical chat analysis contract
+- **[Property Agent Architecture](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md)** - Canonical chat analysis contract
 - **[Checkpoint features](../checkpoint/README.md)** - Property history and condition tracking
 - **[User Docs Agent](../../gcp/agents/homecare/property_agent/agents/user_docs_agent/README.md)** - Document retrieval (registry tool `user_docs_retrieval`)
 
