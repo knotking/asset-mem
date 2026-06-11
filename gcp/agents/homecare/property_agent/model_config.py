@@ -40,7 +40,19 @@ class Gemini3(Gemini):
 # ADK agents (root executor, checkpoint branches, synthesis): fast routing + streaming.
 GLOBAL_GEMINI_MODEL = Gemini3(model="gemini-3.1-flash-lite")
 
+# Phase 4 executor-only experiment: single flash call instead of flash-lite resolve + flash-lite executor.
+EXECUTOR_ONLY_GEMINI_MODEL = Gemini3(model="gemini-3.1-flash")
+
 GLOBAL_FLASH_LITE_MODEL_NAME: str = GLOBAL_GEMINI_MODEL.model
+
+
+def global_agent_gemini_model() -> Gemini3:
+    """Root agent model; flash (non-lite) when executor-only routing is enabled."""
+    from property_agent.routing.executor_only_routing import executor_only_routing_enabled
+
+    if executor_only_routing_enabled():
+        return EXECUTOR_ONLY_GEMINI_MODEL
+    return GLOBAL_GEMINI_MODEL
 
 
 def global_flash_lite_client_and_model() -> tuple[Client, str]:

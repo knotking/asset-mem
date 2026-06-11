@@ -31,7 +31,7 @@ def load_property_plugin() -> PropertyPlugin:
         memory_preload_enabled,
         resolve_property_id,
     )
-    from property_agent.model_config import GLOBAL_GEMINI_MODEL
+    from property_agent.model_config import global_agent_gemini_model
     from property_agent.prompts import property_agent_executor_instructions
     from property_agent.registry import build_executor_tools
     from property_agent.routing.resolve_turn import prepare_before_model_turn
@@ -42,7 +42,7 @@ def load_property_plugin() -> PropertyPlugin:
         prepare_before_model_turn=prepare_before_model_turn,
         property_agent_executor_instructions=property_agent_executor_instructions,
         diagnosis_input_schema=DiagnosisInput,
-        global_gemini_model=GLOBAL_GEMINI_MODEL,
+        global_gemini_model=global_agent_gemini_model(),
         memory_preload_enabled=memory_preload_enabled,
         ingest_invocation_to_memory_bank=ingest_invocation_to_memory_bank,
         property_agent_name=PROPERTY_AGENT_NAME,

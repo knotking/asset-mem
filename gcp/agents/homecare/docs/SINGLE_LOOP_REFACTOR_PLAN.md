@@ -188,14 +188,14 @@ callback tests; guards are router-agnostic (chip/resolve/executor-only ready).
 
 ## Phase 4 — Executor-only routing experiment (the big switch, behind a flag)
 
-- [ ] Add `HOMEAPP_EXECUTOR_ONLY_ROUTING=1`: skip `resolve_turn_llm` entirely;
-      `prepare_before_model_turn` injects only a slim context block (property
-      address, selected checkpoint count, doc/report ids — not the full
-      `[RESOLVED_TURN]` machinery).
-- [ ] Casual-turn short-circuit becomes a ~20-line regex for bare greetings
-      (cheap, fail-open to the executor).
-- [ ] Run the loop on flash (non-lite) for this experiment — Phases 1+2 removed
-      most easy traffic; per-turn cost roughly neutral vs. two flash-lite calls.
+- [x] Add `HOMEAPP_EXECUTOR_ONLY_ROUTING=1`: skip `resolve_turn_llm` entirely;
+      `prepare_before_model_turn` → `executor_only_routing.prepare_executor_only_before_model`
+      injects only a slim `[SESSION_CONTEXT]` block (property address, checkpoint/doc/report
+      counts — not full `[RESOLVED_TURN]` + working-memory hydration). Chip fast-path still
+      injects `[RESOLVED_TURN]`; minimal `ResolvedTurn` kept in state for tool guards.
+- [x] Casual-turn short-circuit: `bare_casual_intent()` regex for bare greetings and
+      “what can you do” (fail-open to the executor for everything else).
+- [x] Root agent uses `gemini-3.1-flash` (non-lite) when flag is set (`global_agent_gemini_model`).
 - [ ] A/B on staging: replay the Phase 0 eval set plus live `adk web` QA under
       both flags. Compare misroute rate, latency, tokens.
 - [ ] Iterate on tool descriptions (not heuristics) until parity or better.
