@@ -1,5 +1,6 @@
 import { extractExecutiveSummaryNarrative } from '@homeapp/common/lib/executive-summary-display';
 import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
+import { normalizeChatMarkdownSpacing } from '@homeapp/common/lib/normalize-chat-markdown';
 import { serviceSearchFailed } from '@homeapp/common/lib/service-search-status';
 import type { Message, StructuredResponseData } from '@homeapp/common/types';
 
@@ -117,13 +118,13 @@ export function structuredDataHasVisibleSections(data: StructuredResponseData): 
 
 function synthesisMarkdownForSummary(message: Message): string {
   if (typeof message.contentMarkdown === 'string' && message.contentMarkdown.trim()) {
-    return message.contentMarkdown.trim();
+    return normalizeChatMarkdownSpacing(message.contentMarkdown);
   }
   const content = typeof message.content === 'string' ? message.content.trim() : '';
   if (!content || content.startsWith('{') || content.startsWith('[')) {
     return '';
   }
-  return content;
+  return normalizeChatMarkdownSpacing(content);
 }
 
 /** Resolve structured vs markdown display from contentJson + contentMarkdown fields. */

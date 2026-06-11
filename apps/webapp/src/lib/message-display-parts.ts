@@ -3,6 +3,7 @@
  * Keep in sync with apps/mapp/lib/chat-content-parse.ts.
  */
 import { extractExecutiveSummaryNarrative } from "@/lib/executive-summary-display";
+import { normalizeChatMarkdownSpacing } from "@/lib/normalize-chat-markdown";
 import type { Message, StructuredResponseData } from "@/lib/types";
 import { resolveMessageContentParts } from "@/lib/message-content-parts";
 
@@ -126,13 +127,13 @@ export function structuredDataHasVisibleSections(data: StructuredResponseData): 
 
 function synthesisMarkdownForSummary(message: Message): string {
   if (typeof message.contentMarkdown === "string" && message.contentMarkdown.trim()) {
-    return message.contentMarkdown.trim();
+    return normalizeChatMarkdownSpacing(message.contentMarkdown);
   }
   const content = typeof message.content === "string" ? message.content.trim() : "";
   if (!content || content.startsWith("{") || content.startsWith("[")) {
     return "";
   }
-  return content;
+  return normalizeChatMarkdownSpacing(content);
 }
 
 /** Resolve structured vs markdown display from contentJson + contentMarkdown fields. */
