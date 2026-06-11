@@ -1,6 +1,6 @@
 # Single-loop agent refactor plan (Orchestrator V3)
 
-Status: **Phase 2 complete** — executor tool split shipped 2026-06-10.
+Status: **Phase 3 complete** — tool-boundary guards consolidated 2026-06-11.
 Owner: —
 Last updated: 2026-06-10
 
@@ -165,28 +165,26 @@ Split the mega-tool in `property_agent/registry.py` so intent maps to tool shape
 (not `run_checkpoint_pipeline`); routing eval unchanged (resolve layer still on);
 434+ unit tests green; no client/proxy changes.
 
-## Phase 3 — Tool-boundary invariants (the ~300 lines that must survive)
+## Phase 3 — Tool-boundary invariants (the ~300 lines that must survive) ✅
 
-Extract legitimate guards into one module (e.g.
-`property_agent/checkpoint/tool_guards.py`), enforced in `before_tool` regardless
-of which router produced the call:
+Extract legitimate guards into one module (`property_agent/checkpoint/tool_guards.py`),
+enforced in `before_tool` regardless of which router produced the call:
 
-- [ ] `checkpoint_ids` forced from UI selection (exists:
-      `apply_session_checkpoint_ids_to_tool_args`).
-- [ ] Branch enum validation + order-preserving dedupe (exists since the
-      2026-06-10 fixes).
-- [ ] Idempotency: branch completed this session + no explicit re-request + no
-      fresh-external-data ask → return cached section instead of re-running (port
-      `filter_optional_branches_for_orchestrator` semantics from
-      `routing/apply_resolved_turn.py`).
-- [ ] Report mode blocks checkpoint tools (exists in
-      `routing/conversational_callbacks.py`).
-- [ ] Pending-offer guard: branches appearing only in a dangling assistant offer
-      do not run unless the user's text or chip references them (fixes the
-      unrequested-cost bug at the boundary, not in the prompt).
+- [x] `checkpoint_ids` forced from UI selection (`apply_session_checkpoint_ids_to_tool_args`
+      via `prepare_list_checkpoints_tool` / `prepare_analyze_checkpoints_tool`).
+- [x] Branch enum validation + order-preserving dedupe (`normalize_checkpoint_optional_agents`).
+- [x] Idempotency: `filter_optional_branches_for_orchestrator` at tool boundary;
+      when all branches already completed and user did not explicitly re-request,
+      `maybe_short_circuit_completed_branches` returns a skip result (cached session
+      answer) instead of re-running.
+- [x] Report mode blocks checkpoint tools (`block_checkpoint_tools_in_report_mode`,
+      called from `conversational_callbacks` before context-only guards).
+- [x] Pending-offer guard: `strip_dangling_pending_offer_branches` drops branches
+      that appear only in `pending_user_action` unless user text, chip, or
+      `accept_offer` references them (fixes unrequested-cost at the boundary).
 
-**Exit criteria:** unit tests per guard; guards fire identically under both
-routers (resolve-LLM path and Phase 4 executor-only path).
+**Exit criteria met:** `tests/test_checkpoint_tool_guards.py` (10 cases) + existing
+callback tests; guards are router-agnostic (chip/resolve/executor-only ready).
 
 ## Phase 4 — Executor-only routing experiment (the big switch, behind a flag)
 

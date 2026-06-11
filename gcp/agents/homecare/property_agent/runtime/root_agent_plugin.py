@@ -33,7 +33,6 @@ from property_agent.routing.conversational_intent import (
 from property_agent.routing.query_mode import snapshot_session_analysis_context
 from property_agent.routing.constants import USER_DOCS_PASSTHROUGH_STATE_KEY
 from property_agent.routing.resolve_turn import requests_optional_analysis_from_resolved
-from property_agent.checkpoint.session_input import sync_checkpoint_tool_args_to_state
 from property_agent.observability.lifecycle_events import (
     PHASE_ENGINE_BEFORE_MODEL,
     emit_lifecycle_from_callback,
@@ -255,29 +254,24 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
         )
         from property_agent.checkpoint.constants import (
             CHECKPOINT_ANALYSIS_TOOL,
-            CHECKPOINT_EXPLICIT_BRANCHES_KEY,
             CHECKPOINT_LIST_TOOL,
         )
-        from property_agent.checkpoint.session_input import (
-            apply_session_checkpoint_ids_to_tool_args,
-            normalize_checkpoint_optional_agents,
+        from property_agent.checkpoint.tool_guards import (
+            prepare_analyze_checkpoints_tool,
+            prepare_list_checkpoints_tool,
         )
 
-        if tool_name in (CHECKPOINT_ANALYSIS_TOOL, CHECKPOINT_LIST_TOOL) and isinstance(
-            args, dict
-        ):
-            if tool_name == CHECKPOINT_ANALYSIS_TOOL:
-                branches = normalize_checkpoint_optional_agents(args.get("branches") or [])
-                tool_context.state[CHECKPOINT_EXPLICIT_BRANCHES_KEY] = True
-                tool_context.state["checkpoint_optional_agents"] = branches
-                args["checkpoint_optional_agents"] = branches
-            apply_session_checkpoint_ids_to_tool_args(tool_context.state, args)
-            sync_checkpoint_tool_args_to_state(tool_context.state, args)
-            logger.info(
-                "property_agent before_tool: synced checkpoint session fields tool=%s branches=%r",
-                tool_name,
-                tool_context.state.get("checkpoint_optional_agents"),
+        if tool_name == CHECKPOINT_LIST_TOOL and isinstance(args, dict):
+            prepare_list_checkpoints_tool(tool_context.state, args)
+        elif tool_name == CHECKPOINT_ANALYSIS_TOOL and isinstance(args, dict):
+            uq = resolve_user_query_from_state(tool_context.state) or str(
+                args.get("user_query") or ""
             )
+            guarded = prepare_analyze_checkpoints_tool(
+                tool_context.state, args, user_query=uq
+            )
+            if guarded is not None:
+                return guarded
         if property_id:
             tool_context.state["property_id"] = property_id
             logger.info("property_id %s set in tool context", property_id)
