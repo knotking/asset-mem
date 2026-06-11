@@ -79,11 +79,12 @@ def test_serpapi_maps_search_partial_llm_payload_without_source(
     assert "Bay Area Door" in out
 
 
-def test_append_serpapi_fallback_hint_includes_retrieval_stem() -> None:
+def test_append_serpapi_fallback_hint_includes_localized_query() -> None:
     state = {
         "checkpoint_retrieval_search_query": (
             "residential garage door paint chipping scratches repair"
-        )
+        ),
+        "property_address": "1982 Helena Way, Brentwood, CA 94513",
     }
     tool_context = SimpleNamespace(state=state)
     raw = "SerpAPI Maps error: Your account has run out of searches."
@@ -93,8 +94,37 @@ def test_append_serpapi_fallback_hint_includes_retrieval_stem() -> None:
         tool_context=tool_context,
     )
     assert "SERPAPI_FALLBACK_HINT" in out
-    assert "residential garage door paint chipping" in out
+    assert "near Brentwood, CA 94513" in out
     assert "home inspection" in out.lower()
+
+
+@pytest.mark.asyncio
+async def test_serpapi_search_uses_trade_query_from_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: list[str] = []
+
+    def _maps(query, resolved, property_address=None):
+        captured.append(query)
+        return "['Local Pro | Brentwood, CA | 2.1 mi']"
+
+    monkeypatch.setattr(service_mod, "_run_serpapi_maps_search", _maps)
+    state = {
+        "checkpoint_service_trade_query": "auto body paint repair contractor",
+        "checkpoint_retrieval_search_query": "vehicle paint transfer repair",
+    }
+    tool_context = SimpleNamespace(state=state)
+    sl = {
+        "source": "property_address",
+        "radius_miles": 5,
+        "coordinates": {"lat": 37.9, "lng": -121.7},
+    }
+    await service_mod.serpapi_search(
+        "auto body shop",
+        search_location=sl,
+        tool_context=tool_context,
+    )
+    assert captured == ["auto body paint repair contractor"]
 
 
 @pytest.mark.asyncio
@@ -105,7 +135,10 @@ async def test_serpapi_search_appends_hint_on_maps_error(
         return "SerpAPI Maps error: quota exceeded"
 
     monkeypatch.setattr(service_mod, "_run_serpapi_maps_search", _fail_maps)
-    state = {"checkpoint_retrieval_search_query": "garage door paint repair"}
+    state = {
+        "checkpoint_retrieval_search_query": "garage door paint repair",
+        "property_address": "1982 Helena Way, Brentwood, CA 94513",
+    }
     tool_context = SimpleNamespace(state=state)
     sl = {
         "source": "property_address",
@@ -118,7 +151,7 @@ async def test_serpapi_search_appends_hint_on_maps_error(
         tool_context=tool_context,
     )
     assert "SERPAPI_FALLBACK_HINT" in out
-    assert "garage door paint repair" in out
+    assert "near Brentwood, CA 94513" in out
 
 
 @pytest.mark.asyncio
@@ -170,4 +203,13 @@ async def test_serpapi_search_resolves_property_address_when_coords_missing(
     assert captured[0]["lat"] == pytest.approx(37.931868)
     assert captured[0]["lon"] == pytest.approx(-121.6957863)
     assert "Brentwood Pro" in out
+
+
+def test_service_agent_instructions_avoid_adk_state_placeholders() -> None:
+    """ADK treats {word} in instructions as session-state injection targets."""
+    from property_agent.agents.service_agent.prompts import service_agent_instructions
+
+    text = service_agent_instructions()
+    assert "{city}" not in text
+    assert "near Brentwood, CA 94513" in text
 

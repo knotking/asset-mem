@@ -22,6 +22,7 @@ def test_normalize_coerces_serpapi_error_string_to_empty_array() -> None:
                     {
                         "name": "Wilfredo's Garage Door Service",
                         "contact": "(925) 318-7025",
+                        "location": "Brentwood, CA",
                         "services": "Garage door repair",
                         "notes": "Free estimates",
                     }
@@ -35,6 +36,58 @@ def test_normalize_coerces_serpapi_error_string_to_empty_array() -> None:
     assert local["googleSearchResults"][0]["name"] == "Wilfredo's Garage Door Service"
     assert local["googleSearchResults"][0]["contact_info"] == "(925) 318-7025"
     assert "Free estimates" in local["googleSearchResults"][0]["additional_information"]
+
+
+def test_normalize_strips_non_local_google_when_serp_fails() -> None:
+    analysis = {
+        "serviceResults": {
+            "localPros": {
+                "serpAPIResults": "SerpAPI Maps error: quota exceeded",
+                "googleSearchResults": [
+                    {
+                        "name": "Charlotte Auto Body",
+                        "location": "Charlotte, NC",
+                        "phone": "704-443-7794",
+                    },
+                    {
+                        "name": "Brentwood Collision Center",
+                        "location": "Brentwood, CA",
+                        "phone": "925-555-0100",
+                    },
+                ],
+            }
+        }
+    }
+    normalize_assembled_analysis(
+        analysis, property_address="1982 Helena Way, Brentwood, CA 94513"
+    )
+    local = analysis["serviceResults"]["localPros"]
+    names = [row["name"] for row in local["serpAPIResults"]]
+    assert names == ["Brentwood Collision Center"]
+    assert local["googleSearchResults"][0]["name"] == "Brentwood Collision Center"
+
+
+def test_normalize_marks_service_failed_when_serp_and_local_google_empty() -> None:
+    analysis = {
+        "serviceResults": {
+            "localPros": {
+                "serpAPIResults": "SerpAPI Maps error: quota exceeded",
+                "googleSearchResults": [
+                    {
+                        "name": "Charlotte Auto Body",
+                        "location": "Charlotte, NC",
+                    }
+                ],
+            }
+        }
+    }
+    normalize_assembled_analysis(
+        analysis, property_address="1982 Helena Way, Brentwood, CA 94513"
+    )
+    service = analysis["serviceResults"]
+    assert service["searchStatus"] == "failed"
+    assert service["localPros"]["serpAPIResults"] == []
+    assert service["localPros"]["googleSearchResults"] == []
 
 
 def test_normalize_merges_google_pros_into_serp_display() -> None:
@@ -53,8 +106,9 @@ def test_normalize_merges_google_pros_into_serp_display() -> None:
     }
     normalize_assembled_analysis(analysis)
     names = [r["name"] for r in analysis["serviceResults"]["localPros"]["serpAPIResults"]]
-    assert names[0] == "Precision Garage Door"
+    assert names[0] == "Brentwood Ace Hardware"
     assert "Up Right Garage Door Repair" in names
+    assert "Precision Garage Door" in names
 
 
 def test_filter_youtube_ranks_by_stem_token_overlap() -> None:
@@ -143,7 +197,12 @@ def test_build_fallback_analysis_normalizes_service_branch() -> None:
                 "localPros": {
                     "serpAPIResults": "SerpAPI Maps error: quota",
                     "googleSearchResults": [
-                        {"provider": "Bay Door Co", "contact": "555-0100", "notes": "Local"}
+                        {
+                            "provider": "Bay Door Co",
+                            "contact": "555-0100",
+                            "location": "Brentwood, CA",
+                            "notes": "Local",
+                        }
                     ],
                 }
             }

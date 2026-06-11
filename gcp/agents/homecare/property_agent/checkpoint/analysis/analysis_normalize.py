@@ -12,6 +12,12 @@ from property_agent.checkpoint.analysis.analysis_validate import (
     title_from_markdown_first_heading,
 )
 from property_agent.agents.diy_agent.youtube_relevance import rank_youtube_videos_by_stem
+from property_agent.checkpoint.analysis.service_providers import (
+    filter_providers_by_property_market,
+)
+from property_agent.checkpoint.analysis.markdown_render import (
+    _user_facing_service_search_error,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +59,7 @@ def normalize_assembled_analysis(
     apply_analysis_title_from_markdown(analysis, markdown_source)
 
     _enrich_checkpoint_summary_property(analysis, property_address)
-    _normalize_service_results(analysis)
+    _normalize_service_results(analysis, property_address=property_address)
     _normalize_diy_results(analysis, retrieval_search_query=retrieval_search_query)
     _sync_diy_cost_from_cost_branch(analysis)
 
@@ -196,10 +202,10 @@ def _normalize_provider_list(raw: Any) -> List[Dict[str, Any]]:
 def _merge_service_provider_lists(
     serp: List[Dict[str, Any]], google: List[Dict[str, Any]], *, max_results: int = 10
 ) -> List[Dict[str, Any]]:
-    """Prefer grounded web pros first, then Maps listings; dedupe by name."""
+    """Prefer Maps listings, then geo-filtered web pros; dedupe by name."""
     merged: List[Dict[str, Any]] = []
     seen: set[str] = set()
-    for row in google + serp:
+    for row in serp + google:
         if not isinstance(row, dict):
             continue
         name = str(row.get("name") or "").strip()
@@ -215,7 +221,9 @@ def _merge_service_provider_lists(
     return merged
 
 
-def _normalize_service_results(analysis: Dict[str, Any]) -> None:
+def _normalize_service_results(
+    analysis: Dict[str, Any], *, property_address: Optional[str] = None
+) -> None:
     service = analysis.get("serviceResults")
     if not isinstance(service, dict):
         return
@@ -225,7 +233,11 @@ def _normalize_service_results(analysis: Dict[str, Any]) -> None:
         service["localPros"] = local
 
     serp_raw = local.get("serpAPIResults")
+    serp_error_text = ""
+    serp_failed = False
     if isinstance(serp_raw, str) and _looks_like_serpapi_failure_message(serp_raw):
+        serp_failed = True
+        serp_error_text = serp_raw.strip()
         logger.info(
             "analysis normalize: coerced serpAPIResults error string to [] chars=%d",
             len(serp_raw),
@@ -234,11 +246,23 @@ def _normalize_service_results(analysis: Dict[str, Any]) -> None:
     else:
         serp_list = _normalize_provider_list(serp_raw)
 
-    google_list = _normalize_provider_list(local.get("googleSearchResults"))
-    local["googleSearchResults"] = google_list
-    local["serpAPIResults"] = _merge_service_provider_lists(
-        serp_list, google_list, max_results=10
+    google_list = filter_providers_by_property_market(
+        _normalize_provider_list(local.get("googleSearchResults")),
+        property_address,
     )
+    local["googleSearchResults"] = google_list
+
+    if serp_list:
+        local["serpAPIResults"] = _merge_service_provider_lists(
+            serp_list, google_list, max_results=10
+        )
+    elif google_list:
+        local["serpAPIResults"] = google_list[:10]
+    else:
+        local["serpAPIResults"] = []
+        if serp_failed or serp_error_text:
+            service["searchStatus"] = "failed"
+            service["searchError"] = _user_facing_service_search_error(serp_error_text)
 
 
 def filter_relevant_youtube_videos(
