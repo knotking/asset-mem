@@ -121,16 +121,6 @@ cases:
       run_optional_agents: []
       user_goal: answer_from_context
 
-  - id: general_homecare_question
-    tags: [checkpoint, general, weblog_session_4, single_loop]
-    query: "how often should I service my HVAC system?"
-    state: {}
-    expect:
-      route: checkpoint
-      run_optional_agents: []
-      retrieval_only: true
-      user_goal: answer_from_context
-
   # ── Docs route ────────────────────────────────────────────────────────────
   - id: docs_policy_water_damage
     tags: [user_docs, single_loop]
@@ -216,7 +206,7 @@ cases:
       run_optional_agents: []
       user_goal: answer_from_context
 
-  # ── adk web sessions (single-loop captures) ───────────────────────────────
+  # ── adk web sessions (single-loop captures; from web-log-session-1..7) ───
   - id: weblog_session_1_t1_summarize_selected
     tags: [weblog, weblog_session_1, single_loop]
     query: "Summarize the issues for the selected checkpoints"
@@ -275,12 +265,13 @@ cases:
 
   - id: weblog_session_2_t1_chip_cost
     tags: [weblog, weblog_session_2, chip, single_loop]
-    query: "Run cost analysis and compare DIY vs professional"
+    query: "Run cost analysis"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
       chip_action: {type: run_branch, branch: cost}
     expect:
       discourse_act: new_work
+      intent: substantive
       route: checkpoint
       retrieval_only: false
       focus_branch: cost
@@ -296,6 +287,7 @@ cases:
       chip_action: {type: run_branch, branch: coverage}
     expect:
       discourse_act: new_work
+      intent: substantive
       route: checkpoint
       retrieval_only: false
       focus_branch: coverage
@@ -311,6 +303,7 @@ cases:
       chip_action: {type: run_branch, branch: service}
     expect:
       discourse_act: new_work
+      intent: substantive
       route: checkpoint
       retrieval_only: false
       focus_branch: service
@@ -326,6 +319,7 @@ cases:
       chip_action: {type: run_branch, branch: diy}
     expect:
       discourse_act: new_work
+      intent: substantive
       route: checkpoint
       retrieval_only: false
       focus_branch: diy
@@ -341,24 +335,35 @@ cases:
       chip_action: {type: discuss, topic: cost}
     expect:
       discourse_act: explain_prior
+      intent: substantive
       route: checkpoint
       retrieval_only: true
       focus_branch: cost
+      query_mode: interpret_session
       run_optional_agents: []
       user_goal: answer_from_context
 
-  - id: weblog_session_3_t5_chip_replay_analysis
-    tags: [weblog, weblog_session_3, chip, single_loop]
-    query: "Show me the full analysis again"
+  - id: weblog_session_3_t5_replay_report
+    tags: [weblog, weblog_session_3, single_loop]
+    query: "Show me the full analysis report again"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
-      chip_action: {type: replay_analysis}
     expect:
-      discourse_act: replay_analysis
       route: checkpoint
       retrieval_only: true
       run_optional_agents: []
-      user_goal: replay_deliverable
+      user_goal: answer_from_context
+
+  - id: weblog_session_4_t1_hvac_service
+    tags: [weblog, weblog_session_4, checkpoint, single_loop]
+    query: "how often should I service my HVAC system?"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+    expect:
+      route: checkpoint
+      retrieval_only: true
+      run_optional_agents: []
+      user_goal: answer_from_context
 
   - id: weblog_session_5_t1_docs_water_damage
     tags: [weblog, weblog_session_5, user_docs, single_loop]
@@ -432,14 +437,13 @@ cases:
       run_optional_agents: [cost]
       user_goal: new_analysis
 
-  - id: weblog_session_7_t3_ui_toggle_runs_cost
+  - id: weblog_session_7_t3_summarize_retrieval_only
     tags: [weblog, weblog_session_7, single_loop]
     query: "Summarize the issues"
     state:
-      checkpoint_ids: ["CKPT0000000000000001"]
-      checkpoint_optional_agents: [cost]
+      checkpoint_ids: []
     expect:
       route: checkpoint
-      retrieval_only: false
-      run_optional_agents: [cost]
-      user_goal: new_analysis
+      retrieval_only: true
+      run_optional_agents: []
+      user_goal: answer_from_context

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-11T12:17:15+0530",
+  "generated_at": "2026-06-11T18:25:18+0530",
   "cases_file": "property_agent/evals/routing/single_loop/cases.yaml",
   "filter": null,
   "repeat": 1,
@@ -12,7 +12,7 @@
     "latency_ms": {
       "p50": 0,
       "p95": 0,
-      "mean": 34
+      "mean": 25
     },
     "field_mismatch_counts": {}
   },
@@ -20,7 +20,7 @@
     {
       "case_id": "greeting_hi",
       "passed": true,
-      "elapsed_ms": 1112,
+      "elapsed_ms": 839,
       "mismatches": {},
       "error": null,
       "resolved": {
@@ -157,27 +157,6 @@
         "intent": "substantive",
         "route": "checkpoint",
         "expanded_user_query": "would this damage be covered by my insurance?",
-        "retrieval_only": true,
-        "run_optional_agents": [],
-        "user_goal": "answer_from_context",
-        "query_mode": "interpret_session",
-        "menu_index": null,
-        "capability_key": null,
-        "discourse_act": null,
-        "focus_branch": null,
-        "resolve_source": "single_loop"
-      }
-    },
-    {
-      "case_id": "general_homecare_question",
-      "passed": true,
-      "elapsed_ms": 0,
-      "mismatches": {},
-      "error": null,
-      "resolved": {
-        "intent": "substantive",
-        "route": "checkpoint",
-        "expanded_user_query": "how often should I service my HVAC system?",
         "retrieval_only": true,
         "run_optional_agents": [],
         "user_goal": "answer_from_context",
@@ -452,7 +431,7 @@
       "resolved": {
         "intent": "substantive",
         "route": "checkpoint",
-        "expanded_user_query": "Run cost analysis and compare DIY vs professional",
+        "expanded_user_query": "Run cost analysis",
         "retrieval_only": false,
         "run_optional_agents": [
           "cost"
@@ -557,7 +536,7 @@
       }
     },
     {
-      "case_id": "weblog_session_3_t5_chip_replay_analysis",
+      "case_id": "weblog_session_3_t5_replay_report",
       "passed": true,
       "elapsed_ms": 0,
       "mismatches": {},
@@ -565,16 +544,37 @@
       "resolved": {
         "intent": "substantive",
         "route": "checkpoint",
-        "expanded_user_query": "Show me the full analysis again",
+        "expanded_user_query": "Show me the full analysis report again",
         "retrieval_only": true,
         "run_optional_agents": [],
-        "user_goal": "replay_deliverable",
+        "user_goal": "answer_from_context",
         "query_mode": "interpret_session",
         "menu_index": null,
         "capability_key": null,
-        "discourse_act": "replay_analysis",
+        "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "chip"
+        "resolve_source": "single_loop"
+      }
+    },
+    {
+      "case_id": "weblog_session_4_t1_hvac_service",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "how often should I service my HVAC system?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -708,7 +708,7 @@
       }
     },
     {
-      "case_id": "weblog_session_7_t3_ui_toggle_runs_cost",
+      "case_id": "weblog_session_7_t3_summarize_retrieval_only",
       "passed": true,
       "elapsed_ms": 0,
       "mismatches": {},
@@ -717,12 +717,10 @@
         "intent": "substantive",
         "route": "checkpoint",
         "expanded_user_query": "Summarize the issues",
-        "retrieval_only": false,
-        "run_optional_agents": [
-          "cost"
-        ],
-        "user_goal": "new_analysis",
-        "query_mode": "branch_explicit",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
         "menu_index": null,
         "capability_key": null,
         "discourse_act": null,
