@@ -100,7 +100,7 @@ conformance-test: ## Replay conformance tests (requires recordings + adk web)
 	$(call print_header,Running Conformance Tests)
 	uv run adk conformance test $(CONFORMANCE_DIR) --mode replay --streaming-mode none
 
-routing-eval: ## Executor-only routing eval (deterministic; ARGS="--filter weblog")
+routing-eval: ## Single-loop routing eval (deterministic; ARGS="--filter weblog")
 	$(call print_header,Running Routing Eval)
 	uv run python -m property_agent.evals.routing.run_routing_eval $(ARGS)
 

@@ -1,4 +1,4 @@
-"""Orchestrator V2 proxy message persist observability."""
+"""Agent message patch persist observability."""
 
 from __future__ import annotations
 
@@ -8,17 +8,20 @@ import time
 
 logger = logging.getLogger(__name__)
 
-_METRICS_ENABLED = os.getenv("ORCHESTRATOR_V2_METRICS", "1").strip().lower() not in (
+_metrics_raw = os.getenv("AGENT_MESSAGE_METRICS")
+if _metrics_raw is None:
+    _metrics_raw = os.getenv("ORCHESTRATOR_V2_METRICS", "1")
+_METRICS_ENABLED = _metrics_raw.strip().lower() not in (
     "0",
     "false",
     "no",
     "off",
 )
 
-METRIC_STALE_REVISION_REJECTS = "orchestrator.v2.message.stale_revision_rejects"
-METRIC_PATCH_APPLIES = "orchestrator.v2.message.patch_applies"
-METRIC_FENCE_STRIPS = "orchestrator.v2.message.fence_strips"
-METRIC_TTF_STRUCTURED_PATCH_MS = "orchestrator.v2.message.ttf_structured_patch_ms"
+METRIC_STALE_REVISION_REJECTS = "orchestrator.message.stale_revision_rejects"
+METRIC_PATCH_APPLIES = "orchestrator.message.patch_applies"
+METRIC_FENCE_STRIPS = "orchestrator.message.fence_strips"
+METRIC_TTF_STRUCTURED_PATCH_MS = "orchestrator.message.ttf_structured_patch_ms"
 
 
 class StreamPatchTracker:
@@ -47,7 +50,7 @@ def metrics_enabled() -> bool:
 
 def record_stale_revision_reject(*, incoming_revision: int, stored_revision: int) -> None:
     logger.info(
-        "orchestrator_v2_stale_revision incoming=%s stored=%s",
+        "agent_message_stale_revision incoming=%s stored=%s",
         incoming_revision,
         stored_revision,
     )
@@ -82,7 +85,7 @@ def record_patch_apply(*, revision: int, has_content_json: bool) -> None:
 def record_fence_strip(*, chars_removed: int) -> None:
     if chars_removed <= 0:
         return
-    logger.info("orchestrator_v2_fence_strip chars_removed=%s", chars_removed)
+    logger.info("agent_message_fence_strip chars_removed=%s", chars_removed)
     if not _METRICS_ENABLED:
         return
     try:
@@ -103,7 +106,7 @@ def record_fence_strip(*, chars_removed: int) -> None:
 
 
 def record_ttf_structured_patch_ms(ms: float) -> None:
-    logger.info("orchestrator_v2_ttf_structured_patch_ms=%.0f", ms)
+    logger.info("agent_message_ttf_structured_patch_ms=%.0f", ms)
     if not _METRICS_ENABLED:
         return
     try:

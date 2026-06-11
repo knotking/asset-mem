@@ -32,7 +32,7 @@ anchors:
 cases:
   # ── Casual (regex short-circuit) ────────────────────────────────────────────
   - id: greeting_hi
-    tags: [casual, greeting, executor_only]
+    tags: [casual, greeting, single_loop]
     query: "hi"
     expect:
       intent: greeting
@@ -41,7 +41,7 @@ cases:
       run_optional_agents: []
 
   - id: greeting_good_morning
-    tags: [casual, greeting, executor_only]
+    tags: [casual, greeting, single_loop]
     query: "good morning!"
     expect:
       intent: greeting
@@ -50,7 +50,7 @@ cases:
       run_optional_agents: []
 
   - id: greeting_with_selection
-    tags: [casual, greeting, selection, executor_only]
+    tags: [casual, greeting, selection, single_loop]
     query: "hello"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
@@ -61,7 +61,7 @@ cases:
       run_optional_agents: []
 
   - id: capabilities_what_can_you_do
-    tags: [casual, capabilities, executor_only]
+    tags: [casual, capabilities, single_loop]
     query: "what can you do?"
     expect:
       intent: capabilities
@@ -71,7 +71,7 @@ cases:
 
   # ── Pending offer (deterministic accept) ────────────────────────────────────
   - id: accept_offer_yes_pending_cost
-    tags: [accept_offer, pending, executor_only]
+    tags: [accept_offer, pending, single_loop]
     query: "yes"
     state:
       <<: *prior_diy_only
@@ -92,7 +92,7 @@ cases:
       user_goal: new_analysis
 
   - id: accept_offer_ok_after_question
-    tags: [accept_offer, pending, executor_only]
+    tags: [accept_offer, pending, single_loop]
     query: "ok"
     state:
       <<: *prior_diy_only
@@ -111,7 +111,7 @@ cases:
 
   # ── Checkpoint substantive (minimal resolved turn) ───────────────────────────
   - id: branch_coverage_insurance
-    tags: [checkpoint, executor_only]
+    tags: [checkpoint, single_loop]
     query: "would this damage be covered by my insurance?"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
@@ -122,7 +122,7 @@ cases:
       user_goal: answer_from_context
 
   - id: general_homecare_question
-    tags: [checkpoint, general, weblog_session_4, executor_only]
+    tags: [checkpoint, general, weblog_session_4, single_loop]
     query: "how often should I service my HVAC system?"
     state: {}
     expect:
@@ -133,7 +133,7 @@ cases:
 
   # ── Docs route ────────────────────────────────────────────────────────────
   - id: docs_policy_water_damage
-    tags: [user_docs, executor_only]
+    tags: [user_docs, single_loop]
     query: "what does my insurance policy say about water damage?"
     state:
       primary_agent: docs
@@ -145,7 +145,7 @@ cases:
       user_goal: answer_from_context
 
   - id: docs_lease_end
-    tags: [user_docs, executor_only]
+    tags: [user_docs, single_loop]
     query: "when does my lease end?"
     state:
       primary_agent: docs
@@ -156,7 +156,7 @@ cases:
       user_goal: answer_from_context
 
   - id: docs_summarize
-    tags: [user_docs, executor_only]
+    tags: [user_docs, single_loop]
     query: "summarize my documents"
     state:
       primary_agent: docs
@@ -169,7 +169,7 @@ cases:
       user_goal: answer_from_context
 
   - id: docs_coverage_question_on_docs_tab
-    tags: [user_docs, executor_only]
+    tags: [user_docs, single_loop]
     query: "does my policy cover the garage door damage?"
     state:
       <<: *prior_diy_only
@@ -182,7 +182,7 @@ cases:
 
   # ── Report route ──────────────────────────────────────────────────────────
   - id: report_summarize
-    tags: [report, executor_only]
+    tags: [report, single_loop]
     query: "summarize my report"
     state:
       primary_agent: report
@@ -194,7 +194,7 @@ cases:
       user_goal: answer_from_context
 
   - id: report_cost_question_stays_report
-    tags: [report, executor_only]
+    tags: [report, single_loop]
     query: "what were the cost estimates in the report?"
     state:
       primary_agent: report
@@ -206,7 +206,7 @@ cases:
       user_goal: answer_from_context
 
   - id: report_show_again
-    tags: [report, executor_only]
+    tags: [report, single_loop]
     query: "show me the report again"
     state:
       primary_agent: report
@@ -216,9 +216,9 @@ cases:
       run_optional_agents: []
       user_goal: answer_from_context
 
-  # ── adk web sessions (executor-only captures) ───────────────────────────────
+  # ── adk web sessions (single-loop captures) ───────────────────────────────
   - id: weblog_session_1_t1_summarize_selected
-    tags: [weblog, weblog_session_1, executor_only]
+    tags: [weblog, weblog_session_1, single_loop]
     query: "Summarize the issues for the selected checkpoints"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
@@ -229,7 +229,7 @@ cases:
       user_goal: answer_from_context
 
   - id: weblog_session_1_t2_which_areas_affected
-    tags: [weblog, weblog_session_1, executor_only]
+    tags: [weblog, weblog_session_1, single_loop]
     query: "Which areas are affected?"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
@@ -240,7 +240,7 @@ cases:
       user_goal: answer_from_context
 
   - id: weblog_session_1_t3_inventory_list
-    tags: [weblog, weblog_session_1, executor_only]
+    tags: [weblog, weblog_session_1, single_loop]
     query: "What checkpoints do I have for this property?"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
@@ -251,7 +251,7 @@ cases:
       user_goal: answer_from_context
 
   - id: weblog_session_1_t4_branch_diy
-    tags: [weblog, weblog_session_1, executor_only]
+    tags: [weblog, weblog_session_1, single_loop]
     query: "Run DIY analysis for the selected checkpoint"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
@@ -263,7 +263,7 @@ cases:
       user_goal: new_analysis
 
   - id: weblog_session_1_t5_summarize_all
-    tags: [weblog, weblog_session_1, executor_only]
+    tags: [weblog, weblog_session_1, single_loop]
     query: "Summarize issues across all selected checkpoints"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
@@ -274,7 +274,7 @@ cases:
       user_goal: answer_from_context
 
   - id: weblog_session_2_t1_chip_cost
-    tags: [weblog, weblog_session_2, chip, executor_only]
+    tags: [weblog, weblog_session_2, chip, single_loop]
     query: "Run cost analysis and compare DIY vs professional"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
@@ -289,7 +289,7 @@ cases:
       user_goal: new_analysis
 
   - id: weblog_session_3_t1_chip_coverage
-    tags: [weblog, weblog_session_3, chip, executor_only]
+    tags: [weblog, weblog_session_3, chip, single_loop]
     query: "Run coverage analysis for this issue"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
@@ -304,7 +304,7 @@ cases:
       user_goal: new_analysis
 
   - id: weblog_session_3_t2_chip_service
-    tags: [weblog, weblog_session_3, chip, executor_only]
+    tags: [weblog, weblog_session_3, chip, single_loop]
     query: "Find local service providers for this repair"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
@@ -319,7 +319,7 @@ cases:
       user_goal: new_analysis
 
   - id: weblog_session_3_t3_chip_diy
-    tags: [weblog, weblog_session_3, chip, executor_only]
+    tags: [weblog, weblog_session_3, chip, single_loop]
     query: "What are the DIY steps for this repair?"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
@@ -334,7 +334,7 @@ cases:
       user_goal: new_analysis
 
   - id: weblog_session_3_t4_chip_discuss_cost
-    tags: [weblog, weblog_session_3, chip, executor_only]
+    tags: [weblog, weblog_session_3, chip, single_loop]
     query: "Can you explain the cost estimate breakdown?"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
@@ -348,7 +348,7 @@ cases:
       user_goal: answer_from_context
 
   - id: weblog_session_3_t5_chip_replay_report
-    tags: [weblog, weblog_session_3, chip, executor_only]
+    tags: [weblog, weblog_session_3, chip, single_loop]
     query: "Show me the full analysis report again"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
@@ -361,7 +361,7 @@ cases:
       user_goal: replay_deliverable
 
   - id: weblog_session_5_t1_docs_water_damage
-    tags: [weblog, weblog_session_5, user_docs, executor_only]
+    tags: [weblog, weblog_session_5, user_docs, single_loop]
     query: "Does my home policy cover water damage?"
     state:
       primary_agent: docs
@@ -373,7 +373,7 @@ cases:
       user_goal: answer_from_context
 
   - id: weblog_session_5_t2_docs_deductible
-    tags: [weblog, weblog_session_5, user_docs, executor_only]
+    tags: [weblog, weblog_session_5, user_docs, single_loop]
     query: "What is my car insurance deductible?"
     state:
       primary_agent: docs
@@ -385,7 +385,7 @@ cases:
       user_goal: answer_from_context
 
   - id: weblog_session_6_t1_report_summarize
-    tags: [weblog, weblog_session_6, report, executor_only]
+    tags: [weblog, weblog_session_6, report, single_loop]
     query: "Summarize the saved property report"
     state:
       primary_agent: report
@@ -397,7 +397,7 @@ cases:
       user_goal: answer_from_context
 
   - id: weblog_session_6_t2_report_issues
-    tags: [weblog, weblog_session_6, report, executor_only]
+    tags: [weblog, weblog_session_6, report, single_loop]
     query: "What issues were flagged in the report?"
     state:
       primary_agent: report
@@ -409,7 +409,7 @@ cases:
       user_goal: answer_from_context
 
   - id: weblog_session_7_t1_branch_cost
-    tags: [weblog, weblog_session_7, executor_only]
+    tags: [weblog, weblog_session_7, single_loop]
     query: "Run cost analysis for the selected checkpoint"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
@@ -421,7 +421,7 @@ cases:
       user_goal: new_analysis
 
   - id: weblog_session_7_t2_branch_cost_rerun
-    tags: [weblog, weblog_session_7, executor_only]
+    tags: [weblog, weblog_session_7, single_loop]
     query: "Run cost analysis again"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
@@ -433,7 +433,7 @@ cases:
       user_goal: new_analysis
 
   - id: weblog_session_7_t3_ui_toggle_runs_cost
-    tags: [weblog, weblog_session_7, executor_only]
+    tags: [weblog, weblog_session_7, single_loop]
     query: "Summarize the issues"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]

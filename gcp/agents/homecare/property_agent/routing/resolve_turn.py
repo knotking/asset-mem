@@ -1,4 +1,4 @@
-"""Turn resolution: executor-only routing + state apply + chip/accept inject."""
+"""Turn resolution: single-loop routing + state apply + chip/accept inject."""
 
 from __future__ import annotations
 
@@ -60,7 +60,7 @@ def is_executor_conversational_turn(
     """True when routing tools should be blocked (plain-text executor only)."""
     if resolved.is_casual:
         return True
-    if resolved.resolve_source == "executor_only":
+    if resolved.resolve_source in ("single_loop", "executor_only"):
         return False
     if resolved.route in ("report", "user_docs"):
         return False
@@ -210,6 +210,6 @@ def prepare_before_model_turn(
     llm_request: Any = None,
 ) -> Optional[Any]:
     """Single-loop routing: chip/accept/casual regex or slim session context."""
-    from .executor_only_routing import prepare_executor_only_before_model
+    from .single_loop_routing import prepare_single_loop_before_model
 
-    return prepare_executor_only_before_model(ctx, llm_request=llm_request)
+    return prepare_single_loop_before_model(ctx, llm_request=llm_request)

@@ -25,7 +25,7 @@ _CONTENTS_LINE = json.dumps(
 
 _SAMPLE = f"""\
 INFO:     127.0.0.1:64063 - "POST /run_sse HTTP/1.1" 200 OK
-2026-06-11 09:44:33,186 property_agent.routing.executor_only_routing INFO executor_only substantive route=checkpoint retrieval_only=True optional=[] query='Summarize the issues for the selected checkpoints'
+2026-06-11 09:44:33,186 property_agent.routing.single_loop_routing INFO single_loop substantive route=checkpoint retrieval_only=True optional=[] query='Summarize the issues for the selected checkpoints'
 Contents:
 {_CONTENTS_LINE}
 -----------------------------------------------------------

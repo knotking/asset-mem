@@ -98,7 +98,7 @@ def minimal_substantive_resolved_turn(
         run_optional_agents=list(optional),
         user_goal="new_analysis" if has_optional else "answer_from_context",
         query_mode="branch_explicit" if has_optional else "interpret_session",
-        resolve_source="executor_only",
+        resolve_source="single_loop",
     )
 
 
@@ -119,7 +119,7 @@ def format_slim_session_context_block(state: Any) -> str:
         "checkpoint_optional_agents": (
             ui_optional if isinstance(ui_optional, list) else []
         ),
-        "routing_mode": "executor_only",
+        "routing_mode": "single_loop",
     }
     return (
         "[SESSION_CONTEXT]\n"
@@ -187,7 +187,7 @@ def _casual_resolved_turn(intent: IntentKind, user_query: str) -> ResolvedTurn:
         route="none",
         expanded_user_query=user_query,
         retrieval_only=True,
-        resolve_source="executor_only",
+        resolve_source="single_loop",
     )
 
 
@@ -212,7 +212,7 @@ def resolve_turn_from_pending_offer(
 
     base = minimal_substantive_resolved_turn(state, user_query=user_query)
     payload = consume_pending_for_resolve(
-        {**base.to_dict(), "resolve_source": "executor_only"},
+        {**base.to_dict(), "resolve_source": "single_loop"},
         user_query=user_query,
         state=state,
         discourse_act="accept_offer",
@@ -228,7 +228,7 @@ def resolve_turn_from_pending_offer(
 
     clear_pending_user_action(state)
     logger.info(
-        "executor_only accept_offer optional=%r expanded=%r query=%r",
+        "single_loop accept_offer optional=%r expanded=%r query=%r",
         resolved.run_optional_agents,
         (resolved.expanded_user_query or "")[:80],
         user_query[:80],
@@ -248,7 +248,7 @@ def _inject_resolved_turn_block(
     inject_resolved_turn_into_llm_request(llm_request, resolved, block=block)
 
 
-def prepare_executor_only_before_model(
+def prepare_single_loop_before_model(
     ctx: Any,
     *,
     llm_request: Any = None,
@@ -265,7 +265,7 @@ def prepare_executor_only_before_model(
     passthrough = _take_user_docs_passthrough(state)
     if passthrough:
         logger.info(
-            "executor_only user_docs passthrough chars=%d",
+            "single_loop user_docs passthrough chars=%d",
             len(passthrough),
         )
         return plain_text_llm_response(passthrough)
@@ -288,7 +288,7 @@ def prepare_executor_only_before_model(
                         block=format_slim_session_context_block(state),
                     )
             logger.debug(
-                "executor_only skip re-resolve invocation_id=%s",
+                "single_loop skip re-resolve invocation_id=%s",
                 inv_id,
             )
             return None
@@ -339,7 +339,7 @@ def prepare_executor_only_before_model(
             state=state,
         )
         logger.info(
-            "executor_only casual intent=%s query=%r",
+            "single_loop casual intent=%s query=%r",
             casual_intent,
             user_query[:80],
         )
@@ -359,7 +359,7 @@ def prepare_executor_only_before_model(
         )
 
     logger.info(
-        "executor_only substantive route=%s retrieval_only=%s optional=%r query=%r",
+        "single_loop substantive route=%s retrieval_only=%s optional=%r query=%r",
         resolved.route,
         resolved.retrieval_only,
         resolved.run_optional_agents,

@@ -1,5 +1,5 @@
 """
-Single-loop routing eval: replay executor_only/cases.yaml and score routing.
+Single-loop routing eval: replay single_loop/cases.yaml and score routing.
 
 Deterministic paths only — chip, pending-offer, casual regex, or
 ``minimal_substantive_resolved_turn``. No Vertex LLM.
@@ -9,7 +9,7 @@ Schema validation: ``tests/test_routing_eval_cases.py``.
 Usage:
     uv run python -m property_agent.evals.routing.run_routing_eval
     uv run python -m property_agent.evals.routing.run_routing_eval --filter weblog_session_1
-    uv run python -m property_agent.evals.routing.run_routing_eval --out executor_only/baselines/$(date +%F).json
+    uv run python -m property_agent.evals.routing.run_routing_eval --out single_loop/baselines/$(date +%F).json
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ import yaml
 from dotenv import load_dotenv
 
 _PACKAGE_ROOT = Path(__file__).resolve().parents[3]  # gcp/agents/homecare
-DEFAULT_CASES_PATH = Path(__file__).resolve().parent / "executor_only" / "cases.yaml"
+DEFAULT_CASES_PATH = Path(__file__).resolve().parent / "single_loop" / "cases.yaml"
 
 # Fields asserted directly on ResolvedTurn.
 SCALAR_EXPECT_FIELDS = (
@@ -124,14 +124,14 @@ def score_case(resolved: Any, expect: dict[str, Any]) -> dict[str, dict[str, Any
     return mismatches
 
 
-def resolve_turn_executor_only(
+def resolve_turn_single_loop(
     *,
     user_query: str,
     state: dict[str, Any],
 ) -> Any:
-    """Mirror ``prepare_executor_only_before_model`` routing without ADK / LLM."""
+    """Mirror ``prepare_single_loop_before_model`` routing without ADK / LLM."""
     from property_agent.routing.chip_action import resolve_turn_from_chip
-    from property_agent.routing.executor_only_routing import (
+    from property_agent.routing.single_loop_routing import (
         bare_casual_intent,
         minimal_substantive_resolved_turn,
         resolve_turn_from_pending_offer,
@@ -159,7 +159,7 @@ def resolve_turn_executor_only(
             route="none",
             expanded_user_query=user_query,
             retrieval_only=True,
-            resolve_source="executor_only",
+            resolve_source="single_loop",
         )
         apply_resolved_turn_to_state(work, resolved)
         return resolved
@@ -174,7 +174,7 @@ def run_case(defaults: dict[str, Any], case: dict[str, Any]) -> CaseResult:
     state = build_state(defaults, case)
     t0 = time.monotonic()
     try:
-        resolved = resolve_turn_executor_only(
+        resolved = resolve_turn_single_loop(
             user_query=str(case.get("query") or ""),
             state=state,
         )
@@ -270,7 +270,7 @@ def main(argv: list[str] | None = None) -> int:
         print("No cases matched.", file=sys.stderr)
         return 2
 
-    print(f"Running {len(cases)} executor-only routing case(s) x{args.repeat} ...\n")
+    print(f"Running {len(cases)} single-loop routing case(s) x{args.repeat} ...\n")
     results: list[CaseResult] = []
     for case in cases:
         for attempt in range(args.repeat):

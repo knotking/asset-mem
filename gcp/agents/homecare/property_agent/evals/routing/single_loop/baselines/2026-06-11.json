@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-06-11T12:17:15+0530",
-  "cases_file": "/Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/property_agent/evals/routing/executor_only/cases.yaml",
+  "cases_file": "/Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/property_agent/evals/routing/single_loop/cases.yaml",
   "filter": null,
   "repeat": 1,
   "summary": {
@@ -35,7 +35,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -56,7 +56,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -77,7 +77,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -98,7 +98,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -121,7 +121,7 @@
         "capability_key": null,
         "discourse_act": "accept_offer",
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -144,7 +144,7 @@
         "capability_key": null,
         "discourse_act": "accept_offer",
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -165,7 +165,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -186,7 +186,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -207,7 +207,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -228,7 +228,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -249,7 +249,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -270,7 +270,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -291,7 +291,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -312,7 +312,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -333,7 +333,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -354,7 +354,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -375,7 +375,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -396,7 +396,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -419,7 +419,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -440,7 +440,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -595,7 +595,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -616,7 +616,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -637,7 +637,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -658,7 +658,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -681,7 +681,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -704,7 +704,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     },
     {
@@ -727,7 +727,7 @@
         "capability_key": null,
         "discourse_act": null,
         "focus_branch": null,
-        "resolve_source": "executor_only"
+        "resolve_source": "single_loop"
       }
     }
   ]

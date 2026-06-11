@@ -24,7 +24,7 @@ property_agent (root orchestrator)
 
 See [`ARCHITECTURE.md`](ARCHITECTURE.md) for layer rules and import matrix.
 
-- **Pre-routing** (`property_agent/routing/executor_only_routing.py`): deterministic chip, accept-offer, casual; slim session context for free text.
+- **Pre-routing** (`property_agent/routing/single_loop_routing.py`): deterministic chip, accept-offer, casual; slim session context for free text.
 - **Schema** (`property_agent/routing/schema.py`): homecare `ResolvedTurn`, routes, intents.
 - **Platform** (`agent_framework/routing/resolved_turn.py`): inject format, state keys.
 - **Bindings** (`property_agent/routing/constants.py`, `bindings/state_merge.py`, `observability/log_redaction.py`): homecare-specific constants, state dedupe keys, log redaction policy.

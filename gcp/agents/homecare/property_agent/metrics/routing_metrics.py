@@ -7,16 +7,19 @@ import os
 
 logger = logging.getLogger(__name__)
 
-_METRICS_ENABLED = os.getenv("ORCHESTRATOR_V2_METRICS", "1").strip().lower() not in (
+_metrics_raw = os.getenv("AGENT_ROUTING_METRICS")
+if _metrics_raw is None:
+    _metrics_raw = os.getenv("ORCHESTRATOR_V2_METRICS", "1")
+_METRICS_ENABLED = _metrics_raw.strip().lower() not in (
     "0",
     "false",
     "no",
     "off",
 )
 
-METRIC_RESOLVE_CALLS = "orchestrator.v2.routing.resolve_calls"
-METRIC_RESOLVE_PROMPT_TOKENS = "orchestrator.v2.routing.resolve_prompt_tokens"
-METRIC_EXECUTOR_SKIPPED = "orchestrator.v2.routing.executor_skipped"
+METRIC_ROUTING_CALLS = "orchestrator.routing.calls"
+METRIC_ROUTING_PROMPT_TOKENS = "orchestrator.routing.prompt_tokens"
+METRIC_EXECUTOR_SKIPPED = "orchestrator.routing.executor_skipped"
 
 
 def metrics_enabled() -> bool:
@@ -58,20 +61,20 @@ def record_routing_turn(
 
     attrs = {"intent": intent, "route": route}
     record_counter(
-        METRIC_RESOLVE_CALLS,
+        METRIC_ROUTING_CALLS,
         1,
         attributes=attrs,
-        description="Orchestrator routing decisions per turn (chip or legacy resolve)",
+        description="Orchestrator routing decisions per turn",
     )
     record_histogram(
-        METRIC_RESOLVE_PROMPT_TOKENS,
+        METRIC_ROUTING_PROMPT_TOKENS,
         float(prompt_tokens),
         attributes=attrs,
         description="Estimated routing prompt tokens (0 for chip/deterministic)",
         unit="1",
     )
     record_histogram(
-        "orchestrator.v2.routing.resolve_duration_ms",
+        "orchestrator.routing.duration_ms",
         elapsed_ms,
         attributes=attrs,
         description="Routing decision latency",
@@ -84,7 +87,3 @@ def record_routing_turn(
             attributes=attrs,
             description="Casual routing short-circuits (executor not invoked)",
         )
-
-
-# Back-compat alias for any external importers.
-record_resolve_turn = record_routing_turn

@@ -1,7 +1,7 @@
 """Tool-boundary invariants for checkpoint executor tools (Phase 3).
 
 Enforced in ``before_tool`` regardless of whether routing came from resolve LLM,
-chip fast-path, or (future) executor-only mode.
+chip fast-path, or (future) single-loop mode.
 """
 
 from __future__ import annotations
@@ -91,7 +91,7 @@ def seed_client_decided_branches(
         return branches
     if resolved.resolve_source == "chip" or resolved.discourse_act == "accept_offer":
         merged = list(dict.fromkeys([*branches, *decided]))
-    elif resolved.resolve_source == "executor_only":
+    elif resolved.resolve_source in ("single_loop", "executor_only"):
         completed = prior_analysis_branches_completed(state)
         merged = list(
             dict.fromkeys([*branches, *(b for b in decided if b not in completed)])

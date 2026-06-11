@@ -12,7 +12,7 @@ from property_agent.evals.routing.summarize_weblog_ab import (
 
 _SAMPLE = """\
 INFO:     127.0.0.1:64063 - "POST /run_sse HTTP/1.1" 200 OK
-2026-06-11 09:44:33,186 property_agent.routing.executor_only_routing INFO executor_only substantive route=checkpoint retrieval_only=True optional=[] query='Summarize the issues for the selected checkpoints'
+2026-06-11 09:44:33,186 property_agent.routing.single_loop_routing INFO single_loop substantive route=checkpoint retrieval_only=True optional=[] query='Summarize the issues for the selected checkpoints'
 {"parts":[{"function_call":{"name":"analyze_checkpoints","args":{"branches":[]}}}],"role":"model"}
 2026-06-11 09:44:43,065 property_agent.observability.turn_request_timing INFO engine_turn_timing: ensure_runner_ms=- set_up_ms=- wire_runner_ms=- adk_stream_start_ms=0 adk_first_event_ms=193 runner_exec_start_ms=0 runner_first_event_ms=193 before_model_ms=0 resolve_ms=- executor_first_model_ms=3630 stream_complete_ms=10003 reason=adk_web_complete entrypoint=adk_web session_id=abc events=9
 INFO:     127.0.0.1:64086 - "POST /run_sse HTTP/1.1" 200 OK
@@ -30,12 +30,12 @@ INFO:     127.0.0.1:64063 - "POST /run_sse HTTP/1.1" 200 OK
 """
 
 
-def test_parse_turn_metrics_executor_only(tmp_path: Path) -> None:
+def test_parse_turn_metrics_single_loop(tmp_path: Path) -> None:
     path = tmp_path / "web-log-session-1"
     path.write_text(_SAMPLE, encoding="utf-8")
     turns = parse_turn_metrics(path)
     assert len(turns) == 2
-    assert turns[0].routing_mode == "executor_only"
+    assert turns[0].routing_mode == "single_loop"
     assert turns[0].stream_complete_ms == 10003
     assert turns[0].resolve_ms is None
     assert turns[0].tools_called == ["analyze_checkpoints"]
@@ -61,7 +61,7 @@ def test_build_ab_report_paired(tmp_path: Path) -> None:
         [tmp_path / "web-log-session-1", tmp_path / "web-log-legacy-session-1"]
     )
     assert report["total_turns"] == 3
-    assert report["executor_only"]["turns"] == 2
+    assert report["single_loop"]["turns"] == 2
     assert report["resolve_llm"]["turns"] == 1
     assert len(report["paired_session_1"]) == 1
     pair = report["paired_session_1"][0]

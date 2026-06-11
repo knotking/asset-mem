@@ -180,8 +180,8 @@ def test_prepare_analyze_forces_accept_offer_branches() -> None:
     assert args["branches"] == ["cost"]
 
 
-def test_prepare_analyze_seeds_executor_only_ui_toggles_first_run() -> None:
-    """Executor-only mode: this turn's UI toggles reach branches deterministically."""
+def test_prepare_analyze_seeds_single_loop_ui_toggles_first_run() -> None:
+    """Single-loop mode: this turn's UI toggles reach branches deterministically."""
     state = {
         "user_query": "What is wrong with my garage?",
         RESOLVED_TURN_STATE_KEY: {
@@ -192,7 +192,7 @@ def test_prepare_analyze_seeds_executor_only_ui_toggles_first_run() -> None:
             "run_optional_agents": ["cost"],
             "user_goal": "new_analysis",
             "discourse_act": "new_work",
-            "resolve_source": "executor_only",
+            "resolve_source": "single_loop",
         },
     }
     args: dict = {"branches": []}
@@ -203,7 +203,7 @@ def test_prepare_analyze_seeds_executor_only_ui_toggles_first_run() -> None:
     assert args["branches"] == ["cost"]
 
 
-def test_prepare_analyze_executor_only_toggle_not_reseeded_when_completed() -> None:
+def test_prepare_analyze_single_loop_toggle_not_reseeded_when_completed() -> None:
     """Sticky UI toggle must not re-run (or short-circuit) a completed branch."""
     state = {
         "user_query": "Summarize the issues",
@@ -219,7 +219,7 @@ def test_prepare_analyze_executor_only_toggle_not_reseeded_when_completed() -> N
             "run_optional_agents": ["cost"],
             "user_goal": "new_analysis",
             "discourse_act": "new_work",
-            "resolve_source": "executor_only",
+            "resolve_source": "single_loop",
         },
     }
     args: dict = {"branches": []}
