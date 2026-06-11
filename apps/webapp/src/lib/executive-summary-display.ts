@@ -21,6 +21,28 @@ export type ExtractExecutiveSummaryOptions = {
   omitCheckpointSummaryMarkdown?: boolean;
 };
 
+/** Prose after checkpoint-summary bullets in the same markdown section (executor reply). */
+function trailingProseAfterCheckpointSummarySection(section: string): string {
+  const lines = section.split("\n");
+  let index = 0;
+  if (/^#{2,3}\s+/.test((lines[0] ?? "").trim())) {
+    index = 1;
+  }
+  while (index < lines.length) {
+    const line = lines[index].trim();
+    if (!line) {
+      index += 1;
+      continue;
+    }
+    if (line.startsWith("- ") || line.startsWith("* ")) {
+      index += 1;
+      continue;
+    }
+    break;
+  }
+  return lines.slice(index).join("\n").trim();
+}
+
 /** Extract overview / recommendation prose from synthesis markdown for hybrid UI. */
 export function extractExecutiveSummaryNarrative(
   markdown: string,
@@ -35,6 +57,7 @@ export function extractExecutiveSummaryNarrative(
 
   const sections = text.split(/(?=^#{2,3}\s+)/m);
   const kept: string[] = [];
+  let pastCheckpointSummarySection = false;
 
   for (const section of sections) {
     const s = section.trim();
@@ -42,7 +65,10 @@ export function extractExecutiveSummaryNarrative(
 
     const headingMatch = s.match(/^#{2,3}\s+(.+?)(?:\n|$)/);
     if (!headingMatch) {
-      if (options?.omitCheckpointSummaryMarkdown) {
+      if (
+        options?.omitCheckpointSummaryMarkdown &&
+        !pastCheckpointSummarySection
+      ) {
         continue;
       }
       kept.push(s);
@@ -50,7 +76,18 @@ export function extractExecutiveSummaryNarrative(
     }
 
     const headingText = (headingMatch[1] ?? "").trim();
-    if (SKIP_SECTION_HEADING.test(`### ${headingText}`)) continue;
+    if (SKIP_SECTION_HEADING.test(`### ${headingText}`)) {
+      if (/checkpoint\s+summary/i.test(headingText)) {
+        pastCheckpointSummarySection = true;
+        if (options?.omitCheckpointSummaryMarkdown) {
+          const trailing = trailingProseAfterCheckpointSummarySection(s);
+          if (trailing) {
+            kept.push(trailing);
+          }
+        }
+      }
+      continue;
+    }
     if (KEEP_SECTION_HEADING.test(headingText)) {
       kept.push(s);
       continue;

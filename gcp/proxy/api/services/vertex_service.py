@@ -401,6 +401,15 @@ def _resolve_assistant_message_fields_for_persist(
         patch_markdown = message_content_patch.get("contentMarkdown")
         if not isinstance(patch_markdown, str) or not patch_markdown.strip():
             patch_markdown = normalized_accumulated
+        elif normalized_accumulated.strip():
+            patch_stripped = patch_markdown.strip()
+            accum_stripped = normalized_accumulated.strip()
+            # Checkpoint progress replaces accumulated text with the structured
+            # summary; the executor appends its brief prose answer afterward.
+            if accum_stripped != patch_stripped and accum_stripped.startswith(
+                patch_stripped
+            ):
+                patch_markdown = normalized_accumulated
         patch_json = message_content_patch.get("contentJson")
         patch_json_dict = patch_json if isinstance(patch_json, dict) else None
         content_markdown, content_json = finalize_assistant_message(

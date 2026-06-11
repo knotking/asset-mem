@@ -54,6 +54,22 @@ Following the inspection, paint chipping was found on the garage door.
     expect(narrative).toContain("### Next Steps");
   });
 
+  it("keeps executor prose after checkpoint summary when omitting duplicate summary", () => {
+    const md = `# Checkpoint analysis
+
+## Checkpoint Summary
+- **Checkpoints Analyzed**: 2
+- **Locations**: Garage, Vehicle - Exterior
+
+I checked your recorded checkpoints, and there are currently **no kitchen issues**.`;
+
+    const narrative = extractExecutiveSummaryNarrative(md, {
+      omitCheckpointSummaryMarkdown: true,
+    });
+    expect(narrative).not.toContain("Checkpoints Analyzed");
+    expect(narrative).toContain("no kitchen issues");
+  });
+
   it("returns empty when markdown is title only", () => {
     expect(
       extractExecutiveSummaryNarrative("# Garage Door Maintenance Analysis: 1982 Helena Way")
