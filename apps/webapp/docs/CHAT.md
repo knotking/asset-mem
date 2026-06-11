@@ -87,7 +87,7 @@ Thinking strip labels come from `useDebouncedThinkingStatus` → `getThinkingSta
 
 Pre-content loading UI still uses `!hasDisplayableContent && isTurnInFlight`.
 
-Uses V2 fields — not raw `message.content` alone.
+Uses contentJson/contentMarkdown — not raw `message.content` alone.
 
 ## Key files
 

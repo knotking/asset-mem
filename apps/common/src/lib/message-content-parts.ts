@@ -6,7 +6,7 @@ export type ResolvedMessageContentParts = {
 };
 
 /**
- * Canonical chat content resolver for V2 message schema.
+ * Canonical chat content resolver for structured message schema (contentJson + contentMarkdown).
  */
 export function resolveMessageContentParts(
   message: Message

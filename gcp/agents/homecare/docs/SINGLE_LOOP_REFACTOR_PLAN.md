@@ -1,10 +1,11 @@
-# Single-loop agent refactor plan (Orchestrator V3)
+# Single-loop agent refactor plan
 
-Status: **Phase 5 complete** — single-loop routing is the only path; resolve LLM stack removed.
+> **Status:** Complete (June 2026). **Current architecture:** [`property_agent/ARCHITECTURE.md`](../property_agent/ARCHITECTURE.md). This document is a migration record only.
+
 Owner: —
 Last updated: 2026-06-11
 
-Strangler migration from the current two-LLM routing architecture (resolve LLM →
+Strangler migration from the former two-LLM routing architecture (removed resolve LLM →
 executor LLM → `before_tool` arbitration, ~4,700 lines in `property_agent/routing/`)
 to a single executor loop with deterministic chip routing and tool-boundary
 invariants. Each phase is independently shippable and reduces risk for the next.
@@ -116,7 +117,7 @@ Highest value, lowest model risk. Previously a chip tap sent canned text +
       sending text).
 - [x] Agent: `routing/chip_action.py` builds the `ResolvedTurn` deterministically
       from `state["chip_action"]` — zero resolve-LLM call, `resolve_source=chip`.
-      *Approach note vs. original plan:* wired at the top of `resolve_turn_llm`
+      *Approach note vs. original plan:* was wired at the top of the removed `resolve_turn_llm`
       (after payload hydration) rather than `early_short_circuit`, so
       `apply_resolved_turn_to_state` + executor inject run unchanged. The state
       key is consume-once (session state persists across turns) and a chip tap

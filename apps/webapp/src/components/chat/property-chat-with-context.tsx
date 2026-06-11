@@ -20,7 +20,7 @@ import type {
 
 export type ChatSendOptions = {
   chatIntent?: "discuss_report" | "new_analysis" | "replay_report";
-  /** Structured chip tap — deterministic agent routing (no resolve LLM). */
+  /** Structured chip tap — deterministic agent routing (single-loop pre-routing). */
   chipAction?: ChipAction;
 };
 import {

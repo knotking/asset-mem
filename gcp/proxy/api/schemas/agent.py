@@ -84,7 +84,7 @@ class AgentRequest(BaseModel):
     )
     chip_action: Optional[ChipActionRequest] = Field(
         default=None,
-        description="Structured suggested-action chip tap; routes deterministically (resolve LLM skipped)",
+        description="Structured suggested-action chip tap; routes deterministically (no routing LLM)",
     )
     # Deprecated: use search_location; kept for backward compatibility during client rollout
     location_type: Optional[Literal["address", "location"]] = Field(

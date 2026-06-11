@@ -27,7 +27,7 @@ Review draft YAML under `evals/routing/drafts/`, merge into `single_loop/cases.y
 ## Routing eval (`evals/routing/single_loop/`)
 
 Replays `single_loop/cases.yaml` through deterministic single-loop routing
-(no resolve LLM). Not run in CI; schema validated by `tests/test_routing_eval_cases.py`.
+(no separate routing LLM). Not run in CI; schema validated by `tests/test_routing_eval_cases.py`.
 
 ```bash
 make routing-eval

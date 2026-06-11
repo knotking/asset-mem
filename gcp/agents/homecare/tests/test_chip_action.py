@@ -1,4 +1,4 @@
-"""Tests for the chip fast-path (deterministic ResolvedTurn, no resolve LLM)."""
+"""Tests for the chip fast-path (deterministic ResolvedTurn, single-loop pre-routing)."""
 
 from __future__ import annotations
 

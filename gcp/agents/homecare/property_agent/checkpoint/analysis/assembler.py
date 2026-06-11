@@ -1,4 +1,4 @@
-"""Deterministic checkpoint analysis assembly (Orchestrator V2 — no dual-format strings)."""
+"""Deterministic checkpoint analysis assembly (no dual-format strings)."""
 
 from __future__ import annotations
 

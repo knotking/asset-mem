@@ -699,7 +699,7 @@ The `getProvidersArray` function searches for provider arrays in:
 
 ### Sample Test Message
 
-Create a test message in Firestore with separate V2 fields:
+Create a test message in Firestore with separate structured fields:
 
 ```json
 {

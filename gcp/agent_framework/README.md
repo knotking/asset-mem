@@ -14,6 +14,8 @@ Reusable **Google ADK agent platform** for HomeApp and future verticals. It hold
 
 ## Architecture
 
+**Homecare today:** `property_agent` uses **single-loop pre-routing** (`single_loop_routing.prepare_single_loop_before_model`) instead of the generic `run_resolve_before_model` + `ResolveTurnHooks` path below. The resolve pipeline remains available for other verticals.
+
 Each user turn flows through three platform layers before and during tool execution:
 
 ```mermaid
@@ -66,11 +68,10 @@ The framework exposes **protocols and hooks**; consumers implement domain logic 
 | Platform API                                   | Consumer supplies                                                                                         |
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `RootAgentPlugin`                              | Model, instructions, tools, ADK callbacks (`property_agent/runtime/root_agent_plugin.py`)                 |
-| `ResolveTurnHooks`                             | Intent resolution, casual replies, inject formatting (`property_agent/routing/homecare_resolve_hooks.py`) |
+| `prepare_before_model` (single-loop)             | Deterministic pre-routing + slim `[SESSION_CONTEXT]` (`property_agent/routing/single_loop_routing.py`) |
 | `ToolSpec` list                                | Lazy tool factories + optional branch metadata (`property_agent/registry.py`)                             |
 | `merge_state_delta(..., list_dedupe_keys=...)` | Domain list keys (`property_agent/bindings/state_merge.py`)                                               |
 | `LogRedactionPolicy`                           | Sensitive field names (`property_agent/observability/log_redaction.py`)                                   |
-| `ContextHydratorV1`                            | Retrieval / compaction for resolve prompts (`property_agent/context/homecare_hydrator_v1.py`)             |
 | `message_patch_v1` helpers                     | Branch-aware `contentJson` merge in proxy (`gcp/proxy/api/utils/message_content_persist.py`)              |
 
 See also `gcp/agents/homecare/property_agent/ARCHITECTURE.md` for how Homecare maps onto these layers.
@@ -139,15 +140,17 @@ Homecare wires this in `property_agent/runtime/root_agent_plugin.py` → `Proper
 
 ### 2. Turn resolution (before_model)
 
+**Homecare:** use `property_agent.routing.single_loop_routing.prepare_single_loop_before_model` (deterministic chip / accept-offer / casual paths + slim `[SESSION_CONTEXT]`). The generic resolve pipeline below is for **new verticals** that want a separate routing LLM.
+
 Register a `before_model` callback that delegates to `run_resolve_before_model` with vertical-specific hooks:
 
 ```python
 from agent_framework.routing.resolve_pipeline import run_resolve_before_model
 
-_HOMECARE_HOOKS = HomecareResolveHooks()
+_HOOKS = MyResolveHooks()
 
 def before_model(ctx, llm_request=None):
-    return run_resolve_before_model(ctx, llm_request=llm_request, hooks=_HOMECARE_HOOKS)
+    return run_resolve_before_model(ctx, llm_request=llm_request, hooks=_HOOKS)
 ```
 
 **What the pipeline does:**
@@ -159,7 +162,7 @@ def before_model(ctx, llm_request=None):
 5. If `is_casual(resolved)` — return `plain_text_llm_response(...)` (no executor LLM)
 6. Otherwise inject `[RESOLVED_TURN]` JSON into the executor system instruction
 
-Implement `ResolveTurnHooks` in your vertical (see `HomecareResolveHooks` for a full example).
+Implement `ResolveTurnHooks` in your vertical (see `MyResolveHooks` in the end-to-end skeleton below).
 
 **Inject block formatting** uses `format_resolved_turn_block`; pass optional `metadata` for UI context:
 

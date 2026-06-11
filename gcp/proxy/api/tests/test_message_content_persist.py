@@ -1,4 +1,4 @@
-"""Tests for Orchestrator V2 message content persist helpers."""
+"""Tests for agent message content persist helpers."""
 
 from utils.message_content_persist import (
     apply_message_patch_from_state_delta,

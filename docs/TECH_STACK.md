@@ -66,7 +66,7 @@ The backend is built using Python and deployed on Google Cloud Platform, providi
 
 The backend implements a multi-agent system using Google Cloud's Agent Development Kit (ADK):
 
-- **Root Property Agent**: Two-hop orchestrator (`resolve_turn_llm` + executor LLM) with flat tool registry
+- **Root Property Agent**: Single-loop orchestrator (deterministic pre-routing + one executor LLM per substantive turn) with flat tool registry
   - `run_checkpoint_pipeline`: Checkpoint retrieval + optional coverage/DIY/service/cost branches
   - `user_docs_retrieval`: RAG over user-uploaded documents
 

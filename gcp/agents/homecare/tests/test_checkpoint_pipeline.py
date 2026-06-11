@@ -1,4 +1,4 @@
-"""Unit tests for Orchestrator V2 checkpoint pipeline (synthesis + tool return)."""
+"""Unit tests for single-loop checkpoint pipeline (synthesis + tool return)."""
 
 from __future__ import annotations
 

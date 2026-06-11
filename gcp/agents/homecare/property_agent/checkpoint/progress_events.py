@@ -1,4 +1,4 @@
-"""ADK-visible checkpoint progress events (Orchestrator V2)."""
+"""ADK-visible checkpoint progress events."""
 
 from __future__ import annotations
 

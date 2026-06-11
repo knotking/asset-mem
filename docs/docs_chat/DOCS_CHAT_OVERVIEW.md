@@ -51,7 +51,7 @@ property_agent (resolve + executor)
 
 ### Component Breakdown
 
-1. **property_agent**: `resolve_turn_llm` sets `route=user_docs` when `primary_agent=docs`
+1. **property_agent**: When `primary_agent=docs`, pre-routing seeds `route=user_docs` and the executor calls `user_docs_retrieval`
 2. **Executor**: Calls `user_docs_retrieval` directly (no doculink transfer)
 3. **User Docs Agent**: Retrieves information from user-uploaded documents
 4. **Vertex AI RAG**: Performs semantic search over document corpus

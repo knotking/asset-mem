@@ -1,4 +1,4 @@
-"""Message patch types for Orchestrator V2 — no imports from registry/routing/runtime."""
+"""Message patch types for structured chat messages — no imports from registry/routing/runtime."""
 
 from __future__ import annotations
 

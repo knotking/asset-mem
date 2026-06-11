@@ -126,7 +126,7 @@ function synthesisMarkdownForSummary(message: Message): string {
   return content;
 }
 
-/** Resolve structured vs markdown display from Orchestrator V2 message fields. */
+/** Resolve structured vs markdown display from contentJson + contentMarkdown fields. */
 export function getMessageDisplayParts(message: Message): MessageDisplayParts {
   const { markdown, contentJson } = resolveMessageContentParts(message);
   if (contentJson && structuredDataHasVisibleSections(contentJson)) {

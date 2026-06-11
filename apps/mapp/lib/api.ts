@@ -176,7 +176,7 @@ export interface StreamAgentResponseParams {
   /** Firestore assistant message doc id (lifecycle + agentSteps persistence). */
   assistantMessageId?: string;
   chatIntent?: 'discuss_report' | 'new_analysis' | 'replay_report';
-  /** Structured chip tap — routes deterministically on the agent (no resolve LLM). */
+  /** Structured chip tap — routes deterministically on the agent (single-loop pre-routing). */
   chipAction?: import('@homeapp/common/lib/suggested-actions').ChipAction;
   onChunk?: (content: string) => void;
   onAgentStep?: (step: AgentStep) => void;

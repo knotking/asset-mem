@@ -1,7 +1,6 @@
 """Tool-boundary invariants for checkpoint executor tools (Phase 3).
 
-Enforced in ``before_tool`` regardless of whether routing came from resolve LLM,
-chip fast-path, or (future) single-loop mode.
+Enforced in ``before_tool`` for chip, accept-offer, and single-loop routing paths.
 """
 
 from __future__ import annotations

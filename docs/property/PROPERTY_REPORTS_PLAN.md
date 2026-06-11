@@ -111,7 +111,7 @@ flowchart TB
   end
 
   subgraph agent [property_agent]
-    ResolveReport[resolve_turn_llm route report]
+    ResolveReport[single_loop pre-route report]
     ReportRet[report_retrieval tool]
     CkptRet[run_checkpoint_pipeline existing]
     DocsRet[user_docs_retrieval existing]
@@ -395,8 +395,8 @@ Implementation notes:
 |-----------|----------|
 | `primary_agent: "report"` | User selects **Reports** in chat settings (mapp modal / webapp popover) |
 | `report_ids: string[]` | Required when in report mode — one or more saved reports attached (property-scoped) |
-| `resolve_turn_llm` | Sets `route=report` when `primary_agent=report` |
-| `report_retrieval` tool | Executor loads `contentSnapshot` + `chatMarkdown` from Firestore; answers cite the frozen snapshot only (no generic home-inspection filler). Report route skips `[SESSION_WORKING_MEMORY]` inject; per-turn `[REPORT_MODE]` block (not global executor prompts) forbids inventing systems/sections not in the snapshot and handles empty retrieval. Base `prompts.py` keeps the general empty-retrieval rule for checkpoint/docs. Session caches loaded text by `report_ids` + `report_revisions` fingerprint; follow-up turns skip re-fetch when selection unchanged. Chat Add Context lists **current revision only** per report (no `revisions` subcollection fetch on open). |
+| `single_loop_routing` + `primary_agent` | Seeds `route=report` when `primary_agent=report`; executor calls `report_retrieval` |
+| `report_retrieval` tool | Executor loads `contentSnapshot` + `chatMarkdown` from Firestore; answers cite the frozen snapshot only (no generic home-inspection filler). Report route uses per-turn `[REPORT_MODE]` in the resolved-turn block (not global executor prompts) to forbid inventing systems/sections not in the snapshot and to handle empty retrieval. Base `prompts.py` keeps the general empty-retrieval rule for checkpoint/docs. Session caches loaded text by `report_ids` + `report_revisions` fingerprint; follow-up turns skip re-fetch when selection unchanged. Chat Add Context lists **current revision only** per report (no `revisions` subcollection fetch on open). |
 | `PrimaryAgent` type | Extend `apps/common/src/types.ts`: `'analysis' \| 'checkpoint' \| 'docs' \| 'report'` |
 
 **Good queries:** “What did the move-out report say about the kitchen?” “Summarize damage in report X.” “Compare issues in revision 1 vs revision 2.” (future: multi-revision picker or explicit archived-revision selection — not in default Add Context list today.)
@@ -557,7 +557,7 @@ Reports live **under Timeline / Checkpoints**, not as a top-level property tab.
 ### Phase 4 — AI chat (`primary_agent: "report"`)
 
 - [x] Extend `PrimaryAgent` + proxy/agent request schema with `primary_agent: "report"` and `report_ids`
-- [x] `resolve_turn_llm` route `report` + `report_retrieval` tool under `property_agent/reports/`
+- [x] `single_loop` report routing + `report_retrieval` tool under `property_agent/reports/`
 - [x] Chat settings: Reports mode (mapp + webapp)
 - [x] Report picker + `contextRefs.reports` on messages
 - [x] Agent display strings (e.g. `report_retrieval` step label)

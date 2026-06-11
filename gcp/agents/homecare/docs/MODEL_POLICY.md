@@ -19,7 +19,7 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 
 **Where:** Root `property_agent` executor only (`global_agent_gemini_model()`).
 
-**Why:** Single-loop orchestration (Orchestrator V3) — one non-lite Flash call per turn for tool selection; deterministic chip/accept routing skips any LLM hop.
+**Why:** Single-loop orchestration — one non-lite Flash call per turn for tool selection; deterministic chip/accept routing skips any LLM hop.
 
 **Client:** Same `Gemini3` / `location=global` as `GLOBAL_GEMINI_MODEL`. The root executor must receive the **`SINGLE_LOOP_GEMINI_MODEL` object** (not the model name string) so ADK does not fall back to `GOOGLE_CLOUD_LOCATION` (e.g. `us-central1`), where newer Flash models may be unavailable.
 

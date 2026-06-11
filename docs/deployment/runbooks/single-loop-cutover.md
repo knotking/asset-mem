@@ -37,8 +37,8 @@ Agent and proxy must ship **together** (same release window). Do not leave a mix
 
 1. **Revert both** proxy and agent to last known-good revision (GitHub Actions re-run previous workflow SHA or `gcloud run services update-traffic` + Agent Engine `update` from prior artifact).
 2. **Verify message schema integrity** on recent chats:
-   - Existing V2 messages remain readable (`contentJson` + `contentMarkdown`).
-   - New messages after rollback may omit V2 fields if rolling back to pre-V2 proxy — clients must still handle legacy prose-only messages.
+   - Existing structured messages remain readable (`contentJson` + `contentMarkdown`).
+   - New messages after rollback may omit structured fields if rolling back to a pre-structured-message proxy — clients must still handle legacy prose-only messages.
 3. **Do not** bulk-delete or rewrite Firestore messages during rollback.
 4. If partial stream failures left `agent_stream: failed` steps, users can retry the turn; no DB migration required.
 
@@ -65,8 +65,9 @@ Complete before marking Property Agent Architecture closed in prod (see also §1
 
 | Signal | Log / metric | Target (staging baseline) |
 |--------|--------------|---------------------------|
-| Resolve calls / turn | `orchestrator.routing.resolve_calls` | ~1 per turn |
-| Follow-up prompt size | `orchestrator.routing.resolve_prompt_tokens` | Context-only turns &lt; 4k estimated tokens |
+| Routing decisions / turn | `orchestrator.routing.calls` | 1 per turn (deterministic; no routing LLM) |
+| Session context inject size | `orchestrator.routing.prompt_tokens` | 0 for chip/casual; slim `[SESSION_CONTEXT]` for free text |
+| Executor skipped (casual) | `orchestrator.routing.executor_skipped` | Greetings / chip-only turns |
 | Time to first structured patch | `orchestrator.message.ttf_structured_patch_ms` | Establish P95 after deploy |
 | Stale writes | `orchestrator.message.stale_revision_rejects` | Low; spikes only under retry storms |
 | Patch rate | `orchestrator.message.patch_applies` | Matches throttled persist cadence |

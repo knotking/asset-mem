@@ -3,7 +3,7 @@
 # Platform boundary: require explicit review on core contracts/primitives.
 /gcp/agent_framework/** @prakashbaskaran
 
-# Orchestrator V2 message SSOT + patch/revision guards
+# Structured message SSOT + patch/revision guards
 /gcp/proxy/api/utils/message_content_persist.py @prakashbaskaran
 /gcp/proxy/api/utils/message_patch_state.py @prakashbaskaran
 /gcp/proxy/api/utils/message_patch_metrics.py @prakashbaskaran

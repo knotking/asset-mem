@@ -422,7 +422,7 @@ AGENT  AGENT   AGENT                   │
 
 #### Root Property Agent (Property Agent Architecture)
 
-- **Role**: Two-hop orchestrator (`resolve_turn_llm` + executor LLM)
+- **Role**: Single-loop orchestrator (deterministic pre-routing + executor LLM)
 - **Flat executor tools**:
   - `run_checkpoint_pipeline` — retrieval + optional coverage/DIY/service/cost
   - `user_docs_retrieval` — user document RAG

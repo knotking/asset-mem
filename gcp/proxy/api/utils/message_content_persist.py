@@ -1,4 +1,4 @@
-"""Orchestrator V2: split, merge, and finalize assistant message content fields."""
+"""Structured message persist: split, merge, and finalize assistant message content fields."""
 
 from __future__ import annotations
 

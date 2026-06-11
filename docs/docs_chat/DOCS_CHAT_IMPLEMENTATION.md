@@ -51,9 +51,9 @@ primary_agent: Optional[PrimaryAgent] = Field(
     default=None,
     description=(
         "Primary agent selection. When provided, this takes precedence in routing decisions. "
-        "Allowed values: 'checkpoint' and 'docs' are context for resolve_turn; "
-        "the orchestrator calls run_checkpoint_pipeline or user_docs_retrieval directly. "
-        "If not provided, routing falls back to legacy logic based on checkpoint_ids."
+        "Allowed values: 'checkpoint' and 'docs' seed session context for single-loop pre-routing; "
+        "the executor calls run_checkpoint_pipeline or user_docs_retrieval directly. "
+        "If not provided, routing falls back to query heuristics and session state."
     ),
 )
 ```
@@ -90,20 +90,20 @@ primary_agent: Optional[PrimaryAgent] = Field(
 - Supports both selected docs and all-docs modes
 - Routes to `user_docs_agent` tool
 
-**Decision Logic** (V2 — `resolve_turn_llm` + flat tool registry):
+**Decision Logic** (single-loop orchestrator + flat tool registry):
 ```python
-1. If routed via primary_agent="docs":
-   → resolve route=user_docs → user_docs_retrieval
+1. If primary_agent="docs":
+   → pre-route user_docs → executor calls user_docs_retrieval
 
 2. Else if checkpoint context needs new retrieval or full analysis:
-   → resolve route=checkpoint → run_checkpoint_pipeline
-   (checkpoint_ids and optional branches are resolve inputs, not a separate root agent)
+   → pre-route checkpoint → executor calls run_checkpoint_pipeline
+   (checkpoint_ids and optional branches are session context, not a separate root agent)
 
 3. Else if context_doc_uris provided:
    → user_docs path
 
 4. Else:
-   → orchestrator markdown only (no retrieval tool)
+   → executor markdown only (no retrieval tool)
 ```
 
 #### 4. User Docs Agent Enhancement
@@ -591,4 +591,4 @@ For implementation questions:
 - [Docs Chat Overview](DOCS_CHAT_OVERVIEW.md)
 - [Docs Chat Testing Guide](DOCS_CHAT_TESTING.md)
 - [Docs Chat API Integration](DOCS_CHAT_API_INTEGRATION.md)
-- [Webapp chat UI (V2 message contract)](../../apps/webapp/docs/CHAT.md)
+- [Webapp chat UI (structured message contract)](../../apps/webapp/docs/CHAT.md)

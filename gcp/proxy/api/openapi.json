@@ -109,7 +109,7 @@
           "Agent"
         ],
         "summary": "Stream Agent Response",
-        "description": "Process a query from the agent and stream the response. Throttled Firestore message patches may include V2 fields from Reasoning Engine `actions.state_delta`: `contentMarkdown` (prose), `contentJson` (structured UI), `analysisRunId`, and progressive `agentSteps`. Merged per `message_content_persist.apply_message_patch_from_state_delta` with `contentSchemaVersion: 2`.",
+        "description": "Process a query from the agent and stream the response. Throttled Firestore message patches may include structured fields from Reasoning Engine `actions.state_delta`: `contentMarkdown` (prose), `contentJson` (structured UI), `analysisRunId`, and progressive `agentSteps`. Merged per `message_content_persist.apply_message_patch_from_state_delta` with `contentSchemaVersion: 2`.",
         "operationId": "firebase_streaming_webhook_mock_secret_firebase_agent_stream_post",
         "requestBody": {
           "content": {
