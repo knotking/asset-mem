@@ -2088,7 +2088,7 @@ const ChatMessageComponent = ({
       {renderContextRefs()}
       {renderFilePreview()}
       {messageMarkdown ? (
-        <div className="prose prose-sm dark:prose-invert max-w-none break-words">
+        <div className="prose prose-sm dark:prose-invert max-w-none break-words [&_h1]:mb-2 [&_h1]:mt-3 [&_h2]:mb-1.5 [&_h2]:mt-3 [&_h3]:mb-1 [&_h3]:mt-2 [&_hr]:my-3 [&_p]:my-1.5">
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownRenderers}>
             {messageMarkdown}
           </ReactMarkdown>

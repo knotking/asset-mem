@@ -220,7 +220,7 @@ export const useMarkdownStyles = (
     hr: {
       backgroundColor: theme.border,
       height: 1,
-      marginVertical: 16,
+      marginVertical: isAccordion ? 10 : 8,
     },
     table: {
       borderWidth: 1,
