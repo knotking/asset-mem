@@ -27,6 +27,7 @@ from property_agent.routing.conversational_callbacks import (
     mark_checkpoint_response_kind,
 )
 from property_agent.routing.conversational_intent import (
+    clear_executor_invocation_analysis_flag,
     mark_executor_invocation_structured_analysis,
     resolve_user_query_from_state,
 )
@@ -175,6 +176,7 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
         ):
             snapshot_session_analysis_context(callback_context.state)
         self._maybe_extract_pending_offer(callback_context)
+        clear_executor_invocation_analysis_flag(callback_context.state)
         self._maybe_update_conversation_summary(callback_context)
         self.plugin.prune_heavy_checkpoint_state(callback_context.state)
         await self.plugin.ingest_invocation_to_memory_bank(
@@ -208,6 +210,32 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
         if not pending_offer_extract_enabled():
             return
         events = session_events(callback_context)
+        inv_id = getattr(callback_context, "invocation_id", None)
+        inv_id_str = str(inv_id).strip() if inv_id is not None else None
+        assistant_text = last_assistant_reply_text(
+            events,
+            current_invocation_id=inv_id_str,
+            require_question=True,
+        )
+        if not assistant_text:
+            assistant_text = last_assistant_reply_text(
+                events,
+                current_invocation_id=inv_id_str,
+            )
+        if assistant_text:
+            uq = resolve_user_query_from_state(callback_context.state)
+            maybe_set_pending_from_assistant_reply(
+                callback_context.state,
+                assistant_text=assistant_text,
+                user_query=uq,
+            )
+            return
+        from property_agent.routing.pending_offer_extract import (
+            maybe_set_pending_from_suggested_actions,
+        )
+
+        if maybe_set_pending_from_suggested_actions(callback_context.state):
+            return
         assistant_text = last_assistant_reply_text(events, require_question=True)
         if not assistant_text:
             assistant_text = last_assistant_reply_text(events)
