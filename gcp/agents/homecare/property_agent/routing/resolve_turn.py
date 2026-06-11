@@ -307,6 +307,13 @@ def prepare_before_model_turn(
 
     Returns LlmResponse to short-circuit the executor, or None to run the executor LLM.
     """
+    from .executor_only_routing import (
+        executor_only_routing_enabled,
+        prepare_executor_only_before_model,
+    )
+
+    if executor_only_routing_enabled():
+        return prepare_executor_only_before_model(ctx, llm_request=llm_request)
     return run_resolve_before_model(
         ctx, llm_request=llm_request, hooks=HOMECARE_RESOLVE_HOOKS
     )
