@@ -62,6 +62,7 @@ def test_bare_casual_intent(query: str, expected: str | None) -> None:
 
 
 def test_global_agent_gemini_model_switches_on_flag() -> None:
+    assert EXECUTOR_ONLY_GEMINI_MODEL.model == "gemini-3.5-flash"
     with patch.dict(os.environ, {"HOMEAPP_EXECUTOR_ONLY_ROUTING": "1"}):
         assert global_agent_gemini_model() is EXECUTOR_ONLY_GEMINI_MODEL
     with patch.dict(os.environ, {}, clear=True):
