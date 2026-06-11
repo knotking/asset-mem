@@ -108,7 +108,7 @@ Highest value, lowest model risk. Previously a chip tap sent canned text +
 
 - [x] Structured `chip_action` field on the chat request schema
       (`gcp/proxy/api/schemas/agent.py` `ChipActionRequest`): `{"type":
-      "run_branch", "branch": "cost"}`, `{"type": "replay_report"}`,
+      "run_branch", "branch": "cost"}`, `{"type": "replay_analysis"}`,
       `{"type": "discuss", "topic": "diy"}`. Proxy forwards it in the agent
       payload (`vertex_service.py`).
 - [x] Chips emit matching `action` objects in
@@ -123,7 +123,7 @@ Highest value, lowest model risk. Previously a chip tap sent canned text +
       key is consume-once (session state persists across turns) and a chip tap
       clears any dangling `pending_user_action`. `run_branch` →
       `run_optional_agents=[branch]`, `query_mode=branch_explicit`; `discuss` →
-      `answer_from_context` + `focus_branch`; `replay_report` →
+      `answer_from_context` + `focus_branch`; `replay_analysis` →
       `replay_deliverable`.
 - [x] Clients send `chip_action` on chip tap, keep `userQuery` for display:
       `apps/common/src/lib/suggested-actions.ts` (+ `types.ts`) parses the chip

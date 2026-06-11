@@ -27,7 +27,7 @@ _DISCUSS_TOPICS = frozenset(
 
 @dataclass(frozen=True)
 class ChipAction:
-    type: str  # "run_branch" | "discuss" | "replay_report"
+    type: str  # "run_branch" | "discuss" | "replay_analysis"
     branch: Optional[str] = None
     topic: Optional[str] = None
 
@@ -47,8 +47,8 @@ def parse_chip_action(value: Any) -> Optional[ChipAction]:
         if topic is not None and topic not in _DISCUSS_TOPICS:
             topic = None
         return ChipAction(type="discuss", topic=topic)
-    if kind == "replay_report":
-        return ChipAction(type="replay_report")
+    if kind == "replay_analysis":
+        return ChipAction(type="replay_analysis")
     return None
 
 
@@ -89,16 +89,16 @@ def resolved_turn_from_chip_action(
             focus_branch=branch,  # type: ignore[arg-type]
             resolve_source="chip",
         )
-    if action.type == "replay_report":
+    if action.type == "replay_analysis":
         return ResolvedTurn(
             intent="substantive",
             route="checkpoint",
-            expanded_user_query=expanded or "Show the full analysis report again",
+            expanded_user_query=expanded or "Show the full analysis again",
             retrieval_only=True,
             run_optional_agents=[],
             user_goal="replay_deliverable",
             query_mode="interpret_session",
-            discourse_act="replay_report",
+            discourse_act="replay_analysis",
             resolve_source="chip",
         )
     # discuss

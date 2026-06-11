@@ -4,7 +4,7 @@
 
 import type { StructuredResponseData } from "@/lib/types";
 
-export type ChatIntentHint = "discuss_report" | "new_analysis" | "replay_report";
+export type ChatIntentHint = "discuss_analysis" | "new_analysis" | "replay_analysis";
 
 export type ChipActionBranch = "coverage" | "diy" | "service" | "cost";
 
@@ -12,7 +12,7 @@ export type ChipActionBranch = "coverage" | "diy" | "service" | "cost";
 export type ChipAction =
   | { type: "run_branch"; branch: ChipActionBranch }
   | { type: "discuss"; topic?: string }
-  | { type: "replay_report" };
+  | { type: "replay_analysis" };
 
 export type SuggestedAction = {
   label: string;
@@ -32,8 +32,8 @@ function parseChipAction(value: unknown): ChipAction | undefined {
   if (row.type === "discuss") {
     return { type: "discuss", topic: typeof row.topic === "string" ? row.topic : undefined };
   }
-  if (row.type === "replay_report") {
-    return { type: "replay_report" };
+  if (row.type === "replay_analysis") {
+    return { type: "replay_analysis" };
   }
   return undefined;
 }

@@ -124,7 +124,7 @@ def test_report_route_substantive_allows_tools() -> None:
         retrieval_only=True,
         run_optional_agents=[],
         user_goal="answer_from_context",
-        discourse_act="replay_report",
+        discourse_act="replay_analysis",
     )
     assert is_executor_conversational_turn(resolved) is False
     state: dict = {}

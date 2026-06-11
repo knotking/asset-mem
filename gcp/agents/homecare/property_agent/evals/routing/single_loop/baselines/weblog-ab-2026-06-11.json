@@ -532,7 +532,7 @@
       "log": "web-log-session-3",
       "routing_mode": "single_loop",
       "turn_index": 5,
-      "query": "Show me the full analysis report again",
+      "query": "Show me the full analysis again",
       "routing_kind": "resolve_turn chip",
       "route": "checkpoint",
       "retrieval_only": true,

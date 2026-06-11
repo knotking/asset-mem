@@ -67,14 +67,14 @@ def test_discuss_resolved_turn_fields() -> None:
 
 def test_replay_resolved_turn_fields() -> None:
     resolved = resolved_turn_from_chip_action(
-        ChipAction(type="replay_report"),
-        user_query="Show me the full analysis report again",
+        ChipAction(type="replay_analysis"),
+        user_query="Show me the full analysis again",
     )
     assert resolved.resolve_source == "chip"
     assert resolved.retrieval_only is True
     assert resolved.run_optional_agents == []
     assert resolved.user_goal == "replay_deliverable"
-    assert resolved.discourse_act == "replay_report"
+    assert resolved.discourse_act == "replay_analysis"
 
 
 def test_take_chip_action_consumes_state() -> None:

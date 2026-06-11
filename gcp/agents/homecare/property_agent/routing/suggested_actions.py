@@ -59,7 +59,7 @@ def build_suggested_actions_for_analysis(analysis: dict[str, Any]) -> list[dict[
             {
                 "label": "Why is pro so expensive?",
                 "userQuery": "Why is professional repair so expensive compared to DIY?",
-                "chatIntent": "discuss_report",
+                "chatIntent": "discuss_analysis",
                 "action": {"type": "discuss", "topic": "cost"},
             }
         )
@@ -68,7 +68,7 @@ def build_suggested_actions_for_analysis(analysis: dict[str, Any]) -> list[dict[
             {
                 "label": "Explain DIY steps",
                 "userQuery": "Can you explain the DIY steps in more detail?",
-                "chatIntent": "discuss_report",
+                "chatIntent": "discuss_analysis",
                 "action": {"type": "discuss", "topic": "diy"},
             }
         )
@@ -77,7 +77,7 @@ def build_suggested_actions_for_analysis(analysis: dict[str, Any]) -> list[dict[
             {
                 "label": "Explain cost estimate",
                 "userQuery": "Can you explain the cost estimate breakdown?",
-                "chatIntent": "discuss_report",
+                "chatIntent": "discuss_analysis",
                 "action": {"type": "discuss", "topic": "cost"},
             }
         )
@@ -99,10 +99,10 @@ def build_suggested_actions_for_analysis(analysis: dict[str, Any]) -> list[dict[
     if completed and len(actions) < 4:
         actions.append(
             {
-                "label": "Show full report",
-                "userQuery": "Show me the full analysis report again",
-                "chatIntent": "replay_report",
-                "action": {"type": "replay_report"},
+                "label": "Show full analysis",
+                "userQuery": "Show me the full analysis again",
+                "chatIntent": "replay_analysis",
+                "action": {"type": "replay_analysis"},
             }
         )
 

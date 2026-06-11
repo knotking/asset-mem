@@ -186,14 +186,14 @@ export type DiyCostEstimatesSummary = {
   };
 };
 
-export type ChatIntentHint = "discuss_report" | "new_analysis" | "replay_report";
+export type ChatIntentHint = "discuss_analysis" | "new_analysis" | "replay_analysis";
 
 export type ChipActionBranch = "coverage" | "diy" | "service" | "cost";
 
 export type ChipAction =
   | { type: "run_branch"; branch: ChipActionBranch }
   | { type: "discuss"; topic?: string }
-  | { type: "replay_report" };
+  | { type: "replay_analysis" };
 
 export type SuggestedAction = {
   label: string;

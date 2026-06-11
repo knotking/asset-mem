@@ -347,14 +347,14 @@ cases:
       run_optional_agents: []
       user_goal: answer_from_context
 
-  - id: weblog_session_3_t5_chip_replay_report
+  - id: weblog_session_3_t5_chip_replay_analysis
     tags: [weblog, weblog_session_3, chip, single_loop]
-    query: "Show me the full analysis report again"
+    query: "Show me the full analysis again"
     state:
       checkpoint_ids: ["CKPT0000000000000001"]
-      chip_action: {type: replay_report}
+      chip_action: {type: replay_analysis}
     expect:
-      discourse_act: replay_report
+      discourse_act: replay_analysis
       route: checkpoint
       retrieval_only: true
       run_optional_agents: []

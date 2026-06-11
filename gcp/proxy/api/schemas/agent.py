@@ -31,7 +31,7 @@ class SearchLocationRequest(BaseModel):
 class ChipActionRequest(BaseModel):
     """Structured suggested-action chip tap (deterministic agent routing)."""
 
-    type: Literal["run_branch", "discuss", "replay_report"]
+    type: Literal["run_branch", "discuss", "replay_analysis"]
     branch: Optional[Literal["coverage", "diy", "service", "cost"]] = Field(
         default=None,
         description="Branch to run (run_branch only)",
@@ -84,9 +84,9 @@ class AgentRequest(BaseModel):
         default=None,
         description="Firestore assistant message doc id (clients create before streaming)",
     )
-    chat_intent: Optional[Literal["discuss_report", "new_analysis", "replay_report"]] = Field(
+    chat_intent: Optional[Literal["discuss_analysis", "new_analysis", "replay_analysis"]] = Field(
         default=None,
-        description="Optional client hint for resolve NLU (discuss_report, new_analysis, replay_report)",
+        description="Optional client hint for resolve NLU (discuss_analysis, new_analysis, replay_analysis)",
     )
     chip_action: Optional[ChipActionRequest] = Field(
         default=None,

@@ -154,7 +154,7 @@ function PropertyChatInner(props: Props) {
     async (
       text: string,
       options?: {
-        chatIntent?: 'discuss_report' | 'new_analysis' | 'replay_report';
+        chatIntent?: 'discuss_analysis' | 'new_analysis' | 'replay_analysis';
         chipAction?: import('@homeapp/common/lib/suggested-actions').ChipAction;
       }
     ) => {
