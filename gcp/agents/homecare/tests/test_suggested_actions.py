@@ -16,7 +16,7 @@ def test_suggested_actions_after_cost_and_diy() -> None:
     }
     actions = build_suggested_actions_for_analysis(analysis)
     labels = [a["label"] for a in actions]
-    assert "Why is pro so expensive?" in labels
+    assert "Compare DIY vs professional" in labels
 
 
 def test_merge_into_content_json() -> None:
