@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-06-11T12:17:15+0530",
-  "cases_file": "/Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/property_agent/evals/routing/single_loop/cases.yaml",
+  "cases_file": "property_agent/evals/routing/single_loop/cases.yaml",
   "filter": null,
   "repeat": 1,
   "summary": {

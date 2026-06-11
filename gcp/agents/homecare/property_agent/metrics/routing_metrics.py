@@ -39,13 +39,15 @@ def record_routing_turn(
     prompt_text: str,
     elapsed_ms: float,
     executor_skipped: bool,
+    resolve_source: str = "single_loop",
 ) -> None:
     prompt_tokens = _estimate_tokens(prompt_text)
     logger.info(
-        "orchestrator_routing intent=%s route=%s routing_prompt_tokens=%s "
-        "elapsed_ms=%.0f executor_skipped=%s",
+        "orchestrator_routing intent=%s route=%s resolve_source=%s "
+        "routing_prompt_tokens=%s elapsed_ms=%.0f executor_skipped=%s",
         intent,
         route,
+        resolve_source,
         prompt_tokens,
         elapsed_ms,
         executor_skipped,
@@ -57,7 +59,7 @@ def record_routing_turn(
     except ImportError:
         return
 
-    attrs = {"intent": intent, "route": route}
+    attrs = {"intent": intent, "route": route, "resolve_source": resolve_source}
     record_counter(
         METRIC_ROUTING_CALLS,
         1,

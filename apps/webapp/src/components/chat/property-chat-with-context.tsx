@@ -17,18 +17,18 @@ import type {
   PrimaryAgent,
   SearchLocationInput,
 } from "@/lib/types";
-
-export type ChatSendOptions = {
-  chatIntent?: "discuss_report" | "new_analysis" | "replay_report";
-  /** Structured chip tap — deterministic agent routing (single-loop pre-routing). */
-  chipAction?: ChipAction;
-};
 import {
   buildAgentRequestContext,
   buildMessageContextRefs,
   canSendChatMessage,
   getSendBlockReason,
 } from "@/lib/chat-send-context";
+
+export type ChatSendOptions = {
+  chatIntent?: "discuss_report" | "new_analysis" | "replay_report";
+  /** Structured chip tap — deterministic agent routing (single-loop pre-routing). */
+  chipAction?: ChipAction;
+};
 import { analyzeCheckpoint } from "@/lib/api-checkpoint";
 import { postFileToAgent, streamAgentResponse } from "@/lib/api-agent";
 import { queueExtractDocInfo } from "@/ai/flows/extract-doc-info";

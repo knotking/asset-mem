@@ -75,19 +75,6 @@ def clear_pending_user_action(state: Any) -> None:
     state[PENDING_USER_ACTION_KEY] = None
 
 
-def set_pick_capability_pending(state: Any) -> None:
-    set_pending_user_action(
-        state,
-        PendingUserAction(
-            kind="pick_capability",
-            expanded_user_query="Help me choose what to explore from the capability menu.",
-            run_optional_agents=[],
-            capability_key=None,
-            offered_summary="Capability menu offered.",
-        ),
-    )
-
-
 def consume_pending_for_resolve(
     payload: dict[str, Any],
     *,

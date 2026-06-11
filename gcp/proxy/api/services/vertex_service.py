@@ -74,6 +74,7 @@ def _reasoning_payload_summary(payload: Dict[str, Any]) -> str:
         f"checkpoint_ids={len(payload.get('checkpoint_ids') or [])} "
         f"has_property_id={bool(payload.get('property_id'))} "
         f"primary_agent={payload.get('primary_agent')!r} "
+        f"chip_action={payload.get('chip_action')!r} "
         f"search_location_source={((payload.get('search_location') or {}).get('source'))!r}"
     )
 

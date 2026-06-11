@@ -6,6 +6,7 @@ import os
 import json
 import firebase_admin
 from firebase_admin import firestore
+from google.cloud.firestore_v1.vector import Vector
 
 from utils import (
     checkpoint_timestamp_to_datetime,
@@ -319,8 +320,6 @@ def pubsub_checkpoint_analysis(request, context):
                         )
             
                         if embedding:
-                            from google.cloud.firestore_v1.vector import Vector
-
                             # Firestore vector indexes require Vector type, not a plain list.
                             embedding_update = {
                                 "embedding": Vector(embedding),

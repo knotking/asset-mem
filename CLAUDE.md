@@ -131,4 +131,4 @@ Docs in `gcp/docs/SETUP_AND_DEPLOYMENT.md` and `gcp/docs/ARCHITECTURE.md` go dee
 - Webapp dev port is **9002**, not 3000.
 - Mobile app reads runtime config from `app.config.js` → `Constants.expoConfig.extra.*` (e.g. `agentSessionUrl`, `agentSseUrl`, `ragFileUploadUrl`, `checkpointAnalysisUrl`, `webAppUrl`); these come from EAS build profiles in `eas.json`.
 - The `gcp/proxy/api/.gcloudignore` is intentional: it forces a staged copy of `gcp/common` (which is git-ignored at that location) into the Cloud Run upload.
-- Agent regression is `make test` under `gcp/agents/homecare/tests/` (mocked, CI-safe). ADK evalsets were removed; use `adk web` on staging for manual E2E QA and `make conformance-test` for replay fixtures.
+- Agent regression is `make test` under `gcp/agents/homecare/tests/` (mocked, CI-safe). ADK evalsets were removed; use `adk web` on staging for manual E2E QA, `make routing-eval` for the deterministic routing eval set, and `make conformance-test` for replay fixtures.
