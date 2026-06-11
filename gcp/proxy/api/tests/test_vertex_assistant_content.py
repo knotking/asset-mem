@@ -75,6 +75,31 @@ def test_resolve_assistant_message_fields_prefers_state_delta_patch() -> None:
     assert content_json == {"analysis": {"title": "Agent"}}
 
 
+def test_resolve_assistant_message_fields_keeps_executor_prose_after_checkpoint_summary() -> None:
+    summary = "# Checkpoint analysis\n\n## Checkpoint Summary\n- **Checkpoints Analyzed**: 2"
+    executor = (
+        "\n\nI checked your recorded checkpoints, and there are currently "
+        "**no issues or checkpoints registered for the kitchen**."
+    )
+    accumulated = summary + executor
+    legacy, markdown, content_json = _resolve_assistant_message_fields_for_persist(
+        assistant_content_accumulated=accumulated,
+        user_query="any issues in kitchen?",
+        message_content_patch={
+            "contentMarkdown": summary,
+            "contentJson": {"analysis": {"checkpointSummary": {"checkpointsAnalyzed": 2}}},
+        },
+        prose_only_persist=True,
+        finalize=True,
+        agent_steps_by_name=None,
+        optional_agent_keys=None,
+    )
+    assert "no issues or checkpoints registered for the kitchen" in markdown
+    assert markdown == accumulated
+    assert legacy == accumulated
+    assert content_json == {"analysis": {"checkpointSummary": {"checkpointsAnalyzed": 2}}}
+
+
 def test_resolve_assistant_message_fields_no_fence_fallback_without_state_delta() -> None:
     dual = (
         "# Summary\n\n"
