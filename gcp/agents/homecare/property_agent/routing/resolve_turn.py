@@ -12,7 +12,7 @@ from agent_framework.routing.resolved_turn import (
 )
 
 from .constants import REPORT_MODE_EXECUTOR_NOTE, RESOLVED_TURN_UI_CONTEXT_NOTE
-from .schema import CASUAL_INTENTS, ResolvedTurn, SessionStateLike, resolved_turn_from_state
+from .schema import CASUAL_INTENTS, ResolvedTurn, resolved_turn_from_state
 
 from .conversational_intent import CONVERSATIONAL_TURN_STATE_KEY
 from .checkpoint_selection import (
@@ -47,7 +47,6 @@ __all__ = [
     "format_resolved_turn_block",
     "inject_resolved_turn_into_llm_request",
     "prepare_before_model_turn",
-    "requests_optional_analysis_from_resolved",
     "resolved_turn_from_state",
 ]
 
@@ -165,18 +164,6 @@ def _clear_checkpoint_passthrough_stash(state: Any) -> None:
     ):
         if key in state:
             state[key] = None
-
-
-def requests_optional_analysis_from_resolved(
-    state: SessionStateLike | None,
-    *,
-    user_query: str = "",
-) -> bool:
-    _ = user_query
-    resolved = resolved_turn_from_state(state)
-    if resolved is None or resolved.is_casual:
-        return False
-    return bool(resolved.run_optional_agents) and not resolved.retrieval_only
 
 
 def format_resolved_turn_block(

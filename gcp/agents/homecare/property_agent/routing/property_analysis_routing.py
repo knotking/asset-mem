@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .conversational_intent import OPTIONAL_CHECKPOINT_BRANCHES
-from .query_mode import prior_analysis_branches_completed
 
 
 def filter_optional_branches_for_orchestrator(

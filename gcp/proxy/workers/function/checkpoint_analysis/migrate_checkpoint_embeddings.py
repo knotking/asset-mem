@@ -72,14 +72,20 @@ def _checkpoint_refs(
             yield from prop_ref.collection("checkpoints").list_documents()
 
 
+# Matches embedding_service.EMBEDDING_DIMENSION (text-embedding-004) and the
+# 768-dim flat vector index in firestore.indexes.json. Kept inline so this
+# script stays runnable with only google-cloud-firestore installed.
+EXPECTED_EMBEDDING_DIMENSION = 768
+
+# Firestore allows up to 500 writes per batch; stay under it.
+_WRITE_BATCH_SIZE = 400
+
+
 def _needs_vector_wrap(embedding: Any) -> bool:
-    if embedding is None:
-        return False
-    if isinstance(embedding, list):
-        return len(embedding) > 0
+    """True for a plain list of the expected dimension (already-Vector skips)."""
     if isinstance(embedding, Vector):
         return False
-    return False
+    return isinstance(embedding, list) and len(embedding) == EXPECTED_EMBEDDING_DIMENSION
 
 
 def migrate(
@@ -91,6 +97,16 @@ def migrate(
     limit: int | None,
 ) -> MigrationStats:
     stats = MigrationStats()
+    batch = db.batch()
+    batch_size = 0
+
+    def _commit_batch() -> None:
+        nonlocal batch, batch_size
+        if batch_size == 0:
+            return
+        batch.commit()
+        batch = db.batch()
+        batch_size = 0
 
     for ckpt_ref in _checkpoint_refs(db, user_id=user_id, property_id=property_id):
         if limit is not None and stats.scanned >= limit:
@@ -112,8 +128,12 @@ def migrate(
             if isinstance(embedding, Vector):
                 stats.skipped_already_vector += 1
                 continue
-            if not isinstance(embedding, list):
-                print(f"skip invalid type path={path} type={type(embedding).__name__}")
+            if not _needs_vector_wrap(embedding):
+                dim = len(embedding) if isinstance(embedding, list) else None
+                print(
+                    f"skip invalid path={path} type={type(embedding).__name__} dim={dim} "
+                    f"(expected list of {EXPECTED_EMBEDDING_DIMENSION})"
+                )
                 stats.skipped_invalid += 1
                 continue
 
@@ -122,11 +142,20 @@ def migrate(
                 f"dim={len(embedding)} model={data.get('embeddingModel')!r}"
             )
             if not dry_run:
-                ckpt_ref.update({"embedding": Vector(embedding)})
+                batch.update(ckpt_ref, {"embedding": Vector(embedding)})
+                batch_size += 1
+                if batch_size >= _WRITE_BATCH_SIZE:
+                    _commit_batch()
             stats.updated += 1
         except Exception as exc:
             stats.errors += 1
             print(f"error path={path}: {exc}", file=sys.stderr)
+
+    try:
+        _commit_batch()
+    except Exception as exc:
+        stats.errors += 1
+        print(f"error committing final batch: {exc}", file=sys.stderr)
 
     return stats
 

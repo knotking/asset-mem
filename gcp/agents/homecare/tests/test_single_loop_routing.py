@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -12,7 +11,6 @@ from google.genai import types
 from agent_framework.routing.resolved_turn import RESOLVE_APPLIED_INVOCATION_KEY
 from property_agent.model_config import (
     SINGLE_LOOP_GEMINI_MODEL,
-    GLOBAL_GEMINI_MODEL,
     global_agent_gemini_model,
 )
 from property_agent.routing.conversational_intent import CONVERSATIONAL_TURN_STATE_KEY

@@ -1,5 +1,5 @@
 from typing import List, Optional, Literal, Dict, Any
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from utils.optional_agents import normalize_checkpoint_optional_agents
 
 
@@ -40,6 +40,12 @@ class ChipActionRequest(BaseModel):
         default=None,
         description="Focus topic for discuss chips (e.g. cost, diy)",
     )
+
+    @model_validator(mode="after")
+    def run_branch_requires_branch(self) -> "ChipActionRequest":
+        if self.type == "run_branch" and not self.branch:
+            raise ValueError("chip_action of type run_branch requires a branch")
+        return self
 
 
 class AgentRequest(BaseModel):

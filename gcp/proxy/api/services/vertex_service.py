@@ -883,6 +883,81 @@ def delete_reasoning_engine_session(user_id: str, session_id: str):
     reasoning_engine_resource.delete_session(user_id=user_id, session_id=session_id)
 
 
+def build_reasoning_engine_payload(
+    request: AgentRequest,
+    *,
+    property_id: Optional[str] = None,
+    resolved_search_location: Optional[Any] = None,
+    correlation_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Build the stream_query message payload from the validated agent request."""
+    payload: Dict[str, Any] = {"user_query": request.user_query}
+
+    if request.user_id:
+        payload["user_id"] = request.user_id
+
+    if request.context_doc_uris:
+        payload["context_doc_uris"] = request.context_doc_uris
+
+    # Include checkpoint_ids if provided (context for run_checkpoint_pipeline)
+    checkpoint_ids = request.checkpoint_ids
+    if checkpoint_ids:
+        payload["checkpoint_ids"] = checkpoint_ids
+        logger.info(f"Including checkpoint_ids in agent payload: {checkpoint_ids} (count: {len(checkpoint_ids)})")
+    else:
+        logger.debug("No checkpoint_ids to include in agent payload")
+
+    if request.report_ids:
+        payload["report_ids"] = request.report_ids
+        logger.info("Including report_ids in agent payload: %s", request.report_ids)
+    if request.report_revisions:
+        payload["report_revisions"] = request.report_revisions
+        logger.info("Including report_revisions in agent payload: %s", request.report_revisions)
+
+    # Include property_id if available (for checkpoint queries, etc.)
+    if property_id:
+        logger.info(f"Including property_id in agent payload: {property_id}")
+        payload["property_id"] = property_id
+
+    # Include primary_agent if provided (for explicit routing)
+    if request.primary_agent:
+        payload["primary_agent"] = request.primary_agent
+        logger.info(f"Including primary_agent in agent payload: {request.primary_agent}")
+
+    # Include checkpoint_optional_agents if provided
+    checkpoint_optional_agents = request.checkpoint_optional_agents or []
+    if checkpoint_optional_agents:
+        payload["checkpoint_optional_agents"] = checkpoint_optional_agents
+        logger.info(f"Including checkpoint_optional_agents in payload: {checkpoint_optional_agents}")
+
+    if request.chat_intent:
+        payload["chat_intent"] = request.chat_intent
+        logger.info("Including chat_intent in payload: %s", request.chat_intent)
+
+    if request.chip_action is not None:
+        payload["chip_action"] = request.chip_action.model_dump(exclude_none=True)
+        logger.info("Including chip_action in payload: %s", payload["chip_action"])
+
+    # property_address: identity/context only (which property, docs)
+    if request.property_address:
+        payload["property_address"] = request.property_address
+
+    # search_location: single source of truth for market/geo (service, cost, diy, etc.)
+    if resolved_search_location is not None:
+        payload["search_location"] = resolved_search_location.to_agent_dict()
+        logger.info(
+            "Including search_location source=%s radius_miles=%s coords=%s,%s",
+            resolved_search_location.source,
+            resolved_search_location.radius_miles,
+            resolved_search_location.coordinates.lat,
+            resolved_search_location.coordinates.lng,
+        )
+
+    if correlation_id:
+        payload["correlation_id"] = correlation_id
+    return payload
+
+
 async def stream_agent_answers(
     request: AgentRequest,
     parse_response: Optional[bool] = True
@@ -982,71 +1057,13 @@ async def stream_agent_answers(
         except Exception as e:
             logger.debug(f"Could not retrieve property_id from Firestore session (this is optional): {e}")
     
-    payload: Dict[str, Any] = {"user_query": user_query}
-
-    if user_id:
-        payload["user_id"] = user_id
-
-    if context_doc_uris:
-        payload["context_doc_uris"] = context_doc_uris
-
-    # Include checkpoint_ids if provided (context for run_checkpoint_pipeline)
-    if checkpoint_ids:
-        payload["checkpoint_ids"] = checkpoint_ids
-        logger.info(f"Including checkpoint_ids in agent payload: {checkpoint_ids} (count: {len(checkpoint_ids)})")
-    else:
-        logger.debug("No checkpoint_ids to include in agent payload")
-
-    if report_ids:
-        payload["report_ids"] = report_ids
-        logger.info("Including report_ids in agent payload: %s", report_ids)
-    if report_revisions:
-        payload["report_revisions"] = report_revisions
-        logger.info("Including report_revisions in agent payload: %s", report_revisions)
-
-    # Include property_id if available (for checkpoint queries, etc.)
-    if property_id:
-        logger.info(f"Including property_id in agent payload: {property_id}")
-        payload["property_id"] = property_id
-    
-    # Include primary_agent if provided (for explicit routing)
-    if primary_agent:
-        payload["primary_agent"] = primary_agent
-        logger.info(f"Including primary_agent in agent payload: {primary_agent}")
-    
-    # Include checkpoint_optional_agents if provided
-    if checkpoint_optional_agents:
-        payload["checkpoint_optional_agents"] = checkpoint_optional_agents
-        logger.info(f"Including checkpoint_optional_agents in payload: {checkpoint_optional_agents}")
-
-    chat_intent = getattr(request, "chat_intent", None)
-    if chat_intent:
-        payload["chat_intent"] = chat_intent
-        logger.info("Including chat_intent in payload: %s", chat_intent)
-
-    chip_action = getattr(request, "chip_action", None)
-    if chip_action is not None:
-        payload["chip_action"] = chip_action.model_dump(exclude_none=True)
-        logger.info("Including chip_action in payload: %s", payload["chip_action"])
-
-    # property_address: identity/context only (which property, docs)
-    if property_address:
-        payload["property_address"] = property_address
-
-    # search_location: single source of truth for market/geo (service, cost, diy, etc.)
-    if resolved_search_location is not None:
-        payload["search_location"] = resolved_search_location.to_agent_dict()
-        logger.info(
-            "Including search_location source=%s radius_miles=%s coords=%s,%s",
-            resolved_search_location.source,
-            resolved_search_location.radius_miles,
-            resolved_search_location.coordinates.lat,
-            resolved_search_location.coordinates.lng,
-        )
-
     correlation_id = get_correlation_id()
-    if correlation_id:
-        payload["correlation_id"] = correlation_id
+    payload = build_reasoning_engine_payload(
+        request,
+        property_id=property_id,
+        resolved_search_location=resolved_search_location,
+        correlation_id=correlation_id,
+    )
 
     stream_started_at = time.monotonic()
     _lifecycle_kwargs = {
