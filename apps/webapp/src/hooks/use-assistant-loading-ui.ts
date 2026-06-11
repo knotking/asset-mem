@@ -3,7 +3,8 @@
  * the webapp does not depend on `@homeapp/common`. Keep both files in sync.
  */
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { maxLifecyclePhase } from "@/lib/agent-lifecycle";
 import {
   resolveAssistantLoadingUi,
   type ResolveAssistantLoadingUiInput,
@@ -33,6 +34,26 @@ export function useAssistantLoadingUi({
     messageId,
   );
 
+  const [peakLifecyclePhase, setPeakLifecyclePhase] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    setPeakLifecyclePhase(null);
+  }, [messageId]);
+
+  useEffect(() => {
+    if (!isActiveLoading) {
+      setPeakLifecyclePhase(null);
+      return;
+    }
+    const phase = agentLifecycle?.phase;
+    if (!phase) {
+      return;
+    }
+    setPeakLifecyclePhase((prev) => maxLifecyclePhase(prev, phase));
+  }, [isActiveLoading, agentLifecycle?.phase]);
+
   return useMemo(
     () =>
       resolveAssistantLoadingUi({
@@ -43,6 +64,7 @@ export function useAssistantLoadingUi({
         isActiveLoading,
         priorAssistantTurnCount,
         followUpStripReady,
+        peakLifecyclePhase,
       }),
     [
       role,
@@ -52,6 +74,7 @@ export function useAssistantLoadingUi({
       isActiveLoading,
       priorAssistantTurnCount,
       followUpStripReady,
+      peakLifecyclePhase,
     ],
   );
 }

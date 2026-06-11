@@ -454,7 +454,7 @@ EXPO_PUBLIC_AGENT_SSE_URL=<your-agent-streaming-endpoint>
 - `apps/mapp/components/GiftedChatBubble.tsx` - GiftedChat bubble wrapper
 - `apps/mapp/components/GiftedChatInputToolbar.tsx` - Custom input toolbar with attachments
 - `apps/mapp/components/TypingIndicator.tsx` - Bounce (pre-lifecycle / follow-up proxy) and wave (first-turn proxy strip) dots
-- `apps/common/src/lib/agent-lifecycle-ui.ts` - Shared rules: first turn shows proxy lifecycle copy + wave strip; follow-ups use wave bubble through `engine.runner_exec`, then status strip at `engine.before_model` (~350ms debounce)
+- `apps/common/src/lib/agent-lifecycle-ui.ts` - Shared rules: first turn shows proxy lifecycle copy + wave strip; follow-ups use wave bubble through `engine.runner_exec`, then status strip at `engine.before_model` (~350ms debounce). Peak phase tracking prevents late out-of-order `engine.runner_exec` from regressing to wave dots after the strip appears.
 - `apps/mapp/components/AgentStatus.tsx` - Agent step visualization
 - `apps/mapp/lib/gifted-chat-utils.ts` - Message transformation utilities
 - `apps/mapp/lib/markdown-styles.ts` - Custom markdown styling

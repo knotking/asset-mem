@@ -102,6 +102,23 @@ describe("resolveAssistantLoadingUi", () => {
     expect(ui.typingIndicatorVariant).toBe("bounce");
   });
 
+  it("follow-up late runner_exec after before_model: keeps status strip", () => {
+    const ui = resolveAssistantLoadingUi({
+      ...base,
+      priorAssistantTurnCount: 2,
+      followUpStripReady: true,
+      peakLifecyclePhase: "engine.before_model",
+      agentLifecycle: {
+        phase: "engine.runner_exec",
+        message: "Working on it...",
+      },
+    });
+    expect(ui.showLifecycleStrip).toBe(true);
+    expect(ui.showTypingIndicator).toBe(false);
+    expect(ui.lifecycleHeader).toBe("Planning next moves...");
+    expect(ui.typingIndicatorVariant).toBe("bounce");
+  });
+
   it("follow-up engine.before_model: bounce until debounce ready", () => {
     const ui = resolveAssistantLoadingUi({
       ...base,
