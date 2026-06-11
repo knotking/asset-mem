@@ -15,11 +15,11 @@ _CACHE_MAX = 200
 
 
 def _cache_ttl_seconds() -> float:
-    raw = os.getenv("DIY_ORCHESTRATOR_CACHE_TTL_SECONDS", "300").strip()
+    raw = os.getenv("DIY_ORCHESTRATOR_CACHE_TTL_SECONDS", "900").strip()
     try:
         v = float(raw)
     except ValueError:
-        return 300.0
+        return 900.0
     return max(0.0, v)
 
 
