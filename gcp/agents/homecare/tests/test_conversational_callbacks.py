@@ -59,7 +59,7 @@ def test_state_take_works_without_pop() -> None:
 
 
 def test_before_tool_allows_pipeline_on_cold_checkpoint_inventory_turn() -> None:
-    tool = SimpleNamespace(name="run_checkpoint_pipeline")
+    tool = SimpleNamespace(name="analyze_checkpoints")
     tool_context = MagicMock()
     tool_context.state = {
         "user_query": "What checkpoints do I have and what is their current status?",
@@ -82,8 +82,8 @@ def test_before_tool_allows_pipeline_on_cold_checkpoint_inventory_turn() -> None
     assert result is None
 
 
-def test_before_tool_blocks_run_checkpoint_pipeline_when_conversational() -> None:
-    tool = SimpleNamespace(name="run_checkpoint_pipeline")
+def test_before_tool_blocks_analyze_checkpoints_when_conversational() -> None:
+    tool = SimpleNamespace(name="analyze_checkpoints")
     tool_context = MagicMock()
     tool_context.state = {CONVERSATIONAL_TURN_STATE_KEY: True}
 
@@ -161,7 +161,7 @@ def test_fail_closed_skips_substantive_query() -> None:
 @pytest.mark.parametrize(
     "tool_name",
     [
-        "run_checkpoint_pipeline",
+        "analyze_checkpoints",
         "user_docs_retrieval",
     ],
 )
@@ -184,7 +184,7 @@ def test_before_tool_blocks_context_tools_on_provider_follow_up(tool_name: str) 
 
 
 def test_before_tool_allows_pipeline_when_fresh_retrieval_requested() -> None:
-    tool = SimpleNamespace(name="run_checkpoint_pipeline")
+    tool = SimpleNamespace(name="analyze_checkpoints")
     tool_context = MagicMock()
     tool_context.state = {
         "user_query": "find more local service providers for garage door repair",
@@ -233,8 +233,8 @@ def test_before_tool_blocks_user_docs_on_checkpoint_memory_follow_up() -> None:
     assert "SESSION_WORKING_MEMORY" in result.get("result", "")
 
 
-def test_before_tool_blocks_run_checkpoint_pipeline_on_report_route() -> None:
-    tool = SimpleNamespace(name="run_checkpoint_pipeline")
+def test_before_tool_blocks_analyze_checkpoints_on_report_route() -> None:
+    tool = SimpleNamespace(name="analyze_checkpoints")
     tool_context = MagicMock()
     tool_context.state = {
         "user_query": "yes do cost analysis",
@@ -255,7 +255,7 @@ def test_before_tool_blocks_run_checkpoint_pipeline_on_report_route() -> None:
 
     assert result is not None
     assert "report mode" in result.get("result", "").lower()
-    assert "run_checkpoint_pipeline" in result.get("result", "")
+    assert "analyze_checkpoints" in result.get("result", "")
 
 
 def test_before_tool_allows_report_retrieval_on_report_route_with_session_cache() -> None:

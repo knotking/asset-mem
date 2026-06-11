@@ -1,6 +1,6 @@
 # Single-loop agent refactor plan (Orchestrator V3)
 
-Status: **Phase 1 complete** — chip fast-path shipped end-to-end (agent + proxy + both clients) 2026-06-10.
+Status: **Phase 2 complete** — executor tool split shipped 2026-06-10.
 Owner: —
 Last updated: 2026-06-10
 
@@ -140,7 +140,7 @@ the resolve LLM. Requires agent + proxy deploy before clients ship chips
 (additive schema — safe to deploy in any order, fast-path activates when all
 three are live).
 
-## Phase 2 — Tool split (shrink the inference problem)
+## Phase 2 — Tool split (shrink the inference problem) ✅
 
 Split the mega-tool in `property_agent/registry.py` so intent maps to tool shape:
 
@@ -150,16 +150,20 @@ Split the mega-tool in `property_agent/registry.py` so intent maps to tool shape
 | `analyze_checkpoints(branches: list[enum] = [])` | existing `run_checkpoint_pipeline` | `retrieval_only`, `run_optional_agents`, most of `query_mode` |
 | `search_user_docs`, `get_report` | unchanged (`user_docs_retrieval`, `report_retrieval`) | — |
 
-- [ ] `branches=[]` means retrieval + summary only (today's `retrieval_only=True`).
-- [ ] Branch enum lives in the tool schema — invalid branches impossible at the
-      API level.
-- [ ] Update `property_agent/prompts.py` executor instructions for the new tool
-      set (rules collapse into tool descriptions).
-- [ ] Pipeline internals, progress streaming, `state_delta` contract untouched;
-      proxy/client `author` label mappings stay valid.
+- [x] `branches=[]` means retrieval + summary only — enforced via
+      `CHECKPOINT_EXPLICIT_BRANCHES_KEY` so resolve/UI pollution cannot add
+      branches on analyze tool calls.
+- [x] Branch enum in tool schema (`CheckpointOptionalAgent` / ADK function
+      signature) — invalid branches rejected at the tool API.
+- [x] Updated `property_agent/prompts.py` executor instructions for the new tool
+      set.
+- [x] Pipeline internals, progress streaming, `state_delta` contract untouched;
+      `run_checkpoint_pipeline` remains internal; proxy/client `author` labels
+      unchanged (tool name in agentSteps will show `analyze_checkpoints`).
 
-**Exit criteria:** resolve layer still on (now picks among clearer tools); eval
-set green; no client/proxy changes required.
+**Exit criteria met:** registry exposes `list_checkpoints` + `analyze_checkpoints`
+(not `run_checkpoint_pipeline`); routing eval unchanged (resolve layer still on);
+434+ unit tests green; no client/proxy changes.
 
 ## Phase 3 — Tool-boundary invariants (the ~300 lines that must survive)
 

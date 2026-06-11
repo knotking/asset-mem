@@ -11,16 +11,23 @@ from property_agent.checkpoint.analysis.parallel_runner import (
 from property_agent.registry import _base_tool_specs
 
 
-def test_checkpoint_pipeline_tool_spec_declares_branch_metadata() -> None:
+def test_analyze_checkpoints_tool_spec_declares_branch_metadata() -> None:
     specs = _base_tool_specs()
-    pipeline = next(s for s in specs if s.id == "run_checkpoint_pipeline")
-    assert len(pipeline.branches) == 4
-    assert {b.branch_id for b in pipeline.branches} == {
+    analyze = next(s for s in specs if s.id == "analyze_checkpoints")
+    assert len(analyze.branches) == 4
+    assert {b.branch_id for b in analyze.branches} == {
         "coverage",
         "diy",
         "service",
         "cost",
     }
+
+
+def test_registry_exposes_list_and_analyze_checkpoint_tools() -> None:
+    ids = {s.id for s in _base_tool_specs()}
+    assert "list_checkpoints" in ids
+    assert "analyze_checkpoints" in ids
+    assert "run_checkpoint_pipeline" not in ids
 
 
 def test_branch_writes_keys_match_assembler_schema() -> None:

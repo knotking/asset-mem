@@ -33,7 +33,7 @@ Turn routing is distributed across three layers. **NLU-first resolve is on by de
 | Layer | Owns | Key files |
 |-------|------|-----------|
 | **1 — Resolve** | `discourse_act`, `focus_branch`, intent, route, `user_goal`, casual short-circuit, `[RESOLVED_TURN]` + `[RECENT_DIALOGUE]` / `[FOCUS_SNIPPET]` inject | `routing/resolve_turn_llm.py`, `routing/resolve_llm_schema.py`, `routing/nlu_first_resolve.py`, `routing/pending_user_action.py`, `routing/resolve_turn.py` |
-| **2 — Executor** | History-first markdown vs tool call | `prompts.py`, `registry.py` |
+| **2 — Executor** | History-first markdown vs tool call (`list_checkpoints`, `analyze_checkpoints(branches)`, docs, report) | `prompts.py`, `registry.py`, `checkpoint/executor_tools.py` |
 | **3 — Guards** | Block tools on casual/context turns; thin invariants (selection changed, UI toggle block on `explain_prior`) | `routing/conversational_callbacks.py`, `routing/apply_resolved_turn.py` (`apply_thin_invariants`), `runtime/root_agent_plugin.py` |
 
 **NLU discourse acts:** `accept_offer`, `explain_prior`, `new_work`, `closure`, `provider_detail`, `replay_report`, plus casual `greeting` / `capabilities`. Pending offers: `pending_user_action` + `pending_offer_extract` (after-agent micro-LLM). Long sessions: `conversation_summary` (after-agent micro-LLM when dialogue grows). Client chips: `contentJson.suggestedActions` carries a structured `action` object alongside `userQuery`/`chatIntent`; clients echo it back as `chip_action` and `routing/chip_action.py` builds the `ResolvedTurn` deterministically (`resolve_source=chip`, zero resolve-LLM call, consume-once state key, clears any pending offer). Free-text turns still go through the resolve LLM.

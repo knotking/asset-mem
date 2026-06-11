@@ -582,7 +582,7 @@ def test_should_block_run_checkpoint_pipeline_on_report_route() -> None:
         user_goal="answer_from_context",
         query_mode="interpret_session",
         resolved_route="report",
-        tool_name="run_checkpoint_pipeline",
+        tool_name="analyze_checkpoints",
     )
 
 

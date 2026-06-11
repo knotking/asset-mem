@@ -10,12 +10,22 @@ from google.adk.tools.preload_memory_tool import preload_memory_tool
 from agent_framework.registry.tool_spec import ToolSpec, build_tools
 
 from property_agent.checkpoint.branch_registry import CHECKPOINT_OPTIONAL_BRANCH_SPECS
+from property_agent.checkpoint.constants import (
+    CHECKPOINT_ANALYSIS_TOOL,
+    CHECKPOINT_LIST_TOOL,
+)
 
 
-def _checkpoint_pipeline_tool():
-    from property_agent.checkpoint.pipeline import run_checkpoint_pipeline
+def _list_checkpoints_tool():
+    from property_agent.checkpoint.executor_tools import list_checkpoints
 
-    return FunctionTool(run_checkpoint_pipeline)
+    return FunctionTool(list_checkpoints)
+
+
+def _analyze_checkpoints_tool():
+    from property_agent.checkpoint.executor_tools import analyze_checkpoints
+
+    return FunctionTool(analyze_checkpoints)
 
 
 def _user_docs_tool():
@@ -43,8 +53,12 @@ def _base_tool_specs() -> tuple[ToolSpec, ...]:
             factory=_report_retrieval_tool,
         ),
         ToolSpec(
-            id="run_checkpoint_pipeline",
-            factory=_checkpoint_pipeline_tool,
+            id=CHECKPOINT_LIST_TOOL,
+            factory=_list_checkpoints_tool,
+        ),
+        ToolSpec(
+            id=CHECKPOINT_ANALYSIS_TOOL,
+            factory=_analyze_checkpoints_tool,
             branches=CHECKPOINT_OPTIONAL_BRANCH_SPECS,
         ),
     )

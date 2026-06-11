@@ -30,15 +30,9 @@ from property_agent.routing.conversational_intent import (
     mark_executor_invocation_structured_analysis,
     resolve_user_query_from_state,
 )
-from property_agent.routing.query_mode import (
-    branches_mentioned_in_query,
-    snapshot_session_analysis_context,
-)
+from property_agent.routing.query_mode import snapshot_session_analysis_context
 from property_agent.routing.constants import USER_DOCS_PASSTHROUGH_STATE_KEY
-from property_agent.routing.resolve_turn import (
-    requests_optional_analysis_from_resolved,
-    resolved_turn_from_state,
-)
+from property_agent.routing.resolve_turn import requests_optional_analysis_from_resolved
 from property_agent.checkpoint.session_input import sync_checkpoint_tool_args_to_state
 from property_agent.observability.lifecycle_events import (
     PHASE_ENGINE_BEFORE_MODEL,
@@ -165,7 +159,9 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
                 if inv_id_str:
                     store_invocation_report_result(inv_id_str, result_text)
                     mark_report_retrieval_served(tool_context.state, inv_id_str)
-        if tool_name == "run_checkpoint_pipeline":
+        from property_agent.checkpoint.constants import CHECKPOINT_ANALYSIS_TOOL
+
+        if tool_name == CHECKPOINT_ANALYSIS_TOOL:
             if requests_optional_analysis_from_resolved(tool_context.state):
                 mark_executor_invocation_structured_analysis(tool_context.state)
             if tool_context.state.get("checkpoint_analysis") or tool_context.state.get(
@@ -257,47 +253,29 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
             arg_keys,
             property_id is not None,
         )
-        if tool_name == "run_checkpoint_pipeline" and isinstance(args, dict):
-            uq = resolve_user_query_from_state(tool_context.state) or str(
-                args.get("user_query") or ""
-            )
-            if not requests_optional_analysis_from_resolved(
-                tool_context.state, user_query=uq
-            ):
-                args["checkpoint_optional_agents"] = []
-            else:
-                branches: list[str] = []
-                resolved = resolved_turn_from_state(tool_context.state)
-                if resolved is not None:
-                    branches.extend(resolved.run_optional_agents or [])
-                from property_agent.routing.nlu_first_resolve import (
-                    nlu_first_resolve_enabled,
-                    should_block_ui_optional_merge,
-                )
+        from property_agent.checkpoint.constants import (
+            CHECKPOINT_ANALYSIS_TOOL,
+            CHECKPOINT_EXPLICIT_BRANCHES_KEY,
+            CHECKPOINT_LIST_TOOL,
+        )
+        from property_agent.checkpoint.session_input import (
+            apply_session_checkpoint_ids_to_tool_args,
+            normalize_checkpoint_optional_agents,
+        )
 
-                block_ui = (
-                    nlu_first_resolve_enabled()
-                    and resolved is not None
-                    and should_block_ui_optional_merge(resolved.to_dict())
-                )
-                if not block_ui:
-                    branches.extend(branches_mentioned_in_query(uq))
-                    branches.extend(
-                        tool_context.state.get("checkpoint_optional_agents") or []
-                    )
-                # Dedupe while preserving order: duplicates here pollute session
-                # state and get echoed back by the next turn's resolve LLM.
-                branches = list(dict.fromkeys(branches))
-                if branches:
-                    args["checkpoint_optional_agents"] = branches
-            from property_agent.checkpoint.session_input import (
-                apply_session_checkpoint_ids_to_tool_args,
-            )
-
+        if tool_name in (CHECKPOINT_ANALYSIS_TOOL, CHECKPOINT_LIST_TOOL) and isinstance(
+            args, dict
+        ):
+            if tool_name == CHECKPOINT_ANALYSIS_TOOL:
+                branches = normalize_checkpoint_optional_agents(args.get("branches") or [])
+                tool_context.state[CHECKPOINT_EXPLICIT_BRANCHES_KEY] = True
+                tool_context.state["checkpoint_optional_agents"] = branches
+                args["checkpoint_optional_agents"] = branches
             apply_session_checkpoint_ids_to_tool_args(tool_context.state, args)
             sync_checkpoint_tool_args_to_state(tool_context.state, args)
             logger.info(
-                "property_agent before_tool: synced checkpoint session fields optional_agents=%r",
+                "property_agent before_tool: synced checkpoint session fields tool=%s branches=%r",
+                tool_name,
                 tool_context.state.get("checkpoint_optional_agents"),
             )
         if property_id:

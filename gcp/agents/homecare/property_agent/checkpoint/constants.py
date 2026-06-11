@@ -58,6 +58,12 @@ CHECKPOINT_INVENTORY_LIST_LIMIT = 20
 
 CHECKPOINT_INVENTORY_META_STATE_KEY = "checkpoint_inventory_meta"
 
+# Phase 2 executor tool names (registry exposes these instead of run_checkpoint_pipeline).
+CHECKPOINT_LIST_TOOL = "list_checkpoints"
+CHECKPOINT_ANALYSIS_TOOL = "analyze_checkpoints"
+# When set, pipeline branch selection follows tool ``branches`` arg only (not resolve/UI).
+CHECKPOINT_EXPLICIT_BRANCHES_KEY = "_checkpoint_explicit_branches"
+
 CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY = "checkpoint_retrieval_search_query"
 # Branch-specific search intents (youtube, shopping materials, service trade).
 CHECKPOINT_BRANCH_SEARCH_INTENTS_KEY = "checkpoint_branch_search_intents"
