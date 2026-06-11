@@ -1,6 +1,6 @@
 # Single-loop agent refactor plan
 
-> **Status:** Complete (June 2026). **Current architecture:** [`property_agent/ARCHITECTURE.md`](../property_agent/ARCHITECTURE.md). This document is a migration record only.
+> **Status:** Complete (June 2026). **Current architecture:** [`property_agent/ARCHITECTURE.md`](../property_agent/ARCHITECTURE.md). **Cleanup record:** [`SINGLE_LOOP_CLEANUP.md`](SINGLE_LOOP_CLEANUP.md). This document is a migration record only.
 
 Owner: —
 Last updated: 2026-06-11

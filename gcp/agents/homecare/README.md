@@ -6,6 +6,8 @@ This is a comprehensive AI agent system designed for home care and vehicle diagn
 
 The system uses a **single-loop orchestrator** (one executor LLM on `gemini-3.5-flash` plus deterministic chip/accept-offer routing) with a flat tool registry; checkpoint optional branches run inside `analyze_checkpoints` / `run_checkpoint_pipeline`.
 
+**Refactor docs:** [`docs/SINGLE_LOOP_REFACTOR_PLAN.md`](docs/SINGLE_LOOP_REFACTOR_PLAN.md) (phases 0–5) · [`docs/SINGLE_LOOP_CLEANUP.md`](docs/SINGLE_LOOP_CLEANUP.md) (cleanup record)
+
 ## Quick Start
 
 From the `gcp/agents/homecare` directory:
