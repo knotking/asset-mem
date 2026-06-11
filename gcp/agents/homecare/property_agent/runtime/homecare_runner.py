@@ -5,11 +5,13 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import AsyncGenerator, Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
+from google.adk.agents.run_config import RunConfig
 from google.adk.events.event import Event
 from google.adk.runners import Runner
 from google.adk.utils.context_utils import Aclosing
+from google.genai import types
 
 from property_agent.checkpoint.progress_stream import (
     checkpoint_progress_streaming_enabled,
@@ -22,6 +24,10 @@ from property_agent.observability.lifecycle_events import (
     enqueue_lifecycle_event,
     lifecycle_context_from_invocation,
     log_lifecycle_payload,
+)
+from property_agent.observability.session_compaction import (
+    compaction_event_count,
+    log_compaction_applied,
 )
 from property_agent.observability.turn_request_timing import (
     begin_turn_for_adk_web,
@@ -113,6 +119,68 @@ async def multiplex_agent_and_progress_queue(
 
 class HomecareRunner(Runner):
     """Yields ``checkpoint_analysis_progress`` events while tools are running."""
+
+    async def _session_compaction_count(
+        self,
+        *,
+        user_id: str,
+        session_id: str,
+        run_config: RunConfig | None,
+    ) -> int:
+        try:
+            session = await self._get_or_create_session(
+                user_id=user_id,
+                session_id=session_id,
+                get_session_config=(run_config or RunConfig()).get_session_config,
+            )
+        except Exception:
+            logger.debug("session_compaction: could not load session", exc_info=True)
+            return 0
+        return compaction_event_count(getattr(session, "events", None))
+
+    async def run_async(
+        self,
+        *,
+        user_id: str,
+        session_id: str,
+        invocation_id: str | None = None,
+        new_message: types.Content | None = None,
+        state_delta: dict[str, Any] | None = None,
+        run_config: RunConfig | None = None,
+    ) -> AsyncGenerator[Event, None]:
+        compaction_before = await self._session_compaction_count(
+            user_id=user_id,
+            session_id=session_id,
+            run_config=run_config,
+        )
+        async for event in super().run_async(
+            user_id=user_id,
+            session_id=session_id,
+            invocation_id=invocation_id,
+            new_message=new_message,
+            state_delta=state_delta,
+            run_config=run_config,
+        ):
+            yield event
+        try:
+            session = await self._get_or_create_session(
+                user_id=user_id,
+                session_id=session_id,
+                get_session_config=(run_config or RunConfig()).get_session_config,
+            )
+            events = getattr(session, "events", None)
+            compaction_after = compaction_event_count(events)
+            config = getattr(self.app, "events_compaction_config", None)
+            log_compaction_applied(
+                session_id=session_id,
+                events_before=compaction_before,
+                events_after=compaction_after,
+                session_events=events,
+                token_threshold=getattr(config, "token_threshold", None),
+                event_retention_size=getattr(config, "event_retention_size", None),
+            )
+        except Exception:
+            logger.debug("session_compaction: post-run observe failed", exc_info=True)
 
     async def _exec_with_plugin(
         self,
