@@ -1,0 +1,734 @@
+{
+  "generated_at": "2026-06-11T12:17:15+0530",
+  "cases_file": "/Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/property_agent/evals/routing/executor_only/cases.yaml",
+  "filter": null,
+  "repeat": 1,
+  "summary": {
+    "total": 33,
+    "passed": 33,
+    "failed": 0,
+    "errors": 0,
+    "pass_rate": 1.0,
+    "latency_ms": {
+      "p50": 0,
+      "p95": 0,
+      "mean": 34
+    },
+    "field_mismatch_counts": {}
+  },
+  "results": [
+    {
+      "case_id": "greeting_hi",
+      "passed": true,
+      "elapsed_ms": 1112,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "greeting",
+        "route": "none",
+        "expanded_user_query": "hi",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "greeting_good_morning",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "greeting",
+        "route": "none",
+        "expanded_user_query": "good morning!",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "greeting_with_selection",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "greeting",
+        "route": "none",
+        "expanded_user_query": "hello",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "capabilities_what_can_you_do",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "capabilities",
+        "route": "none",
+        "expanded_user_query": "what can you do?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "accept_offer_yes_pending_cost",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Run cost analysis for the vehicle paint damage",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "cost"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "accept_offer",
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "accept_offer_ok_after_question",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Run cost analysis and compare DIY vs professional",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "cost"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "accept_offer",
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "branch_coverage_insurance",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "would this damage be covered by my insurance?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "general_homecare_question",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "how often should I service my HVAC system?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "docs_policy_water_damage",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "user_docs",
+        "expanded_user_query": "what does my insurance policy say about water damage?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "docs_lease_end",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "user_docs",
+        "expanded_user_query": "when does my lease end?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "docs_summarize",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "user_docs",
+        "expanded_user_query": "summarize my documents",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "docs_coverage_question_on_docs_tab",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "user_docs",
+        "expanded_user_query": "does my policy cover the garage door damage?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "report_summarize",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "report",
+        "expanded_user_query": "summarize my report",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "report_cost_question_stays_report",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "report",
+        "expanded_user_query": "what were the cost estimates in the report?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "report_show_again",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "report",
+        "expanded_user_query": "show me the report again",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "weblog_session_1_t1_summarize_selected",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Summarize the issues for the selected checkpoints",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "weblog_session_1_t2_which_areas_affected",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Which areas are affected?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "weblog_session_1_t3_inventory_list",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "What checkpoints do I have for this property?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "weblog_session_1_t4_branch_diy",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Run DIY analysis for the selected checkpoint",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "diy"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_explicit",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "weblog_session_1_t5_summarize_all",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Summarize issues across all selected checkpoints",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "weblog_session_2_t1_chip_cost",
+      "passed": true,
+      "elapsed_ms": 1,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Run cost analysis and compare DIY vs professional",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "cost"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_explicit",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "new_work",
+        "focus_branch": "cost",
+        "resolve_source": "chip"
+      }
+    },
+    {
+      "case_id": "weblog_session_3_t1_chip_coverage",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Run coverage analysis for this issue",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "coverage"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_explicit",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "new_work",
+        "focus_branch": "coverage",
+        "resolve_source": "chip"
+      }
+    },
+    {
+      "case_id": "weblog_session_3_t2_chip_service",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Find local service providers for this repair",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "service"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_explicit",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "new_work",
+        "focus_branch": "service",
+        "resolve_source": "chip"
+      }
+    },
+    {
+      "case_id": "weblog_session_3_t3_chip_diy",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "What are the DIY steps for this repair?",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "diy"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_explicit",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "new_work",
+        "focus_branch": "diy",
+        "resolve_source": "chip"
+      }
+    },
+    {
+      "case_id": "weblog_session_3_t4_chip_discuss_cost",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Can you explain the cost estimate breakdown?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "explain_prior",
+        "focus_branch": "cost",
+        "resolve_source": "chip"
+      }
+    },
+    {
+      "case_id": "weblog_session_3_t5_chip_replay_report",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Show me the full analysis report again",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "replay_deliverable",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": "replay_report",
+        "focus_branch": null,
+        "resolve_source": "chip"
+      }
+    },
+    {
+      "case_id": "weblog_session_5_t1_docs_water_damage",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "user_docs",
+        "expanded_user_query": "Does my home policy cover water damage?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "weblog_session_5_t2_docs_deductible",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "user_docs",
+        "expanded_user_query": "What is my car insurance deductible?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "weblog_session_6_t1_report_summarize",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "report",
+        "expanded_user_query": "Summarize the saved property report",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "weblog_session_6_t2_report_issues",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "report",
+        "expanded_user_query": "What issues were flagged in the report?",
+        "retrieval_only": true,
+        "run_optional_agents": [],
+        "user_goal": "answer_from_context",
+        "query_mode": "interpret_session",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "weblog_session_7_t1_branch_cost",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Run cost analysis for the selected checkpoint",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "cost"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_explicit",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "weblog_session_7_t2_branch_cost_rerun",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Run cost analysis again",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "cost"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_explicit",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    },
+    {
+      "case_id": "weblog_session_7_t3_ui_toggle_runs_cost",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "resolved": {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Summarize the issues",
+        "retrieval_only": false,
+        "run_optional_agents": [
+          "cost"
+        ],
+        "user_goal": "new_analysis",
+        "query_mode": "branch_explicit",
+        "menu_index": null,
+        "capability_key": null,
+        "discourse_act": null,
+        "focus_branch": null,
+        "resolve_source": "executor_only"
+      }
+    }
+  ]
+}

@@ -1,0 +1,720 @@
+{
+  "generated_at": "2026-06-11T12:19:54+0530",
+  "source_logs": [
+    "web-log",
+    "web-log-legacy-session-1",
+    "web-log-legacy-session-2",
+    "web-log-legacy-smoke",
+    "web-log-session-1",
+    "web-log-session-2",
+    "web-log-session-3",
+    "web-log-session-4",
+    "web-log-session-5",
+    "web-log-session-6",
+    "web-log-session-7"
+  ],
+  "total_turns": 33,
+  "resolve_llm": {
+    "label": "resolve_llm (web-log-legacy*)",
+    "turns": 10,
+    "substantive_turns": 8,
+    "stream_complete_ms": {
+      "p50": 7419,
+      "p95": 39131,
+      "mean": 16478
+    },
+    "substantive_stream_complete_ms": {
+      "p50": 15295,
+      "p95": 39131,
+      "mean": 19595
+    },
+    "resolve_ms": {
+      "p50": 1995,
+      "p95": 3226,
+      "mean": 2090
+    },
+    "resolve_ms_total_saved_vs_executor": 18809,
+    "events_p50": 7,
+    "tools_called": {
+      "analyze_checkpoints": 7,
+      "list_checkpoints": 3
+    },
+    "misroutes_observed": []
+  },
+  "executor_only": {
+    "label": "executor_only (web-log-session*, web-log)",
+    "turns": 23,
+    "substantive_turns": 18,
+    "stream_complete_ms": {
+      "p50": 11568,
+      "p95": 33258,
+      "mean": 15941
+    },
+    "substantive_stream_complete_ms": {
+      "p50": 14223,
+      "p95": 33258,
+      "mean": 18990
+    },
+    "resolve_ms": null,
+    "resolve_ms_total_saved_vs_executor": 0,
+    "events_p50": 7,
+    "tools_called": {
+      "analyze_checkpoints": 16,
+      "list_checkpoints": 3
+    },
+    "misroutes_observed": []
+  },
+  "paired_session_1": [
+    {
+      "query": "Summarize the issues for the selected checkpoints",
+      "legacy_log": "web-log-legacy-session-1",
+      "executor_log": "web-log-session-1",
+      "legacy_stream_ms": 11490,
+      "executor_stream_ms": 10003,
+      "delta_ms": -1487,
+      "delta_pct": -12.9
+    },
+    {
+      "query": "Which areas are affected?",
+      "legacy_log": "web-log-legacy-session-1",
+      "executor_log": "web-log-session-1",
+      "legacy_stream_ms": 3542,
+      "executor_stream_ms": 2424,
+      "delta_ms": -1118,
+      "delta_pct": -31.6
+    },
+    {
+      "query": "What checkpoints do I have for this property?",
+      "legacy_log": "web-log-legacy-session-1",
+      "executor_log": "web-log-session-1",
+      "legacy_stream_ms": 7228,
+      "executor_stream_ms": 8225,
+      "delta_ms": 997,
+      "delta_pct": 13.8
+    },
+    {
+      "query": "Summarize issues across all selected checkpoints",
+      "legacy_log": "web-log-legacy-session-1",
+      "executor_log": "web-log-session-1",
+      "legacy_stream_ms": 6566,
+      "executor_stream_ms": 9089,
+      "delta_ms": 2523,
+      "delta_pct": 38.4
+    }
+  ],
+  "comparison_notes": {
+    "2026_06_10_resolve_baseline_stream_ms": {
+      "retrieval_only": 12300,
+      "cost_branch": 28500,
+      "diy_branch": 46000
+    },
+    "aggregate_substantive_p50_delta_pct": 7.0,
+    "paired_comparable_turns_p50_improvement_pct": -13.1,
+    "resolve_llm_calls_eliminated_per_turn": 1995,
+    "misroutes_in_executor_logs": 0,
+    "exit_criteria_30pct_substantive_p50": false
+  },
+  "turns": [
+    {
+      "log": "web-log",
+      "routing_mode": "executor_only",
+      "turn_index": 1,
+      "query": "Get me local service providers",
+      "routing_kind": "executor_only substantive",
+      "route": "checkpoint",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 24576,
+      "resolve_ms": null,
+      "executor_first_model_ms": 4320,
+      "events": 11,
+      "tools_called": [
+        "analyze_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-legacy-session-1",
+      "routing_mode": "resolve_llm",
+      "turn_index": 1,
+      "query": "Summarize the issues for the selected checkpoints",
+      "routing_kind": "resolve_turn_llm",
+      "route": "checkpoint",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 11490,
+      "resolve_ms": 3226,
+      "executor_first_model_ms": 5580,
+      "events": 9,
+      "tools_called": [
+        "analyze_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-legacy-session-1",
+      "routing_mode": "resolve_llm",
+      "turn_index": 2,
+      "query": "Which areas are affected?",
+      "routing_kind": "resolve_turn_llm",
+      "route": "checkpoint",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 3542,
+      "resolve_ms": 1258,
+      "executor_first_model_ms": 2214,
+      "events": 4,
+      "tools_called": [
+        "analyze_checkpoints"
+      ],
+      "substantive": false
+    },
+    {
+      "log": "web-log-legacy-session-1",
+      "routing_mode": "resolve_llm",
+      "turn_index": 3,
+      "query": "What checkpoints do I have for this property?",
+      "routing_kind": "resolve_turn_llm",
+      "route": "checkpoint",
+      "retrieval_only": false,
+      "optional_branches": [],
+      "stream_complete_ms": 7228,
+      "resolve_ms": 1995,
+      "executor_first_model_ms": 3234,
+      "events": 7,
+      "tools_called": [
+        "analyze_checkpoints",
+        "list_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-legacy-session-1",
+      "routing_mode": "resolve_llm",
+      "turn_index": 4,
+      "query": "Provide DIY repair steps or professional repair cost estimate for the vehicle ex",
+      "routing_kind": "resolve_turn_llm",
+      "route": "checkpoint",
+      "retrieval_only": false,
+      "optional_branches": [
+        "cost",
+        "diy"
+      ],
+      "stream_complete_ms": 39131,
+      "resolve_ms": 1619,
+      "executor_first_model_ms": 3320,
+      "events": 12,
+      "tools_called": [
+        "analyze_checkpoints",
+        "list_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-legacy-session-1",
+      "routing_mode": "resolve_llm",
+      "turn_index": 5,
+      "query": "Summarize issues across all selected checkpoints",
+      "routing_kind": "resolve_turn_llm",
+      "route": "checkpoint",
+      "retrieval_only": false,
+      "optional_branches": [],
+      "stream_complete_ms": 6566,
+      "resolve_ms": 1673,
+      "executor_first_model_ms": 3139,
+      "events": 9,
+      "tools_called": [
+        "analyze_checkpoints",
+        "list_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-legacy-session-2",
+      "routing_mode": "resolve_llm",
+      "turn_index": 1,
+      "query": "Run cost analysis",
+      "routing_kind": "resolve_turn chip",
+      "route": "checkpoint",
+      "retrieval_only": false,
+      "optional_branches": [
+        "cost"
+      ],
+      "stream_complete_ms": 35349,
+      "resolve_ms": null,
+      "executor_first_model_ms": 2683,
+      "events": 11,
+      "tools_called": [
+        "analyze_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-legacy-session-2",
+      "routing_mode": "resolve_llm",
+      "turn_index": 2,
+      "query": "Run cost analysis",
+      "routing_kind": "resolve_turn_llm",
+      "route": "checkpoint",
+      "retrieval_only": false,
+      "optional_branches": [
+        "cost"
+      ],
+      "stream_complete_ms": 34284,
+      "resolve_ms": 2117,
+      "executor_first_model_ms": 3644,
+      "events": 11,
+      "tools_called": [
+        "analyze_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-legacy-smoke",
+      "routing_mode": "resolve_llm",
+      "turn_index": 1,
+      "query": "hi",
+      "routing_kind": "resolve_turn_llm",
+      "route": "none",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 4473,
+      "resolve_ms": 2695,
+      "executor_first_model_ms": 2834,
+      "events": 4,
+      "tools_called": [],
+      "substantive": false
+    },
+    {
+      "log": "web-log-legacy-smoke",
+      "routing_mode": "resolve_llm",
+      "turn_index": 2,
+      "query": "Does my home policy cover water damage?",
+      "routing_kind": "resolve_turn_llm",
+      "route": "user_docs",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 15295,
+      "resolve_ms": 1861,
+      "executor_first_model_ms": 3420,
+      "events": 6,
+      "tools_called": [],
+      "substantive": true
+    },
+    {
+      "log": "web-log-legacy-smoke",
+      "routing_mode": "resolve_llm",
+      "turn_index": 3,
+      "query": "Summarize the saved property report",
+      "routing_kind": "resolve_turn_llm",
+      "route": "report",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 7419,
+      "resolve_ms": 2365,
+      "executor_first_model_ms": 3352,
+      "events": 6,
+      "tools_called": [],
+      "substantive": true
+    },
+    {
+      "log": "web-log-session-1",
+      "routing_mode": "executor_only",
+      "turn_index": 1,
+      "query": "Summarize the issues for the selected checkpoints",
+      "routing_kind": "executor_only substantive",
+      "route": "checkpoint",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 10003,
+      "resolve_ms": null,
+      "executor_first_model_ms": 4579,
+      "events": 9,
+      "tools_called": [
+        "analyze_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-session-1",
+      "routing_mode": "executor_only",
+      "turn_index": 2,
+      "query": "Which areas are affected?",
+      "routing_kind": "executor_only substantive",
+      "route": "checkpoint",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 2424,
+      "resolve_ms": null,
+      "executor_first_model_ms": 2422,
+      "events": 4,
+      "tools_called": [
+        "analyze_checkpoints"
+      ],
+      "substantive": false
+    },
+    {
+      "log": "web-log-session-1",
+      "routing_mode": "executor_only",
+      "turn_index": 3,
+      "query": "What checkpoints do I have for this property?",
+      "routing_kind": "executor_only substantive",
+      "route": "checkpoint",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 8225,
+      "resolve_ms": null,
+      "executor_first_model_ms": 2002,
+      "events": 7,
+      "tools_called": [
+        "analyze_checkpoints",
+        "list_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-session-1",
+      "routing_mode": "executor_only",
+      "turn_index": 4,
+      "query": "Run DIY analysis for the selected checkpoint",
+      "routing_kind": "executor_only substantive",
+      "route": "checkpoint",
+      "retrieval_only": false,
+      "optional_branches": [
+        "diy"
+      ],
+      "stream_complete_ms": null,
+      "resolve_ms": null,
+      "executor_first_model_ms": null,
+      "events": null,
+      "tools_called": [
+        "analyze_checkpoints",
+        "list_checkpoints"
+      ],
+      "substantive": false
+    },
+    {
+      "log": "web-log-session-1",
+      "routing_mode": "executor_only",
+      "turn_index": 5,
+      "query": "Summarize issues across all selected checkpoints",
+      "routing_kind": "executor_only substantive",
+      "route": "checkpoint",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 9089,
+      "resolve_ms": null,
+      "executor_first_model_ms": 3526,
+      "events": 9,
+      "tools_called": [
+        "analyze_checkpoints",
+        "list_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-session-2",
+      "routing_mode": "executor_only",
+      "turn_index": 1,
+      "query": "Run cost analysis and compare DIY vs professional",
+      "routing_kind": "resolve_turn chip",
+      "route": "checkpoint",
+      "retrieval_only": false,
+      "optional_branches": [
+        "cost"
+      ],
+      "stream_complete_ms": 39804,
+      "resolve_ms": null,
+      "executor_first_model_ms": 4953,
+      "events": 11,
+      "tools_called": [
+        "analyze_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-session-2",
+      "routing_mode": "executor_only",
+      "turn_index": 2,
+      "query": "",
+      "routing_kind": "executor_only accept_offer",
+      "route": null,
+      "retrieval_only": null,
+      "optional_branches": [],
+      "stream_complete_ms": 30212,
+      "resolve_ms": null,
+      "executor_first_model_ms": 3779,
+      "events": 10,
+      "tools_called": [
+        "analyze_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-session-3",
+      "routing_mode": "executor_only",
+      "turn_index": 1,
+      "query": "Run coverage analysis for this issue",
+      "routing_kind": "resolve_turn chip",
+      "route": "checkpoint",
+      "retrieval_only": false,
+      "optional_branches": [
+        "coverage"
+      ],
+      "stream_complete_ms": 26280,
+      "resolve_ms": null,
+      "executor_first_model_ms": 4395,
+      "events": 9,
+      "tools_called": [
+        "analyze_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-session-3",
+      "routing_mode": "executor_only",
+      "turn_index": 2,
+      "query": "Find local service providers for this repair",
+      "routing_kind": "resolve_turn chip",
+      "route": "checkpoint",
+      "retrieval_only": false,
+      "optional_branches": [
+        "service"
+      ],
+      "stream_complete_ms": 21448,
+      "resolve_ms": null,
+      "executor_first_model_ms": 2522,
+      "events": 9,
+      "tools_called": [
+        "analyze_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-session-3",
+      "routing_mode": "executor_only",
+      "turn_index": 3,
+      "query": "What are the DIY steps for this repair?",
+      "routing_kind": "resolve_turn chip",
+      "route": "checkpoint",
+      "retrieval_only": false,
+      "optional_branches": [
+        "diy"
+      ],
+      "stream_complete_ms": 33258,
+      "resolve_ms": null,
+      "executor_first_model_ms": 2244,
+      "events": 11,
+      "tools_called": [
+        "analyze_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-session-3",
+      "routing_mode": "executor_only",
+      "turn_index": 4,
+      "query": "Can you explain the cost estimate breakdown?",
+      "routing_kind": "resolve_turn chip",
+      "route": "checkpoint",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 10759,
+      "resolve_ms": null,
+      "executor_first_model_ms": 3061,
+      "events": 7,
+      "tools_called": [
+        "analyze_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-session-3",
+      "routing_mode": "executor_only",
+      "turn_index": 5,
+      "query": "Show me the full analysis report again",
+      "routing_kind": "resolve_turn chip",
+      "route": "checkpoint",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 11871,
+      "resolve_ms": null,
+      "executor_first_model_ms": 9797,
+      "events": 4,
+      "tools_called": [
+        "analyze_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-session-4",
+      "routing_mode": "executor_only",
+      "turn_index": 1,
+      "query": "how often should I service my HVAC system?",
+      "routing_kind": null,
+      "route": "checkpoint",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 2385,
+      "resolve_ms": null,
+      "executor_first_model_ms": 167,
+      "events": 4,
+      "tools_called": [],
+      "substantive": false
+    },
+    {
+      "log": "web-log-session-4",
+      "routing_mode": "executor_only",
+      "turn_index": 2,
+      "query": "",
+      "routing_kind": null,
+      "route": null,
+      "retrieval_only": null,
+      "optional_branches": [],
+      "stream_complete_ms": 1819,
+      "resolve_ms": null,
+      "executor_first_model_ms": 9,
+      "events": 4,
+      "tools_called": [],
+      "substantive": false
+    },
+    {
+      "log": "web-log-session-4",
+      "routing_mode": "executor_only",
+      "turn_index": 3,
+      "query": "",
+      "routing_kind": "executor_only substantive",
+      "route": null,
+      "retrieval_only": null,
+      "optional_branches": [],
+      "stream_complete_ms": 11568,
+      "resolve_ms": null,
+      "executor_first_model_ms": 8778,
+      "events": 4,
+      "tools_called": [],
+      "substantive": true
+    },
+    {
+      "log": "web-log-session-5",
+      "routing_mode": "executor_only",
+      "turn_index": 1,
+      "query": "Does my home policy cover water damage?",
+      "routing_kind": "executor_only substantive",
+      "route": "user_docs",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 18538,
+      "resolve_ms": null,
+      "executor_first_model_ms": 4384,
+      "events": 6,
+      "tools_called": [],
+      "substantive": true
+    },
+    {
+      "log": "web-log-session-5",
+      "routing_mode": "executor_only",
+      "turn_index": 2,
+      "query": "What is my car insurance deductible?",
+      "routing_kind": "executor_only substantive",
+      "route": "user_docs",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 14223,
+      "resolve_ms": null,
+      "executor_first_model_ms": 5829,
+      "events": 6,
+      "tools_called": [],
+      "substantive": true
+    },
+    {
+      "log": "web-log-session-6",
+      "routing_mode": "executor_only",
+      "turn_index": 1,
+      "query": "Summarize the saved property report",
+      "routing_kind": "executor_only substantive",
+      "route": "report",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 8776,
+      "resolve_ms": null,
+      "executor_first_model_ms": 3613,
+      "events": 6,
+      "tools_called": [],
+      "substantive": true
+    },
+    {
+      "log": "web-log-session-6",
+      "routing_mode": "executor_only",
+      "turn_index": 2,
+      "query": "What issues were flagged in the report?",
+      "routing_kind": "executor_only substantive",
+      "route": "report",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 2267,
+      "resolve_ms": null,
+      "executor_first_model_ms": 2267,
+      "events": 3,
+      "tools_called": [],
+      "substantive": false
+    },
+    {
+      "log": "web-log-session-7",
+      "routing_mode": "executor_only",
+      "turn_index": 1,
+      "query": "Run cost analysis for the selected checkpoint",
+      "routing_kind": "executor_only substantive",
+      "route": "checkpoint",
+      "retrieval_only": false,
+      "optional_branches": [
+        "cost"
+      ],
+      "stream_complete_ms": 32104,
+      "resolve_ms": null,
+      "executor_first_model_ms": 3630,
+      "events": 11,
+      "tools_called": [
+        "analyze_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-session-7",
+      "routing_mode": "executor_only",
+      "turn_index": 2,
+      "query": "Run cost analysis again",
+      "routing_kind": "executor_only substantive",
+      "route": "checkpoint",
+      "retrieval_only": false,
+      "optional_branches": [
+        "cost"
+      ],
+      "stream_complete_ms": 22731,
+      "resolve_ms": null,
+      "executor_first_model_ms": 2680,
+      "events": 11,
+      "tools_called": [
+        "analyze_checkpoints"
+      ],
+      "substantive": true
+    },
+    {
+      "log": "web-log-session-7",
+      "routing_mode": "executor_only",
+      "turn_index": 3,
+      "query": "Summarize the issues",
+      "routing_kind": "executor_only substantive",
+      "route": "checkpoint",
+      "retrieval_only": true,
+      "optional_branches": [],
+      "stream_complete_ms": 8351,
+      "resolve_ms": null,
+      "executor_first_model_ms": 2021,
+      "events": 7,
+      "tools_called": [
+        "analyze_checkpoints"
+      ],
+      "substantive": true
+    }
+  ]
+}

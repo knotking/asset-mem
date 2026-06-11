@@ -187,7 +187,7 @@ node_modules
 **/expo-env.d.ts
 **/package-lock.json
 .gcloud
-gcp/agents/homecare/web-log.txt
+gcp/agents/homecare/web-log*
 .adk
 .cursor-control
 
