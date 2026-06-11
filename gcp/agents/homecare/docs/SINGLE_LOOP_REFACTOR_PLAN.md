@@ -63,7 +63,7 @@ No parity claim without a yardstick.
       selection changes, cold sessions, docs/report routes, and the known failure
       cases (unrequested cost run, post-DIY summarize misroute, inventory
       `retrieval_only` violation) — 42 cases in
-      `property_agent/evals/routing/cases.yaml`.
+      `property_agent/evals/routing/executor_only/cases.yaml` (resolve-LLM cases removed).
 - [x] Build a live eval runner asserting on the post-processed `ResolvedTurn`
       (`property_agent/evals/routing/run_routing_eval.py`, `make routing-eval`).
       *Approach change vs. original plan:* resolve-level eval instead of full

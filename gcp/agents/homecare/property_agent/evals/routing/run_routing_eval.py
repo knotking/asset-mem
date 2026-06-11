@@ -1,20 +1,15 @@
 """
-Live routing eval: replay cases.yaml through the resolve LLM and score routing.
+Executor-only routing eval: replay executor_only/cases.yaml and score routing.
 
-Phase 0 baseline harness for the single-loop refactor
-(docs/SINGLE_LOOP_REFACTOR_PLAN.md). Calls the real flash-lite resolver via
-``call_resolve_turn_llm`` with synthetic session state + dialogue, then asserts
-fields on the post-processed ``ResolvedTurn`` — i.e. exactly what the executor
-would receive.
+Matches staging ``HOMEAPP_EXECUTOR_ONLY_ROUTING=1`` — chip, pending-offer,
+casual regex, or ``minimal_substantive_resolved_turn``. No resolve LLM, no Vertex.
 
-Requires Vertex credentials (gcp/agents/homecare/.env, like ``make run``).
-Not CI-safe; schema validation for the dataset lives in
-``tests/test_routing_eval_cases.py``.
+Schema validation: ``tests/test_routing_eval_cases.py``.
 
 Usage:
     uv run python -m property_agent.evals.routing.run_routing_eval
-    uv run python -m property_agent.evals.routing.run_routing_eval --filter weblog
-    uv run python -m property_agent.evals.routing.run_routing_eval --out baselines/2026-06-10.json
+    uv run python -m property_agent.evals.routing.run_routing_eval --filter weblog_session_1
+    uv run python -m property_agent.evals.routing.run_routing_eval --out executor_only/baselines/$(date +%F).json
 """
 
 from __future__ import annotations
@@ -34,7 +29,7 @@ import yaml
 from dotenv import load_dotenv
 
 _PACKAGE_ROOT = Path(__file__).resolve().parents[3]  # gcp/agents/homecare
-DEFAULT_CASES_PATH = Path(__file__).resolve().parent / "cases.yaml"
+DEFAULT_CASES_PATH = Path(__file__).resolve().parent / "executor_only" / "cases.yaml"
 
 # Fields asserted directly on ResolvedTurn.
 SCALAR_EXPECT_FIELDS = (
@@ -129,21 +124,59 @@ def score_case(resolved: Any, expect: dict[str, Any]) -> dict[str, dict[str, Any
     return mismatches
 
 
-def run_case(defaults: dict[str, Any], case: dict[str, Any]) -> CaseResult:
-    from property_agent.routing.resolve_turn_llm import call_resolve_turn_llm
+def resolve_turn_executor_only(
+    *,
+    user_query: str,
+    state: dict[str, Any],
+) -> Any:
+    """Mirror ``prepare_executor_only_before_model`` routing without ADK / LLM."""
+    from property_agent.routing.chip_action import resolve_turn_from_chip
+    from property_agent.routing.executor_only_routing import (
+        bare_casual_intent,
+        minimal_substantive_resolved_turn,
+        resolve_turn_from_pending_offer,
+    )
+    from property_agent.routing.resolve_turn import apply_resolved_turn_to_state
+    from property_agent.routing.schema import ResolvedTurn
 
+    work = copy.deepcopy(state)
+    work["user_query"] = user_query
+
+    chip = resolve_turn_from_chip(work, user_query=user_query)
+    if chip is not None:
+        apply_resolved_turn_to_state(work, chip)
+        return chip
+
+    accept = resolve_turn_from_pending_offer(work, user_query=user_query)
+    if accept is not None:
+        apply_resolved_turn_to_state(work, accept)
+        return accept
+
+    casual = bare_casual_intent(user_query)
+    if casual is not None:
+        resolved = ResolvedTurn(
+            intent=casual,
+            route="none",
+            expanded_user_query=user_query,
+            retrieval_only=True,
+            resolve_source="executor_only",
+        )
+        apply_resolved_turn_to_state(work, resolved)
+        return resolved
+
+    resolved = minimal_substantive_resolved_turn(work, user_query=user_query)
+    apply_resolved_turn_to_state(work, resolved)
+    return resolved
+
+
+def run_case(defaults: dict[str, Any], case: dict[str, Any]) -> CaseResult:
     case_id = str(case.get("id"))
     state = build_state(defaults, case)
-    events = build_events(case.get("dialogue"))
     t0 = time.monotonic()
     try:
-        resolved = call_resolve_turn_llm(
+        resolved = resolve_turn_executor_only(
             user_query=str(case.get("query") or ""),
             state=state,
-            session_events=events,
-            current_invocation_id="eval-current-turn",
-            user_id=None,
-            property_id=state.get("property_id"),
         )
     except Exception as exc:  # noqa: BLE001 - report per-case, keep running
         return CaseResult(
@@ -237,7 +270,7 @@ def main(argv: list[str] | None = None) -> int:
         print("No cases matched.", file=sys.stderr)
         return 2
 
-    print(f"Running {len(cases)} routing eval case(s) x{args.repeat} ...\n")
+    print(f"Running {len(cases)} executor-only routing case(s) x{args.repeat} ...\n")
     results: list[CaseResult] = []
     for case in cases:
         for attempt in range(args.repeat):
