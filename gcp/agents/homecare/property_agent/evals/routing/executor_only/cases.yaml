@@ -1,0 +1,445 @@
+# Executor-only routing eval (HOMEAPP_EXECUTOR_ONLY_ROUTING=1 / staging).
+#
+# Asserts ResolvedTurn from chip, pending-offer, bare casual regex, or
+# minimal_substantive_resolved_turn — no resolve LLM.
+#
+# Expectation rules: see run_routing_eval.py
+
+defaults:
+  state:
+    property_id: "EVALPROP0001"
+    property_address: "1982 Helena Way, Brentwood, CA 94513"
+    primary_agent: "checkpoint"
+
+anchors:
+  prior_diy_only: &prior_diy_only
+    checkpoint_last_response_kind: analysis
+    checkpoint_ids: ["CKPT0000000000000001"]
+    checkpoint_ids_analyzed: ["CKPT0000000000000001"]
+    checkpoint_analysis:
+      title: "Rear Quarter Panel and Bumper Paint Damage"
+      checkpointSummary:
+        checkpointsAnalyzed: 1
+        issuesDetected:
+          - "Significant paint transfer and deep surface scratches"
+        locations: ["Vehicle - Exterior"]
+        overallCondition: "damaged, needs maintenance"
+      analysisStatus: {diy: completed}
+      diyResults:
+        diySteps:
+          summary: "Clean, remove paint transfer, sand, touch-up paint, clear coat."
+
+cases:
+  # ── Casual (regex short-circuit) ────────────────────────────────────────────
+  - id: greeting_hi
+    tags: [casual, greeting, executor_only]
+    query: "hi"
+    expect:
+      intent: greeting
+      route: none
+      retrieval_only: true
+      run_optional_agents: []
+
+  - id: greeting_good_morning
+    tags: [casual, greeting, executor_only]
+    query: "good morning!"
+    expect:
+      intent: greeting
+      route: none
+      retrieval_only: true
+      run_optional_agents: []
+
+  - id: greeting_with_selection
+    tags: [casual, greeting, selection, executor_only]
+    query: "hello"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+    expect:
+      intent: greeting
+      route: none
+      retrieval_only: true
+      run_optional_agents: []
+
+  - id: capabilities_what_can_you_do
+    tags: [casual, capabilities, executor_only]
+    query: "what can you do?"
+    expect:
+      intent: capabilities
+      route: none
+      retrieval_only: true
+      run_optional_agents: []
+
+  # ── Pending offer (deterministic accept) ────────────────────────────────────
+  - id: accept_offer_yes_pending_cost
+    tags: [accept_offer, pending, executor_only]
+    query: "yes"
+    state:
+      <<: *prior_diy_only
+      pending_user_action:
+        kind: run_branch
+        expanded_user_query: "Run cost analysis for the vehicle paint damage"
+        run_optional_agents: [cost]
+        offered_summary: "Offered to run cost analysis."
+    dialogue:
+      - role: assistant
+        text: "I can also estimate repair costs. Want me to run **cost** analysis?"
+    expect:
+      discourse_act: accept_offer
+      intent: substantive
+      route: checkpoint
+      retrieval_only: false
+      run_optional_agents: [cost]
+      user_goal: new_analysis
+
+  - id: accept_offer_ok_after_question
+    tags: [accept_offer, pending, executor_only]
+    query: "ok"
+    state:
+      <<: *prior_diy_only
+      pending_user_action:
+        kind: run_branch
+        expanded_user_query: "Run cost analysis and compare DIY vs professional"
+        run_optional_agents: [cost]
+        offered_summary: "Offered cost analysis."
+    dialogue:
+      - role: assistant
+        text: "Want me to run **cost** analysis to compare DIY vs professional repair?"
+    expect:
+      discourse_act: accept_offer
+      run_optional_agents: [cost]
+      retrieval_only: false
+
+  # ── Checkpoint substantive (minimal resolved turn) ───────────────────────────
+  - id: branch_coverage_insurance
+    tags: [checkpoint, executor_only]
+    query: "would this damage be covered by my insurance?"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+    expect:
+      route: checkpoint
+      retrieval_only: true
+      run_optional_agents: []
+      user_goal: answer_from_context
+
+  - id: general_homecare_question
+    tags: [checkpoint, general, weblog_session_4, executor_only]
+    query: "how often should I service my HVAC system?"
+    state: {}
+    expect:
+      route: checkpoint
+      run_optional_agents: []
+      retrieval_only: true
+      user_goal: answer_from_context
+
+  # ── Docs route ────────────────────────────────────────────────────────────
+  - id: docs_policy_water_damage
+    tags: [user_docs, executor_only]
+    query: "what does my insurance policy say about water damage?"
+    state:
+      primary_agent: docs
+      context_doc_uris: ["gs://homegeek-user-data-staging/docs/policy.pdf"]
+    expect:
+      route: user_docs
+      run_optional_agents: []
+      retrieval_only: true
+      user_goal: answer_from_context
+
+  - id: docs_lease_end
+    tags: [user_docs, executor_only]
+    query: "when does my lease end?"
+    state:
+      primary_agent: docs
+      context_doc_uris: ["gs://homegeek-user-data-staging/docs/lease.pdf"]
+    expect:
+      route: user_docs
+      run_optional_agents: []
+      user_goal: answer_from_context
+
+  - id: docs_summarize
+    tags: [user_docs, executor_only]
+    query: "summarize my documents"
+    state:
+      primary_agent: docs
+      context_doc_uris:
+        - "gs://homegeek-user-data-staging/docs/policy.pdf"
+        - "gs://homegeek-user-data-staging/docs/lease.pdf"
+    expect:
+      route: user_docs
+      run_optional_agents: []
+      user_goal: answer_from_context
+
+  - id: docs_coverage_question_on_docs_tab
+    tags: [user_docs, executor_only]
+    query: "does my policy cover the garage door damage?"
+    state:
+      <<: *prior_diy_only
+      primary_agent: docs
+      context_doc_uris: ["gs://homegeek-user-data-staging/docs/policy.pdf"]
+    expect:
+      route: user_docs
+      run_optional_agents: []
+      user_goal: answer_from_context
+
+  # ── Report route ──────────────────────────────────────────────────────────
+  - id: report_summarize
+    tags: [report, executor_only]
+    query: "summarize my report"
+    state:
+      primary_agent: report
+      report_ids: ["RPT0000000000000001"]
+    expect:
+      route: report
+      retrieval_only: true
+      run_optional_agents: []
+      user_goal: answer_from_context
+
+  - id: report_cost_question_stays_report
+    tags: [report, executor_only]
+    query: "what were the cost estimates in the report?"
+    state:
+      primary_agent: report
+      report_ids: ["RPT0000000000000001"]
+    expect:
+      route: report
+      run_optional_agents: []
+      retrieval_only: true
+      user_goal: answer_from_context
+
+  - id: report_show_again
+    tags: [report, executor_only]
+    query: "show me the report again"
+    state:
+      primary_agent: report
+      report_ids: ["RPT0000000000000001"]
+    expect:
+      route: report
+      run_optional_agents: []
+      user_goal: answer_from_context
+
+  # ── adk web sessions (executor-only captures) ───────────────────────────────
+  - id: weblog_session_1_t1_summarize_selected
+    tags: [weblog, weblog_session_1, executor_only]
+    query: "Summarize the issues for the selected checkpoints"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+    expect:
+      route: checkpoint
+      retrieval_only: true
+      run_optional_agents: []
+      user_goal: answer_from_context
+
+  - id: weblog_session_1_t2_which_areas_affected
+    tags: [weblog, weblog_session_1, executor_only]
+    query: "Which areas are affected?"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+    expect:
+      route: checkpoint
+      retrieval_only: true
+      run_optional_agents: []
+      user_goal: answer_from_context
+
+  - id: weblog_session_1_t3_inventory_list
+    tags: [weblog, weblog_session_1, executor_only]
+    query: "What checkpoints do I have for this property?"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+    expect:
+      route: checkpoint
+      retrieval_only: true
+      run_optional_agents: []
+      user_goal: answer_from_context
+
+  - id: weblog_session_1_t4_branch_diy
+    tags: [weblog, weblog_session_1, executor_only]
+    query: "Run DIY analysis for the selected checkpoint"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+      checkpoint_optional_agents: [diy]
+    expect:
+      route: checkpoint
+      retrieval_only: false
+      run_optional_agents: [diy]
+      user_goal: new_analysis
+
+  - id: weblog_session_1_t5_summarize_all
+    tags: [weblog, weblog_session_1, executor_only]
+    query: "Summarize issues across all selected checkpoints"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+    expect:
+      route: checkpoint
+      retrieval_only: true
+      run_optional_agents: []
+      user_goal: answer_from_context
+
+  - id: weblog_session_2_t1_chip_cost
+    tags: [weblog, weblog_session_2, chip, executor_only]
+    query: "Run cost analysis and compare DIY vs professional"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+      chip_action: {type: run_branch, branch: cost}
+    expect:
+      discourse_act: new_work
+      route: checkpoint
+      retrieval_only: false
+      focus_branch: cost
+      query_mode: branch_explicit
+      run_optional_agents: [cost]
+      user_goal: new_analysis
+
+  - id: weblog_session_3_t1_chip_coverage
+    tags: [weblog, weblog_session_3, chip, executor_only]
+    query: "Run coverage analysis for this issue"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+      chip_action: {type: run_branch, branch: coverage}
+    expect:
+      discourse_act: new_work
+      route: checkpoint
+      retrieval_only: false
+      focus_branch: coverage
+      query_mode: branch_explicit
+      run_optional_agents: [coverage]
+      user_goal: new_analysis
+
+  - id: weblog_session_3_t2_chip_service
+    tags: [weblog, weblog_session_3, chip, executor_only]
+    query: "Find local service providers for this repair"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+      chip_action: {type: run_branch, branch: service}
+    expect:
+      discourse_act: new_work
+      route: checkpoint
+      retrieval_only: false
+      focus_branch: service
+      query_mode: branch_explicit
+      run_optional_agents: [service]
+      user_goal: new_analysis
+
+  - id: weblog_session_3_t3_chip_diy
+    tags: [weblog, weblog_session_3, chip, executor_only]
+    query: "What are the DIY steps for this repair?"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+      chip_action: {type: run_branch, branch: diy}
+    expect:
+      discourse_act: new_work
+      route: checkpoint
+      retrieval_only: false
+      focus_branch: diy
+      query_mode: branch_explicit
+      run_optional_agents: [diy]
+      user_goal: new_analysis
+
+  - id: weblog_session_3_t4_chip_discuss_cost
+    tags: [weblog, weblog_session_3, chip, executor_only]
+    query: "Can you explain the cost estimate breakdown?"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+      chip_action: {type: discuss, topic: cost}
+    expect:
+      discourse_act: explain_prior
+      route: checkpoint
+      retrieval_only: true
+      focus_branch: cost
+      run_optional_agents: []
+      user_goal: answer_from_context
+
+  - id: weblog_session_3_t5_chip_replay_report
+    tags: [weblog, weblog_session_3, chip, executor_only]
+    query: "Show me the full analysis report again"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+      chip_action: {type: replay_report}
+    expect:
+      discourse_act: replay_report
+      route: checkpoint
+      retrieval_only: true
+      run_optional_agents: []
+      user_goal: replay_deliverable
+
+  - id: weblog_session_5_t1_docs_water_damage
+    tags: [weblog, weblog_session_5, user_docs, executor_only]
+    query: "Does my home policy cover water damage?"
+    state:
+      primary_agent: docs
+      context_doc_uris: ["gs://homegeek-user-data-staging/docs/policy.pdf"]
+    expect:
+      route: user_docs
+      retrieval_only: true
+      run_optional_agents: []
+      user_goal: answer_from_context
+
+  - id: weblog_session_5_t2_docs_deductible
+    tags: [weblog, weblog_session_5, user_docs, executor_only]
+    query: "What is my car insurance deductible?"
+    state:
+      primary_agent: docs
+      context_doc_uris: ["gs://homegeek-user-data-staging/docs/policy.pdf"]
+    expect:
+      route: user_docs
+      retrieval_only: true
+      run_optional_agents: []
+      user_goal: answer_from_context
+
+  - id: weblog_session_6_t1_report_summarize
+    tags: [weblog, weblog_session_6, report, executor_only]
+    query: "Summarize the saved property report"
+    state:
+      primary_agent: report
+      report_ids: ["RPT0000000000000001"]
+    expect:
+      route: report
+      retrieval_only: true
+      run_optional_agents: []
+      user_goal: answer_from_context
+
+  - id: weblog_session_6_t2_report_issues
+    tags: [weblog, weblog_session_6, report, executor_only]
+    query: "What issues were flagged in the report?"
+    state:
+      primary_agent: report
+      report_ids: ["RPT0000000000000001"]
+    expect:
+      route: report
+      retrieval_only: true
+      run_optional_agents: []
+      user_goal: answer_from_context
+
+  - id: weblog_session_7_t1_branch_cost
+    tags: [weblog, weblog_session_7, executor_only]
+    query: "Run cost analysis for the selected checkpoint"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+      checkpoint_optional_agents: [cost]
+    expect:
+      route: checkpoint
+      retrieval_only: false
+      run_optional_agents: [cost]
+      user_goal: new_analysis
+
+  - id: weblog_session_7_t2_branch_cost_rerun
+    tags: [weblog, weblog_session_7, executor_only]
+    query: "Run cost analysis again"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+      checkpoint_optional_agents: [cost]
+    expect:
+      route: checkpoint
+      retrieval_only: false
+      run_optional_agents: [cost]
+      user_goal: new_analysis
+
+  - id: weblog_session_7_t3_ui_toggle_runs_cost
+    tags: [weblog, weblog_session_7, executor_only]
+    query: "Summarize the issues"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+      checkpoint_optional_agents: [cost]
+    expect:
+      route: checkpoint
+      retrieval_only: false
+      run_optional_agents: [cost]
+      user_goal: new_analysis

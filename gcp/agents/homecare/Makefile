@@ -104,6 +104,10 @@ routing-eval: ## Live routing eval vs resolve LLM (requires Vertex creds; ARGS="
 	$(call print_header,Running Routing Eval)
 	uv run python -m property_agent.evals.routing.run_routing_eval $(ARGS)
 
+weblog-extract: ## Draft routing/conformance cases from adk web stdout logs (ARGS="web-log*")
+	$(call print_header,Extracting Weblog Cases)
+	uv run python -m property_agent.evals.routing.extract_weblog_cases $(ARGS)
+
 deploy: ## Deploy the agent to Vertex AI
 	$(call print_header,Deploying Agent)
 	@if [ ! -f .env ]; then \

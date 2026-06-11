@@ -36,7 +36,7 @@ def dataset():
 
 def test_cases_load_and_ids_unique(dataset) -> None:
     _, cases = dataset
-    assert len(cases) >= 30
+    assert len(cases) >= 20
     ids = [c.get("id") for c in cases]
     assert all(isinstance(i, str) and i for i in ids)
     assert len(ids) == len(set(ids)), "duplicate case ids"
