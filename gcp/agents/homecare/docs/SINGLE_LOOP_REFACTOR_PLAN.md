@@ -252,7 +252,7 @@ Single-loop is unconditional (no `HOMEAPP_EXECUTOR_ONLY_ROUTING` flag).
       removed working-memory inject from `format_resolved_turn_block`
       (chip/accept still inject `[RESOLVED_TURN]`).
 - [x] Keep `pending_offer_extract.py` (accept-offer fast-path).
-- [x] Keep `conversation_summary` for long-session aid (ADK compaction primary).
+- [x] `conversation_summary` disabled by default (`HOMEAPP_CONVERSATION_SUMMARY=1` to opt in); ADK compaction primary.
 - [x] Root agent always `gemini-3.5-flash` via `global_agent_gemini_model()`.
 - [x] `DISCOURSE_ACTS` moved to `routing/schema.py`; deploy no longer sets
       `HOMEAPP_EXECUTOR_ONLY_ROUTING`.

@@ -1,9 +1,10 @@
-"""Long-session conversation summary for resolve and executor inject."""
+"""Long-session conversation summary (optional; off by default in single-loop)."""
 
 from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 from typing import Any, Mapping, Optional, Sequence
 
@@ -20,6 +21,16 @@ CONVERSATION_SUMMARY_STATE_KEY = "conversation_summary"
 _SUMMARY_SOURCE_LINES_KEY = "_conversation_summary_source_lines"
 _DEFAULT_LINE_THRESHOLD = 12
 _RE_SUMMARIZE_DELTA = 4
+
+
+def conversation_summary_enabled() -> bool:
+    """Opt-in rolling summary; disabled by default (ADK compaction is primary)."""
+    return os.getenv("HOMEAPP_CONVERSATION_SUMMARY", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
 
 _SUMMARY_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -83,7 +94,9 @@ def maybe_update_conversation_summary(
     *,
     line_threshold: int = _DEFAULT_LINE_THRESHOLD,
 ) -> None:
-    """Refresh rolling summary when dialogue grows (long-session aid; ADK compaction is primary)."""
+    """Refresh rolling summary when dialogue grows (opt-in; ADK compaction is primary)."""
+    if not conversation_summary_enabled():
+        return
     if state is None or not hasattr(state, "__setitem__"):
         return
     dialogue = recent_dialogue(session_events, max_chars=5000)
