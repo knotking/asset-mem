@@ -34,7 +34,7 @@ from property_agent.checkpoint.constants import (
     CHECKPOINT_ANALYSIS_TOOL,
     CHECKPOINT_LIST_TOOL,
 )
-from .constants import REPORT_MODE_CHECKPOINT_PIPELINE_BLOCKED
+from property_agent.checkpoint.tool_guards import block_checkpoint_tools_in_report_mode
 from .resolve_turn import resolved_turn_from_state
 
 logger = logging.getLogger(__name__)
@@ -131,20 +131,14 @@ def _conversational_before_tool_impl(
             return repeat
 
     resolved = resolved_turn_from_state(tool_context.state)
-    if (
-        tool_name == CHECKPOINT_ANALYSIS_TOOL
-        and resolved is not None
-        and resolved.route == "report"
-    ):
-        logger.info(
-            "before_tool: blocked %s (report mode) query=%r",
-            CHECKPOINT_ANALYSIS_TOOL,
-            (resolve_user_query_from_state(tool_context.state) or "")[:80],
-        )
-        return {"result": REPORT_MODE_CHECKPOINT_PIPELINE_BLOCKED}
     user_query = resolve_user_query_from_state(tool_context.state) or str(
         (args or {}).get("user_query") or ""
     )
+    report_block = block_checkpoint_tools_in_report_mode(
+        tool_name, tool_context.state, user_query=user_query
+    )
+    if report_block is not None:
+        return report_block
     if (
         tool_name in _CONTEXT_ONLY_BLOCKED_TOOLS
         and resolved is not None
