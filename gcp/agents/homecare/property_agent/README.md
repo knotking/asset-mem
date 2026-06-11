@@ -1,6 +1,6 @@
 # Property Agent
 
-The **property agent** (`root_agent` in `property_agent/runtime/agent.py`, ADK module `property_agent.runtime.agent`) is the Home Care orchestrator. It handles casual turns with **canned** replies (no LLM), runs a **resolve** step for substantive turns, then the orchestrator LLM calls **flat registry tools**.
+The **property agent** (`root_agent`) is the Home Care orchestrator: **single-loop routing** (chip / accept-offer / casual regex, then one executor LLM on `gemini-3.5-flash`) calls flat registry tools.
 
 Regression: `make test` (unit tests). ADK evalsets removed; see `property_agent/evals/README.md`.
 
@@ -16,7 +16,7 @@ property_agent (root orchestrator)
 ├── property_agent/runtime/root_agent_plugin.py  # PropertyRootAgentPlugin adapter
 ├── property_agent/runtime/homecare_runner.py    # ADK dev progress streaming
 ├── property_agent/manifest.py               # plugin registration
-├── before_model: casual canned OR resolve_turn
+├── before_model: chip / accept-offer / casual OR slim [SESSION_CONTEXT]
 ├── run_checkpoint_pipeline (FunctionTool)     # retrieval + optional branches + assembler
 │       └── checkpoint/analysis/               # parallel_runner, assembler, synthesis
 └── AgentTool(user_docs_agent)
@@ -24,7 +24,7 @@ property_agent (root orchestrator)
 
 See [`ARCHITECTURE.md`](ARCHITECTURE.md) for layer rules and import matrix.
 
-- **Resolve** (`property_agent/routing/resolve_turn_llm.py`): LLM-only flash JSON routing.
+- **Pre-routing** (`property_agent/routing/executor_only_routing.py`): deterministic chip, accept-offer, casual; slim session context for free text.
 - **Schema** (`property_agent/routing/schema.py`): homecare `ResolvedTurn`, routes, intents.
 - **Platform** (`agent_framework/routing/resolved_turn.py`): inject format, state keys.
 - **Bindings** (`property_agent/routing/constants.py`, `bindings/state_merge.py`, `observability/log_redaction.py`): homecare-specific constants, state dedupe keys, log redaction policy.
@@ -36,7 +36,7 @@ See [`ARCHITECTURE.md`](ARCHITECTURE.md) for layer rules and import matrix.
 | `plain_text_llm_response`, `state_take`, resolve pipeline, compaction, memory ingest | `agent_framework.*` |
 | `redact_tool_args_for_log` (homecare policy) | `property_agent.observability.log_redaction` |
 | `safe_text_preview` (no policy) | `agent_framework.observability.log_redaction` |
-| `ResolvedTurn`, `resolve_turn_llm`, conversational copy | `property_agent.routing.*` |
+| `ResolvedTurn`, single-loop routing, conversational copy | `property_agent.routing.*` |
 
 Do not re-export platform symbols from `property_agent` (no shim modules).
 - **Conversational** (`property_agent/routing/conversational_*`): hello/thanks gate; indexical menu.
@@ -60,9 +60,6 @@ make run          # adk run property_agent
 adk web           # pick property_agent
 make test         # unit tests under tests/
 ```
-
-**Env:** `RESOLVE_LLM_DISABLED=1` skips the resolver LLM and uses a safe retrieval-only fallback.
-`HOMEAPP_EXECUTOR_ONLY_ROUTING=1` (Phase 4 experiment) skips resolve entirely; the root executor on `gemini-3.5-flash` picks tools with a slim `[SESSION_CONTEXT]` inject.
 
 **Lifecycle status:** Proxy persists `agentLifecycle` on the assistant Firestore message (`proxy.request_accepted`, `proxy.engine_invoke`, engine phases via `author=homeapp_lifecycle`). Clients read it from the message listener (mapp/webapp). Cloud Logging: `HOMEAPP_LIFECYCLE phase=…`.
 

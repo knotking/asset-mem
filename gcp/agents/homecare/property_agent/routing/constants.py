@@ -26,6 +26,16 @@ REPORT_MODE_EXECUTOR_NOTE = (
     "[/REPORT_MODE]"
 )
 
+CHECKPOINT_QUERY_HINTS = (
+    "checkpoint",
+    "inspection",
+    "inspection note",
+    "show me the latest",
+    "what changed",
+    "analyse my checkpoints",
+    "analyze my checkpoints",
+)
+
 REPORT_MODE_CHECKPOINT_PIPELINE_BLOCKED = (
     "Skipped: report mode — saved report snapshots contain condition findings only, "
     "not cost/DIY/service/coverage analysis. Do not call analyze_checkpoints. "

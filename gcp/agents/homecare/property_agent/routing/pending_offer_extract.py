@@ -17,11 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 def pending_offer_extract_enabled() -> bool:
-    """Run after-agent offer extraction for NLU-first and executor-only routing."""
-    from .executor_only_routing import executor_only_routing_enabled
-    from .nlu_first_resolve import nlu_first_resolve_enabled
-
-    return nlu_first_resolve_enabled() or executor_only_routing_enabled()
+    """Run after-agent offer extraction for accept-offer fast-path."""
+    return True
 
 _EXTRACT_SCHEMA: dict[str, Any] = {
     "type": "object",

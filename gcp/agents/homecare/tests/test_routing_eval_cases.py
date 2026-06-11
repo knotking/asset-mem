@@ -15,8 +15,7 @@ from property_agent.evals.routing.run_routing_eval import (
     score_case,
 )
 from property_agent.routing.optional_branches import OPTIONAL_CHECKPOINT_BRANCHES
-from property_agent.routing.nlu_first_resolve import DISCOURSE_ACTS
-from property_agent.routing.schema import ResolvedTurn
+from property_agent.routing.schema import DISCOURSE_ACTS, ResolvedTurn
 
 _VALID_ROUTES = {"none", "checkpoint", "user_docs", "report"}
 _VALID_INTENTS = {"greeting", "capabilities", "acknowledgment", "substantive"}

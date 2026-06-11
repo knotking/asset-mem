@@ -217,8 +217,6 @@ def should_block_checkpoint_pipeline_for_context_turn(
     discourse_act: str = "",
 ) -> bool:
     """Block checkpoint/retrieval tools when resolve chose session-memory follow-up."""
-    from ..nlu_first_resolve import nlu_first_resolve_enabled
-
     route = (resolved_route or "").strip().lower()
     tool = (tool_name or "").strip().lower()
     if tool in ("analyze_checkpoints", "run_checkpoint_pipeline") and route == "report":
@@ -227,7 +225,7 @@ def should_block_checkpoint_pipeline_for_context_turn(
     if discourse_act == "accept_offer":
         return False
 
-    if nlu_first_resolve_enabled() and discourse_act in (
+    if discourse_act in (
         "explain_prior",
         "provider_detail",
         "closure",

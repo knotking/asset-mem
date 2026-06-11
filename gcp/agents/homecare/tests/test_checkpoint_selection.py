@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from property_agent.checkpoint.constants import CHECKPOINT_IDS_ANALYZED_STATE_KEY
-from property_agent.routing.apply_resolved_turn import apply_checkpoint_retrieval_plan
+from property_agent.routing.apply_resolved_turn import (
+    apply_checkpoint_retrieval_plan,
+    apply_turn_intent_guardrails,
+)
 from property_agent.routing.checkpoint_selection import (
     checkpoint_selection_changed,
     checkpoint_selection_cleared,
@@ -14,7 +17,6 @@ from property_agent.routing.conversational_intent import (
     CHECKPOINT_LAST_RESPONSE_KIND_KEY,
     prior_checkpoint_analysis_in_session,
 )
-from property_agent.routing.turn_intent_llm import apply_turn_intent_guardrails
 
 
 def _payload() -> dict:

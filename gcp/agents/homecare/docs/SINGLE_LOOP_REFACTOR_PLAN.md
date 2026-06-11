@@ -1,6 +1,6 @@
 # Single-loop agent refactor plan (Orchestrator V3)
 
-Status: **Phase 4 staging soak** — full-turn A/B captured from `web-log*` captures; prod off until sprint sign-off.
+Status: **Phase 5 complete** — single-loop routing is the only path; resolve LLM stack removed.
 Owner: —
 Last updated: 2026-06-11
 
@@ -232,32 +232,33 @@ callback tests; guards are router-agnostic (chip/resolve/executor-only ready).
       aggregate substantive p50 −7% across all logs). The strict ≥30% p50 target
       is not met on paired turns alone — acceptable for staging soak given
       misroute parity and one fewer LLM call per turn.
-- [ ] Prod enable + one-sprint soak, then Phase 5 deletion.
+- [ ] Prod enable + one-sprint soak (not live yet; staging-only).
 - [ ] Iterate on tool descriptions only if prod/staging QA surfaces new gaps.
 
 **Exit criteria:** executor-only ≥ parity on **live** misroute rate ✅ (0 observed
 in weblog A/B), meaningful latency win on common paths ✅ (resolve overhead removed;
 follow-up turns faster). Aggregate ≥30% p50 on all substantive turns: **not met**
 on paired session-1 (−13% p50) but not blocking staging soak. **If misroutes
-appear in prod, roll back flag** — Phases 1–3 already delivered most value.
+appear in prod, roll back via redeploy** — Phases 1–3 already delivered most value.
 
-## Phase 5 — Deletion and docs
+## Phase 5 — Deletion and docs ✅
 
-After Phase 4 holds in production for a sprint:
+Executor-only is unconditional (no `HOMEAPP_EXECUTOR_ONLY_ROUTING` flag).
 
-- [ ] Delete: `resolve_turn_llm.py`, `resolve_llm_schema.py`,
-      `nlu_first_resolve.py`, `apply_resolved_turn.py` post-processing,
-      `pending_offer_extract.py`, `turn_intent_llm.py`, most of `query_mode/`,
-      `conversational_intent.py` inference, `analysis_digest`/working-memory
-      hydration (executor sees real history; ADK compaction handles long
-      sessions). Expected: ~3,500–4,000 lines removed.
-- [ ] Keep `conversation_summary` only if compaction proves insufficient in
-      long-session QA.
-- [ ] Update `property_agent/ARCHITECTURE.md`, `docs/ORCHESTRATOR_V2_PLAN.md`,
-      proxy lifecycle-label docs; remove `RESOLVE_LLM_DISABLED` /
-      `HOMEAPP_NLU_FIRST_RESOLVE` flags.
-- [ ] Simplify `ResolvedTurn` to a thin record of what was decided (kept for
-      logging/metrics), no longer a control structure.
+- [x] Delete: `resolve_turn_llm.py`, `resolve_llm_schema.py`,
+      `nlu_first_resolve.py`, `homecare_resolve_hooks.py`, `turn_intent_llm.py`;
+      slim `apply_resolved_turn.py` to checkpoint retrieval-plan helpers only;
+      removed resolve-LLM post-processing and working-memory inject from
+      `format_resolved_turn_block` (chip/accept still inject `[RESOLVED_TURN]`).
+- [x] Keep `pending_offer_extract.py` (accept-offer fast-path).
+- [x] Keep `conversation_summary` for long-session aid (ADK compaction primary).
+- [x] Root agent always `gemini-3.5-flash` via `global_agent_gemini_model()`.
+- [x] `DISCOURSE_ACTS` moved to `routing/schema.py`; deploy no longer sets
+      `HOMEAPP_EXECUTOR_ONLY_ROUTING`.
+- [x] Tests: 463 passed (removed `test_resolve_turn_llm`, `test_nlu_first_resolve`,
+      `test_turn_intent_llm`).
+- [ ] Update `property_agent/ARCHITECTURE.md`, `docs/ORCHESTRATOR_V2_PLAN.md` when
+      those docs are next touched (historical V2 diagrams still reference resolve hop).
 
 ---
 

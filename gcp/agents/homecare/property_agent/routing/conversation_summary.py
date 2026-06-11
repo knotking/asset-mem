@@ -11,7 +11,6 @@ from google.genai import types
 
 from ..model_config import global_flash_lite_client_and_model
 from .analysis_digest import build_analysis_digest_blob
-from .nlu_first_resolve import nlu_first_resolve_enabled
 from .pending_user_action import get_pending_user_action
 from .recent_dialogue import recent_dialogue
 
@@ -84,9 +83,7 @@ def maybe_update_conversation_summary(
     *,
     line_threshold: int = _DEFAULT_LINE_THRESHOLD,
 ) -> None:
-    """Refresh rolling summary when dialogue grows (NLU-first long sessions)."""
-    if not nlu_first_resolve_enabled():
-        return
+    """Refresh rolling summary when dialogue grows (long-session aid; ADK compaction is primary)."""
     if state is None or not hasattr(state, "__setitem__"):
         return
     dialogue = recent_dialogue(session_events, max_chars=5000)
