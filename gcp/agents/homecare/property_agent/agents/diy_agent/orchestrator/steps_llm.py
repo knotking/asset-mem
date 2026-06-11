@@ -63,8 +63,7 @@ _DIY_STEPS_ONLY_JSON_SCHEMA: Dict[str, Any] = {
 
 
 def _synthesis_model() -> str:
-    """Model for steps synthesis: gemini-3.5-flash for faster latency."""
-    return "gemini-3.5-flash"
+    return LEGACY_API_GEMINI.model
 
 
 def _steps_llm_max_output_tokens() -> int:
