@@ -25,11 +25,6 @@ from .conversational_intent import (
     resolve_user_query_for_turn,
     resolve_user_query_from_state,
 )
-from .query_mode import (
-    format_provider_context_answer,
-    should_answer_provider_from_context,
-    should_block_checkpoint_pipeline_for_context_turn,
-)
 from property_agent.checkpoint.constants import (
     CHECKPOINT_ANALYSIS_TOOL,
     CHECKPOINT_LIST_TOOL,
@@ -46,13 +41,6 @@ _BLOCKED_ROUTING_TOOLS_ON_CASUAL = frozenset(
         "user_docs_retrieval",
         "report_retrieval",
     }
-)
-
-_CONTEXT_ONLY_BLOCKED_TOOLS = _BLOCKED_ROUTING_TOOLS_ON_CASUAL
-
-_CONTEXT_ONLY_FALLBACK = (
-    "Answer from prior messages in this conversation and session context. "
-    "Do not call checkpoint or retrieval tools again for this turn."
 )
 
 _CONVERSATIONAL_TOOL_RESULT = (
@@ -139,28 +127,6 @@ def _conversational_before_tool_impl(
     )
     if report_block is not None:
         return report_block
-    if (
-        tool_name in _CONTEXT_ONLY_BLOCKED_TOOLS
-        and resolved is not None
-        and should_block_checkpoint_pipeline_for_context_turn(
-            user_query=user_query,
-            state=tool_context.state,
-            user_goal=str(resolved.user_goal or ""),
-            query_mode=str(resolved.query_mode or ""),
-            resolved_route=str(resolved.route or ""),
-            tool_name=tool_name,
-            discourse_act=str(resolved.discourse_act or ""),
-        )
-    ):
-        answer: str | None = None
-        if should_answer_provider_from_context(user_query, state=tool_context.state):
-            answer = format_provider_context_answer(user_query, tool_context.state)
-        logger.info(
-            "before_tool: blocked %s (context-only) query=%r",
-            tool_name,
-            user_query[:80],
-        )
-        return {"result": answer or _CONTEXT_ONLY_FALLBACK}
 
     casual = resolved is not None and resolved.is_casual
     blocked = block_tools_on_flag(

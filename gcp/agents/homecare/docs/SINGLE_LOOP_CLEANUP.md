@@ -16,9 +16,11 @@ The homecare property agent moved from a **two-LLM routing stack** (resolve LLM 
 
 1. **Deterministic pre-routing** — chip taps, accept-offer, bare greetings/capabilities  
 2. **One executor LLM** (`gemini-3.5-flash`) per substantive turn — flat tool registry  
-3. **Tool-boundary guards** — ids, dedupe, pending-offer, report mode (no resolve arbitration)
+3. **Tool-boundary guards** — ids, dedupe, idempotency, pending-offer, report mode (no arbitration)
 
 Cleanup eliminated ~4,700 lines of routing authority split, legacy V2 naming, stale docs, and unused LLM calls. The resolve LLM path is **gone**; single-loop is **unconditional** (no feature flag).
+
+**Zero-arbitration criterion met (post-Phase-5 cleanup):** The `should_block_checkpoint_pipeline_for_context_turn` context-only heuristic and `routing/query_mode/{heuristics,provider_context}.py` (~970 lines of regex + working-memory arbitration) have been removed. The executor prompt (`prompts.py`) is now the sole authority over whether to call `analyze_checkpoints` on a follow-up turn; `checkpoint/tool_guards.py` enforces only structural invariants (ids, dedupe, idempotency, report mode). This completes the plan's success criterion: *"A turn like 'Summarize the issues for the selected checkpoints' costs one LLM call… and zero heuristic arbitration."*
 
 ---
 
@@ -77,6 +79,21 @@ flowchart LR
 - Duplicate `branches_mentioned_in_query` removed from resolve stack  
 - Working-memory inject removed from `format_resolved_turn_block` (chips/accept still inject `[RESOLVED_TURN]` where needed)  
 - `ResolveTurnHooks` wiring deleted from property agent manifest  
+
+### Zero-arbitration cleanup (heuristic layer removal)
+
+| Removed | Notes |
+|---------|--------|
+| `property_agent/routing/query_mode/heuristics.py` | ~265-line regex + working-memory context-block layer |
+| `property_agent/routing/query_mode/provider_context.py` | ~192-line provider-from-context matcher and answer formatter |
+| `session_has_checkpoint_answer_context` | From `session_memory.py` — only consumer was the removed block guard |
+| `should_answer_provider_from_context` short-circuit in `apply_resolved_turn_to_state` | Was pre-empting executor on provider follow-ups |
+| `is_executor_conversational_turn` dead branches | `query_requests_checkpoint_inventory` + `session_has_checkpoint_answer_context` clauses unreachable under single-loop |
+| `_CONTEXT_ONLY_BLOCKED_TOOLS` / `_CONTEXT_ONLY_FALLBACK` | Removed from `conversational_callbacks.py` with the block |
+
+**Relocated (still live — legitimate tool-boundary logic):**
+- `branches_mentioned_in_query`, `prior_analysis_branches_completed`, `query_requests_fresh_external_data`, `query_requests_entity_detail` → `routing/query_mode/branch_analysis.py` (consumed by `checkpoint/tool_guards.py` and `checkpoint/analysis/search_query.py`)
+- `query_requests_checkpoint_inventory` → `checkpoint/retrieval/inventory_query.py` (consumed by `checkpoint/retrieval/agent.py` for `inventory_recent` retrieval mode)
 
 ---
 

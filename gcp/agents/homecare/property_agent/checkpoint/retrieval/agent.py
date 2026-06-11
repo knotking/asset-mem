@@ -20,7 +20,7 @@ from property_agent.checkpoint.constants import (
     CHECKPOINT_INVENTORY_META_STATE_KEY,
     CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY,
 )
-from property_agent.routing.query_mode.heuristics import query_requests_checkpoint_inventory
+from property_agent.checkpoint.retrieval.inventory_query import query_requests_checkpoint_inventory
 from .media_search_query_refiner import refine_checkpoint_branch_search_intents
 from property_agent.checkpoint.timing import record_retrieval_ms
 

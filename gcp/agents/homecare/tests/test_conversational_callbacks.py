@@ -17,7 +17,7 @@ from property_agent.routing.conversational_callbacks import (
     fail_closed_before_model_on_resolve_error,
 )
 from property_agent.routing.conversational_intent import CONVERSATIONAL_TURN_STATE_KEY
-from property_agent.routing.query_mode import SESSION_WORKING_MEMORY_SNAPSHOT_KEY, snapshot_session_analysis_context
+from property_agent.routing.query_mode import SESSION_WORKING_MEMORY_SNAPSHOT_KEY
 
 
 def _service_parallel_json(*names: str) -> str:
@@ -158,17 +158,11 @@ def test_fail_closed_skips_substantive_query() -> None:
     assert response is None
 
 
-@pytest.mark.parametrize(
-    "tool_name",
-    [
-        "analyze_checkpoints",
-        "user_docs_retrieval",
-    ],
-)
-def test_before_tool_blocks_context_tools_on_provider_follow_up(tool_name: str) -> None:
+def test_before_tool_allows_analyze_checkpoints_on_context_follow_up() -> None:
+    """Executor is the sole authority — context-only follow-ups are no longer vetoed."""
     provider = "Up Right Garage Door Repair"
     user_query = f"More details on {provider}"
-    tool = SimpleNamespace(name=tool_name)
+    tool = SimpleNamespace(name="analyze_checkpoints")
     tool_context = MagicMock()
     tool_context.state = _provider_follow_up_state(
         provider=provider,
@@ -177,35 +171,11 @@ def test_before_tool_blocks_context_tools_on_provider_follow_up(tool_name: str) 
 
     result = conversational_before_tool(tool, {}, tool_context)
 
-    assert result is not None
-    body = result.get("result", "")
-    assert provider in body
-    assert "555-0100" in body or "**Phone:**" in body or "Service results" in body
-
-
-def test_before_tool_allows_pipeline_when_fresh_retrieval_requested() -> None:
-    tool = SimpleNamespace(name="analyze_checkpoints")
-    tool_context = MagicMock()
-    tool_context.state = {
-        "user_query": "find more local service providers for garage door repair",
-        RESOLVED_TURN_STATE_KEY: {
-            "intent": "substantive",
-            "route": "checkpoint",
-            "expanded_user_query": "find more local service providers",
-            "retrieval_only": False,
-            "run_optional_agents": ["service"],
-            "user_goal": "new_analysis",
-            "query_mode": "branch_issue_search",
-        },
-        "checkpoint_parallel_results": _service_parallel_json("Up Right Garage Door Repair"),
-    }
-
-    result = conversational_before_tool(tool, {}, tool_context)
-
     assert result is None
 
 
-def test_before_tool_blocks_user_docs_on_checkpoint_memory_follow_up() -> None:
+def test_before_tool_allows_user_docs_on_checkpoint_memory_follow_up() -> None:
+    """Executor decides whether to call user_docs — context-only block is gone."""
     tool = SimpleNamespace(name="user_docs_retrieval")
     tool_context = MagicMock()
     tool_context.state = {
@@ -229,8 +199,7 @@ def test_before_tool_blocks_user_docs_on_checkpoint_memory_follow_up() -> None:
 
     result = conversational_before_tool(tool, {}, tool_context)
 
-    assert result is not None
-    assert "prior messages" in result.get("result", "")
+    assert result is None
 
 
 def test_before_tool_blocks_analyze_checkpoints_on_report_route() -> None:
@@ -351,7 +320,10 @@ def test_before_tool_allows_user_docs_on_user_docs_route() -> None:
     assert result is None
 
 
-def test_before_tool_blocks_user_docs_after_prune_when_snapshot_has_providers() -> None:
+def test_before_tool_allows_user_docs_after_prune_when_snapshot_has_providers() -> None:
+    """Executor decides whether to call user_docs — context-only block is gone."""
+    from property_agent.routing.query_mode import snapshot_session_analysis_context
+
     provider = "Ace Handyman Services Brentwood"
     state = {
         "user_query": f"get me more details on {provider}",
@@ -375,5 +347,4 @@ def test_before_tool_blocks_user_docs_after_prune_when_snapshot_has_providers() 
 
     result = conversational_before_tool(tool, {}, tool_context)
 
-    assert result is not None
-    assert "925" in result.get("result", "") or provider in result.get("result", "")
+    assert result is None

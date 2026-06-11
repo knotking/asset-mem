@@ -9,7 +9,6 @@ from agent_framework.context.memory_merge import merge_memory_maps
 
 from property_agent.checkpoint.constants import CHECKPOINT_IDS_ANALYZED_STATE_KEY
 
-from ..conversational_intent import prior_checkpoint_analysis_in_session
 from ..optional_branches import OPTIONAL_CHECKPOINT_BRANCHES
 
 SESSION_WORKING_MEMORY_SNAPSHOT_KEY = "session_working_memory_snapshot"
@@ -480,29 +479,6 @@ def snapshot_session_analysis_context(state: Any) -> None:
                 merged[key] = value
         memory = merged
     state[SESSION_WORKING_MEMORY_SNAPSHOT_KEY] = memory
-
-
-def session_has_checkpoint_answer_context(state: Mapping[str, Any] | None) -> bool:
-    """True when session memory or live analysis can ground a checkpoint follow-up."""
-    if not state:
-        return False
-    if prior_checkpoint_analysis_in_session(state):
-        return True
-    memory = build_session_working_memory(state)
-    if not memory:
-        return False
-    if memory.get("checkpoint_summary"):
-        return True
-    if memory.get("analysis_digest"):
-        return True
-    if memory.get("branches_completed"):
-        return True
-    if memory.get("analysis_title"):
-        return True
-    analyzed_ids = memory.get(CHECKPOINT_IDS_ANALYZED_STATE_KEY)
-    if isinstance(analyzed_ids, list) and analyzed_ids:
-        return True
-    return False
 
 
 def build_session_working_memory(state: Mapping[str, Any] | None) -> dict[str, Any]:
