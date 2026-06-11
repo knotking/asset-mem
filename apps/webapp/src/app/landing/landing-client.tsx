@@ -43,6 +43,39 @@ const LANDING_COLORS = {
   white: "rgb(255, 255, 255)",
 };
 
+const LANDING_HEADER_OFFSET = 80;
+
+function scrollToLandingSection(
+  targetId: string,
+  behavior: ScrollBehavior = "smooth",
+  animate = true,
+) {
+  if (targetId === "#") {
+    window.scrollTo({ top: 0, behavior });
+    return;
+  }
+
+  const element = document.querySelector(targetId) as HTMLElement | null;
+  if (!element) return;
+
+  const elementPosition = element.getBoundingClientRect().top;
+  const offsetPosition =
+    elementPosition + window.pageYOffset - LANDING_HEADER_OFFSET;
+
+  window.scrollTo({ top: offsetPosition, behavior });
+
+  if (animate && behavior === "smooth") {
+    setTimeout(() => {
+      element.classList.add("fade-in-up");
+      element.classList.add("animate-highlight");
+      setTimeout(() => {
+        element.classList.remove("animate-highlight");
+        element.classList.remove("fade-in-up");
+      }, 2000);
+    }, 300);
+  }
+}
+
 export default function LandingPageClient() {
   const { user, loading } = useAuth();
   const [activeSection, setActiveSection] = useState<string>("");
@@ -121,6 +154,21 @@ export default function LandingPageClient() {
     };
   }, []);
 
+  // External deep links (e.g. mapp "View plans on the web" → asset-mem.com#pricing)
+  // arrive while auth is still loading, so the target section is not in the DOM yet.
+  useEffect(() => {
+    if (loading || typeof window === "undefined") return;
+
+    const hash = window.location.hash;
+    if (!hash || hash === "#") return;
+
+    const scrollToHash = () => scrollToLandingSection(hash, "auto", false);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(scrollToHash);
+    });
+  }, [loading]);
+
   const handleButtonClick = (
     _e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
     label = "primary_cta",
@@ -135,41 +183,7 @@ export default function LandingPageClient() {
     targetId: string,
   ) => {
     e.preventDefault();
-
-    if (targetId === "#") {
-      // Scroll to top for Home with smooth animation
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
-    } else {
-      const element = document.querySelector(targetId) as HTMLElement;
-      if (element) {
-        const headerOffset = 80; // Account for sticky header
-        const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition =
-          elementPosition + window.pageYOffset - headerOffset;
-
-        // Smooth scroll to the element
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth",
-        });
-
-        // Add fade-in animation to the section when scrolled to
-        setTimeout(() => {
-          element.classList.add("fade-in-up");
-          // Add highlight animation
-          element.classList.add("animate-highlight");
-
-          // Remove animations after they complete
-          setTimeout(() => {
-            element.classList.remove("animate-highlight");
-            element.classList.remove("fade-in-up");
-          }, 2000);
-        }, 300); // Small delay to sync with scroll
-      }
-    }
+    scrollToLandingSection(targetId);
   };
 
   // IMPORTANT: All hooks must be called before any conditional returns (Rules of Hooks)
@@ -327,7 +341,7 @@ export default function LandingPageClient() {
                         LANDING_COLORS.primary;
                       e.currentTarget.style.transform = "translateX(0)";
                     }}
-                    className="inline-flex items-center text-base px-10 py-7 rounded-lg font-medium shadow-xl hover:shadow-2xl transition-all group"
+                    className="inline-flex items-center justify-center text-base px-10 py-7 rounded-lg font-medium shadow-xl hover:shadow-2xl transition-all group"
                     style={{
                       backgroundColor: LANDING_COLORS.primary,
                       color: "#0a0a0f",
@@ -362,7 +376,7 @@ export default function LandingPageClient() {
                         LANDING_COLORS.primary;
                       e.currentTarget.style.transform = "translateX(0)";
                     }}
-                    className="inline-flex items-center text-base px-10 py-7 rounded-lg font-medium shadow-xl hover:shadow-2xl transition-all group"
+                    className="inline-flex items-center justify-center text-base px-10 py-7 rounded-lg font-medium shadow-xl hover:shadow-2xl transition-all group"
                     style={{
                       backgroundColor: LANDING_COLORS.primary,
                       color: "#0a0a0f",
@@ -814,39 +828,43 @@ export default function LandingPageClient() {
                   e.currentTarget.style.boxShadow = "none";
                 }}
               >
-                <div
-                  className="h-14 w-14 rounded-xl flex items-center justify-center mb-4"
-                  style={{
-                    background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
-                  }}
-                >
-                  <svg
-                    className="h-7 w-7"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    style={{ color: LANDING_COLORS.white }}
+                <div className="flex items-start gap-4">
+                  <div
+                    className="h-14 w-14 rounded-xl flex flex-shrink-0 items-center justify-center"
+                    style={{
+                      background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
+                    }}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d={item.icon}
-                    />
-                  </svg>
+                    <svg
+                      className="h-7 w-7"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      style={{ color: LANDING_COLORS.white }}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d={item.icon}
+                      />
+                    </svg>
+                  </div>
+                  <div className="flex-1 pt-0.5">
+                    <h3
+                      className="text-xl font-bold mb-2"
+                      style={{ color: LANDING_COLORS.foreground }}
+                    >
+                      {item.title}
+                    </h3>
+                    <p
+                      className="text-sm leading-relaxed font-light"
+                      style={{ color: LANDING_COLORS.mutedForeground }}
+                    >
+                      {item.desc}
+                    </p>
+                  </div>
                 </div>
-                <h3
-                  className="text-xl font-bold mb-2"
-                  style={{ color: LANDING_COLORS.foreground }}
-                >
-                  {item.title}
-                </h3>
-                <p
-                  className="text-sm leading-relaxed font-light"
-                  style={{ color: LANDING_COLORS.mutedForeground }}
-                >
-                  {item.desc}
-                </p>
               </div>
             ))}
           </div>
@@ -1097,39 +1115,43 @@ export default function LandingPageClient() {
                   e.currentTarget.style.boxShadow = "none";
                 }}
               >
-                <div
-                  className="h-14 w-14 rounded-xl flex items-center justify-center mb-4"
-                  style={{
-                    background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
-                  }}
-                >
-                  <svg
-                    className="h-7 w-7"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    style={{ color: LANDING_COLORS.white }}
+                <div className="flex items-start gap-4">
+                  <div
+                    className="h-14 w-14 rounded-xl flex flex-shrink-0 items-center justify-center"
+                    style={{
+                      background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
+                    }}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d={item.icon}
-                    />
-                  </svg>
+                    <svg
+                      className="h-7 w-7"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      style={{ color: LANDING_COLORS.white }}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d={item.icon}
+                      />
+                    </svg>
+                  </div>
+                  <div className="flex-1 pt-0.5">
+                    <h3
+                      className="text-xl font-bold mb-2"
+                      style={{ color: LANDING_COLORS.foreground }}
+                    >
+                      {item.title}
+                    </h3>
+                    <p
+                      className="text-sm leading-relaxed font-light"
+                      style={{ color: LANDING_COLORS.mutedForeground }}
+                    >
+                      {item.desc}
+                    </p>
+                  </div>
                 </div>
-                <h3
-                  className="text-xl font-bold mb-3"
-                  style={{ color: LANDING_COLORS.foreground }}
-                >
-                  {item.title}
-                </h3>
-                <p
-                  className="text-sm leading-relaxed font-light"
-                  style={{ color: LANDING_COLORS.mutedForeground }}
-                >
-                  {item.desc}
-                </p>
               </div>
             ))}
           </div>
@@ -1715,7 +1737,7 @@ export default function LandingPageClient() {
                       LANDING_COLORS.primary;
                     e.currentTarget.style.transform = "translateX(0)";
                   }}
-                  className="inline-flex items-center text-base px-12 py-8 rounded-lg font-medium shadow-2xl hover:shadow-primary/30 transition-all text-lg group"
+                  className="inline-flex items-center justify-center text-base px-12 py-8 rounded-lg font-medium shadow-2xl hover:shadow-primary/30 transition-all text-lg group"
                   style={{
                     backgroundColor: LANDING_COLORS.primary,
                     color: "#0a0a0f",
@@ -1750,7 +1772,7 @@ export default function LandingPageClient() {
                       LANDING_COLORS.primary;
                     e.currentTarget.style.transform = "translateX(0)";
                   }}
-                  className="inline-flex items-center text-base px-12 py-8 rounded-lg font-medium shadow-2xl hover:shadow-primary/30 transition-all text-lg group"
+                  className="inline-flex items-center justify-center text-base px-12 py-8 rounded-lg font-medium shadow-2xl hover:shadow-primary/30 transition-all text-lg group"
                   style={{
                     backgroundColor: LANDING_COLORS.primary,
                     color: "#0a0a0f",
