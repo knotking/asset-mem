@@ -63,8 +63,8 @@ _DOC_NEGATION_MARKERS = (
 )
 
 _DOC_ALLOWLINE_MARKERS = (
-    "Pre–Orchestrator V2",
-    "Pre-Orchestrator V2",
+    "Pre-structured-message",
+    "Pre-structured-message",
     "Removed from the serving path",
     "superseded",
     "Historical",
@@ -88,7 +88,7 @@ def _line_allowed_in_doc(line: str) -> bool:
         return True
     if any(marker.lower() in lower for marker in _DOC_NEGATION_MARKERS):
         return True
-    # Explicit "removed / replaced by" table rows in canonical V2 doc are OK.
+    # Explicit "removed / replaced by" table rows in architecture docs are OK.
     if "| Removed |" in line or "| Replaced by |" in line:
         return True
     if "no `analysis/current`" in lower or "not `analysis/current`" in lower:

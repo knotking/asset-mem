@@ -1,4 +1,4 @@
-"""Tests for weblog → routing eval draft extraction (no live LLM)."""
+"""Tests for weblog → routing eval draft extraction (includes legacy resolve-LLM log fixtures)."""
 
 from __future__ import annotations
 

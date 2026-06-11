@@ -9,13 +9,13 @@ The agent lives at `gcp/agents/homecare/` and is built on Google's Agent Develop
 
 ## Architecture in one paragraph
 
-`property_agent` is the root **orchestrator** (`property_agent/runtime/agent.py`). Each substantive turn: `resolve_turn_llm` → orchestrator LLM calls flat registry tools:
+`property_agent` is the root **orchestrator** (`property_agent/runtime/agent.py`). Each substantive turn: deterministic **single-loop pre-routing** (`single_loop_routing.py` — chips, accept-offer, casual regex), then the executor LLM calls flat registry tools:
 
 - `run_checkpoint_pipeline` — Firestore vector retrieval, optional parallel coverage / DIY / service / cost analysis, deterministic `contentJson` assembly, synthesis markdown; emits `state_delta` patches
 - `user_docs_retrieval` — RAG over user uploads (`context_doc_uris`)
 - Leaf agents (`diy_agent`, `service_agent`, `cost_agent`, `shopping_agent`) — invoked inside the checkpoint pipeline, not as root routes
 
-Tool registration: `property_agent/registry.py` + `manifest.py`. Canonical V2 contract: `gcp/agents/homecare/property_agent/ARCHITECTURE.md`.
+Tool registration: `property_agent/registry.py` + `manifest.py`. Canonical architecture: `gcp/agents/homecare/property_agent/ARCHITECTURE.md`.
 
 **ADK dev streaming:** `HomecareRunner` + `checkpoint/progress_stream.py` multiplex progress text events while `run_checkpoint_pipeline` runs (see `property_agent/ARCHITECTURE.md`). Set `HOMEAPP_CHECKPOINT_PROGRESS_RUNNER=0` for stock ADK `Runner`.
 

@@ -1,6 +1,6 @@
-"""Single-loop routing (Orchestrator V3).
+"""Single-loop routing.
 
-Skips the resolve LLM; the root executor chooses tools. Injects a slim
+Skips a separate routing LLM; the root executor chooses tools. Injects a slim
 ``[SESSION_CONTEXT]`` block instead of full ``[RESOLVED_TURN]`` + working-memory
 hydration. Bare greetings short-circuit via cheap regex (fail-open to the executor).
 """
@@ -253,7 +253,7 @@ def prepare_single_loop_before_model(
     *,
     llm_request: Any = None,
 ) -> Optional[Any]:
-    """Skip resolve LLM; inject slim context or short-circuit bare greetings."""
+    """Single-loop pre-routing; inject slim context or short-circuit bare greetings."""
     state = getattr(ctx, "state", None)
     inv_id = invocation_id(ctx)
 

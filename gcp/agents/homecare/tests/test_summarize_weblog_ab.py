@@ -1,4 +1,4 @@
-"""Tests for weblog full-turn A/B summarizer."""
+"""Tests for weblog full-turn A/B summarizer (includes legacy resolve-LLM log fixtures)."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Checkpoint pipeline state keys and branch maps (Orchestrator V2)."""
+"""Checkpoint pipeline state keys and branch maps."""
 
 from __future__ import annotations
 

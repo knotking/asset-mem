@@ -1,4 +1,4 @@
-"""Orchestrator V2 proxy reliability: patch ordering, retries, stream interruption."""
+"""Agent message patch reliability: patch ordering, retries, stream interruption."""
 
 from __future__ import annotations
 

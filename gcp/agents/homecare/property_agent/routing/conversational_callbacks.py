@@ -1,4 +1,4 @@
-"""ADK callbacks for conversational tool blocking (resolve_turn sets casual state)."""
+"""ADK callbacks for conversational tool blocking (single-loop routing sets casual state)."""
 
 from __future__ import annotations
 

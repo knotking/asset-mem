@@ -7,9 +7,7 @@ import os
 
 logger = logging.getLogger(__name__)
 
-_metrics_raw = os.getenv("AGENT_ROUTING_METRICS")
-if _metrics_raw is None:
-    _metrics_raw = os.getenv("ORCHESTRATOR_V2_METRICS", "1")
+_metrics_raw = os.getenv("AGENT_ROUTING_METRICS", "1")
 _METRICS_ENABLED = _metrics_raw.strip().lower() not in (
     "0",
     "false",

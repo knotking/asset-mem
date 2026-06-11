@@ -91,7 +91,7 @@ The system accepts various input types:
 - **Property Address / search_location**: Location for local service and cost context
 
 ### Processing Flow
-1. **Root routing**: `resolve_turn` → casual canned reply OR orchestrator LLM + flat tools
+1. **Root routing**: `single_loop_routing` → casual canned reply OR orchestrator LLM + flat tools
 2. **Checkpoint path**: `run_checkpoint_pipeline` — retrieval, optional parallel branches, assembler, synthesis
 3. **Docs path**: `user_docs_retrieval`; general questions without docs/checkpoints → orchestrator markdown only (`route=none`)
 4. **Response**: Proxy merges `state_delta` into Firestore message (`contentMarkdown` + `contentJson`); clients render via `resolveMessageContentParts`

@@ -90,7 +90,7 @@ A sophisticated multi-agent AI system deployed on Vertex AI Reasoning Engine tha
 
 **Location:** `gcp/agents/homecare/property_agent/`
 
-**Purpose:** Single-loop orchestrator (Orchestrator V3): deterministic pre-routing (chips, accept-offer, casual regex), then one executor LLM per substantive turn calling a flat tool registry (`run_checkpoint_pipeline`, RAG tools); optional checkpoint branches run inside the pipeline.
+**Purpose:** Single-loop orchestrator: deterministic pre-routing (chips, accept-offer, casual regex), then one executor LLM per substantive turn calling a flat tool registry (`run_checkpoint_pipeline`, RAG tools); optional checkpoint branches run inside the pipeline.
 
 **Key Responsibilities:**
 - **Pre-routing** for chips, pending-offer accept, and bare greetings (no executor LLM)

@@ -1,6 +1,6 @@
 {
   "name": "checkpoint_response_v2",
-  "description": "Score Orchestrator V2 checkpoint assistant messages: contentJson.analysis structure, not dual-format fences.",
+  "description": "Score Structured checkpoint assistant messages: contentJson.analysis structure, not dual-format fences.",
   "version": 2,
   "criteria": [
     {

@@ -27,7 +27,7 @@ export type CheckpointBranchAccordionBadge = {
   label: string;
 };
 
-/** ``analysis.analysisStatus`` key for executive-summary synthesis (Orchestrator V2). */
+/** ``analysis.analysisStatus`` key for executive-summary synthesis (structured message schema). */
 export const CHECKPOINT_SYNTHESIS_ANALYSIS_STATUS_KEY = "synthesis";
 
 export const SYNTHESIS_WRITING_LABEL = "Writing your summary…";
