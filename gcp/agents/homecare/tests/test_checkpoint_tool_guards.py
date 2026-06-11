@@ -147,6 +147,90 @@ def test_report_mode_blocks_analyze_checkpoints() -> None:
     assert "report mode" in blocked["result"].lower()
 
 
+def test_prepare_analyze_forces_chip_branches() -> None:
+    """Chip-decided branches must not depend on the executor copying them."""
+    state = {
+        "user_query": "Run cost analysis",
+        RESOLVED_TURN_STATE_KEY: {
+            "intent": "substantive",
+            "route": "checkpoint",
+            "expanded_user_query": "Run cost analysis",
+            "retrieval_only": False,
+            "run_optional_agents": ["cost"],
+            "user_goal": "new_analysis",
+            "discourse_act": "new_work",
+            "resolve_source": "chip",
+        },
+    }
+    args: dict = {"branches": []}
+    result = prepare_analyze_checkpoints_tool(
+        state, args, user_query=state["user_query"]
+    )
+    assert result is None
+    assert args["branches"] == ["cost"]
+
+
+def test_prepare_analyze_forces_accept_offer_branches() -> None:
+    state = _state_with_pending_cost(user_query="yes", discourse_act="accept_offer")
+    args: dict = {"branches": []}
+    result = prepare_analyze_checkpoints_tool(
+        state, args, user_query=state["user_query"]
+    )
+    assert result is None
+    assert args["branches"] == ["cost"]
+
+
+def test_prepare_analyze_seeds_executor_only_ui_toggles_first_run() -> None:
+    """Executor-only mode: this turn's UI toggles reach branches deterministically."""
+    state = {
+        "user_query": "What is wrong with my garage?",
+        RESOLVED_TURN_STATE_KEY: {
+            "intent": "substantive",
+            "route": "checkpoint",
+            "expanded_user_query": "What is wrong with my garage?",
+            "retrieval_only": False,
+            "run_optional_agents": ["cost"],
+            "user_goal": "new_analysis",
+            "discourse_act": "new_work",
+            "resolve_source": "executor_only",
+        },
+    }
+    args: dict = {"branches": []}
+    result = prepare_analyze_checkpoints_tool(
+        state, args, user_query=state["user_query"]
+    )
+    assert result is None
+    assert args["branches"] == ["cost"]
+
+
+def test_prepare_analyze_executor_only_toggle_not_reseeded_when_completed() -> None:
+    """Sticky UI toggle must not re-run (or short-circuit) a completed branch."""
+    state = {
+        "user_query": "Summarize the issues",
+        "checkpoint_analysis": {
+            "analysisStatus": {"cost": "completed"},
+            "costEstimationResults": {"costEstimates": {"DIY": {"cost_range": "$50"}}},
+        },
+        RESOLVED_TURN_STATE_KEY: {
+            "intent": "substantive",
+            "route": "checkpoint",
+            "expanded_user_query": "Summarize the issues",
+            "retrieval_only": False,
+            "run_optional_agents": ["cost"],
+            "user_goal": "new_analysis",
+            "discourse_act": "new_work",
+            "resolve_source": "executor_only",
+        },
+    }
+    args: dict = {"branches": []}
+    result = prepare_analyze_checkpoints_tool(
+        state, args, user_query=state["user_query"]
+    )
+    # Retrieval-only call proceeds — no duplicate cost run, no skip result.
+    assert result is None
+    assert args["branches"] == []
+
+
 def test_user_requested_branches_from_query() -> None:
     requested = user_requested_branches("run cost and diy analysis", None)
     assert "cost" in requested

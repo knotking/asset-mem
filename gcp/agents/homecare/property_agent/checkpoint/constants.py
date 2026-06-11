@@ -62,7 +62,9 @@ CHECKPOINT_INVENTORY_META_STATE_KEY = "checkpoint_inventory_meta"
 CHECKPOINT_LIST_TOOL = "list_checkpoints"
 CHECKPOINT_ANALYSIS_TOOL = "analyze_checkpoints"
 # When set, pipeline branch selection follows tool ``branches`` arg only (not resolve/UI).
-CHECKPOINT_EXPLICIT_BRANCHES_KEY = "_checkpoint_explicit_branches"
+# ``temp:``-scoped: ADK applies it in-memory for the invocation but never persists it
+# (ADK ``State`` has no ``__delitem__``, so a plain key could never be cleaned up).
+CHECKPOINT_EXPLICIT_BRANCHES_KEY = "temp:checkpoint_explicit_branches"
 
 CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY = "checkpoint_retrieval_search_query"
 # Branch-specific search intents (youtube, shopping materials, service trade).

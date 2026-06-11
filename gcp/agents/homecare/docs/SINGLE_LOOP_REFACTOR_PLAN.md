@@ -1,8 +1,8 @@
 # Single-loop agent refactor plan (Orchestrator V3)
 
-Status: **Phase 3 complete** — tool-boundary guards consolidated 2026-06-11.
+Status: **Phase 4 implemented behind flag** — staging A/B pending 2026-06-11.
 Owner: —
-Last updated: 2026-06-10
+Last updated: 2026-06-11
 
 Strangler migration from the current two-LLM routing architecture (resolve LLM →
 executor LLM → `before_tool` arbitration, ~4,700 lines in `property_agent/routing/`)
@@ -151,8 +151,9 @@ Split the mega-tool in `property_agent/registry.py` so intent maps to tool shape
 | `search_user_docs`, `get_report` | unchanged (`user_docs_retrieval`, `report_retrieval`) | — |
 
 - [x] `branches=[]` means retrieval + summary only — enforced via
-      `CHECKPOINT_EXPLICIT_BRANCHES_KEY` so resolve/UI pollution cannot add
-      branches on analyze tool calls.
+      `CHECKPOINT_EXPLICIT_BRANCHES_KEY` (a `temp:`-scoped ADK state key, never
+      persisted) so resolve/UI pollution cannot add branches on analyze tool
+      calls.
 - [x] Branch enum in tool schema (`CheckpointOptionalAgent` / ADK function
       signature) — invalid branches rejected at the tool API.
 - [x] Updated `property_agent/prompts.py` executor instructions for the new tool
@@ -182,6 +183,12 @@ enforced in `before_tool` regardless of which router produced the call:
 - [x] Pending-offer guard: `strip_dangling_pending_offer_branches` drops branches
       that appear only in `pending_user_action` unless user text, chip, or
       `accept_offer` references them (fixes unrequested-cost at the boundary).
+- [x] Client-decided branches enforced, not just filtered
+      (`seed_client_decided_branches`): chip taps and `accept_offer` branches are
+      unioned into the tool `branches` arg so they don't depend on the executor
+      LLM copying `run_optional_agents` out of the `[RESOLVED_TURN]` block;
+      executor-only UI toggles are seeded for their first run only (completed
+      branches fall back to the idempotency guard, not a re-run).
 
 **Exit criteria met:** `tests/test_checkpoint_tool_guards.py` (10 cases) + existing
 callback tests; guards are router-agnostic (chip/resolve/executor-only ready).
@@ -191,8 +198,11 @@ callback tests; guards are router-agnostic (chip/resolve/executor-only ready).
 - [x] Add `HOMEAPP_EXECUTOR_ONLY_ROUTING=1`: skip `resolve_turn_llm` entirely;
       `prepare_before_model_turn` → `executor_only_routing.prepare_executor_only_before_model`
       injects only a slim `[SESSION_CONTEXT]` block (property address, checkpoint/doc/report
-      counts — not full `[RESOLVED_TURN]` + working-memory hydration). Chip fast-path still
-      injects `[RESOLVED_TURN]`; minimal `ResolvedTurn` kept in state for tool guards.
+      counts, this turn's UI optional toggles — not full `[RESOLVED_TURN]` + working-memory
+      hydration). Chip fast-path still injects `[RESOLVED_TURN]`; minimal `ResolvedTurn` kept
+      in state for tool guards. Persisted `checkpoint_optional_agents` is reset at the top of
+      each turn so only toggles the client sent now count (UI toggle delivery is then
+      enforced at the tool boundary by `seed_client_decided_branches`).
 - [x] Casual-turn short-circuit: `bare_casual_intent()` regex for bare greetings and
       “what can you do” (fail-open to the executor for everything else).
 - [x] Root agent uses `gemini-3.1-flash` (non-lite) when flag is set (`global_agent_gemini_model`).

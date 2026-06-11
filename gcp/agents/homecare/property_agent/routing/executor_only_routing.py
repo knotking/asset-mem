@@ -113,6 +113,7 @@ def format_slim_session_context_block(state: Any) -> str:
     cp_ids = state.get("checkpoint_ids") or []
     doc_uris = state.get("context_doc_uris") or []
     report_ids = state.get("report_ids") or []
+    ui_optional = state.get("checkpoint_optional_agents") or []
     payload = {
         "property_address": state.get("property_address"),
         "property_id": state.get("property_id"),
@@ -120,6 +121,11 @@ def format_slim_session_context_block(state: Any) -> str:
         "checkpoint_ids_count": len(cp_ids) if isinstance(cp_ids, list) else 0,
         "context_doc_uris_count": len(doc_uris) if isinstance(doc_uris, list) else 0,
         "report_ids_count": len(report_ids) if isinstance(report_ids, list) else 0,
+        # UI optional-branch toggles the client sent this turn; pass them as
+        # ``branches`` on analyze_checkpoints (tool guards enforce regardless).
+        "checkpoint_optional_agents": (
+            ui_optional if isinstance(ui_optional, list) else []
+        ),
         "routing_mode": "executor_only",
     }
     return (
@@ -241,6 +247,11 @@ def prepare_executor_only_before_model(
             return None
 
     clear_executor_invocation_analysis_flag(state)
+    if state is not None and hasattr(state, "__setitem__"):
+        # UI optional toggles are a per-turn payload field; reset the persisted
+        # value (also written by tool guards after each analyze call) so this
+        # turn only sees toggles the client sent now.
+        state["checkpoint_optional_agents"] = []
     user_query = hydrate_turn_state_from_context(ctx, llm_request=llm_request)
 
     chip = resolve_turn_from_chip(state, user_query=user_query)
