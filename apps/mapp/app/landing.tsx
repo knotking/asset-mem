@@ -1461,7 +1461,7 @@ export default function LandingPage() {
               and property report generations. See what you have left anytime in Settings.
             </Text>
             <TouchableOpacity
-              onPress={() => Linking.openURL('https://asset-mem.com#pricing')}
+              onPress={() => Linking.openURL(`${WEB_APP_BASE}#pricing`)}
               style={{
                 paddingVertical: 14,
                 paddingHorizontal: 28,
