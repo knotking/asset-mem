@@ -55,7 +55,7 @@ def test_run_branch_resolved_turn_fields() -> None:
 def test_discuss_resolved_turn_fields() -> None:
     resolved = resolved_turn_from_chip_action(
         ChipAction(type="discuss", topic="cost"),
-        user_query="Why is professional repair so expensive compared to DIY?",
+        user_query="Compare DIY and professional repair options for this issue",
     )
     assert resolved.resolve_source == "chip"
     assert resolved.retrieval_only is True

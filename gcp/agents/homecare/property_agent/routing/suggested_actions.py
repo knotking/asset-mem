@@ -57,8 +57,8 @@ def build_suggested_actions_for_analysis(analysis: dict[str, Any]) -> list[dict[
     if "cost" in completed and "diy" in completed:
         actions.append(
             {
-                "label": "Why is pro so expensive?",
-                "userQuery": "Why is professional repair so expensive compared to DIY?",
+                "label": "Compare DIY vs professional",
+                "userQuery": "Compare DIY and professional repair options for this issue",
                 "chatIntent": "discuss_analysis",
                 "action": {"type": "discuss", "topic": "cost"},
             }
