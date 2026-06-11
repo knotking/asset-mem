@@ -5,7 +5,6 @@ Retrieves checkpoint information using Firestore Vector Search for semantic quer
 Can optionally trigger comprehensive analysis with coverage, DIY, service, and cost recommendations.
 """
 
-import json
 import logging
 import re
 import time
@@ -14,6 +13,7 @@ from typing import Any, Dict, List, Optional
 from google.adk.tools import ToolContext
 from dotenv import load_dotenv
 from .firestore_checkpoint_list import list_recent_property_checkpoints
+from .format_checkpoints import format_raw_checkpoints
 from .firestore_vector_search import search_checkpoints_by_vector
 from property_agent.checkpoint.constants import (
     CHECKPOINT_BRANCH_SEARCH_INTENTS_KEY,
@@ -333,93 +333,12 @@ def ask_checkpoints_retrieval(
                 _record_retrieval_timing()
                 return {"checkpoints": [], "search_query": "", "inventory_meta": None}
 
-        # Format checkpoints for agent consumption
-        # Extract relevant information: summary, location, detected items, issues, etc.
         logger.debug(
             "checkpoint_retrieval: formatting checkpoint_count=%d",
             len(checkpoints),
         )
         t_fmt = time.monotonic()
-        formatted_results = []
-        for idx, checkpoint in enumerate(checkpoints):
-            logger.debug(
-                "checkpoint_retrieval: format %d/%d id=%s",
-                idx + 1,
-                len(checkpoints),
-                checkpoint.get("id"),
-            )
-            checkpoint_id = checkpoint.get("id")
-            ai_analysis = checkpoint.get("aiAnalysis", {})
-
-            # Build a summary text from checkpoint data
-            summary_parts = []
-            if ai_analysis.get("summary"):
-                summary_parts.append(f"Summary: {ai_analysis['summary']}")
-
-            cp_location = checkpoint.get("location") or ai_analysis.get("detectedAsset")
-            if cp_location:
-                summary_parts.append(f"Location/Asset: {cp_location}")
-
-            analysis_status = checkpoint.get("analysisStatus")
-            if analysis_status:
-                summary_parts.append(f"Status: {analysis_status}")
-
-            detected_items = ai_analysis.get("detectedItems", [])
-            if detected_items:
-                items_text = ", ".join(detected_items[:5])  # Limit to first 5
-                summary_parts.append(f"Detected items: {items_text}")
-
-            issues = ai_analysis.get("issues", [])
-            if issues:
-                issue_descriptions = []
-                for issue in issues[:3]:  # Limit to first 3 issues
-                    if isinstance(issue, dict):
-                        issue_descriptions.append(issue.get("description", ""))
-                    elif isinstance(issue, str):
-                        issue_descriptions.append(issue)
-
-                if issue_descriptions:
-                    issues_text = "; ".join(issue_descriptions)
-                    summary_parts.append(f"Issues: {issues_text}")
-
-            conditions = ai_analysis.get("conditions", [])
-            if conditions:
-                conditions_text = ", ".join(conditions[:3])  # Limit to first 3
-                summary_parts.append(f"Conditions: {conditions_text}")
-
-            # Get checkpoint name (prefer name, fallback to location or "Checkpoint")
-            checkpoint_name = checkpoint.get("name") or cp_location or "Checkpoint"
-
-            # Include checkpoint name in the text summary for agent consumption
-            if checkpoint_name and checkpoint_name != "Checkpoint":
-                summary_parts.insert(0, f"Checkpoint Name: {checkpoint_name}")
-
-            # Build formatted checkpoint data
-            formatted_checkpoint = {
-                "checkpointId": checkpoint_id,  # Keep ID for internal reference
-                "checkpointName": checkpoint_name,  # Add name field
-                "text": "\n".join(summary_parts)
-                if summary_parts
-                else "No summary available",
-                "location": cp_location,
-                "createdAt": checkpoint.get("createdAt"),
-                "summary": ai_analysis.get("summary", ""),
-                "detectedItems": detected_items,
-                "conditions": conditions,
-                "issues": issues[:5] if issues else [],  # Limit issues for context
-                "similarity_score": checkpoint.get("similarity_score", 0.0),
-            }
-            logger.debug(
-                "formatted_checkpoint=%s",
-                json.dumps(formatted_checkpoint, default=str, ensure_ascii=False),
-            )
-
-            formatted_results.append(formatted_checkpoint)
-            logger.debug(
-                "checkpoint_retrieval: formatted idx=%d text_len=%d",
-                idx + 1,
-                len(formatted_checkpoint.get("text") or ""),
-            )
+        formatted_results = format_raw_checkpoints(checkpoints)
 
         search_query = build_search_query_from_checkpoints(formatted_results)
         if refine_branch_intents:

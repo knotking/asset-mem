@@ -25,9 +25,11 @@ from property_agent.checkpoint.analysis.synthesis_runner import (
     synthesize_checkpoint_markdown,
 )
 from property_agent.checkpoint.constants import (
+    CHECKPOINT_EXPLICIT_BRANCHES_KEY,
     CHECKPOINT_INVENTORY_META_STATE_KEY,
     CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY,
 )
+from property_agent.checkpoint.session_input import normalize_checkpoint_optional_agents
 from property_agent.checkpoint.retrieval.agent import ask_checkpoints_retrieval
 from property_agent.checkpoint.analysis.parallel_runner import (
     BranchCompleteCallback,
@@ -159,16 +161,23 @@ async def run_checkpoint_pipeline(
     tool_context.state["user_query"] = user_query
     tool_context.state["property_id"] = property_id
 
-    requested = optional_agents_for_progress_from_state(tool_context.state)
-    if not requested and checkpoint_optional_agents:
-        requested = [
-            b for b in checkpoint_optional_agents if b in ("coverage", "diy", "service", "cost")
-        ]
-
-    resolved = resolved_turn_from_state(tool_context.state)
-    retrieval_only = bool(resolved and resolved.retrieval_only)
-    if retrieval_only:
-        requested = []
+    explicit_branches = bool(tool_context.state.get(CHECKPOINT_EXPLICIT_BRANCHES_KEY))
+    if explicit_branches:
+        requested = normalize_checkpoint_optional_agents(
+            checkpoint_optional_agents or tool_context.state.get("checkpoint_optional_agents")
+        )
+    else:
+        requested = optional_agents_for_progress_from_state(tool_context.state)
+        if not requested and checkpoint_optional_agents:
+            requested = [
+                b
+                for b in checkpoint_optional_agents
+                if b in ("coverage", "diy", "service", "cost")
+            ]
+        resolved = resolved_turn_from_state(tool_context.state)
+        retrieval_only = bool(resolved and resolved.retrieval_only)
+        if retrieval_only:
+            requested = []
 
     retrieval = ask_checkpoints_retrieval(
         user_query=user_query,

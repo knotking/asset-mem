@@ -50,7 +50,7 @@ def test_select_events_for_memory_ingest_filters_tools():
                 parts=[
                     types.Part(
                         function_call=types.FunctionCall(
-                            name="run_checkpoint_pipeline", args={}
+                            name="analyze_checkpoints", args={}
                         )
                     )
                 ],

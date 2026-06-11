@@ -6,6 +6,7 @@ import logging
 from typing import Any, Dict, List
 
 from property_agent.checkpoint.constants import (
+    CHECKPOINT_EXPLICIT_BRANCHES_KEY,
     _VALID_OPTIONAL_BRANCHES,
 )
 
@@ -23,6 +24,10 @@ def normalize_checkpoint_optional_agents(value: Any) -> List[str]:
 def optional_agents_for_progress_from_state(state: Any) -> List[str]:
     if not hasattr(state, "get"):
         return []
+    if state.get(CHECKPOINT_EXPLICIT_BRANCHES_KEY):
+        return normalize_checkpoint_optional_agents(
+            state.get("checkpoint_optional_agents")
+        )
     from property_agent.routing.resolve_turn import resolved_turn_from_state
 
     resolved = resolved_turn_from_state(state)
@@ -66,7 +71,7 @@ def checkpoint_ids_for_pipeline_from_state(state: Any) -> List[str]:
 
 
 def apply_session_checkpoint_ids_to_tool_args(state: Any, args: Dict[str, Any]) -> None:
-    """Force ``run_checkpoint_pipeline`` ids to match session UI selection only."""
+    """Force checkpoint tool ids to match session UI selection only."""
     if not isinstance(args, dict):
         return
     session_ids = checkpoint_ids_for_pipeline_from_state(state)

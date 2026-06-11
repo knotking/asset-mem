@@ -30,6 +30,10 @@ from .query_mode import (
     should_answer_provider_from_context,
     should_block_checkpoint_pipeline_for_context_turn,
 )
+from property_agent.checkpoint.constants import (
+    CHECKPOINT_ANALYSIS_TOOL,
+    CHECKPOINT_LIST_TOOL,
+)
 from .constants import REPORT_MODE_CHECKPOINT_PIPELINE_BLOCKED
 from .resolve_turn import resolved_turn_from_state
 
@@ -37,7 +41,8 @@ logger = logging.getLogger(__name__)
 
 _BLOCKED_ROUTING_TOOLS_ON_CASUAL = frozenset(
     {
-        "run_checkpoint_pipeline",
+        CHECKPOINT_ANALYSIS_TOOL,
+        CHECKPOINT_LIST_TOOL,
         "user_docs_retrieval",
         "report_retrieval",
     }
@@ -127,12 +132,13 @@ def _conversational_before_tool_impl(
 
     resolved = resolved_turn_from_state(tool_context.state)
     if (
-        tool_name == "run_checkpoint_pipeline"
+        tool_name == CHECKPOINT_ANALYSIS_TOOL
         and resolved is not None
         and resolved.route == "report"
     ):
         logger.info(
-            "before_tool: blocked run_checkpoint_pipeline (report mode) query=%r",
+            "before_tool: blocked %s (report mode) query=%r",
+            CHECKPOINT_ANALYSIS_TOOL,
             (resolve_user_query_from_state(tool_context.state) or "")[:80],
         )
         return {"result": REPORT_MODE_CHECKPOINT_PIPELINE_BLOCKED}
