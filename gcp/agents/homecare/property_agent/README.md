@@ -62,7 +62,7 @@ make test         # unit tests under tests/
 ```
 
 **Env:** `RESOLVE_LLM_DISABLED=1` skips the resolver LLM and uses a safe retrieval-only fallback.
-`HOMEAPP_EXECUTOR_ONLY_ROUTING=1` (Phase 4 experiment) skips resolve entirely; the root executor on `gemini-3.1-flash` picks tools with a slim `[SESSION_CONTEXT]` inject.
+`HOMEAPP_EXECUTOR_ONLY_ROUTING=1` (Phase 4 experiment) skips resolve entirely; the root executor on `gemini-3.5-flash` picks tools with a slim `[SESSION_CONTEXT]` inject.
 
 **Lifecycle status:** Proxy persists `agentLifecycle` on the assistant Firestore message (`proxy.request_accepted`, `proxy.engine_invoke`, engine phases via `author=homeapp_lifecycle`). Clients read it from the message listener (mapp/webapp). Cloud Logging: `HOMEAPP_LIFECYCLE phase=…`.
 

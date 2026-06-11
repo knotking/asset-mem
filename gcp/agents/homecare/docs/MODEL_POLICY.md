@@ -15,6 +15,14 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 
 **Client:** ADK `Gemini3` wrapper with Vertex `location=global`. The root executor must receive the **`GLOBAL_GEMINI_MODEL` object** (not the model name string) so ADK does not fall back to `GOOGLE_CLOUD_LOCATION` (e.g. `us-central1`), where `gemini-3.1-flash-lite` may be unavailable.
 
+## `EXECUTOR_ONLY_GEMINI_MODEL` (`gemini-3.5-flash`)
+
+**Where:** Root `property_agent` only, when `HOMEAPP_EXECUTOR_ONLY_ROUTING=1` (`global_agent_gemini_model()`).
+
+**Why:** Phase 4 single-loop experiment — one non-lite Flash call for tool selection instead of flash-lite resolve + flash-lite executor.
+
+**Client:** Same `Gemini3` / `location=global` as `GLOBAL_GEMINI_MODEL`.
+
 ## `LEGACY_API_GEMINI` (`gemini-2.5-flash`)
 
 **Where:** Direct `google.genai` `generate_content` / `embed_content` (not ADK `Agent.run`):

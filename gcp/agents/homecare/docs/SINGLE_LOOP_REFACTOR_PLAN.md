@@ -205,7 +205,7 @@ callback tests; guards are router-agnostic (chip/resolve/executor-only ready).
       enforced at the tool boundary by `seed_client_decided_branches`).
 - [x] Casual-turn short-circuit: `bare_casual_intent()` regex for bare greetings and
       “what can you do” (fail-open to the executor for everything else).
-- [x] Root agent uses `gemini-3.1-flash` (non-lite) when flag is set (`global_agent_gemini_model`).
+- [x] Root agent uses `gemini-3.5-flash` (non-lite) when flag is set (`global_agent_gemini_model`).
 - [ ] A/B on staging: replay the Phase 0 eval set plus live `adk web` QA under
       both flags. Compare misroute rate, latency, tokens.
 - [ ] Iterate on tool descriptions (not heuristics) until parity or better.

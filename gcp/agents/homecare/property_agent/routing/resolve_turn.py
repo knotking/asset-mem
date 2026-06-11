@@ -89,6 +89,12 @@ def is_executor_conversational_turn(
     """
     if resolved.is_casual:
         return True
+    # Executor-only mode: the minimal resolved turn is a placeholder state record
+    # (always retrieval_only + answer_from_context), not a routing decision — the
+    # executor owns tool choice and the Phase 3 idempotency guard prevents
+    # duplicate runs. Blocking here would re-impose resolve-layer arbitration.
+    if resolved.resolve_source == "executor_only":
+        return False
     # Report/docs routes need their retrieval tools on substantive turns; follow-up
     # blocking is handled in conversational_before_tool (context-only guards).
     if resolved.route in ("report", "user_docs"):

@@ -186,6 +186,38 @@ def test_apply_resolved_cold_session_inventory_enables_tools() -> None:
     assert state.get(CONVERSATIONAL_TURN_STATE_KEY) is False
 
 
+def test_executor_only_minimal_turn_never_blocks_tools() -> None:
+    """The minimal executor-only resolved turn is a placeholder, not a decision —
+    it must not trip the conversational_turn tool block even with rich session memory."""
+    rich_state = {
+        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
+            "checkpoint_summary": {"locations": ["Garage"], "checkpointsAnalyzed": 1},
+        }
+    }
+    minimal = ResolvedTurn(
+        intent="substantive",
+        route="checkpoint",
+        expanded_user_query="Summarize the issues for the selected checkpoints",
+        retrieval_only=True,
+        run_optional_agents=[],
+        user_goal="answer_from_context",
+        query_mode="interpret_session",
+        resolve_source="executor_only",
+    )
+    assert is_executor_conversational_turn(minimal, state=rich_state) is False
+
+
+def test_executor_only_casual_turn_still_conversational() -> None:
+    resolved = ResolvedTurn(
+        intent="greeting",
+        route="none",
+        expanded_user_query="hello",
+        retrieval_only=True,
+        resolve_source="executor_only",
+    )
+    assert is_executor_conversational_turn(resolved) is True
+
+
 def test_greeting_route_none_stays_conversational() -> None:
     resolved = ResolvedTurn(
         intent="greeting",
