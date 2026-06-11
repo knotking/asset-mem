@@ -40,8 +40,7 @@ def _synthesis_model() -> str:
 
 
 def _web_search_model() -> str:
-    """Model for web grounding: gemini-3.5-flash for faster latency."""
-    return "gemini-3.5-flash"
+    return LEGACY_API_GEMINI.model
 
 
 def _web_grounding_max_output_tokens() -> int:
