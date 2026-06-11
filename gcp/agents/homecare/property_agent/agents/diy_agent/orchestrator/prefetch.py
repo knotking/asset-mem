@@ -9,7 +9,10 @@ from typing import Any, Dict, Optional
 
 from google.genai import types
 
-from property_agent.shared.google_search_grounding import google_search_grounding_tool
+from property_agent.shared.google_search_grounding import (
+    google_search_grounding_tool,
+    text_from_generate_content_response,
+)
 from property_agent.shared.inputs import SearchLocation
 from property_agent.model_config import LEGACY_API_GEMINI
 from property_agent.geo.search_location_utils import market_label
@@ -112,7 +115,7 @@ def _diy_web_search_grounded(diagnosis: str, market_location: str) -> str:
                 tools=[google_search_grounding_tool()],
             ),
         )
-        return _truncate_web_summary(response.text or "")
+        return _truncate_web_summary(text_from_generate_content_response(response))
     except Exception as exc:
         logger.exception(
             "DIY grounded web search failed (%s: %s)",

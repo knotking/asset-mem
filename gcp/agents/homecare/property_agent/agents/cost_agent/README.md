@@ -8,7 +8,7 @@ The Cost Agent provides intelligent, location-aware cost estimates for home repa
 
 ### 🤖 AI-Powered Estimation
 
-- **Google Search Grounding**: Leverages real-time web data for current 2026 pricing
+- **Google Search Grounding**: Prefetches live market pricing (current year) via `LEGACY_API_GEMINI` before structured JSON estimation
 - **Location-Aware Pricing**: Adjusts costs based on regional labor rates and cost-of-living
 - **Complexity Analysis**: AI-driven assessment of repair difficulty and safety factors
 - **Market Trends**: Incorporates current material costs and seasonal variations
@@ -37,18 +37,17 @@ The Cost Agent provides intelligent, location-aware cost estimates for home repa
                     │
                     ├─── AI Estimation Path (Primary)
                     │    │
+                    │    ├─── service_pricing_extractor.py (if provider $ data)
+                    │    │    ├─── Parse SerpAPI / Google Search results
+                    │    │    └─── Calibrate when confidence ≥ threshold
+                    │    │
+                    │    ├─── _fetch_market_pricing_context (if no provider data)
+                    │    │    └─── Google Search grounding → web_context prose
+                    │    │
                     │    ├─── ai_cost_estimator.py
-                    │    │    ├─── Extract location info
-                    │    │    ├─── Analyze repair complexity
-                    │    │    ├─── Build structured prompt
-                    │    │    └─── Call Gemini with Search grounding
+                    │    │    ├─── Build prompt with web_context
+                    │    │    └─── Structured JSON (no grounding tools)
                     │    │
-                    │    ├─── service_pricing_extractor.py
-                    │    │    ├─── Parse SerpAPI results
-                    │    │    ├─── Parse Google Search results
-                    │    │    └─── Combine pricing data
-                    │    │
-                    │    ├─── Calibrate with provider data
                     │    ├─── Validate cost ranges
                     │    └─── Check confidence threshold
                     │
@@ -82,7 +81,7 @@ The primary agent that coordinates AI estimation and fallback logic.
 
 ### 2. `ai_cost_estimator.py` - AI Estimation Engine
 
-Handles AI-powered cost estimation using Gemini with Google Search grounding.
+Handles AI-powered cost estimation: structured JSON from Gemini using optional `web_context` from grounding prefetch or checkpoint shared summary.
 
 **Key Functions:**
 
@@ -90,7 +89,7 @@ Handles AI-powered cost estimation using Gemini with Google Search grounding.
 - `_extract_location_info()`: Parse city/state from address
 - `_extract_repair_details()`: Categorize and analyze repair
 - `_build_cost_estimation_prompt()`: Create structured AI prompt
-- `_parse_ai_response_to_json()`: Convert AI text to structured JSON
+- `_parse_structured_cost_json()` / `_validate_structured_costs()`: Parse and validate JSON cost output
 - `validate_cost_ranges()`: Ensure estimates are realistic
 
 **Features:**

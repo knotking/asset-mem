@@ -32,6 +32,11 @@ class CostEstimationConfig:
     AI_ESTIMATION_TIMEOUT: int = int(os.getenv("AI_ESTIMATION_TIMEOUT", "30"))
     PROVIDER_PRICING_TIMEOUT: int = int(os.getenv("PROVIDER_PRICING_TIMEOUT", "10"))
 
+    # Market Pricing Search (pre-fetch Google Search grounding context)
+    USE_MARKET_PRICING_SEARCH: bool = (
+        os.getenv("COST_MARKET_SEARCH_ENABLED", "true").lower() == "true"
+    )
+
     # Calibration Settings
     PROVIDER_DATA_WEIGHT: float = float(
         os.getenv("PROVIDER_DATA_WEIGHT", "0.3")
@@ -109,6 +114,11 @@ class CostEstimationConfig:
             True if calibration is enabled
         """
         return cls.USE_SERVICE_PROVIDER_CALIBRATION
+
+    @classmethod
+    def should_use_market_pricing_search(cls) -> bool:
+        """True when live market pricing pre-fetch via Google Search is enabled."""
+        return cls.USE_AI_COST_ESTIMATION and cls.USE_MARKET_PRICING_SEARCH
 
     @classmethod
     def get_ai_config(cls) -> Dict[str, Any]:
