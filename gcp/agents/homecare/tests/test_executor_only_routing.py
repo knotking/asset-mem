@@ -23,6 +23,12 @@ from property_agent.routing.executor_only_routing import (
     inject_slim_session_context_into_llm_request,
     minimal_substantive_resolved_turn,
     prepare_executor_only_before_model,
+    resolve_turn_from_pending_offer,
+)
+from property_agent.routing.pending_user_action import (
+    PENDING_USER_ACTION_KEY,
+    PendingUserAction,
+    set_pending_user_action,
 )
 from property_agent.routing.resolve_turn import prepare_before_model_turn
 
@@ -127,6 +133,63 @@ def test_prepare_executor_only_chip_injects_resolved_turn() -> None:
     si = getattr(llm_request.config, "system_instruction", "")
     assert "[RESOLVED_TURN]" in str(si)
     assert ctx.state.get("chip_action") is None
+
+
+def test_resolve_turn_from_pending_offer_cost() -> None:
+    state: dict = {"primary_agent": "checkpoint"}
+    set_pending_user_action(
+        state,
+        PendingUserAction(
+            kind="run_branch",
+            expanded_user_query="Run cost analysis for the vehicle paint damage.",
+            run_optional_agents=["cost"],
+        ),
+    )
+    resolved = resolve_turn_from_pending_offer(state, user_query="yes")
+    assert resolved is not None
+    assert resolved.discourse_act == "accept_offer"
+    assert resolved.run_optional_agents == ["cost"]
+    assert resolved.user_goal == "new_analysis"
+    assert resolved.retrieval_only is False
+    assert state.get(PENDING_USER_ACTION_KEY) is None
+
+
+def test_resolve_turn_from_pending_offer_ignores_thanks() -> None:
+    state: dict = {"primary_agent": "checkpoint"}
+    set_pending_user_action(
+        state,
+        PendingUserAction(
+            kind="run_branch",
+            expanded_user_query="Run cost analysis.",
+            run_optional_agents=["cost"],
+        ),
+    )
+    assert resolve_turn_from_pending_offer(state, user_query="thanks") is None
+    assert state.get(PENDING_USER_ACTION_KEY) is not None
+
+
+def test_prepare_executor_only_accept_offer_injects_resolved_turn() -> None:
+    ctx = _ctx(
+        query="yes",
+        state={
+            "primary_agent": "checkpoint",
+            "checkpoint_ids": ["cp-1"],
+            PENDING_USER_ACTION_KEY: PendingUserAction(
+                kind="run_branch",
+                expanded_user_query="Run DIY and service analysis.",
+                run_optional_agents=["diy", "service"],
+            ).to_dict(),
+        },
+    )
+    llm_request = SimpleNamespace(config=None)
+    assert prepare_executor_only_before_model(ctx, llm_request=llm_request) is None
+    si = str(getattr(llm_request.config, "system_instruction", ""))
+    assert "[RESOLVED_TURN]" in si
+    resolved = ctx.state["resolved_turn"]
+    assert resolved["discourse_act"] == "accept_offer"
+    assert resolved["run_optional_agents"] == ["diy", "service"]
+    assert ctx.state.get(PENDING_USER_ACTION_KEY) is None
+    assert ctx.state.get(CONVERSATIONAL_TURN_STATE_KEY) is False
 
 
 def test_format_slim_session_context_block() -> None:

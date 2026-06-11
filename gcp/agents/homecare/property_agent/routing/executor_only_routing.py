@@ -198,6 +198,63 @@ def _casual_resolved_turn(intent: IntentKind, user_query: str) -> ResolvedTurn:
     )
 
 
+def resolve_turn_from_pending_offer(
+    state: Any,
+    *,
+    user_query: str,
+) -> Optional[ResolvedTurn]:
+    """Deterministic accept-offer fast-path when user short-replies to a pending offer."""
+    from .conversational_intent import is_closure_phrase
+    from .pending_user_action import (
+        clear_pending_user_action,
+        consume_pending_for_resolve,
+        get_pending_user_action,
+        is_short_reply,
+    )
+
+    if get_pending_user_action(state) is None:
+        return None
+    if not is_short_reply(user_query) or is_closure_phrase(user_query):
+        return None
+
+    base = minimal_substantive_resolved_turn(state, user_query=user_query)
+    payload = consume_pending_for_resolve(
+        {**base.to_dict(), "resolve_source": "executor_only"},
+        user_query=user_query,
+        state=state,
+        discourse_act="accept_offer",
+    )
+    if payload.get("discourse_act") != "accept_offer":
+        return None
+
+    from agent_framework.routing.resolved_turn import RESOLVED_TURN_STATE_KEY
+
+    resolved = resolved_turn_from_state({RESOLVED_TURN_STATE_KEY: payload})
+    if resolved is None:
+        return None
+
+    clear_pending_user_action(state)
+    logger.info(
+        "executor_only accept_offer optional=%r expanded=%r query=%r",
+        resolved.run_optional_agents,
+        (resolved.expanded_user_query or "")[:80],
+        user_query[:80],
+    )
+    return resolved
+
+
+def _inject_resolved_turn_block(
+    llm_request: Any,
+    resolved: ResolvedTurn,
+    *,
+    state: Any,
+) -> None:
+    from .resolve_turn import format_resolved_turn_block
+
+    block = format_resolved_turn_block(resolved, state=state)
+    inject_resolved_turn_into_llm_request(llm_request, resolved, block=block)
+
+
 def prepare_executor_only_before_model(
     ctx: Any,
     *,
@@ -228,12 +285,9 @@ def prepare_executor_only_before_model(
         existing = resolved_turn_from_state(state)
         if existing is not None and not existing.is_casual:
             if llm_request is not None:
-                if existing.resolve_source == "chip":
-                    from .resolve_turn import format_resolved_turn_block
-
-                    block = format_resolved_turn_block(existing, state=state)
-                    inject_resolved_turn_into_llm_request(
-                        llm_request, existing, block=block
+                if existing.resolve_source == "chip" or existing.discourse_act == "accept_offer":
+                    _inject_resolved_turn_block(
+                        llm_request, existing, state=state
                     )
                 else:
                     inject_slim_session_context_into_llm_request(
@@ -256,14 +310,24 @@ def prepare_executor_only_before_model(
 
     chip = resolve_turn_from_chip(state, user_query=user_query)
     if chip is not None:
-        from .resolve_turn import apply_resolved_turn_to_state, format_resolved_turn_block
+        from .resolve_turn import apply_resolved_turn_to_state
 
         apply_resolved_turn_to_state(state, chip)
         if inv_id and state is not None:
             state[RESOLVE_APPLIED_INVOCATION_KEY] = inv_id
         if llm_request is not None:
-            block = format_resolved_turn_block(chip, state=state)
-            inject_resolved_turn_into_llm_request(llm_request, chip, block=block)
+            _inject_resolved_turn_block(llm_request, chip, state=state)
+        return None
+
+    accept = resolve_turn_from_pending_offer(state, user_query=user_query)
+    if accept is not None:
+        from .resolve_turn import apply_resolved_turn_to_state
+
+        apply_resolved_turn_to_state(state, accept)
+        if inv_id and state is not None:
+            state[RESOLVE_APPLIED_INVOCATION_KEY] = inv_id
+        if llm_request is not None:
+            _inject_resolved_turn_block(llm_request, accept, state=state)
         return None
 
     casual_intent = bare_casual_intent(user_query)
