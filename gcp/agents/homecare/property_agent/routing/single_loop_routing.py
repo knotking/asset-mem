@@ -111,6 +111,7 @@ def format_slim_session_context_block(state: Any) -> str:
     ui_optional = state.get("checkpoint_optional_agents") or []
     payload = {
         "property_address": state.get("property_address"),
+        "search_location": state.get("search_location"),
         "property_id": state.get("property_id"),
         "primary_agent": state.get("primary_agent"),
         "checkpoint_ids_count": len(cp_ids) if isinstance(cp_ids, list) else 0,

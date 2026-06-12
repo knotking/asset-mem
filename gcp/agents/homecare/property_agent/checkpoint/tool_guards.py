@@ -15,6 +15,7 @@ from property_agent.checkpoint.constants import (
 from property_agent.checkpoint.executor_tools import CHECKPOINT_ROUTING_TOOLS
 from property_agent.checkpoint.session_input import (
     apply_session_checkpoint_ids_to_tool_args,
+    apply_session_location_to_tool_args,
     normalize_checkpoint_optional_agents,
     sync_checkpoint_tool_args_to_state,
 )
@@ -255,6 +256,7 @@ def prepare_analyze_checkpoints_tool(
     args["branches"] = branches
     args["checkpoint_optional_agents"] = branches
     apply_session_checkpoint_ids_to_tool_args(state, args)
+    apply_session_location_to_tool_args(state, args)
     sync_checkpoint_tool_args_to_state(state, args)
     logger.info(
         "tool_guards: analyze_checkpoints branches=%r checkpoint_ids=%r",
