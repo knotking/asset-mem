@@ -28,7 +28,7 @@ Three layers inside the `property_agent` Python package. Generic ADK plumbing li
 
 ## Routing control plane (single-loop)
 
-One executor LLM per substantive turn. Deterministic pre-routing for chips, accept-offer, and bare greetings; slim `[SESSION_CONTEXT]` inject for free text.
+One executor LLM per substantive turn. Deterministic pre-routing for chips, accept-offer, and bare greetings; slim `[SESSION_CONTEXT]` inject for free text (`current_date_utc`, `current_year`, property/routing fields).
 
 | Layer | Owns | Key files |
 |-------|------|-----------|

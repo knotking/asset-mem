@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from datetime import datetime, timezone
 from typing import Any, Mapping, Optional
 
 from agent_framework.routing.resolved_turn import (
@@ -104,12 +105,19 @@ def minimal_substantive_resolved_turn(
     )
 
 
-def format_slim_session_context_block(state: Any) -> str:
+def format_slim_session_context_block(
+    state: Any,
+    *,
+    now: datetime | None = None,
+) -> str:
+    ref = now or datetime.now(timezone.utc)
     cp_ids = state.get("checkpoint_ids") or []
     doc_uris = state.get("context_doc_uris") or []
     report_ids = state.get("report_ids") or []
     ui_optional = state.get("checkpoint_optional_agents") or []
     payload = {
+        "current_date_utc": ref.strftime("%Y-%m-%d"),
+        "current_year": ref.year,
         "property_address": state.get("property_address"),
         "search_location": state.get("search_location"),
         "property_id": state.get("property_id"),

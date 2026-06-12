@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
+from datetime import datetime, timezone
 from google.genai import types
 
 from agent_framework.routing.resolved_turn import RESOLVE_APPLIED_INVOCATION_KEY
@@ -211,6 +212,7 @@ def test_prepare_single_loop_accept_offer_injects_resolved_turn() -> None:
 
 
 def test_format_slim_session_context_block() -> None:
+    fixed = datetime(2026, 6, 12, 17, 10, tzinfo=timezone.utc)
     block = format_slim_session_context_block(
         {
             "property_address": "123 Main St",
@@ -220,9 +222,12 @@ def test_format_slim_session_context_block() -> None:
             "context_doc_uris": [],
             "report_ids": ["r-1"],
             "checkpoint_optional_agents": ["cost"],
-        }
+        },
+        now=fixed,
     )
     assert "[SESSION_CONTEXT]" in block
+    assert '"current_date_utc": "2026-06-12"' in block
+    assert '"current_year": 2026' in block
     assert "checkpoint_ids_count" in block
     assert '"checkpoint_ids_count": 2' in block
     assert '"cost"' in block

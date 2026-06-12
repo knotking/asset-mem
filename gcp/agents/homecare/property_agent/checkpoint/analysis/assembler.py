@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import uuid
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Sequence
 
 from property_agent.bindings.state_merge import merge_homecare_state_delta
@@ -253,6 +254,29 @@ def minimal_checkpoint_progress_session_text(
     return f"# {title}\n\n_Progress {done}/{total} ({labels})._\n"
 
 
+def format_checkpoint_captured_at(value: Any) -> Optional[str]:
+    """Normalize checkpoint ``createdAt`` for retrieval prose (UTC date)."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped:
+            return None
+        if "T" in stripped:
+            return stripped.split("T", 1)[0]
+        return stripped[:10] if len(stripped) >= 10 else stripped
+    if isinstance(value, datetime):
+        dt = value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc).strftime("%Y-%m-%d")
+    isoformat = getattr(value, "isoformat", None)
+    if callable(isoformat):
+        try:
+            return format_checkpoint_captured_at(isoformat())
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
 def format_checkpoints_for_analysis_blob(
     formatted_results: List[Dict[str, Any]],
 ) -> str:
@@ -265,6 +289,9 @@ def format_checkpoints_for_analysis_blob(
         name = (fc.get("checkpointName") or "Checkpoint").strip()
         if name:
             lines.append(f"Checkpoint Name: {name}")
+        captured = format_checkpoint_captured_at(fc.get("createdAt"))
+        if captured:
+            lines.append(f"Captured: {captured} (UTC)")
         loc = (fc.get("location") or "").strip()
         if loc:
             lines.append(f"Location/Asset: {loc}")
