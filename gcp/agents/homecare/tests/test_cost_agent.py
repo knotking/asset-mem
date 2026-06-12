@@ -626,6 +626,41 @@ def test_fetch_market_pricing_context_reads_text_from_parts_when_response_text_e
     assert result == "DIY: $40-80. Professional: $150-350."
 
 
+def test_fetch_market_pricing_context_retries_when_first_response_empty(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(CostEstimationConfig, "USE_AI_COST_ESTIMATION", True)
+    monkeypatch.setattr(CostEstimationConfig, "USE_MARKET_PRICING_SEARCH", True)
+
+    class _Empty:
+        text = None
+        candidates = []
+
+    class _Ok:
+        text = "DIY: $40-80. Professional: $150-350."
+
+    calls: list[int] = []
+
+    class _FakeModels:
+        def generate_content(self, **_kwargs):
+            calls.append(1)
+            return _Empty() if len(calls) == 1 else _Ok()
+
+    class _FakeClient:
+        models = _FakeModels()
+
+    monkeypatch.setattr(
+        cost_mod,
+        "global_direct_generate_client_and_model",
+        lambda: (_FakeClient(), "gemini-3.5-flash"),
+    )
+    result = cost_mod._fetch_market_pricing_context(
+        "Kitchen faucet leak at base of faucet", "Austin, TX"
+    )
+    assert result == "DIY: $40-80. Professional: $150-350."
+    assert len(calls) == 2
+
+
 def test_fetch_market_pricing_context_returns_none_on_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

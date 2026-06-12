@@ -669,6 +669,38 @@ def test_web_grounding_max_output_tokens_env(monkeypatch: pytest.MonkeyPatch) ->
     assert diy_prefetch._web_grounding_max_output_tokens() == 1024
 
 
+def test_diy_web_search_grounded_retries_empty_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[int] = []
+
+    class _Empty:
+        text = None
+        candidates = []
+
+    class _Ok:
+        text = "1. Wash area. 2. Sand scratches."
+
+    class _FakeModels:
+        def generate_content(self, **_kwargs):
+            calls.append(1)
+            return _Empty() if len(calls) == 1 else _Ok()
+
+    class _FakeClient:
+        models = _FakeModels()
+
+    monkeypatch.setattr(
+        diy_prefetch,
+        "global_direct_generate_client_and_model",
+        lambda: (_FakeClient(), "gemini-3.5-flash"),
+    )
+    out = diy_prefetch._diy_web_search_grounded(
+        "vehicle bumper paint scratch repair", "Brentwood, CA"
+    )
+    assert "Wash area" in out
+    assert len(calls) == 2
+
+
 def test_run_diy_pipeline_cache_hits_on_second_call(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
