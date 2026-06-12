@@ -17,7 +17,11 @@ from .service_pricing_extractor import (
     calibrate_ai_estimate_with_provider_data,
 )
 from property_agent.shared.inputs import CheckpointOptionalAgent
-from ...model_config import GLOBAL_GEMINI_MODEL, LEGACY_API_GEMINI
+from ...model_config import (
+    GLOBAL_GEMINI_MODEL,
+    direct_gemini_thinking_config,
+    global_direct_generate_client_and_model,
+)
 from ...shared.google_search_grounding import (
     google_search_grounding_tool,
     text_from_generate_content_response,
@@ -360,8 +364,8 @@ def _fetch_market_pricing_context(
     Pre-fetch live market pricing via a Google Search grounding call.
 
     Same pattern as DIY ``_diy_web_search_grounded``: direct ``generate_content``
-    on ``LEGACY_API_GEMINI`` (``gemini-2.5-flash`` on regional Vertex). Grounding
-    tools are incompatible with JSON mode, so this prose summary becomes
+    on ``global_direct_generate_client_and_model()`` (``gemini-3.5-flash`` global).
+    Grounding tools are incompatible with JSON mode, so this prose summary becomes
     ``web_context`` for the structured cost call.
 
     Runs in the calling thread (already a worker thread inside ``to_thread``).
@@ -381,8 +385,9 @@ def _fetch_market_pricing_context(
     )
 
     try:
-        response = LEGACY_API_GEMINI.api_client.models.generate_content(
-            model=LEGACY_API_GEMINI.model,
+        client, model = global_direct_generate_client_and_model()
+        response = client.models.generate_content(
+            model=model,
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.1,
@@ -390,6 +395,10 @@ def _fetch_market_pricing_context(
                 max_output_tokens=500,
                 response_modalities=["TEXT"],
                 tools=[google_search_grounding_tool()],
+                thinking_config=direct_gemini_thinking_config(
+                    "COST_MARKET_THINKING",
+                    default="low",
+                ),
             ),
         )
         text = text_from_generate_content_response(response) or None

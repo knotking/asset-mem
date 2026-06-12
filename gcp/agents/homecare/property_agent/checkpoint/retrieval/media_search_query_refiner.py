@@ -16,7 +16,10 @@ from typing import Any, Dict, List, Optional
 
 from google.genai import types
 
-from property_agent.model_config import LEGACY_API_GEMINI
+from property_agent.model_config import (
+    direct_gemini_thinking_config,
+    global_direct_generate_client_and_model,
+)
 
 from property_agent.checkpoint.branch_search_intents import (
     BranchSearchIntents,
@@ -28,7 +31,8 @@ logger = logging.getLogger(__name__)
 
 def _vertex_genai_client():
     """Indirection so tests can monkeypatch without replacing a read-only property."""
-    return LEGACY_API_GEMINI.api_client
+    client, _ = global_direct_generate_client_and_model()
+    return client
 
 
 _REFINE_SCHEMA: Dict[str, Any] = {
@@ -303,7 +307,7 @@ def refine_checkpoint_branch_search_intents(
 
     hints = _hints_from_formatted(formatted_results)
     client = _vertex_genai_client()
-    model = LEGACY_API_GEMINI.model
+    _, model = global_direct_generate_client_and_model()
     prompt = _refiner_prompt(raw, hints)
     t0 = time.monotonic()
     try:
@@ -316,7 +320,10 @@ def refine_checkpoint_branch_search_intents(
                 max_output_tokens=512,
                 response_mime_type="application/json",
                 response_json_schema=_REFINE_SCHEMA,
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
+                thinking_config=direct_gemini_thinking_config(
+                    "MEDIA_SEARCH_REFINE_THINKING",
+                    default="minimal",
+                ),
             ),
         )
         data = _refiner_json_from_response(response)
