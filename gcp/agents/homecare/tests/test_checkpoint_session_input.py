@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 
 import pytest
 
+from property_agent.checkpoint.analysis.parallel_runner import _build_checkpoint_cost_query
 from property_agent.checkpoint.session_input import (
     apply_session_checkpoint_ids_to_tool_args,
+    apply_session_location_to_tool_args,
     checkpoint_ids_for_pipeline_from_state,
     normalize_checkpoint_optional_agents,
+    resolve_checkpoint_location_fields,
 )
 
 
@@ -51,6 +55,89 @@ def test_apply_session_checkpoint_ids_replaces_executor_slugs_with_ui() -> None:
     args = {"checkpoint_ids": ["garage"], "property_id": "p1"}
     apply_session_checkpoint_ids_to_tool_args(state, args)
     assert args["checkpoint_ids"] == [real_id]
+
+
+def test_resolve_checkpoint_location_falls_back_to_session() -> None:
+    state = {
+        "property_address": "1982 Helena Way, Brentwood, CA 94513",
+        "search_location": {
+            "source": "property_address",
+            "radius_miles": 5,
+            "coordinates": {"lat": 37.9319, "lng": -121.6958},
+            "label": "1982 Helena Way, Brentwood, CA 94513",
+        },
+    }
+    pa, sl = resolve_checkpoint_location_fields(
+        state, property_address=None, search_location=None
+    )
+    assert pa == "1982 Helena Way, Brentwood, CA 94513"
+    assert sl is not None
+    assert sl["label"] == "1982 Helena Way, Brentwood, CA 94513"
+    assert sl["coordinates"]["lat"] == 37.9319
+
+
+def test_resolve_checkpoint_location_merges_partial_tool_arg_with_session_label() -> None:
+    state = {
+        "search_location": {
+            "source": "property_address",
+            "radius_miles": 5,
+            "coordinates": {"lat": 37.9, "lng": -121.7},
+            "label": "Brentwood, CA",
+        },
+    }
+    tool_sl = {
+        "coordinates": {"lat": 37.9, "lng": -121.7},
+        "radius_miles": 5,
+    }
+    pa, sl = resolve_checkpoint_location_fields(
+        state, property_address=None, search_location=tool_sl
+    )
+    assert sl is not None
+    assert sl["label"] == "Brentwood, CA"
+
+
+def test_apply_session_location_to_tool_args_backfills_missing_fields() -> None:
+    state = {
+        "property_address": "1982 Helena Way, Brentwood, CA 94513",
+        "search_location": {
+            "source": "property_address",
+            "radius_miles": 5,
+            "coordinates": {"lat": 37.9, "lng": -121.7},
+            "label": "1982 Helena Way, Brentwood, CA 94513",
+        },
+    }
+    args: dict = {
+        "user_query": "Run cost analysis",
+        "property_id": "p1",
+        "branches": ["cost"],
+    }
+    apply_session_location_to_tool_args(state, args)
+    assert args["property_address"] == "1982 Helena Way, Brentwood, CA 94513"
+    assert args["search_location"]["label"] == "1982 Helena Way, Brentwood, CA 94513"
+
+
+def test_build_cost_query_includes_market_location_from_resolved_payload() -> None:
+    pa, sl = resolve_checkpoint_location_fields(
+        {
+            "property_address": "1982 Helena Way, Brentwood, CA 94513",
+            "search_location": {
+                "source": "property_address",
+                "radius_miles": 5,
+                "coordinates": {"lat": 37.9, "lng": -121.7},
+                "label": "1982 Helena Way, Brentwood, CA 94513",
+            },
+        },
+        property_address=None,
+        search_location=None,
+    )
+    payload = {
+        "checkpoint_retrieval_search_query": "garage door paint repair",
+        "property_address": pa,
+        "search_location": sl,
+    }
+    body = json.loads(_build_checkpoint_cost_query(payload))
+    assert body["market_location"] == "1982 Helena Way, Brentwood, CA 94513"
+    assert body["property_address"] == "1982 Helena Way, Brentwood, CA 94513"
 
 
 def test_ask_checkpoints_retrieval_falls_back_to_vector_on_by_id_miss(

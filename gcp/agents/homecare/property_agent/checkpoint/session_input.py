@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 from property_agent.checkpoint.constants import (
     CHECKPOINT_EXPLICIT_BRANCHES_KEY,
@@ -100,3 +100,39 @@ def sync_checkpoint_tool_args_to_state(state: Any, args: Dict[str, Any]) -> None
     for key in CHECKPOINT_SESSION_INPUT_KEYS:
         if key in args and args[key] is not None:
             state[key] = args[key]
+
+
+def resolve_checkpoint_location_fields(
+    state: Any,
+    *,
+    property_address: Optional[str] = None,
+    search_location: Any = None,
+) -> Tuple[Optional[str], Optional[Dict[str, Any]]]:
+    """Merge tool args with session state for optional-branch market/geo payloads."""
+    from property_agent.geo.address_parse import merge_search_location_sources
+    from property_agent.routing.conversational_intent import (
+        resolve_property_address_from_state,
+    )
+
+    pa = (property_address or "").strip() or None
+    if not pa:
+        pa = resolve_property_address_from_state(state)
+
+    state_sl = state.get("search_location") if hasattr(state, "get") else None
+    merged = merge_search_location_sources(search_location, state_sl)
+    if merged is None:
+        return pa, None
+    return pa, merged.model_dump()
+
+
+def apply_session_location_to_tool_args(state: Any, args: Dict[str, Any]) -> None:
+    """Backfill ``property_address`` / ``search_location`` on tool args from session."""
+    if not isinstance(args, dict):
+        return
+    pa, sl = resolve_checkpoint_location_fields(
+        state,
+        property_address=args.get("property_address"),
+        search_location=args.get("search_location"),
+    )
+    args["property_address"] = pa
+    args["search_location"] = sl

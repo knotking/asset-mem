@@ -58,6 +58,7 @@ from property_agent.checkpoint.analysis.service_providers import (
     seed_service_branch_tool_state,
 )
 from property_agent.checkpoint.branch_search_intents import BranchSearchIntents
+from property_agent.checkpoint.session_input import resolve_checkpoint_location_fields
 from property_agent.agents.cost_agent.agent import _cost_estimation_sync, cost_agent
 from .search_query import (
     optional_branch_search_user_query,
@@ -382,6 +383,12 @@ async def run_checkpoint_optional_agents_parallel(
     )
 
     branch_intents = _branch_intents_from_state(tool_context.state)
+
+    property_address, search_location = resolve_checkpoint_location_fields(
+        tool_context.state,
+        property_address=property_address,
+        search_location=search_location,
+    )
 
     payload: Dict[str, Any] = {
         "user_query": branch_user_query,
