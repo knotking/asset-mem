@@ -418,6 +418,14 @@ def _fetch_market_pricing_context(
         return None
 
 
+def fetch_market_pricing_context(
+    diagnosis: str,
+    location: Optional[str],
+) -> Optional[str]:
+    """Public entry for checkpoint pricing prefetch and tests."""
+    return _fetch_market_pricing_context(diagnosis, location)
+
+
 def _estimate_with_ai(
     diagnosis: str,
     property_address: Optional[str] = None,

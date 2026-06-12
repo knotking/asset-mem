@@ -81,7 +81,7 @@ The primary agent that coordinates AI estimation and fallback logic.
 
 ### 2. `ai_cost_estimator.py` - AI Estimation Engine
 
-Handles AI-powered cost estimation: structured JSON from Gemini using optional `web_context` from grounding prefetch or checkpoint shared summary.
+Handles AI-powered cost estimation: structured JSON from Gemini using optional `web_context` from pricing-focused checkpoint prefetch (`checkpoint_pricing_grounding_web_summary`) or inline `_fetch_market_pricing_context` — not the DIY steps summary.
 
 **Key Functions:**
 
