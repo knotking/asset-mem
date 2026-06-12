@@ -70,8 +70,8 @@ def test_refiner_uses_model_json(monkeypatch):
     mock_client.models.generate_content.assert_called_once()
 
 
-def test_refiner_disables_thinking_budget(monkeypatch):
-    """gemini-2.5-flash thinking consumes the 256-token cap and truncates JSON."""
+def test_refiner_uses_minimal_thinking_level(monkeypatch):
+    """gemini-3.5-flash defaults to medium thinking; minimal keeps JSON within token cap."""
     monkeypatch.setenv("HOMEAPP_REFINE_MEDIA_SEARCH_QUERY", "1")
 
     class _Resp:
@@ -88,7 +88,7 @@ def test_refiner_disables_thinking_budget(monkeypatch):
     _kwargs = mock_client.models.generate_content.call_args.kwargs
     cfg = _kwargs["config"]
     assert cfg.thinking_config is not None
-    assert cfg.thinking_config.thinking_budget == 0
+    assert str(cfg.thinking_config.thinking_level).lower().endswith("minimal")
 
 
 def test_refiner_uses_response_parsed_when_text_empty(monkeypatch):

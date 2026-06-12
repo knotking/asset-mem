@@ -42,8 +42,8 @@ class CostEstimationConfig:
         os.getenv("PROVIDER_DATA_WEIGHT", "0.3")
     )  # 0.0-1.0
 
-    # Model for direct generate_content (Google Search grounding); matches LEGACY_API_GEMINI default.
-    AI_MODEL_NAME: str = os.getenv("COST_ESTIMATION_MODEL", "gemini-2.5-flash")
+    # Model for direct generate_content JSON; default matches SINGLE_LOOP_GEMINI_MODEL.
+    AI_MODEL_NAME: str = os.getenv("COST_ESTIMATION_MODEL", "gemini-3.5-flash")
     AI_TEMPERATURE: float = float(os.getenv("AI_TEMPERATURE", "0.3"))
     AI_MAX_OUTPUT_TOKENS: int = int(os.getenv("AI_MAX_OUTPUT_TOKENS", "2048"))
 

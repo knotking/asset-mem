@@ -66,6 +66,23 @@ def global_direct_generate_client_and_model() -> tuple[Client, str]:
     return SINGLE_LOOP_GEMINI_MODEL.api_client, SINGLE_LOOP_GEMINI_MODEL.model
 
 
+def direct_gemini_thinking_config(
+    env_var: str,
+    *,
+    default: str = "minimal",
+) -> types.ThinkingConfig:
+    """
+    ``thinking_level`` for gemini-3.x direct ``generate_content`` call sites.
+
+    Env value: ``minimal`` | ``low`` | ``medium`` | ``high`` | ``0`` (legacy budget).
+    Do not set both ``thinking_level`` and ``thinking_budget`` in one request.
+    """
+    raw = os.getenv(env_var, default).strip().lower()
+    if raw in ("0", "off", "disabled", "budget0"):
+        return types.ThinkingConfig(thinking_budget=0)
+    return types.ThinkingConfig(thinking_level=raw)
+
+
 @lru_cache(maxsize=1)
 def _legacy_vertex_genai_client() -> genai.Client:
     """Standard Vertex google.genai client (not ADK Gemini.api_client)."""

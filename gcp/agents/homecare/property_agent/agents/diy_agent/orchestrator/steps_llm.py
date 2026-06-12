@@ -11,7 +11,10 @@ from typing import Any, Callable, Dict, Optional, Tuple
 from google.genai import types
 
 from agent_framework.observability.logging_context import auth_uid_scope
-from property_agent.model_config import global_direct_generate_client_and_model
+from property_agent.model_config import (
+    direct_gemini_thinking_config,
+    global_direct_generate_client_and_model,
+)
 
 from .checkpoint_parse import (
     _infer_hire_professional,
@@ -86,18 +89,8 @@ def _steps_web_excerpt_chars() -> int:
 
 
 def _steps_thinking_config() -> types.ThinkingConfig:
-    """
-    Control internal reasoning for steps synthesis.
-
-    gemini-3.5-flash defaults to thinking_level=MEDIUM (adds latency). Use
-    ``minimal`` (default here) or legacy ``thinking_budget=0`` via env
-    ``DIY_STEPS_THINKING`` (``minimal`` | ``low`` | ``medium`` | ``high`` | ``0``).
-    Do not set both thinking_level and thinking_budget in one request.
-    """
-    raw = os.getenv("DIY_STEPS_THINKING", "minimal").strip().lower()
-    if raw in ("0", "off", "disabled", "budget0"):
-        return types.ThinkingConfig(thinking_budget=0)
-    return types.ThinkingConfig(thinking_level=raw)
+    """Steps synthesis; default ``minimal`` (see ``DIY_STEPS_THINKING``)."""
+    return direct_gemini_thinking_config("DIY_STEPS_THINKING", default="minimal")
 
 
 def _web_excerpt_for_steps(web_summary: str) -> str:

@@ -14,7 +14,10 @@ from property_agent.shared.google_search_grounding import (
     text_from_generate_content_response,
 )
 from property_agent.shared.inputs import SearchLocation
-from property_agent.model_config import global_direct_generate_client_and_model
+from property_agent.model_config import (
+    direct_gemini_thinking_config,
+    global_direct_generate_client_and_model,
+)
 from property_agent.geo.search_location_utils import market_label
 from property_agent.agents.diy_agent.youtube import youtube_search
 from property_agent.checkpoint.branch_search_intents import (
@@ -59,16 +62,8 @@ def _web_summary_max_chars() -> int:
 
 
 def _web_thinking_config() -> types.ThinkingConfig:
-    """
-    Control internal reasoning for grounded web search.
-
-    gemini-3.5-flash defaults to thinking_level=MEDIUM. Override via
-    ``DIY_WEB_THINKING`` (default ``low``; ``minimal`` | ``low`` | ``medium`` | ``high`` | ``0``).
-    """
-    raw = os.getenv("DIY_WEB_THINKING", "low").strip().lower()
-    if raw in ("0", "off", "disabled", "budget0"):
-        return types.ThinkingConfig(thinking_budget=0)
-    return types.ThinkingConfig(thinking_level=raw)
+    """Grounded web search; default ``low`` (see ``DIY_WEB_THINKING``)."""
+    return direct_gemini_thinking_config("DIY_WEB_THINKING", default="low")
 
 
 def _truncate_web_summary(text: str) -> str:

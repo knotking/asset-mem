@@ -575,16 +575,14 @@ def test_fetch_market_pricing_context_returns_text(
         def generate_content(self, **_kwargs):
             return _FakeResponse()
 
-    class _FakeLegacyApiGemini:
-        model = "gemini-2.5-flash"
+    class _FakeClient:
+        models = _FakeModels()
 
-        @property
-        def api_client(self):
-            class _C:
-                models = _FakeModels()
-            return _C()
-
-    monkeypatch.setattr(cost_mod, "LEGACY_API_GEMINI", _FakeLegacyApiGemini())
+    monkeypatch.setattr(
+        cost_mod,
+        "global_direct_generate_client_and_model",
+        lambda: (_FakeClient(), "gemini-3.5-flash"),
+    )
     result = cost_mod._fetch_market_pricing_context(
         "Kitchen faucet leak at base of faucet", "Austin, TX"
     )
@@ -614,16 +612,14 @@ def test_fetch_market_pricing_context_reads_text_from_parts_when_response_text_e
         def generate_content(self, **_kwargs):
             return _FakeResponse()
 
-    class _FakeLegacyApiGemini:
-        model = "gemini-2.5-flash"
+    class _FakeClient:
+        models = _FakeModels()
 
-        @property
-        def api_client(self):
-            class _C:
-                models = _FakeModels()
-            return _C()
-
-    monkeypatch.setattr(cost_mod, "LEGACY_API_GEMINI", _FakeLegacyApiGemini())
+    monkeypatch.setattr(
+        cost_mod,
+        "global_direct_generate_client_and_model",
+        lambda: (_FakeClient(), "gemini-3.5-flash"),
+    )
     result = cost_mod._fetch_market_pricing_context(
         "Kitchen faucet leak at base of faucet", "Austin, TX"
     )
@@ -640,16 +636,14 @@ def test_fetch_market_pricing_context_returns_none_on_error(
         def generate_content(self, **_kwargs):
             raise RuntimeError("network error")
 
-    class _BrokenLegacyApiGemini:
-        model = "gemini-2.5-flash"
+    class _BrokenClient:
+        models = _BrokenModels()
 
-        @property
-        def api_client(self):
-            class _C:
-                models = _BrokenModels()
-            return _C()
-
-    monkeypatch.setattr(cost_mod, "LEGACY_API_GEMINI", _BrokenLegacyApiGemini())
+    monkeypatch.setattr(
+        cost_mod,
+        "global_direct_generate_client_and_model",
+        lambda: (_BrokenClient(), "gemini-3.5-flash"),
+    )
     result = cost_mod._fetch_market_pricing_context(
         "Kitchen faucet leak at base of faucet", None
     )

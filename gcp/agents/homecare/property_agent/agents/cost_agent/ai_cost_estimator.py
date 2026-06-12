@@ -16,7 +16,10 @@ from google import genai
 from google.genai import types
 
 from agent_framework.execution.thread_context import executor_submit
-from ...model_config import LEGACY_API_GEMINI
+from ...model_config import (
+    direct_gemini_thinking_config,
+    global_direct_generate_client_and_model,
+)
 from .config import CostEstimationConfig
 
 logger = logging.getLogger(__name__)
@@ -387,8 +390,9 @@ def _generate_cost_estimate_content(
     If live market data is needed, pass it pre-fetched via `web_context`.
     """
     ai_cfg = CostEstimationConfig.get_ai_config()
+    _, default_model = global_direct_generate_client_and_model()
     return client.models.generate_content(
-        model=ai_cfg["model"],
+        model=ai_cfg.get("model") or default_model,
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=ai_cfg["temperature"],
@@ -396,6 +400,10 @@ def _generate_cost_estimate_content(
             top_k=40,
             max_output_tokens=ai_cfg["max_output_tokens"],
             response_mime_type="application/json",
+            thinking_config=direct_gemini_thinking_config(
+                "COST_AI_THINKING",
+                default="minimal",
+            ),
         ),
     )
 
@@ -431,7 +439,7 @@ def estimate_costs_with_ai(
         )
 
         if client is None:
-            client = LEGACY_API_GEMINI.api_client
+            client, _ = global_direct_generate_client_and_model()
 
         timeout_s = CostEstimationConfig.AI_ESTIMATION_TIMEOUT
         with ThreadPoolExecutor(max_workers=1) as pool:

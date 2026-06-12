@@ -6,7 +6,12 @@ import json
 import logging
 from typing import Any, Dict
 
-from property_agent.model_config import GLOBAL_GEMINI_MODEL
+from google.genai import types
+
+from property_agent.model_config import (
+    direct_gemini_thinking_config,
+    global_direct_generate_client_and_model,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +46,7 @@ async def synthesize_checkpoint_markdown(
     user_query: str,
 ) -> str:
     """Run synthesis LLM; returns markdown prose only."""
-    client = GLOBAL_GEMINI_MODEL.api_client
-    model = GLOBAL_GEMINI_MODEL.model
+    client, model = global_direct_generate_client_and_model()
     contents = _synthesis_user_content(
         analysis,
         checkpoint_results=checkpoint_results,
@@ -52,7 +56,14 @@ async def synthesize_checkpoint_markdown(
         response = await client.aio.models.generate_content(
             model=model,
             contents=contents,
-            config={"temperature": 0.3, "max_output_tokens": 2048},
+            config=types.GenerateContentConfig(
+                temperature=0.3,
+                max_output_tokens=2048,
+                thinking_config=direct_gemini_thinking_config(
+                    "CHECKPOINT_SYNTHESIS_THINKING",
+                    default="low",
+                ),
+            ),
         )
     except Exception:
         logger.exception("checkpoint synthesis: generate_content failed")
