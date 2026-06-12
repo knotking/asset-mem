@@ -17,6 +17,7 @@ from property_agent.shared.inputs import SearchLocation
 from property_agent.model_config import (
     direct_gemini_thinking_config,
     global_direct_generate_client_and_model,
+    global_direct_generate_model_name,
 )
 from property_agent.geo.search_location_utils import market_label
 from property_agent.agents.diy_agent.youtube import youtube_search
@@ -39,8 +40,7 @@ from .checkpoint_parse import (
 logger = logging.getLogger(__name__)
 
 def _web_search_model() -> str:
-    _, model = global_direct_generate_client_and_model()
-    return model
+    return global_direct_generate_model_name()
 
 
 def _web_grounding_max_output_tokens() -> int:

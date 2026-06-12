@@ -61,6 +61,11 @@ def global_flash_lite_client_and_model() -> tuple[Client, str]:
     return GLOBAL_GEMINI_MODEL.api_client, GLOBAL_GEMINI_MODEL.model
 
 
+def global_direct_generate_model_name() -> str:
+    """Model id for direct ``generate_content`` without constructing a Vertex client."""
+    return SINGLE_LOOP_GEMINI_MODEL.model
+
+
 def global_direct_generate_client_and_model() -> tuple[Client, str]:
     """
     Vertex ``location=global`` client for direct ``generate_content`` (DIY web/steps).
@@ -68,7 +73,7 @@ def global_direct_generate_client_and_model() -> tuple[Client, str]:
     Uses ``SINGLE_LOOP_GEMINI_MODEL`` on Vertex ``location=global`` (not regional
     ``LEGACY_API_GEMINI`` / ``GOOGLE_CLOUD_LOCATION``).
     """
-    return SINGLE_LOOP_GEMINI_MODEL.api_client, SINGLE_LOOP_GEMINI_MODEL.model
+    return SINGLE_LOOP_GEMINI_MODEL.api_client, global_direct_generate_model_name()
 
 
 def direct_gemini_thinking_config(

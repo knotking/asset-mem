@@ -19,6 +19,7 @@ from agent_framework.execution.thread_context import executor_submit
 from ...model_config import (
     direct_gemini_thinking_config,
     global_direct_generate_client_and_model,
+    global_direct_generate_model_name,
 )
 from .config import CostEstimationConfig
 
@@ -390,7 +391,7 @@ def _generate_cost_estimate_content(
     If live market data is needed, pass it pre-fetched via `web_context`.
     """
     ai_cfg = CostEstimationConfig.get_ai_config()
-    _, default_model = global_direct_generate_client_and_model()
+    default_model = global_direct_generate_model_name()
     return client.models.generate_content(
         model=ai_cfg.get("model") or default_model,
         contents=prompt,

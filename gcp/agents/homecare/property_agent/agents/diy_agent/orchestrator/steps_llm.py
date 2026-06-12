@@ -14,6 +14,7 @@ from agent_framework.observability.logging_context import auth_uid_scope
 from property_agent.model_config import (
     direct_gemini_thinking_config,
     global_direct_generate_client_and_model,
+    global_direct_generate_model_name,
 )
 
 from .checkpoint_parse import (
@@ -66,8 +67,7 @@ _DIY_STEPS_ONLY_JSON_SCHEMA: Dict[str, Any] = {
 
 
 def _synthesis_model() -> str:
-    _, model = global_direct_generate_client_and_model()
-    return model
+    return global_direct_generate_model_name()
 
 
 def _steps_llm_max_output_tokens() -> int:
