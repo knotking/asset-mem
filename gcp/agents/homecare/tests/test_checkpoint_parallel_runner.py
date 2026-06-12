@@ -3,6 +3,7 @@
 import asyncio
 import json
 import threading
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -846,16 +847,20 @@ def test_format_checkpoints_for_analysis_blob():
             "checkpointName": "Garage May 11",
             "location": "Garage",
             "text": "Summary: door wear\nIssues: paint chipping",
+            "createdAt": "2026-05-11T14:30:00Z",
         },
         {
             "checkpointName": "Garage May 8",
             "location": "Garage",
             "text": "Issues: minor wear",
+            "createdAt": datetime(2026, 5, 8, 9, 0, tzinfo=timezone.utc),
         },
     ]
     blob = format_checkpoints_for_analysis_blob(formatted)
     assert "Garage May 11" in blob
     assert "Garage May 8" in blob
+    assert "Captured: 2026-05-11 (UTC)" in blob
+    assert "Captured: 2026-05-08 (UTC)" in blob
     assert "paint chipping" in blob
     assert blob.count("Checkpoint Name:") == 2
 
