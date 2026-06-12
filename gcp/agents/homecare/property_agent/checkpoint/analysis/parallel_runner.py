@@ -39,9 +39,14 @@ from property_agent.checkpoint.constants import (
 )
 from property_agent.checkpoint.grounding_prefetch import (
     CHECKPOINT_GROUNDING_SUMMARY_KEY,
+    CHECKPOINT_PRICING_GROUNDING_SUMMARY_KEY,
+    checkpoint_cost_diagnosis,
     grounding_summary_from_payload,
+    prefetch_checkpoint_pricing_context,
     prefetch_checkpoint_web_context,
-    should_prefetch_checkpoint_grounding,
+    pricing_grounding_summary_from_payload,
+    should_prefetch_cost_pricing_grounding,
+    should_prefetch_diy_grounding,
 )
 from property_agent.checkpoint.timing import (
     mark_synthesis_started,
@@ -61,14 +66,10 @@ from property_agent.checkpoint.branch_search_intents import BranchSearchIntents
 from property_agent.checkpoint.session_input import resolve_checkpoint_location_fields
 from property_agent.agents.cost_agent.agent import _cost_estimation_sync, cost_agent
 from .search_query import (
-    optional_branch_search_user_query,
     resolve_effective_search_query,
     resolve_optional_branch_user_query,
     resolve_service_branch_user_query,
 )
-
-# Branches that consume shared checkpoint web summary (await same prefetch task).
-_GROUNDING_CONSUMER_BRANCHES = frozenset({"diy", "cost"})
 
 logger = logging.getLogger(__name__)
 
@@ -176,23 +177,10 @@ async def _run_checkpoint_diy_pipeline(payload: Dict[str, Any]) -> str:
     )
 
 
-def _checkpoint_cost_diagnosis(payload: Dict[str, Any]) -> str:
-    seed = (payload.get("checkpoint_retrieval_search_query") or "").strip()
-    if seed:
-        return seed
-    branch_q = (payload.get("user_query") or "").strip()
-    if branch_q:
-        return branch_q
-    ck = (payload.get("checkpoint_results") or "").strip()
-    if ck:
-        return optional_branch_search_user_query(ck)
-    return "Property maintenance"
-
-
 def _build_checkpoint_cost_query(payload: Dict[str, Any]) -> str:
     from property_agent.geo.search_location_utils import market_label
 
-    diagnosis = _checkpoint_cost_diagnosis(payload)
+    diagnosis = checkpoint_cost_diagnosis(payload)
     body: Dict[str, Any] = {"diagnosis": diagnosis}
     sl = search_location_from_payload(payload)
     pa = (payload.get("property_address") or "").strip() or None
@@ -203,7 +191,7 @@ def _build_checkpoint_cost_query(payload: Dict[str, Any]) -> str:
         body["property_address"] = pa
     if sl is not None:
         body["search_location"] = sl.model_dump()
-    web_summary = grounding_summary_from_payload(payload)
+    web_summary = pricing_grounding_summary_from_payload(payload)
     if web_summary:
         body["grounding_web_summary"] = web_summary
     return json.dumps(body, ensure_ascii=False)
@@ -429,32 +417,42 @@ async def run_checkpoint_optional_agents_parallel(
         run_id=run_id,
     )
 
-    prefetch_task: Optional[asyncio.Task[str]] = None
-    if should_prefetch_checkpoint_grounding(requested):
-        prefetch_task = asyncio.create_task(
+    diy_prefetch_task: Optional[asyncio.Task[str]] = None
+    pricing_prefetch_task: Optional[asyncio.Task[str]] = None
+    if should_prefetch_diy_grounding(requested):
+        diy_prefetch_task = asyncio.create_task(
             to_thread(prefetch_checkpoint_web_context, payload)
         )
         logger.info(
-            "checkpoint grounding prefetch: started in parallel with optional branches"
+            "checkpoint DIY grounding prefetch: started in parallel with optional branches"
+        )
+    if should_prefetch_cost_pricing_grounding(requested):
+        pricing_prefetch_task = asyncio.create_task(
+            to_thread(prefetch_checkpoint_pricing_context, payload)
+        )
+        logger.info(
+            "checkpoint cost pricing prefetch: started in parallel with optional branches"
         )
 
-    async def _payload_with_grounding_summary(
+    async def _payload_with_prefetch_summary(
         branch_payload: Dict[str, Any],
+        *,
+        prefetch_task: Optional[asyncio.Task[str]],
+        payload_key: str,
+        existing_summary: str,
+        log_label: str,
     ) -> Dict[str, Any]:
         if prefetch_task is None:
             return branch_payload
-        if grounding_summary_from_payload(branch_payload):
+        if existing_summary:
             return branch_payload
         try:
             summary = await prefetch_task
         except Exception:
-            logger.exception("checkpoint grounding prefetch task failed")
+            logger.exception("checkpoint %s prefetch task failed", log_label)
             return branch_payload
         if summary:
-            return {
-                **branch_payload,
-                CHECKPOINT_GROUNDING_SUMMARY_KEY: summary,
-            }
+            return {**branch_payload, payload_key: summary}
         return branch_payload
 
     async def _run_named_branch(name: str) -> Tuple[str, str]:
@@ -474,8 +472,22 @@ async def run_checkpoint_optional_agents_parallel(
                 tool_context, service_payload, prefetched=prefetched_serp
             )
             branch_payload = service_payload
-        if name in _GROUNDING_CONSUMER_BRANCHES:
-            branch_payload = await _payload_with_grounding_summary(branch_payload)
+        if name == "diy":
+            branch_payload = await _payload_with_prefetch_summary(
+                branch_payload,
+                prefetch_task=diy_prefetch_task,
+                payload_key=CHECKPOINT_GROUNDING_SUMMARY_KEY,
+                existing_summary=grounding_summary_from_payload(branch_payload),
+                log_label="DIY grounding",
+            )
+        elif name == "cost":
+            branch_payload = await _payload_with_prefetch_summary(
+                branch_payload,
+                prefetch_task=pricing_prefetch_task,
+                payload_key=CHECKPOINT_PRICING_GROUNDING_SUMMARY_KEY,
+                existing_summary=pricing_grounding_summary_from_payload(branch_payload),
+                log_label="cost pricing",
+            )
         value = await _run_single_optional_agent_async(
             name, branch_payload, tool_context
         )

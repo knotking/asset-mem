@@ -256,6 +256,11 @@ def test_parallel_runner_prefetch_overlaps_coverage(monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(
         parallel_mod, "prefetch_checkpoint_web_context", _slow_prefetch
     )
+    monkeypatch.setattr(
+        parallel_mod,
+        "prefetch_checkpoint_pricing_context",
+        lambda _payload: "pricing-web-summary",
+    )
     coverage_during_prefetch: list[bool] = []
 
     async def _invoke(agent, payload, tool_context):
@@ -277,7 +282,11 @@ def test_parallel_runner_prefetch_overlaps_coverage(monkeypatch: pytest.MonkeyPa
         return "diy-ok"
 
     async def _cost_ok(payload):
-        assert payload.get("checkpoint_grounding_web_summary") == "shared-web-summary"
+        assert payload.get("checkpoint_grounding_web_summary") is None
+        assert (
+            payload.get("checkpoint_pricing_grounding_web_summary")
+            == "pricing-web-summary"
+        )
         return "cost-ok"
 
     monkeypatch.setattr(parallel_mod, "_invoke_optional_agent_async", _invoke)
