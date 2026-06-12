@@ -56,6 +56,16 @@ def global_flash_lite_client_and_model() -> tuple[Client, str]:
     return GLOBAL_GEMINI_MODEL.api_client, GLOBAL_GEMINI_MODEL.model
 
 
+def global_direct_generate_client_and_model() -> tuple[Client, str]:
+    """
+    Vertex ``location=global`` client for direct ``generate_content`` (DIY web/steps).
+
+    Newer Flash models (e.g. gemini-3.5-flash) are not available on the regional
+    ``LEGACY_API_GEMINI`` client (``GOOGLE_CLOUD_LOCATION`` / us-central1).
+    """
+    return SINGLE_LOOP_GEMINI_MODEL.api_client, SINGLE_LOOP_GEMINI_MODEL.model
+
+
 @lru_cache(maxsize=1)
 def _legacy_vertex_genai_client() -> genai.Client:
     """Standard Vertex google.genai client (not ADK Gemini.api_client)."""

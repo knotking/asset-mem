@@ -14,7 +14,7 @@ from property_agent.shared.google_search_grounding import (
     text_from_generate_content_response,
 )
 from property_agent.shared.inputs import SearchLocation
-from property_agent.model_config import LEGACY_API_GEMINI
+from property_agent.model_config import global_direct_generate_client_and_model
 from property_agent.geo.search_location_utils import market_label
 from property_agent.agents.diy_agent.youtube import youtube_search
 from property_agent.checkpoint.branch_search_intents import (
@@ -35,12 +35,9 @@ from .checkpoint_parse import (
 
 logger = logging.getLogger(__name__)
 
-def _synthesis_model() -> str:
-    return LEGACY_API_GEMINI.model
-
-
 def _web_search_model() -> str:
-    return LEGACY_API_GEMINI.model
+    _, model = global_direct_generate_client_and_model()
+    return model
 
 
 def _web_grounding_max_output_tokens() -> int:
@@ -59,6 +56,19 @@ def _web_summary_max_chars() -> int:
     except ValueError:
         return 3500
     return max(500, min(n, 8000))
+
+
+def _web_thinking_config() -> types.ThinkingConfig:
+    """
+    Control internal reasoning for grounded web search.
+
+    gemini-3.5-flash defaults to thinking_level=MEDIUM. Override via
+    ``DIY_WEB_THINKING`` (default ``low``; ``minimal`` | ``low`` | ``medium`` | ``high`` | ``0``).
+    """
+    raw = os.getenv("DIY_WEB_THINKING", "low").strip().lower()
+    if raw in ("0", "off", "disabled", "budget0"):
+        return types.ThinkingConfig(thinking_budget=0)
+    return types.ThinkingConfig(thinking_level=raw)
 
 
 def _truncate_web_summary(text: str) -> str:
@@ -89,7 +99,7 @@ def fetch_repair_web_context(web_query: str, market_location: str) -> str:
 
 def _diy_web_search_grounded(diagnosis: str, market_location: str) -> str:
     """One Gemini call with Google Search grounding for DIY steps context."""
-    client = LEGACY_API_GEMINI.api_client
+    client, _ = global_direct_generate_client_and_model()
     addr = market_location.strip() if market_location else "not provided"
     checkpoint_ctx = parse_checkpoint_structured_context(diagnosis)
     ctx_block = ""
@@ -113,6 +123,7 @@ def _diy_web_search_grounded(diagnosis: str, market_location: str) -> str:
                 max_output_tokens=_web_grounding_max_output_tokens(),
                 response_modalities=["TEXT"],
                 tools=[google_search_grounding_tool()],
+                thinking_config=_web_thinking_config(),
             ),
         )
         return _truncate_web_summary(text_from_generate_content_response(response))
