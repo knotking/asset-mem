@@ -329,7 +329,14 @@ def _checkpoint_progress_display_text(event: Dict[str, Any], event_text: str) ->
 def _should_replace_assistant_content(event: Dict[str, Any], event_text: str) -> bool:
     _ = event_text
     author = event.get("author")
-    return isinstance(author, str) and author in _CHECKPOINT_CONTENT_REPLACE_AUTHORS
+    if isinstance(author, str) and author in _CHECKPOINT_CONTENT_REPLACE_AUTHORS:
+        return True
+    # Synthesis markdown is emitted on checkpoint_analysis_progress, then the same
+    # contentMarkdown snapshot rides on analyze_checkpoints function_response
+    # (author=property_agent). Treat snapshot deltas as replace, not append.
+    delta = _event_state_delta(event)
+    patch_md = delta.get("contentMarkdown")
+    return isinstance(patch_md, str) and bool(patch_md.strip())
 
 
 def _strip_user_query_echoes(content: str, user_query: str) -> str:
