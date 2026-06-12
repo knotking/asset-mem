@@ -11,6 +11,7 @@ from google.genai import types
 from agent_framework.routing.resolved_turn import RESOLVE_APPLIED_INVOCATION_KEY
 from property_agent.model_config import (
     SINGLE_LOOP_GEMINI_MODEL,
+    SINGLE_LOOP_GEMINI_MODEL_NAME,
     global_agent_gemini_model,
 )
 from property_agent.routing.conversational_intent import CONVERSATIONAL_TURN_STATE_KEY
@@ -57,8 +58,8 @@ def test_bare_casual_intent(query: str, expected: str | None) -> None:
     assert bare_casual_intent(query) == expected
 
 
-def test_global_agent_gemini_model_uses_flash() -> None:
-    assert SINGLE_LOOP_GEMINI_MODEL.model == "gemini-3.5-flash"
+def test_global_agent_gemini_model_uses_single_loop_model() -> None:
+    assert SINGLE_LOOP_GEMINI_MODEL.model == SINGLE_LOOP_GEMINI_MODEL_NAME
     assert global_agent_gemini_model() is SINGLE_LOOP_GEMINI_MODEL
 
 

@@ -13,7 +13,9 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 
 **Client:** ADK `Gemini3` wrapper with Vertex `location=global`.
 
-## `SINGLE_LOOP_GEMINI_MODEL` (`gemini-3.5-flash`)
+## `SINGLE_LOOP_GEMINI_MODEL` (default `gemini-3.1-flash-lite` on perf branch)
+
+**Env:** `SINGLE_LOOP_GEMINI_MODEL` — default `gemini-3.1-flash-lite`; set to `gemini-3.5-flash` for A/B comparison.
 
 **Where:**
 
@@ -47,4 +49,4 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 
 Changing the default chat model for ADK agents: edit `Gemini3(model=...)` in `model_config.py`, run `make test`, and exercise key flows via `adk web` on staging.
 
-Changing global direct-call model: edit `SINGLE_LOOP_GEMINI_MODEL` in the same file.
+Changing global direct-call / executor model: set `SINGLE_LOOP_GEMINI_MODEL` or edit the default in `model_config.py`.

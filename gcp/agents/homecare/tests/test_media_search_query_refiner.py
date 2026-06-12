@@ -71,7 +71,7 @@ def test_refiner_uses_model_json(monkeypatch):
 
 
 def test_refiner_uses_minimal_thinking_level(monkeypatch):
-    """gemini-3.5-flash defaults to medium thinking; minimal keeps JSON within token cap."""
+    """Direct-call model defaults to minimal thinking; 3.1-flash-lite default is minimal."""
     monkeypatch.setenv("HOMEAPP_REFINE_MEDIA_SEARCH_QUERY", "1")
 
     class _Resp:

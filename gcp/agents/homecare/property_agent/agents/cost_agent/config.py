@@ -42,8 +42,11 @@ class CostEstimationConfig:
         os.getenv("PROVIDER_DATA_WEIGHT", "0.3")
     )  # 0.0-1.0
 
-    # Model for direct generate_content JSON; default matches SINGLE_LOOP_GEMINI_MODEL.
-    AI_MODEL_NAME: str = os.getenv("COST_ESTIMATION_MODEL", "gemini-3.5-flash")
+    # Model for direct generate_content JSON; default follows SINGLE_LOOP_GEMINI_MODEL.
+    AI_MODEL_NAME: str = (
+        os.getenv("COST_ESTIMATION_MODEL")
+        or os.getenv("SINGLE_LOOP_GEMINI_MODEL", "gemini-3.1-flash-lite")
+    )
     AI_TEMPERATURE: float = float(os.getenv("AI_TEMPERATURE", "0.3"))
     AI_MAX_OUTPUT_TOKENS: int = int(os.getenv("AI_MAX_OUTPUT_TOKENS", "2048"))
 

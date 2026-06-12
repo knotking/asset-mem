@@ -37,17 +37,22 @@ class Gemini3(Gemini):
         )
 
 
-# ADK agents (root executor, checkpoint branches, synthesis): fast routing + streaming.
+# ADK sub-agents (coverage, service, shopping, …): fast routing + streaming.
 GLOBAL_GEMINI_MODEL = Gemini3(model="gemini-3.1-flash-lite")
 
-# Phase 4 single-loop experiment: single flash call instead of flash-lite resolve + flash-lite executor.
-SINGLE_LOOP_GEMINI_MODEL = Gemini3(model="gemini-3.5-flash")
+# Root executor + direct ``generate_content`` (DIY web/steps, cost, refiner, synthesis).
+# A/B on perf branch: default ``gemini-3.1-flash-lite``; set ``SINGLE_LOOP_GEMINI_MODEL=gemini-3.5-flash`` to compare.
+SINGLE_LOOP_GEMINI_MODEL_NAME: str = (
+    os.getenv("SINGLE_LOOP_GEMINI_MODEL", "gemini-3.1-flash-lite").strip()
+    or "gemini-3.1-flash-lite"
+)
+SINGLE_LOOP_GEMINI_MODEL = Gemini3(model=SINGLE_LOOP_GEMINI_MODEL_NAME)
 
 GLOBAL_FLASH_LITE_MODEL_NAME: str = GLOBAL_GEMINI_MODEL.model
 
 
 def global_agent_gemini_model() -> Gemini3:
-    """Root agent model — single non-lite flash call for tool selection."""
+    """Root agent model for single-loop tool selection (see ``SINGLE_LOOP_GEMINI_MODEL``)."""
     return SINGLE_LOOP_GEMINI_MODEL
 
 
@@ -60,8 +65,8 @@ def global_direct_generate_client_and_model() -> tuple[Client, str]:
     """
     Vertex ``location=global`` client for direct ``generate_content`` (DIY web/steps).
 
-    Newer Flash models (e.g. gemini-3.5-flash) are not available on the regional
-    ``LEGACY_API_GEMINI`` client (``GOOGLE_CLOUD_LOCATION`` / us-central1).
+    Uses ``SINGLE_LOOP_GEMINI_MODEL`` on Vertex ``location=global`` (not regional
+    ``LEGACY_API_GEMINI`` / ``GOOGLE_CLOUD_LOCATION``).
     """
     return SINGLE_LOOP_GEMINI_MODEL.api_client, SINGLE_LOOP_GEMINI_MODEL.model
 
