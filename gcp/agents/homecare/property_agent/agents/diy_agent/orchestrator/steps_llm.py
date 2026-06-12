@@ -11,7 +11,7 @@ from typing import Any, Callable, Dict, Optional, Tuple
 from google.genai import types
 
 from agent_framework.observability.logging_context import auth_uid_scope
-from property_agent.model_config import LEGACY_API_GEMINI
+from property_agent.model_config import global_direct_generate_client_and_model
 
 from .checkpoint_parse import (
     _infer_hire_professional,
@@ -63,7 +63,8 @@ _DIY_STEPS_ONLY_JSON_SCHEMA: Dict[str, Any] = {
 
 
 def _synthesis_model() -> str:
-    return LEGACY_API_GEMINI.model
+    _, model = global_direct_generate_client_and_model()
+    return model
 
 
 def _steps_llm_max_output_tokens() -> int:
@@ -82,6 +83,21 @@ def _steps_web_excerpt_chars() -> int:
     except ValueError:
         return 1500
     return max(400, min(n, 6000))
+
+
+def _steps_thinking_config() -> types.ThinkingConfig:
+    """
+    Control internal reasoning for steps synthesis.
+
+    gemini-3.5-flash defaults to thinking_level=MEDIUM (adds latency). Use
+    ``minimal`` (default here) or legacy ``thinking_budget=0`` via env
+    ``DIY_STEPS_THINKING`` (``minimal`` | ``low`` | ``medium`` | ``high`` | ``0``).
+    Do not set both thinking_level and thinking_budget in one request.
+    """
+    raw = os.getenv("DIY_STEPS_THINKING", "minimal").strip().lower()
+    if raw in ("0", "off", "disabled", "budget0"):
+        return types.ThinkingConfig(thinking_budget=0)
+    return types.ThinkingConfig(thinking_level=raw)
 
 
 def _web_excerpt_for_steps(web_summary: str) -> str:
@@ -229,7 +245,7 @@ def _generate_diy_steps_llm(
 
     Returns ``(hire_professional_recommended, diySteps dict)``.
     """
-    client = LEGACY_API_GEMINI.api_client
+    client, _ = global_direct_generate_client_and_model()
     checkpoint_ctx = parse_checkpoint_structured_context(diagnosis)
     web_excerpt = _web_excerpt_for_steps(web_summary)
     payload: Dict[str, Any] = {
@@ -253,6 +269,7 @@ def _generate_diy_steps_llm(
                 "top_p": 0.85,
                 "max_output_tokens": _steps_llm_max_output_tokens(),
                 "response_mime_type": "application/json",
+                "thinking_config": _steps_thinking_config(),
             }
             if use_response_schema:
                 cfg_kwargs["response_json_schema"] = _DIY_STEPS_ONLY_JSON_SCHEMA

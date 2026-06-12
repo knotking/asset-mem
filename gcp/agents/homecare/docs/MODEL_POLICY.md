@@ -30,8 +30,11 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 **Where:** Direct `google.genai` `generate_content` / `embed_content` (not ADK `Agent.run`):
 
 - `cost_agent/ai_cost_estimator.py` — structured cost JSON
-- `diy_agent/orchestrator.py` — DIY steps synthesis, grounded web search helper
-- `checkpoint/retrieval/media_search_query_refiner.py` — retrieval search phrase cleanup
+- `checkpoint/retrieval/media_search_query_refiner.py` — retrieval search phrase cleanup (regional client)
+
+**DIY orchestrator** (`diy_agent/orchestrator/prefetch.py`, `steps_llm.py`) uses **`global_direct_generate_client_and_model()`** (`gemini-3.5-flash` on `location=global`) — not `LEGACY_API_GEMINI`, because 3.x Flash is unavailable on regional `us-central1` for this project.
+
+Legacy regional direct calls:
 - Firestore checkpoint **query embeddings** (`text-embedding-004`, separate from chat models)
 
 **Why:** These paths predate the 3.x ADK default or need `response_json_schema` / orchestrator-specific retry behavior on the standard Vertex client (`vertexai=True`, project region).
@@ -42,7 +45,8 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 |------|-----|
 | New ADK sub-agent with tools / transfer | `GLOBAL_GEMINI_MODEL` |
 | Root orchestrator tool selection | `SINGLE_LOOP_GEMINI_MODEL` via `global_agent_gemini_model()` |
-| New one-shot JSON from Python (`generate_content`) | `LEGACY_API_GEMINI` unless ADK migration is explicit |
+| New one-shot JSON from Python (`generate_content`) | `LEGACY_API_GEMINI` (regional) unless the model needs `global_direct_generate_client_and_model()` |
+| DIY web grounding + steps synthesis | `global_direct_generate_client_and_model()` |
 | Embeddings | `text-embedding-004` in `firestore_vector_search.py` (not chat models) |
 
 Changing the default chat model for ADK agents: edit `Gemini3(model=...)` in `model_config.py`, run `make test`, and exercise key flows via `adk web` on staging.
