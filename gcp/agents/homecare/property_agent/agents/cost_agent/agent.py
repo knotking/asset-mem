@@ -364,7 +364,7 @@ def _fetch_market_pricing_context(
     Pre-fetch live market pricing via a Google Search grounding call.
 
     Same pattern as DIY ``_diy_web_search_grounded``: direct ``generate_content``
-    on ``global_direct_generate_client_and_model()`` (``gemini-3.5-flash`` global).
+    on ``global_direct_generate_client_and_model()`` (global Vertex ``generate_content``).
     Grounding tools are incompatible with JSON mode, so this prose summary becomes
     ``web_context`` for the structured cost call.
 
