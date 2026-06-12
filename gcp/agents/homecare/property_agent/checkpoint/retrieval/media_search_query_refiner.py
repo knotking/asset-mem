@@ -19,6 +19,7 @@ from google.genai import types
 from property_agent.model_config import (
     direct_gemini_thinking_config,
     global_direct_generate_client_and_model,
+    global_direct_generate_model_name,
 )
 
 from property_agent.checkpoint.branch_search_intents import (
@@ -307,7 +308,7 @@ def refine_checkpoint_branch_search_intents(
 
     hints = _hints_from_formatted(formatted_results)
     client = _vertex_genai_client()
-    _, model = global_direct_generate_client_and_model()
+    model = global_direct_generate_model_name()
     prompt = _refiner_prompt(raw, hints)
     t0 = time.monotonic()
     try:
