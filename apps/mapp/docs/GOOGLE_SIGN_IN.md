@@ -181,6 +181,7 @@ Add test users under Google Cloud → **OAuth consent screen** → **Test users*
 | Stale package (`com.assetmem.*`) | `npx expo prebuild --clean` so `applicationId` matches `ANDROID_PACKAGE` |
 | Expo Go | Use dev build, not Expo Go |
 | iOS redirect / scheme errors | Sync `iosClientId` in `firebase-config.ts` and `GOOGLE_IOS_CLIENT_ID_BY_ENV` in `app.config.js`, then prebuild |
+| EAS iOS `pod install`: `AppCheckCore` / `GoogleUtilities` modular headers | `expo-build-properties` in `app.config.js` sets `ios.extraPods` with `modular_headers: true` for `GoogleUtilities` and `RecaptchaInterop` |
 
 ---
 
