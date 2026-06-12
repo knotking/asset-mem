@@ -24,7 +24,7 @@ from ...model_config import (
 )
 from ...shared.google_search_grounding import (
     google_search_grounding_tool,
-    text_from_generate_content_response,
+    grounded_prose_with_retry,
 )
 
 logger = logging.getLogger(__name__)
@@ -386,27 +386,33 @@ def _fetch_market_pricing_context(
 
     try:
         client, model = global_direct_generate_client_and_model()
-        response = client.models.generate_content(
-            model=model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.1,
-                top_p=0.9,
-                max_output_tokens=500,
-                response_modalities=["TEXT"],
-                tools=[google_search_grounding_tool()],
-                thinking_config=direct_gemini_thinking_config(
-                    "COST_MARKET_THINKING",
-                    default="low",
+
+        def _generate() -> Any:
+            return client.models.generate_content(
+                model=model,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.1,
+                    top_p=0.9,
+                    max_output_tokens=500,
+                    response_modalities=["TEXT"],
+                    tools=[google_search_grounding_tool()],
+                    thinking_config=direct_gemini_thinking_config(
+                        "COST_MARKET_THINKING",
+                        default="low",
+                    ),
                 ),
-            ),
+            )
+
+        text = grounded_prose_with_retry(
+            _generate,
+            logger=logger,
+            label="cost market pricing",
         )
-        text = text_from_generate_content_response(response) or None
         if text:
             logger.info("Market pricing context fetched len=%d", len(text))
-        else:
-            logger.info("Market pricing web search returned empty text")
-        return text
+            return text
+        return None
     except Exception as exc:
         logger.warning("Market pricing web search failed (non-fatal): %s", exc)
         return None

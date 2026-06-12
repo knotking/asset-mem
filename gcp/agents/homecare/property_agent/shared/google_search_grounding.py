@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 import os
-from typing import Any
+from typing import Any, Callable
 
 from google.genai import types
 
@@ -39,6 +40,132 @@ def text_from_generate_content_response(response: Any) -> str:
 
     if isinstance(direct, str):
         return direct.strip()
+    return ""
+
+
+def grounded_generate_max_attempts() -> int:
+    """Retries for intermittent empty grounded ``generate_content`` responses."""
+    raw = os.getenv("GROUNDED_GENERATE_MAX_ATTEMPTS", "2").strip()
+    try:
+        n = int(raw)
+    except ValueError:
+        return 2
+    return max(1, min(n, 4))
+
+
+def finish_reason_from_response(response: Any) -> str:
+    candidates = getattr(response, "candidates", None) or []
+    if not candidates:
+        return "no_candidates"
+    reason = getattr(candidates[0], "finish_reason", None)
+    return str(reason) if reason is not None else "unknown"
+
+
+def usage_metadata_summary(response: Any) -> str:
+    usage = getattr(response, "usage_metadata", None)
+    if usage is None:
+        return "usage=?"
+    parts: list[str] = []
+    for attr in (
+        "prompt_token_count",
+        "candidates_token_count",
+        "thoughts_token_count",
+        "total_token_count",
+    ):
+        value = getattr(usage, attr, None)
+        if value is not None:
+            parts.append(f"{attr}={value}")
+    return " ".join(parts) if parts else "usage=?"
+
+
+def part_kind_summary(response: Any) -> str:
+    text_parts = thought_parts = other_parts = 0
+    for candidate in getattr(response, "candidates", None) or []:
+        content = getattr(candidate, "content", None)
+        if content is None:
+            continue
+        for part in getattr(content, "parts", None) or []:
+            if getattr(part, "thought", False):
+                thought_parts += 1
+            elif isinstance(getattr(part, "text", None), str) and part.text:
+                text_parts += 1
+            else:
+                other_parts += 1
+    return f"parts text={text_parts} thought={thought_parts} other={other_parts}"
+
+
+def log_grounded_response_usage(
+    logger: logging.Logger,
+    response: Any,
+    *,
+    label: str,
+    attempt: int,
+    max_attempts: int,
+    text_len: int,
+) -> None:
+    """Log finish_reason and usage_metadata for grounded generate_content calls."""
+    outcome = "ok" if text_len > 0 else "empty"
+    logger.info(
+        "%s: grounded %s finish_reason=%s %s %s text_len=%d attempt=%d/%d",
+        label,
+        outcome,
+        finish_reason_from_response(response),
+        usage_metadata_summary(response),
+        part_kind_summary(response),
+        text_len,
+        attempt,
+        max_attempts,
+    )
+
+
+def grounded_prose_with_retry(
+    generate: Callable[[], Any],
+    *,
+    logger: logging.Logger,
+    label: str,
+    max_attempts: int | None = None,
+) -> str:
+    """
+    Call ``generate()`` (a ``client.models.generate_content``) and extract prose.
+
+    Grounded Gemini calls intermittently return HTTP 200 with no visible text;
+    retry once or twice before giving up.
+    """
+    attempts = max_attempts if max_attempts is not None else grounded_generate_max_attempts()
+    for attempt in range(1, attempts + 1):
+        try:
+            response = generate()
+        except Exception as exc:
+            if attempt >= attempts:
+                logger.exception(
+                    "%s: grounded generate_content failed on final attempt (%s: %s)",
+                    label,
+                    type(exc).__name__,
+                    exc,
+                )
+                return ""
+            logger.warning(
+                "%s: grounded generate_content failed attempt %d/%d (%s: %s), retrying",
+                label,
+                attempt,
+                attempts,
+                type(exc).__name__,
+                exc,
+            )
+            continue
+
+        text = text_from_generate_content_response(response)
+        log_grounded_response_usage(
+            logger,
+            response,
+            label=label,
+            attempt=attempt,
+            max_attempts=attempts,
+            text_len=len(text),
+        )
+        if text:
+            return text
+
     return ""
 
 

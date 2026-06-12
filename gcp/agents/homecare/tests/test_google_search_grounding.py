@@ -80,3 +80,104 @@ def test_text_from_generate_content_response_empty() -> None:
 
     assert gsg.text_from_generate_content_response(_Resp()) == ""
     assert gsg.text_from_generate_content_response(None) == ""
+
+
+def test_grounded_prose_with_retry_returns_first_non_empty() -> None:
+    class _Ok:
+        text = "grounded summary"
+
+    calls: list[int] = []
+
+    def _generate():
+        calls.append(1)
+        return _Ok()
+
+    import logging
+
+    out = gsg.grounded_prose_with_retry(
+        _generate,
+        logger=logging.getLogger("test"),
+        label="test",
+        max_attempts=2,
+    )
+    assert out == "grounded summary"
+    assert calls == [1]
+
+
+def test_grounded_prose_with_retry_retries_empty_response() -> None:
+    class _Empty:
+        text = None
+        candidates = []
+
+    class _Ok:
+        text = "retry ok"
+
+    calls: list[int] = []
+
+    def _generate():
+        calls.append(1)
+        return _Empty() if len(calls) == 1 else _Ok()
+
+    import logging
+
+    out = gsg.grounded_prose_with_retry(
+        _generate,
+        logger=logging.getLogger("test"),
+        label="test",
+        max_attempts=2,
+    )
+    assert out == "retry ok"
+    assert calls == [1, 1]
+
+
+def test_log_grounded_response_usage(caplog: pytest.LogCaptureFixture) -> None:
+    import logging
+
+    class _Usage:
+        prompt_token_count = 84
+        candidates_token_count = 712
+        thoughts_token_count = 698
+        total_token_count = 1494
+
+    class _Candidate:
+        finish_reason = "STOP"
+
+    class _Resp:
+        candidates = [_Candidate()]
+        usage_metadata = _Usage()
+
+    caplog.set_level(logging.INFO)
+    logger = logging.getLogger("test.grounded.usage")
+    gsg.log_grounded_response_usage(
+        logger,
+        _Resp(),
+        label="DIY web grounding",
+        attempt=1,
+        max_attempts=2,
+        text_len=2691,
+    )
+    assert len(caplog.records) == 1
+    msg = caplog.records[0].message
+    assert "DIY web grounding: grounded ok" in msg
+    assert "finish_reason=STOP" in msg
+    assert "prompt_token_count=84" in msg
+    assert "thoughts_token_count=698" in msg
+    assert "text_len=2691" in msg
+
+
+def test_finish_reason_and_usage_helpers() -> None:
+    class _Usage:
+        prompt_token_count = 10
+        candidates_token_count = 0
+        thoughts_token_count = 150
+        total_token_count = 160
+
+    class _Candidate:
+        finish_reason = "MAX_TOKENS"
+
+    class _Resp:
+        candidates = [_Candidate()]
+        usage_metadata = _Usage()
+
+    assert gsg.finish_reason_from_response(_Resp()) == "MAX_TOKENS"
+    assert "thoughts_token_count=150" in gsg.usage_metadata_summary(_Resp())

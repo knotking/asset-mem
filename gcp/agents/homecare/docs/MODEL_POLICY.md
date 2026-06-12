@@ -42,7 +42,7 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 |------|-----|
 | New ADK sub-agent with tools / transfer | `GLOBAL_GEMINI_MODEL` |
 | Root orchestrator tool selection | `SINGLE_LOOP_GEMINI_MODEL` via `global_agent_gemini_model()` |
-| One-shot `generate_content` (JSON, web grounding, synthesis) | `global_direct_generate_client_and_model()` + `direct_gemini_thinking_config()` |
+| One-shot `generate_content` (JSON, web grounding, synthesis) | `global_direct_generate_client_and_model()` + `direct_gemini_thinking_config()`; grounded prose uses `grounded_prose_with_retry()` (`GROUNDED_GENERATE_MAX_ATTEMPTS`, default 2) |
 | Embeddings | `text-embedding-004` in `firestore_vector_search.py` (not chat models) |
 
 Changing the default chat model for ADK agents: edit `Gemini3(model=...)` in `model_config.py`, run `make test`, and exercise key flows via `adk web` on staging.

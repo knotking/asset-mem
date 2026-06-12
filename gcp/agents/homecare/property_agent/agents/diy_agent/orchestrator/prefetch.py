@@ -11,7 +11,7 @@ from google.genai import types
 
 from property_agent.shared.google_search_grounding import (
     google_search_grounding_tool,
-    text_from_generate_content_response,
+    grounded_prose_with_retry,
 )
 from property_agent.shared.inputs import SearchLocation
 from property_agent.model_config import (
@@ -44,11 +44,11 @@ def _web_search_model() -> str:
 
 
 def _web_grounding_max_output_tokens() -> int:
-    raw = os.getenv("DIY_WEB_GROUNDING_MAX_OUTPUT_TOKENS", "1024").strip()
+    raw = os.getenv("DIY_WEB_GROUNDING_MAX_OUTPUT_TOKENS", "2048").strip()
     try:
         n = int(raw)
     except ValueError:
-        return 1024
+        return 2048
     return max(256, min(n, 4096))
 
 
@@ -108,8 +108,8 @@ def _diy_web_search_grounded(diagnosis: str, market_location: str) -> str:
         "required tools, materials, and safety warnings. Be concise (under 500 words). "
         "Do not fabricate URLs."
     )
-    try:
-        response = client.models.generate_content(
+    def _generate() -> Any:
+        return client.models.generate_content(
             model=_web_search_model(),
             contents=prompt,
             config=types.GenerateContentConfig(
@@ -121,14 +121,13 @@ def _diy_web_search_grounded(diagnosis: str, market_location: str) -> str:
                 thinking_config=_web_thinking_config(),
             ),
         )
-        return _truncate_web_summary(text_from_generate_content_response(response))
-    except Exception as exc:
-        logger.exception(
-            "DIY grounded web search failed (%s: %s)",
-            type(exc).__name__,
-            exc,
-        )
-        return ""
+
+    text = grounded_prose_with_retry(
+        _generate,
+        logger=logger,
+        label="DIY web grounding",
+    )
+    return _truncate_web_summary(text)
 
 
 def _youtube_for_diagnosis(
