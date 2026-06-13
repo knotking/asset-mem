@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "test": "jest --ci",
     "test:watch": "jest --watch",
-    "generate:splash": "python3 scripts/generate-splash.py"
+    "generate:splash": "python3 scripts/generate-splash.py",
+    "generate:adaptive-icon": "python3 scripts/generate-adaptive-icon.py"
   },
   "dependencies": {
     "@homeapp/common": "*",
