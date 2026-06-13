@@ -108,7 +108,7 @@ module.exports = {
           // Match LANDING_BACKGROUND in lib/landing-background.ts
           backgroundColor: '#0a0a0f',
           image: './assets/images/splash.png',
-          imageWidth: 100,
+          imageWidth: 180,
           resizeMode: 'contain',
           ios: {
             backgroundColor: '#0a0a0f',
