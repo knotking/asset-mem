@@ -20,10 +20,11 @@ When users request actionable recommendations from checkpoints, the pipeline:
 
 ```
 run_checkpoint_pipeline (FunctionTool)
-├── checkpoint/retrieval/          # vector search → checkpoint_results
-├── parallel_runner.py             # coverage | diy | service | cost (Python-parallel)
-├── assembler.py                   # contentJson (StructuredResponseData shape)
-└── synthesis                      # contentMarkdown only
+├── composite_hooks.py           # CompositePipelineHooks → run_composite_pipeline
+├── checkpoint/retrieval/        # vector search → checkpoint_results
+├── parallel_runner.py           # per-branch workers (shared with hooks)
+├── assembler.py                 # contentJson (StructuredResponseData shape)
+└── synthesis                    # contentMarkdown only
 ```
 
 Leaf agents under `property_agent/agents/` (coverage, diy, service, cost, shopping) are invoked by the parallel runner — not as separate root orchestrator routes.

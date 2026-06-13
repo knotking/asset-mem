@@ -309,44 +309,46 @@ async def _emit_progressive_update(
     return analysis
 
 
-async def run_checkpoint_optional_agents_parallel(
+async def _payload_with_prefetch_summary(
+    branch_payload: Dict[str, Any],
+    *,
+    prefetch_task: Optional[asyncio.Task[str]],
+    payload_key: str,
+    existing_summary: str,
+    log_label: str,
+) -> Dict[str, Any]:
+    if prefetch_task is None:
+        return branch_payload
+    if existing_summary:
+        return branch_payload
+    try:
+        summary = await prefetch_task
+    except Exception:
+        logger.exception("checkpoint %s prefetch task failed", log_label)
+        return branch_payload
+    if summary:
+        return {**branch_payload, payload_key: summary}
+    return branch_payload
+
+
+def build_checkpoint_branch_payload(
+    tool_context: ToolContext,
+    *,
     checkpoint_results: str,
     user_query: str,
-    checkpoint_optional_agents: List[CheckpointOptionalAgent],
+    requested_branches: List[str],
+    search_query: Optional[str] = None,
     context_doc_uris: Optional[List[str]] = None,
     property_address: Optional[str] = None,
     property_id: Optional[str] = None,
     search_location: Optional[Dict[str, Any]] = None,
-    search_query: Optional[str] = None,
-    tool_context: ToolContext | None = None,
-    on_branch_complete: Optional[BranchCompleteCallback] = None,
-) -> str:
-    total_start = time.monotonic()
+) -> Dict[str, Any]:
+    """Shared branch agent payload for composite hooks and parallel_runner."""
     if (
-        tool_context
-        and hasattr(tool_context, "_invocation_context")
+        hasattr(tool_context, "_invocation_context")
         and hasattr(tool_context._invocation_context, "session")
     ):
         tool_context.state["user_id"] = tool_context._invocation_context.session.user_id
-
-    results: Dict[str, str] = {
-        spec.parallel_result_key: "SKIPPED"
-        for spec in CHECKPOINT_OPTIONAL_BRANCH_SPECS
-    }
-
-    requested = [
-        n for n in (checkpoint_optional_agents or []) if n in _VALID_OPTIONAL_BRANCH_IDS
-    ]
-    if not requested:
-        return _serialize_and_store_parallel_results(tool_context, results)
-
-    if tool_context is None:
-        return json.dumps(results, ensure_ascii=False)
-
-    run_id = ensure_analysis_run_id(tool_context.state)
-    tool_context.state["_checkpoint_pipeline_requested"] = list(requested)
-    tool_context.state["_checkpoint_pipeline_completed"] = []
-    tool_context.state["_checkpoint_pipeline_pending"] = list(requested)
 
     search_query = resolve_effective_search_query(search_query, tool_context)
     query_mode = "branch_issue_search"
@@ -369,17 +371,15 @@ async def run_checkpoint_optional_agents_parallel(
         query_mode=query_mode,
         max_chars=400,
     )
-
     branch_intents = _branch_intents_from_state(tool_context.state)
-
     property_address, search_location = resolve_checkpoint_location_fields(
         tool_context.state,
         property_address=property_address,
         search_location=search_location,
     )
-
     payload: Dict[str, Any] = {
         "user_query": branch_user_query,
+        "service_user_query": service_user_query,
         "checkpoint_results": checkpoint_results,
         "checkpoint_retrieval_search_query": search_query,
         "context_doc_uris": context_doc_uris,
@@ -393,6 +393,130 @@ async def run_checkpoint_optional_agents_parallel(
             payload["checkpoint_service_trade_query"] = (
                 branch_intents.service_trade_query
             )
+    return payload
+
+
+def start_checkpoint_branch_prefetch_tasks(
+    payload: Dict[str, Any],
+    requested: List[str],
+    extras: Dict[str, Any],
+) -> None:
+    """Start DIY / cost prefetch tasks; store asyncio tasks in ``extras``."""
+    if should_prefetch_diy_grounding(requested):
+        extras["diy_prefetch_task"] = asyncio.create_task(
+            to_thread(prefetch_checkpoint_web_context, payload)
+        )
+        logger.info(
+            "checkpoint DIY grounding prefetch: started in parallel with optional branches"
+        )
+    if should_prefetch_cost_pricing_grounding(requested):
+        extras["pricing_prefetch_task"] = asyncio.create_task(
+            to_thread(prefetch_checkpoint_pricing_context, payload)
+        )
+        logger.info(
+            "checkpoint cost pricing prefetch: started in parallel with optional branches"
+        )
+
+
+async def run_checkpoint_optional_branch(
+    branch_id: str,
+    payload: Dict[str, Any],
+    tool_context: ToolContext,
+    *,
+    prefetch_tasks: Dict[str, Any],
+) -> str:
+    """Run one optional checkpoint branch (coverage, diy, service, cost)."""
+    branch_payload = payload
+    prefetched_serp: List[Dict[str, Any]] = []
+    if branch_id == "service":
+        service_payload = {
+            **payload,
+            "user_query": (payload.get("service_user_query") or payload.get("user_query") or ""),
+        }
+        trade_q = (payload.get("checkpoint_service_trade_query") or "").strip()
+        if trade_q:
+            service_payload["checkpoint_service_trade_query"] = trade_q
+        prefetched_serp = await to_thread(
+            prefetch_service_maps_providers, service_payload
+        )
+        if prefetched_serp:
+            service_payload["checkpoint_prefetched_serp_providers"] = prefetched_serp
+        seed_service_branch_tool_state(
+            tool_context, service_payload, prefetched=prefetched_serp
+        )
+        branch_payload = service_payload
+    if branch_id == "diy":
+        diy_task = prefetch_tasks.get("diy_prefetch_task")
+        branch_payload = await _payload_with_prefetch_summary(
+            branch_payload,
+            prefetch_task=diy_task if isinstance(diy_task, asyncio.Task) else None,
+            payload_key=CHECKPOINT_GROUNDING_SUMMARY_KEY,
+            existing_summary=grounding_summary_from_payload(branch_payload),
+            log_label="DIY grounding",
+        )
+    elif branch_id == "cost":
+        pricing_task = prefetch_tasks.get("pricing_prefetch_task")
+        branch_payload = await _payload_with_prefetch_summary(
+            branch_payload,
+            prefetch_task=pricing_task if isinstance(pricing_task, asyncio.Task) else None,
+            payload_key=CHECKPOINT_PRICING_GROUNDING_SUMMARY_KEY,
+            existing_summary=pricing_grounding_summary_from_payload(branch_payload),
+            log_label="cost pricing",
+        )
+    value = await _run_single_optional_agent_async(
+        branch_id, branch_payload, tool_context
+    )
+    if branch_id == "service" and prefetched_serp:
+        value = apply_prefetched_serp_to_branch_result(value, prefetched_serp)
+    return value
+
+
+async def run_checkpoint_optional_agents_parallel(
+    checkpoint_results: str,
+    user_query: str,
+    checkpoint_optional_agents: List[CheckpointOptionalAgent],
+    context_doc_uris: Optional[List[str]] = None,
+    property_address: Optional[str] = None,
+    property_id: Optional[str] = None,
+    search_location: Optional[Dict[str, Any]] = None,
+    search_query: Optional[str] = None,
+    tool_context: ToolContext | None = None,
+    on_branch_complete: Optional[BranchCompleteCallback] = None,
+) -> str:
+    total_start = time.monotonic()
+    results: Dict[str, str] = {
+        spec.parallel_result_key: "SKIPPED"
+        for spec in CHECKPOINT_OPTIONAL_BRANCH_SPECS
+    }
+
+    requested = [
+        n for n in (checkpoint_optional_agents or []) if n in _VALID_OPTIONAL_BRANCH_IDS
+    ]
+    if not requested:
+        return _serialize_and_store_parallel_results(tool_context, results)
+
+    if tool_context is None:
+        return json.dumps(results, ensure_ascii=False)
+
+    run_id = ensure_analysis_run_id(tool_context.state)
+    tool_context.state["_checkpoint_pipeline_requested"] = list(requested)
+    tool_context.state["_checkpoint_pipeline_completed"] = []
+    tool_context.state["_checkpoint_pipeline_pending"] = list(requested)
+
+    search_query = resolve_effective_search_query(search_query, tool_context)
+    payload = build_checkpoint_branch_payload(
+        tool_context,
+        checkpoint_results=checkpoint_results,
+        user_query=user_query,
+        requested_branches=requested,
+        search_query=search_query,
+        context_doc_uris=context_doc_uris,
+        property_address=property_address,
+        property_id=property_id,
+        search_location=search_location,
+    )
+    prefetch_extras: Dict[str, Any] = {}
+    start_checkpoint_branch_prefetch_tasks(payload, requested, prefetch_extras)
 
     completed: List[str] = []
     pending: List[str] = list(requested)
@@ -417,82 +541,13 @@ async def run_checkpoint_optional_agents_parallel(
         run_id=run_id,
     )
 
-    diy_prefetch_task: Optional[asyncio.Task[str]] = None
-    pricing_prefetch_task: Optional[asyncio.Task[str]] = None
-    if should_prefetch_diy_grounding(requested):
-        diy_prefetch_task = asyncio.create_task(
-            to_thread(prefetch_checkpoint_web_context, payload)
-        )
-        logger.info(
-            "checkpoint DIY grounding prefetch: started in parallel with optional branches"
-        )
-    if should_prefetch_cost_pricing_grounding(requested):
-        pricing_prefetch_task = asyncio.create_task(
-            to_thread(prefetch_checkpoint_pricing_context, payload)
-        )
-        logger.info(
-            "checkpoint cost pricing prefetch: started in parallel with optional branches"
-        )
-
-    async def _payload_with_prefetch_summary(
-        branch_payload: Dict[str, Any],
-        *,
-        prefetch_task: Optional[asyncio.Task[str]],
-        payload_key: str,
-        existing_summary: str,
-        log_label: str,
-    ) -> Dict[str, Any]:
-        if prefetch_task is None:
-            return branch_payload
-        if existing_summary:
-            return branch_payload
-        try:
-            summary = await prefetch_task
-        except Exception:
-            logger.exception("checkpoint %s prefetch task failed", log_label)
-            return branch_payload
-        if summary:
-            return {**branch_payload, payload_key: summary}
-        return branch_payload
-
     async def _run_named_branch(name: str) -> Tuple[str, str]:
-        branch_payload = payload
-        prefetched_serp: List[Dict[str, Any]] = []
-        if name == "service":
-            service_payload = {**payload, "user_query": service_user_query}
-            trade_q = (payload.get("checkpoint_service_trade_query") or "").strip()
-            if trade_q:
-                service_payload["checkpoint_service_trade_query"] = trade_q
-            prefetched_serp = await to_thread(
-                prefetch_service_maps_providers, service_payload
-            )
-            if prefetched_serp:
-                service_payload["checkpoint_prefetched_serp_providers"] = prefetched_serp
-            seed_service_branch_tool_state(
-                tool_context, service_payload, prefetched=prefetched_serp
-            )
-            branch_payload = service_payload
-        if name == "diy":
-            branch_payload = await _payload_with_prefetch_summary(
-                branch_payload,
-                prefetch_task=diy_prefetch_task,
-                payload_key=CHECKPOINT_GROUNDING_SUMMARY_KEY,
-                existing_summary=grounding_summary_from_payload(branch_payload),
-                log_label="DIY grounding",
-            )
-        elif name == "cost":
-            branch_payload = await _payload_with_prefetch_summary(
-                branch_payload,
-                prefetch_task=pricing_prefetch_task,
-                payload_key=CHECKPOINT_PRICING_GROUNDING_SUMMARY_KEY,
-                existing_summary=pricing_grounding_summary_from_payload(branch_payload),
-                log_label="cost pricing",
-            )
-        value = await _run_single_optional_agent_async(
-            name, branch_payload, tool_context
+        value = await run_checkpoint_optional_branch(
+            name,
+            payload,
+            tool_context,
+            prefetch_tasks=prefetch_extras,
         )
-        if name == "service" and prefetched_serp:
-            value = apply_prefetched_serp_to_branch_result(value, prefetched_serp)
         return name, value
 
     async def _on_branch_complete(name: str, pair: tuple[str, str]) -> None:

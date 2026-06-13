@@ -93,8 +93,7 @@ async def test_pipeline_inits_progress_queue_on_tool_invocation_context(
     monkeypatch.setattr(cp, "checkpoint_progress_streaming_enabled", lambda: True)
     monkeypatch.setattr(cp, "init_checkpoint_progress_queue", _track_init)
     monkeypatch.setattr(
-        cp,
-        "ask_checkpoints_retrieval",
+        "property_agent.checkpoint.composite_hooks.ask_checkpoints_retrieval",
         lambda **_: {"checkpoints": []},
     )
 
@@ -109,30 +108,42 @@ async def test_pipeline_inits_progress_queue_on_tool_invocation_context(
 
 
 @pytest.mark.asyncio
-async def test_pipeline_skips_initial_progress_emit_when_parallel_runs(
+async def test_pipeline_emits_single_initial_progress_when_branches_run(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Avoid duplicate Progress 0/N: parallel_runner emits the first snapshot."""
+    """Composite pipeline emits one Progress 0/N snapshot before branches run."""
     emit_calls: list[str] = []
 
     async def _track_emit(tool_context, *, session_event_text, state_delta, branch=None):
         emit_calls.append(session_event_text)
 
-    monkeypatch.setattr(cp, "checkpoint_progress_streaming_enabled", lambda: True)
-    monkeypatch.setattr(cp, "emit_checkpoint_progress_event", _track_emit)
-    monkeypatch.setattr(
-        cp,
-        "ask_checkpoints_retrieval",
-        lambda **_: {"checkpoints": [{"id": "c1", "issues": []}], "search_query": "q"},
-    )
-    async def _fake_parallel(**_kwargs):
-        return "{}"
+    async def _fake_branch(*_args, **_kwargs):
+        return "ok"
 
-    monkeypatch.setattr(cp, "run_checkpoint_optional_agents_parallel", _fake_parallel)
-    async def _fake_synthesis(**_kwargs):
+    async def _fake_synthesis(analysis, *, checkpoint_results, user_query):
         return "# Done"
 
-    monkeypatch.setattr(cp, "_run_synthesis_markdown", _fake_synthesis)
+    monkeypatch.setattr(cp, "checkpoint_progress_streaming_enabled", lambda: True)
+    monkeypatch.setattr(
+        "property_agent.checkpoint.composite_hooks.emit_checkpoint_progress_event",
+        _track_emit,
+    )
+    monkeypatch.setattr(
+        "property_agent.checkpoint.composite_hooks.ask_checkpoints_retrieval",
+        lambda **_: {"checkpoints": [{"id": "c1", "issues": []}], "search_query": "q"},
+    )
+    monkeypatch.setattr(
+        "property_agent.checkpoint.composite_hooks.run_checkpoint_optional_branch",
+        _fake_branch,
+    )
+    monkeypatch.setattr(
+        "property_agent.checkpoint.composite_hooks.synthesize_checkpoint_markdown",
+        _fake_synthesis,
+    )
+    monkeypatch.setattr(
+        "property_agent.checkpoint.composite_hooks.start_checkpoint_branch_prefetch_tasks",
+        lambda *_args, **_kwargs: None,
+    )
 
     ctx = _minimal_tool_context()
     ctx.state["checkpoint_optional_agents"] = ["coverage", "diy", "cost", "service"]
@@ -143,7 +154,8 @@ async def test_pipeline_skips_initial_progress_emit_when_parallel_runs(
         tool_context=ctx,
     )
 
-    assert not any("Progress 0/" in t for t in emit_calls)
+    progress_zero = [t for t in emit_calls if "Progress 0/" in t]
+    assert len(progress_zero) == 1
 
 
 def test_run_checkpoint_pipeline_returns_markdown_not_status_stub(
