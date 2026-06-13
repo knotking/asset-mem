@@ -17,6 +17,7 @@ from property_agent.checkpoint.executor_tools import CHECKPOINT_ROUTING_TOOLS
 from property_agent.checkpoint.session_input import (
     apply_session_checkpoint_ids_to_tool_args,
     apply_session_location_to_tool_args,
+    checkpoint_ids_for_pipeline_from_state,
     normalize_checkpoint_optional_agents,
     sync_checkpoint_tool_args_to_state,
 )
@@ -252,6 +253,10 @@ def prepare_analyze_checkpoints_tool(
 
     Returns a short-circuit tool result dict when idempotency skips a duplicate run.
     """
+    from property_agent.checkpoint.retrieval.retrieval_scope import (
+        query_scope_overrides_checkpoint_ids,
+    )
+
     if not isinstance(args, dict):
         return None
 
@@ -288,7 +293,18 @@ def prepare_analyze_checkpoints_tool(
         state["checkpoint_optional_agents"] = branches
     args["branches"] = branches
     args["checkpoint_optional_agents"] = branches
-    apply_session_checkpoint_ids_to_tool_args(state, args)
+    session_ids = checkpoint_ids_for_pipeline_from_state(state)
+    if query_scope_overrides_checkpoint_ids(uq, session_ids):
+        logger.info(
+            "tool_guards: query scope overrides UI checkpoint_ids count=%d query=%r",
+            len(session_ids),
+            (uq or "")[:80],
+        )
+        args["checkpoint_ids"] = []
+        if state is not None and hasattr(state, "__setitem__"):
+            state["checkpoint_ids"] = []
+    else:
+        apply_session_checkpoint_ids_to_tool_args(state, args)
     apply_session_location_to_tool_args(state, args)
     _apply_retrieval_scope_carryover_to_tool_args(state, args)
     sync_checkpoint_tool_args_to_state(state, args)

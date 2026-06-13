@@ -111,6 +111,18 @@ def test_prepare_analyze_dedupes_and_syncs_branches() -> None:
     assert args["checkpoint_ids"] == ["cp-1"]
 
 
+def test_prepare_analyze_drops_session_ids_when_query_defines_scope() -> None:
+    state: dict = {"checkpoint_ids": ["vehicle-cp-1"]}
+    args = {"branches": [], "checkpoint_ids": ["vehicle-cp-1"]}
+    result = prepare_analyze_checkpoints_tool(
+        state,
+        args,
+        user_query="Any issues in kitchen last year?",
+    )
+    assert result is None
+    assert args["checkpoint_ids"] == []
+
+
 def test_prepare_analyze_short_circuits_completed_branches() -> None:
     state = {
         "user_query": "Summarize the issues for the selected checkpoint",
