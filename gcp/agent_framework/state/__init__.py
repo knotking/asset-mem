@@ -1,1 +1,1 @@
-"""Session state merge and identity helpers."""
+"""Compatibility shim — see agent_platform.core."""

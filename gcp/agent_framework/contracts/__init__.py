@@ -1,8 +1,3 @@
-"""Versioned platform contracts."""
+"""Compatibility shim — migrate to agent_platform.core.contracts."""
 
-from agent_framework.contracts.message_patch_types import (
-    MESSAGE_PATCH_SCHEMA_VERSION,
-    MessagePatchInputV1,
-)
-
-__all__ = ["MESSAGE_PATCH_SCHEMA_VERSION", "MessagePatchInputV1"]
+from agent_platform.core.contracts import *  # noqa: F403

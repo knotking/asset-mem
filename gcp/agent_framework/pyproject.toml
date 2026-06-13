@@ -1,12 +1,12 @@
 [project]
 name = "agent-framework"
 version = "0.1.0"
-description = "Reusable Google ADK agent framework (routing, state, tools, context)"
+description = "Deprecated shim — use agent-platform-core and agent-platform-adk"
 license = "Apache-2.0"
 requires-python = ">=3.11"
 dependencies = [
-    "google-adk>=1.33.0",
-    "google-genai>=1.72.0",
+    "agent-platform-core",
+    "agent-platform-adk",
 ]
 
 [project.optional-dependencies]
@@ -15,9 +15,9 @@ dev = [
     "pytest-asyncio>=0.26.0",
 ]
 
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
+[tool.uv.sources]
+agent-platform-core = { path = "../../../agent-platform/packages/core", editable = true }
+agent-platform-adk = { path = "../../../agent-platform/packages/adk", editable = true }
 
 [tool.setuptools]
 package-dir = { "agent_framework" = "." }
@@ -34,6 +34,10 @@ packages = [
     "agent_framework.runtime",
     "agent_framework.state",
 ]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]

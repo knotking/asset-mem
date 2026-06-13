@@ -1,1 +1,1 @@
-"""Reusable Google ADK agent framework primitives (domain-agnostic)."""
+"""Deprecated compatibility package — use agent_platform.core / agent_platform.adk."""

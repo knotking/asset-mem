@@ -1,1 +1,1 @@
-"""Production prompt assembly helpers."""
+"""Compatibility shim — see agent_platform.core."""

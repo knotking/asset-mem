@@ -534,6 +534,10 @@ Notable test modules:
 - The FastAPI proxy imports `agent_framework.contracts.message_patch_v1` and `message_patch_types` for Firestore persist. CI stages only those contract modules via `gcp/proxy/scripts/stage-agent-framework-contracts.sh` (not the full framework tree).
 - Intended future: extract to a standalone GitHub repo once the public API stabilizes. Until then, dogfood via the monorepo path dependency.
 
+**Extraction plan:** [`gcp/docs/agent-platform/`](../../docs/agent-platform/README.md) — RFC and migration matrix.
+
+**Phase 1:** Implementation lives in [BuildGeekAI/agent-platform](https://github.com/BuildGeekAI/agent-platform) (`agent-platform-core`, `agent-platform-adk`). This directory is a **compatibility shim** — imports delegate to `agent_platform.*`.
+
 ---
 
 ## Quick reference — key imports

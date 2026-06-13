@@ -1,1 +1,1 @@
-"""Context helpers: prompt blocks and memory merge."""
+"""Compatibility shim — see agent_platform.core."""

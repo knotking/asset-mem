@@ -1,1 +1,1 @@
-"""Memory Bank ingest primitives."""
+"""Compatibility shim — see agent_platform.core."""

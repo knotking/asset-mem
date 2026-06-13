@@ -724,4 +724,5 @@ gcloud functions deploy pubsub_to_user_docs --gen2 --runtime python313
 - **[Setup and Deployment](./SETUP_AND_DEPLOYMENT.md)** - Comprehensive setup guide
 - **[Agents README](../agents/homecare/README.md)** - Agent system documentation
 - **[Deployment docs](../../docs/deployment/README.md)** - Launch checklists, infra, CI/CD
+- **[Agent platform extraction plan](./agent-platform/README.md)** - ADK-agnostic OSS extraction RFC (draft)
 - **[GitHub Actions README](../../.github/workflows/README.md)** - Workflow map (gcloud only)

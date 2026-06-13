@@ -1,1 +1,1 @@
-"""Turn routing inject and state helpers."""
+"""Compatibility shim — see agent_platform.core."""

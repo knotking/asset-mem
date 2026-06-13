@@ -23,13 +23,49 @@ name = "agent-framework"
 version = "0.1.0"
 source = { editable = "../../agent_framework" }
 dependencies = [
+    { name = "agent-platform-adk" },
+    { name = "agent-platform-core" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "agent-platform-adk", editable = "../../../../agent-platform/packages/adk" },
+    { name = "agent-platform-core", editable = "../../../../agent-platform/packages/core" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.26.0" },
+]
+provides-extras = ["dev"]
+
+[[package]]
+name = "agent-platform-adk"
+version = "0.1.0"
+source = { editable = "../../../../agent-platform/packages/adk" }
+dependencies = [
+    { name = "agent-platform-core" },
     { name = "google-adk" },
     { name = "google-genai" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "agent-platform-core", editable = "../../../../agent-platform/packages/core" },
     { name = "google-adk", specifier = ">=1.33.0" },
+    { name = "google-genai", specifier = ">=1.72.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.26.0" },
+]
+provides-extras = ["dev"]
+
+[[package]]
+name = "agent-platform-core"
+version = "0.1.0"
+source = { editable = "../../../../agent-platform/packages/core" }
+dependencies = [
+    { name = "google-genai" },
+]
+
+[package.metadata]
+requires-dist = [
     { name = "google-genai", specifier = ">=1.72.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.26.0" },
