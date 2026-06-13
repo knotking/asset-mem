@@ -20,9 +20,9 @@ When users request actionable recommendations from checkpoints, the pipeline:
 
 ```
 run_checkpoint_pipeline (FunctionTool)
-├── composite_hooks.py           # CompositePipelineHooks → run_composite_pipeline
+├── composite_hooks.py           # CompositePipelineHooks + branch orchestration
 ├── checkpoint/retrieval/        # vector search → checkpoint_results
-├── parallel_runner.py           # per-branch workers (shared with hooks)
+├── parallel_runner.py           # per-branch workers (delegates orchestration to hooks)
 ├── assembler.py                 # contentJson (StructuredResponseData shape)
 └── synthesis                    # contentMarkdown only
 ```

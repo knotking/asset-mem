@@ -8,13 +8,15 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from agent_platform.core.pipeline.ports import PipelineContext, RetrievalResult
+from agent_platform.core.execution import run_orchestrated_branches
+from agent_platform.core.pipeline.ports import PipelineContext, RetrievalResult, filter_requested_branches
 from google.adk.tools import ToolContext
 
 from property_agent.checkpoint.analysis.assembler import (
     apply_tool_context_state_delta,
     build_initial_analysis,
     build_message_patch_from_analysis,
+    ensure_analysis_run_id,
     format_checkpoints_for_analysis_blob,
     merge_branch_result,
     minimal_checkpoint_progress_session_text,
@@ -26,7 +28,9 @@ from property_agent.checkpoint.analysis.assembler import (
 )
 from property_agent.checkpoint.analysis.parallel_runner import (
     BranchCompleteCallback,
+    _serialize_and_store_parallel_results,
     build_checkpoint_branch_payload,
+    resolve_effective_search_query,
     run_checkpoint_optional_branch,
     start_checkpoint_branch_prefetch_tasks,
 )
@@ -35,6 +39,7 @@ from property_agent.checkpoint.analysis.synthesis_runner import (
 )
 from property_agent.checkpoint.branch_registry import CHECKPOINT_OPTIONAL_BRANCH_SPECS
 from property_agent.checkpoint.constants import (
+    CHECKPOINT_ANALYSIS_STATE_KEY,
     CHECKPOINT_INVENTORY_META_STATE_KEY,
     CHECKPOINT_LOCATION_META_STATE_KEY,
     CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY,
@@ -303,6 +308,54 @@ class CheckpointPipelineHooks:
             requested_branches=requested,
         )
 
+    async def run_orchestrated_optional_branches(
+        self,
+        ctx: PipelineContext,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Run requested optional branches via shared hook merge / emit path."""
+        requested = filter_requested_branches(
+            CHECKPOINT_OPTIONAL_BRANCH_SPECS,
+            ctx.extras.get("requested_branches", []),
+        )
+        if not requested:
+            return payload
+
+        ctx.extras["emit_phase"] = "initial"
+        ctx.extras["last_branch_completed"] = ""
+        progress = self.branch_progress_text(ctx, "", payload=payload)
+        initial_patch = self.build_state_delta_patch(
+            ctx, payload, markdown=progress
+        )
+        await self.emit_patch(ctx, initial_patch, progress_text=progress)
+
+        async def _worker(branch_id: str) -> dict[str, Any]:
+            return await self.run_branch(ctx, branch_id, payload=payload)
+
+        async def _on_result(branch_id: str, branch_result: dict[str, Any]) -> None:
+            nonlocal payload
+            payload = self.merge_branch(ctx, payload, branch_id, branch_result)
+            progress = self.branch_progress_text(ctx, branch_id, payload=payload)
+            patch = self.build_state_delta_patch(ctx, payload, markdown=progress)
+            await self.emit_patch(ctx, patch, progress_text=progress)
+
+        await run_orchestrated_branches(
+            CHECKPOINT_OPTIONAL_BRANCH_SPECS,
+            requested,
+            _worker,
+            on_result=_on_result,
+        )
+
+        if self._parallel_start:
+            import time
+
+            record_parallel_ms(
+                self.tool_context.state,
+                int((time.monotonic() - self._parallel_start) * 1000),
+            )
+        mark_synthesis_started(self.tool_context.state)
+        return payload
+
     async def synthesize_markdown(
         self,
         ctx: PipelineContext,
@@ -435,6 +488,26 @@ class CheckpointPipelineHooks:
             apply_tool_context_state_delta(self.tool_context, patch)
             return
 
+        if self.on_branch_complete is not None and not self.streaming:
+            branch = (
+                ""
+                if phase == "initial"
+                else str(ctx.extras.get("last_branch_completed") or "")
+            )
+            parallel_results = ctx.extras.get("parallel_results")
+            if not isinstance(parallel_results, dict):
+                parallel_results = {}
+            raw_analysis = self.tool_context.state.get(CHECKPOINT_ANALYSIS_STATE_KEY)
+            analysis = raw_analysis if isinstance(raw_analysis, dict) else {}
+            await self.on_branch_complete(
+                branch,
+                parallel_results,
+                analysis,
+                self.tool_context,
+                session_event_text=progress_text,
+            )
+            return
+
         if self.streaming and self.on_branch_complete is not None:
             await emit_checkpoint_progress_event(
                 self.tool_context,
@@ -444,3 +517,98 @@ class CheckpointPipelineHooks:
             return
 
         apply_tool_context_state_delta(self.tool_context, patch)
+
+
+async def run_checkpoint_optional_branches(
+    *,
+    checkpoint_results: str,
+    user_query: str,
+    checkpoint_optional_agents: list[str],
+    context_doc_uris: list[str] | None = None,
+    property_address: str | None = None,
+    property_id: str | None = None,
+    search_location: dict[str, Any] | None = None,
+    search_query: str | None = None,
+    tool_context: ToolContext | None = None,
+    on_branch_complete: BranchCompleteCallback | None = None,
+) -> str:
+    """
+    Run optional checkpoint branches only (no retrieval / synthesis).
+
+    Used by tests and legacy callers; production pipeline uses ``run_composite_pipeline``.
+    """
+    parallel_results: dict[str, str] = {
+        spec.parallel_result_key: "SKIPPED"
+        for spec in CHECKPOINT_OPTIONAL_BRANCH_SPECS
+    }
+    valid_ids = {spec.branch_id for spec in CHECKPOINT_OPTIONAL_BRANCH_SPECS}
+    requested = [n for n in (checkpoint_optional_agents or []) if n in valid_ids]
+    if not requested:
+        return _serialize_and_store_parallel_results(tool_context, parallel_results)
+    if tool_context is None:
+        return json.dumps(parallel_results, ensure_ascii=False)
+
+    run_id = ensure_analysis_run_id(tool_context.state)
+    effective_search_query = resolve_effective_search_query(search_query, tool_context)
+    if effective_search_query:
+        tool_context.state[CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY] = effective_search_query
+
+    hooks = CheckpointPipelineHooks(
+        tool_context=tool_context,
+        property_id=property_id or "",
+        checkpoint_ids=None,
+        context_doc_uris=context_doc_uris,
+        property_address=property_address,
+        search_location=search_location,
+        requested_branches=requested,
+        refine_branch_intents=False,
+        on_branch_complete=on_branch_complete,
+        streaming=False,
+    )
+    ctx = PipelineContext(
+        state=tool_context.state,
+        user_query=user_query,
+        run_id=run_id,
+    )
+    ctx.extras["checkpoint_blob"] = checkpoint_results
+    ctx.extras["search_query"] = effective_search_query or ""
+    ctx.extras["requested_branches"] = list(requested)
+    ctx.extras["completed_branches"] = []
+    ctx.extras["pending_branches"] = list(requested)
+    ctx.extras["parallel_results"] = dict(parallel_results)
+
+    tool_context.state["_checkpoint_pipeline_requested"] = list(requested)
+    tool_context.state["_checkpoint_pipeline_completed"] = []
+    tool_context.state["_checkpoint_pipeline_pending"] = list(requested)
+
+    branch_payload = build_checkpoint_branch_payload(
+        tool_context,
+        checkpoint_results=checkpoint_results,
+        user_query=user_query,
+        requested_branches=requested,
+        search_query=effective_search_query,
+        context_doc_uris=context_doc_uris,
+        property_address=property_address,
+        property_id=property_id,
+        search_location=search_location,
+    )
+    ctx.extras["branch_payload"] = branch_payload
+    start_checkpoint_branch_prefetch_tasks(branch_payload, requested, ctx.extras)
+
+    analysis = build_initial_analysis(
+        checkpoint_results=checkpoint_results,
+        user_query=user_query,
+        requested_branches=requested,
+        property_address=property_address,
+        retrieval_search_query=effective_search_query or None,
+    )
+    stash_checkpoint_analysis_in_state(tool_context.state, analysis)
+
+    import time
+
+    hooks._parallel_start = time.monotonic()
+    await hooks.run_orchestrated_optional_branches(ctx, analysis)
+
+    stored = ctx.extras.get("parallel_results")
+    results = stored if isinstance(stored, dict) else parallel_results
+    return _serialize_and_store_parallel_results(tool_context, results)

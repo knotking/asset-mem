@@ -6,7 +6,7 @@ import asyncio
 import json
 import logging
 import time
-from typing import Any, Dict, List, Optional, Protocol, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Protocol, Tuple
 
 from agent_platform.core.execution.thread_context import to_thread
 
@@ -14,28 +14,16 @@ from google.adk.agents import Agent
 from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
 
-from agent_platform.core.execution import run_orchestrated_branches
 from agent_platform.core.registry.orchestration import build_execution_plan
 
 from property_agent.checkpoint.branch_registry import (
     CHECKPOINT_OPTIONAL_BRANCH_SPECS,
-    _VALID_OPTIONAL_BRANCH_IDS,
 )
 
 from property_agent.shared.inputs import CheckpointOptionalAgent
 from property_agent.geo.search_location_utils import search_location_from_payload
-from property_agent.checkpoint.analysis.assembler import (
-    apply_tool_context_state_delta,
-    build_initial_analysis,
-    build_message_patch_from_analysis,
-    ensure_analysis_run_id,
-    merge_branch_result,
-    minimal_checkpoint_progress_session_text,
-    stash_checkpoint_analysis_in_state,
-)
 from property_agent.checkpoint.constants import (
     CHECKPOINT_BRANCH_SEARCH_INTENTS_KEY,
-    CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY,
 )
 from property_agent.checkpoint.grounding_prefetch import (
     CHECKPOINT_GROUNDING_SUMMARY_KEY,
@@ -49,9 +37,7 @@ from property_agent.checkpoint.grounding_prefetch import (
     should_prefetch_diy_grounding,
 )
 from property_agent.checkpoint.timing import (
-    mark_synthesis_started,
     record_diy_ms,
-    record_parallel_ms,
 )
 from property_agent.agents.coverage_agent.agent import coverage_agent
 from property_agent.agents.diy_agent.agent import diy_agent
@@ -79,20 +65,6 @@ def _branch_intents_from_state(state: Any) -> Optional[BranchSearchIntents]:
         return None
     raw = state.get(CHECKPOINT_BRANCH_SEARCH_INTENTS_KEY)
     return BranchSearchIntents.from_dict(raw)
-
-
-def _analysis_merge_context_from_state(state: Any) -> tuple[Optional[str], Optional[str], str]:
-    """property_address, retrieval stem, markdown for merge/normalize."""
-    if not hasattr(state, "get"):
-        return None, None, ""
-    pa = str(state.get("property_address") or "").strip() or None
-    stem = str(state.get(CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY) or "").strip() or None
-    from property_agent.checkpoint.constants import (
-        CHECKPOINT_ANALYSIS_MARKDOWN_STATE_KEY,
-    )
-
-    md = str(state.get(CHECKPOINT_ANALYSIS_MARKDOWN_STATE_KEY) or "").strip()
-    return pa, stem, md
 
 
 class BranchCompleteCallback(Protocol):
@@ -254,59 +226,6 @@ def _serialize_and_store_parallel_results(
         tool_context.state["checkpoint_parallel_results"] = out
     return out
 
-
-async def _emit_progressive_update(
-    *,
-    branch: str,
-    results: Dict[str, str],
-    checkpoint_results: str,
-    user_query: str,
-    requested: Sequence[str],
-    completed: List[str],
-    pending: List[str],
-    tool_context: ToolContext,
-    on_branch_complete: Optional[BranchCompleteCallback],
-    analysis: Dict[str, Any],
-    run_id: str,
-) -> Dict[str, Any]:
-    pa, stem, md = _analysis_merge_context_from_state(tool_context.state)
-    analysis = merge_branch_result(
-        analysis,
-        checkpoint_results=checkpoint_results,
-        user_query=user_query,
-        parallel_results=results,
-        requested_branches=requested,
-        completed_branches=completed,
-        pending_branches=pending,
-        in_progress=bool(pending),
-        property_address=pa,
-        retrieval_search_query=stem,
-        markdown_source=md,
-    )
-    session_event_text = minimal_checkpoint_progress_session_text(
-        completed_branches=completed,
-        pending_branches=pending,
-        requested_branches=requested,
-    )
-    if on_branch_complete is not None:
-        await on_branch_complete(
-            branch,
-            results,
-            analysis,
-            tool_context,
-            session_event_text=session_event_text,
-        )
-    else:
-        stash_checkpoint_analysis_in_state(tool_context.state, analysis)
-        apply_tool_context_state_delta(
-            tool_context,
-            build_message_patch_from_analysis(
-                analysis,
-                analysis_run_id=run_id,
-                branch_completed=branch or "",
-            ),
-        )
-    return analysis
 
 
 async def _payload_with_prefetch_summary(
@@ -483,106 +402,18 @@ async def run_checkpoint_optional_agents_parallel(
     tool_context: ToolContext | None = None,
     on_branch_complete: Optional[BranchCompleteCallback] = None,
 ) -> str:
-    total_start = time.monotonic()
-    results: Dict[str, str] = {
-        spec.parallel_result_key: "SKIPPED"
-        for spec in CHECKPOINT_OPTIONAL_BRANCH_SPECS
-    }
+    """Deprecated alias — branches run via ``CheckpointPipelineHooks``."""
+    from property_agent.checkpoint.composite_hooks import run_checkpoint_optional_branches
 
-    requested = [
-        n for n in (checkpoint_optional_agents or []) if n in _VALID_OPTIONAL_BRANCH_IDS
-    ]
-    if not requested:
-        return _serialize_and_store_parallel_results(tool_context, results)
-
-    if tool_context is None:
-        return json.dumps(results, ensure_ascii=False)
-
-    run_id = ensure_analysis_run_id(tool_context.state)
-    tool_context.state["_checkpoint_pipeline_requested"] = list(requested)
-    tool_context.state["_checkpoint_pipeline_completed"] = []
-    tool_context.state["_checkpoint_pipeline_pending"] = list(requested)
-
-    search_query = resolve_effective_search_query(search_query, tool_context)
-    payload = build_checkpoint_branch_payload(
-        tool_context,
+    return await run_checkpoint_optional_branches(
         checkpoint_results=checkpoint_results,
         user_query=user_query,
-        requested_branches=requested,
-        search_query=search_query,
+        checkpoint_optional_agents=list(checkpoint_optional_agents or []),
         context_doc_uris=context_doc_uris,
         property_address=property_address,
         property_id=property_id,
         search_location=search_location,
-    )
-    prefetch_extras: Dict[str, Any] = {}
-    start_checkpoint_branch_prefetch_tasks(payload, requested, prefetch_extras)
-
-    completed: List[str] = []
-    pending: List[str] = list(requested)
-    analysis = build_initial_analysis(
-        checkpoint_results=checkpoint_results,
-        user_query=user_query,
-        requested_branches=requested,
-    )
-    stash_checkpoint_analysis_in_state(tool_context.state, analysis)
-
-    await _emit_progressive_update(
-        branch="",
-        results=results,
-        checkpoint_results=checkpoint_results,
-        user_query=user_query,
-        requested=requested,
-        completed=[],
-        pending=list(requested),
+        search_query=search_query,
         tool_context=tool_context,
         on_branch_complete=on_branch_complete,
-        analysis=analysis,
-        run_id=run_id,
     )
-
-    async def _run_named_branch(name: str) -> Tuple[str, str]:
-        value = await run_checkpoint_optional_branch(
-            name,
-            payload,
-            tool_context,
-            prefetch_tasks=prefetch_extras,
-        )
-        return name, value
-
-    async def _on_branch_complete(name: str, pair: tuple[str, str]) -> None:
-        nonlocal analysis, completed, pending
-        branch_name, value = pair
-        _, key = _branch_agents()[branch_name]
-        results[key] = value
-        if branch_name in pending:
-            pending.remove(branch_name)
-        completed.append(branch_name)
-        tool_context.state["_checkpoint_pipeline_completed"] = completed
-        tool_context.state["_checkpoint_pipeline_pending"] = pending
-        _serialize_and_store_parallel_results(tool_context, results)
-        analysis = await _emit_progressive_update(
-            branch=branch_name,
-            results=results,
-            checkpoint_results=checkpoint_results,
-            user_query=user_query,
-            requested=requested,
-            completed=list(completed),
-            pending=list(pending),
-            tool_context=tool_context,
-            on_branch_complete=on_branch_complete,
-            analysis=analysis,
-            run_id=run_id,
-        )
-
-    await run_orchestrated_branches(
-        CHECKPOINT_OPTIONAL_BRANCH_SPECS,
-        requested,
-        _run_named_branch,
-        on_result=_on_branch_complete,
-    )
-
-    parallel_ms = int((time.monotonic() - total_start) * 1000)
-    record_parallel_ms(tool_context.state, parallel_ms)
-    mark_synthesis_started(tool_context.state)
-    return _serialize_and_store_parallel_results(tool_context, results)
