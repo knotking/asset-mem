@@ -10,7 +10,7 @@ from typing import Any, Mapping, Optional
 
 from google.adk.tools import ToolContext
 
-from agent_framework.state.context_ids import resolve_user_id_from_context
+from agent_platform.core.state.context_ids import resolve_user_id_from_context
 
 logger = logging.getLogger(__name__)
 

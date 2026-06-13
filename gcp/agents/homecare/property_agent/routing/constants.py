@@ -1,4 +1,4 @@
-"""Homecare routing constants (not part of agent_framework)."""
+"""Homecare routing constants (not part of agent_platform core)."""
 
 USER_DOCS_PASSTHROUGH_STATE_KEY = "_executor_user_docs_passthrough"
 

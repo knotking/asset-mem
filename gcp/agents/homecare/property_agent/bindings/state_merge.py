@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from agent_framework.state.state_delta_merge import merge_state_delta
+from agent_platform.core.state.state_delta_merge import merge_state_delta
 
 HOMECARE_LIST_DEDUPE_KEYS = frozenset(
     {

@@ -1,4 +1,4 @@
-"""Property plugin adapter for ``agent_framework.runtime.build_root_agent``."""
+"""Property plugin adapter for ``agent_platform.adk.build_root_agent``."""
 
 from __future__ import annotations
 
@@ -13,13 +13,13 @@ from google.adk.models.llm_request import LlmRequest
 from google.adk.models.llm_response import LlmResponse
 from google.adk.tools import BaseTool, ToolContext
 
-from agent_framework.observability.logging_context import (
+from agent_platform.core.observability.logging_context import (
     extract_correlation_id_from_json_dict,
     install_auth_uid_logging,
     suppress_otel_context_detach_noise,
 )
-from agent_framework.runtime.build_root_agent import RootAgentPlugin, build_root_agent
-from agent_framework.runtime.logging_plugin import LoggingRootAgentPlugin
+from agent_platform.adk.build_root_agent import RootAgentPlugin, build_root_agent
+from agent_platform.core.runtime.logging_plugin import LoggingRootAgentPlugin
 from property_agent.manifest import PropertyPlugin, load_property_plugin
 from property_agent.routing.conversational_callbacks import (
     conversational_before_tool,
@@ -192,7 +192,7 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
         )
         if not conversation_summary_enabled():
             return
-        from agent_framework.routing.resolved_turn import session_events
+        from agent_platform.core.routing.resolved_turn import session_events
 
         maybe_update_conversation_summary(
             callback_context.state,
@@ -205,7 +205,7 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
             pending_offer_extract_enabled,
         )
         from property_agent.routing.recent_dialogue import last_assistant_reply_text
-        from agent_framework.routing.resolved_turn import session_events
+        from agent_platform.core.routing.resolved_turn import session_events
 
         if not pending_offer_extract_enabled():
             return
@@ -261,7 +261,7 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
 
         uid = tool_context._invocation_context.session.user_id
         tool_context.state["user_id"] = uid
-        from agent_framework.observability.logging_context import (
+        from agent_platform.core.observability.logging_context import (
             bind_auth_uid,
             bind_correlation_id,
         )

@@ -7,7 +7,7 @@ from typing import Callable
 from google.adk.tools import FunctionTool
 from google.adk.tools.preload_memory_tool import preload_memory_tool
 
-from agent_framework.registry.tool_spec import ToolSpec, build_tools
+from agent_platform.core.registry.tool_spec import ToolSpec, build_tools
 
 from property_agent.checkpoint.branch_registry import CHECKPOINT_OPTIONAL_BRANCH_SPECS
 from property_agent.checkpoint.constants import (

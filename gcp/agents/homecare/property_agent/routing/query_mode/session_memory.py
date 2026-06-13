@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any, Mapping, Optional
 
-from agent_framework.context.memory_merge import merge_memory_maps
+from agent_platform.core.context.memory_merge import merge_memory_maps
 
 from property_agent.checkpoint.constants import CHECKPOINT_IDS_ANALYZED_STATE_KEY
 

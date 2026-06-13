@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Mapping, Optional
 
-from agent_framework.routing.resolved_turn import (
+from agent_platform.core.routing.resolved_turn import (
     RESOLVED_TURN_STATE_KEY,
     format_resolved_turn_block as _platform_format_resolved_turn_block,
     inject_resolved_turn_into_llm_request as _platform_inject_resolved_turn,

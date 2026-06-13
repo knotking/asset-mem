@@ -9,8 +9,8 @@ from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from typing import Any, Dict, Optional
 
 from property_agent.shared.inputs import SearchLocation
-from agent_framework.execution.thread_context import executor_submit, to_thread
-from agent_framework.observability.logging_context import get_auth_uid
+from agent_platform.core.execution.thread_context import executor_submit, to_thread
+from agent_platform.core.observability.logging_context import get_auth_uid
 from property_agent.geo.search_location_utils import market_label
 from .cache import (
     _CACHE_LOCK,

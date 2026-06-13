@@ -157,7 +157,15 @@ File-by-file inventory for agent platform extraction.
 
 ---
 
-## Phase 1 PR scope (suggested first code PR)
+## HomeApp strangler status
+
+| Area | Status |
+|------|--------|
+| `property_agent` imports | `agent_platform.core.*` / `agent_platform.adk.*` (no `agent_framework`) |
+| `gcp/agent_framework/` | Deprecated shim only — do not add new imports |
+| Agent Engine bundle | Stages `property_agent` + `agent_platform/{core,adk}` |
+| `pyproject.toml` | Direct path deps on `agent-platform-core` + `agent-platform-adk` |
+
 
 Smallest useful slice after this planning branch:
 

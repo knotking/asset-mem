@@ -13,7 +13,7 @@ from google.adk.agents.callback_context import CallbackContext
 from google.adk.events.event import Event
 from google.genai import types
 
-from agent_framework.memory.ingest import (
+from agent_platform.adk.memory.ingest import (
     build_ingest_custom_metadata,
     invocation_used_agent,
     memory_ingest_enabled,

@@ -15,7 +15,7 @@ from typing import Any, Dict, Optional, Tuple
 from google import genai
 from google.genai import types
 
-from agent_framework.execution.thread_context import executor_submit
+from agent_platform.core.execution.thread_context import executor_submit
 from ...model_config import (
     direct_gemini_thinking_config,
     global_direct_generate_client_and_model,

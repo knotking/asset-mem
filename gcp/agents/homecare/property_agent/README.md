@@ -4,7 +4,7 @@ The **property agent** (`root_agent`) is the Home Care orchestrator: **single-lo
 
 Regression: `make test` (unit tests). ADK evalsets removed; see `property_agent/evals/README.md`.
 
-**Layout:** `property_agent/` (routing, agents, checkpoint pipeline, evals, runtime) plus the shared **`agent_framework`** package (`gcp/agent_framework/`, import `agent_framework.*`).
+**Layout:** `property_agent/` (routing, agents, checkpoint pipeline, evals, runtime) plus **`agent-platform`** packages (`agent_platform.core`, `agent_platform.adk` — sibling repo, path dependency in `pyproject.toml`).
 
 **Gemini models:** ADK agents use `GLOBAL_GEMINI_MODEL` (`gemini-3.1-flash-lite`); direct Python `generate_content` paths use `LEGACY_API_GEMINI`. See [`docs/MODEL_POLICY.md`](../docs/MODEL_POLICY.md).
 
@@ -12,7 +12,7 @@ Regression: `make test` (unit tests). ADK evalsets removed; see `property_agent/
 
 ```
 property_agent (root orchestrator)
-├── agent_framework/runtime/build_root_agent.py   # generic Agent shell
+├── agent_platform.adk.build_root_agent          # generic Agent shell
 ├── property_agent/runtime/root_agent_plugin.py  # PropertyRootAgentPlugin adapter
 ├── property_agent/runtime/homecare_runner.py    # ADK dev progress streaming
 ├── property_agent/manifest.py               # plugin registration
@@ -26,16 +26,16 @@ See [`ARCHITECTURE.md`](ARCHITECTURE.md) for layer rules and import matrix.
 
 - **Pre-routing** (`property_agent/routing/single_loop_routing.py`): deterministic chip, accept-offer, casual; slim session context for free text.
 - **Schema** (`property_agent/routing/schema.py`): homecare `ResolvedTurn`, routes, intents.
-- **Platform** (`agent_framework/routing/resolved_turn.py`): inject format, state keys.
+- **Platform** (`agent_platform.core.routing.resolved_turn`): inject format, state keys.
 - **Bindings** (`property_agent/routing/constants.py`, `bindings/state_merge.py`, `observability/log_redaction.py`): homecare-specific constants, state dedupe keys, log redaction policy.
 
 ## Import rules (platform vs property_agent)
 
 | Need | Import from |
 |------|-------------|
-| `plain_text_llm_response`, `state_take`, resolve pipeline, compaction, memory ingest | `agent_framework.*` |
+| `plain_text_llm_response`, `state_take`, resolve pipeline, compaction, memory ingest | `agent_platform.core.*` / `agent_platform.adk.*` |
 | `redact_tool_args_for_log` (homecare policy) | `property_agent.observability.log_redaction` |
-| `safe_text_preview` (no policy) | `agent_framework.observability.log_redaction` |
+| `safe_text_preview` (no policy) | `agent_platform.core.observability.log_redaction` |
 | `ResolvedTurn`, single-loop routing, conversational copy | `property_agent.routing.*` |
 
 Do not re-export platform symbols from `property_agent` (no shim modules).

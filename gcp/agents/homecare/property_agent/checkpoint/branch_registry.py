@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agent_framework.registry.orchestration import BranchToolSpec
+from agent_platform.core.registry.orchestration import BranchToolSpec
 
 CHECKPOINT_OPTIONAL_BRANCH_SPECS: tuple[BranchToolSpec, ...] = (
     BranchToolSpec(

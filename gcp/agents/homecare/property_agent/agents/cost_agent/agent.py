@@ -8,7 +8,7 @@ from google.adk.agents import Agent
 from google.genai import types
 from pydantic import BaseModel, Field
 
-from agent_framework.execution.thread_context import to_thread
+from agent_platform.core.execution.thread_context import to_thread
 
 from .config import config
 from .ai_cost_estimator import estimate_costs_with_ai, validate_cost_ranges
@@ -474,7 +474,7 @@ def _estimate_with_ai(
             web_context = _fetch_market_pricing_context(diagnosis, property_address)
 
         # --- Step 3: call AI cost estimator ---
-        from agent_framework.observability.log_redaction import safe_text_preview
+        from agent_platform.core.observability.log_redaction import safe_text_preview
 
         logger.info(
             "Calling AI cost estimator diagnosis_len=%d preview=%r "

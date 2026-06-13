@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 from google import genai
 from google.genai.types import EmbedContentConfig
 
-from agent_framework.observability.log_redaction import safe_text_preview
+from agent_platform.core.observability.log_redaction import safe_text_preview
 
 logger = logging.getLogger(__name__)
 

@@ -8,7 +8,7 @@ on:
     paths:
       - "gcp/proxy/api/**"
       - "gcp/common/**"
-      - "gcp/agent_framework/**"
+      - "gcp/agents/homecare/**"
       - ".github/workflows/deploy-homecare-agent-proxy.yaml"
   workflow_dispatch:
     inputs:

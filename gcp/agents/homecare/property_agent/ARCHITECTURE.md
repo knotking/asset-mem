@@ -1,22 +1,22 @@
 # property_agent architecture
 
-Three layers inside the `property_agent` Python package. Generic ADK plumbing lives in `agent_framework`; homecare domain logic stays here.
+Three layers inside the `property_agent` Python package. Generic ADK plumbing lives in **`agent_platform`** (`agent-platform-core` + `agent-platform-adk`); homecare domain logic stays here.
 
 ## Layers
 
 | Layer | Responsibility | May import | Must not |
 |-------|----------------|------------|----------|
 | `runtime/` | ADK shell, app config, deploy entrypoints | `manifest`, `routing` (callback registration only) | Business logic bodies |
-| `routing/` | Turn control plane: resolve, guards, session memory | `agent_framework.*`, `shared.*`, `checkpoint.*` public APIs | `agents/*/orchestrator` internals; private `_` symbols from siblings |
+| `routing/` | Turn control plane: resolve, guards, session memory | `agent_platform.*`, `shared.*`, `checkpoint.*` public APIs | `agents/*/orchestrator` internals; private `_` symbols from siblings |
 | `checkpoint/` | Retrieval, `run_checkpoint_pipeline`, assembler, parallel analysis, progress streaming | `routing/schema`, `shared/inputs`, leaf `agents/*` for branches | Heavy eager imports from deleted resolve stack |
 | `agents/*` | Leaf specialists (user_docs, kb, coverage, diy, …) | `shared`, `geo`, `routing` public helpers | — |
-| `shared/` | Cross-cutting homecare types | stdlib, `agent_framework` | `routing` resolve internals |
+| `shared/` | Cross-cutting homecare types | stdlib, `agent_platform.core` | `routing` resolve internals |
 
 ## Import matrix (common paths)
 
 | Need | Import from |
 |------|-------------|
-| Platform resolve pipeline, compaction, memory | `agent_framework.*` |
+| Platform resolve pipeline, compaction, memory | `agent_platform.core.*` / `agent_platform.adk.*` |
 | `ResolvedTurn`, single-loop routing, conversational copy | `property_agent.routing.*` |
 | Checkpoint pipeline, retrieval, assembler, analysis | `property_agent.checkpoint.*` |
 | Optional-branch regex / constants | `property_agent.routing.optional_branches` |
@@ -24,7 +24,7 @@ Three layers inside the `property_agent` Python package. Generic ADK plumbing li
 | Homecare state merge | `property_agent.bindings.state_merge` |
 | Log redaction (homecare policy) | `property_agent.observability.log_redaction` |
 
-**Boundary:** `agent_framework` must never import `property_agent`.
+**Boundary:** `agent_platform` core must never import `property_agent`.
 
 ## Routing control plane (single-loop)
 
@@ -53,7 +53,7 @@ Inside `run_checkpoint_pipeline`, optional branches use mixed invocation styles 
 | `coverage` | `AgentTool(coverage_agent)` | RAG + LLM dialogue fits ADK agent |
 | `service` | `AgentTool(service_agent)` | Same |
 
-Orchestration waves and `depends_on` edges: `agent_framework/registry/orchestration.py` + `checkpoint/branch_registry.py`.
+Orchestration waves and `depends_on` edges: `agent_platform.core.registry.orchestration` + `checkpoint/branch_registry.py`.
 
 ## Naming
 

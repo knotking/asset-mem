@@ -28,12 +28,19 @@ from typing import Iterable, Sequence
 # Distributions in pyproject.toml that must not be pip-installed on Agent Engine.
 # Path-only packages are copied into the bundle via ``stage_extra_packages``.
 AGENT_ENGINE_EXCLUDED_DISTS = frozenset(
-    {"adk", "agent-framework", "tabulate", "tool", "tools", "tqdm"}
+    {
+        "adk",
+        "agent-platform-core",
+        "agent-platform-adk",
+        "tabulate",
+        "tool",
+        "tools",
+        "tqdm",
+    }
 )
 
 _BUNDLE_PACKAGE_SOURCES: dict[str, str] = {
     "property_agent": "property_agent",
-    "agent_framework": "../../agent_framework",
 }
 
 _COPY_IGNORE = shutil.ignore_patterns(
@@ -86,6 +93,40 @@ def resolve_package_source(relative_path: str) -> pathlib.Path:
     return source
 
 
+def agent_platform_root() -> pathlib.Path:
+    """Resolve sibling ``agent-platform`` repo (or ``AGENT_PLATFORM_ROOT``)."""
+    env = os.environ.get("AGENT_PLATFORM_ROOT", "").strip()
+    if env:
+        candidate = pathlib.Path(env).resolve()
+        if (candidate / "packages" / "core").is_dir():
+            return candidate
+    root = homecare_root()
+    for rel in ("../../../../agent-platform", "../../../agent-platform"):
+        candidate = (root / rel).resolve()
+        if (candidate / "packages" / "core").is_dir():
+            return candidate
+    raise FileNotFoundError(
+        "agent-platform not found; set AGENT_PLATFORM_ROOT or clone beside HomeApp"
+    )
+
+
+def stage_agent_platform_namespace(staging_dir: pathlib.Path) -> pathlib.Path:
+    """Copy ``agent_platform.core`` + ``agent_platform.adk`` into the bundle."""
+    platform_root = agent_platform_root()
+    destination = staging_dir / "agent_platform"
+    if destination.exists():
+        shutil.rmtree(destination)
+    destination.mkdir(parents=True)
+    for pkg in ("core", "adk"):
+        source = (
+            platform_root / "packages" / pkg / "src" / "agent_platform" / pkg
+        )
+        if not source.is_dir():
+            raise FileNotFoundError(f"Agent Engine bundle source not found: {source}")
+        shutil.copytree(source, destination / pkg, ignore=_COPY_IGNORE)
+    return destination
+
+
 def stage_extra_packages(
     *,
     staging_root: pathlib.Path | None = None,
@@ -94,7 +135,7 @@ def stage_extra_packages(
 
     Returns the staging root and absolute paths ready for ``extra_packages``.
     Each staged directory name matches the import root (``property_agent``,
-    ``agent_framework``) so the dependency tarball can use flat arcnames.
+    ``agent_platform``) so the dependency tarball can use flat arcnames.
     """
     staging_dir = staging_root or pathlib.Path(
         tempfile.mkdtemp(prefix="agent_engine_bundle_")
@@ -108,6 +149,8 @@ def stage_extra_packages(
             shutil.rmtree(destination)
         shutil.copytree(source, destination, ignore=_COPY_IGNORE)
         staged_paths.append(str(destination))
+
+    staged_paths.append(str(stage_agent_platform_namespace(staging_dir)))
 
     return staging_dir, staged_paths
 
@@ -137,7 +180,7 @@ def validate_extra_packages_tar(tar_bytes: bytes) -> None:
         )
 
     top_level = {name.split("/", 1)[0] for name in names if name}
-    expected = set(_BUNDLE_PACKAGE_SOURCES)
+    expected = set(_BUNDLE_PACKAGE_SOURCES) | {"agent_platform"}
     missing = expected - top_level
     if missing:
         raise ValueError(

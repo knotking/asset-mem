@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from agent_framework.state.state_delta_merge import merge_state_delta
+from agent_platform.core.state.state_delta_merge import merge_state_delta
 from property_agent.checkpoint.analysis.assembler import apply_tool_context_state_delta
 from property_agent.bindings.state_merge import merge_homecare_state_delta
 

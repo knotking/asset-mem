@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agent_framework.registry.orchestration import build_execution_plan
+from agent_platform.core.registry.orchestration import build_execution_plan
 
 from property_agent.checkpoint.branch_registry import CHECKPOINT_OPTIONAL_BRANCH_SPECS
 from property_agent.checkpoint.analysis.parallel_runner import (

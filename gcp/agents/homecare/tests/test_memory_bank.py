@@ -9,7 +9,7 @@ from google.adk.events.event import Event
 from google.adk.events.event_actions import EventActions, EventCompaction
 from google.genai import types
 
-from agent_framework.memory.ingest import (
+from agent_platform.adk.memory.ingest import (
     build_ingest_custom_metadata,
     select_events_for_memory_ingest,
 )
@@ -104,7 +104,7 @@ def test_invocation_used_orchestrator():
 def test_memory_flags_disabled_by_default(monkeypatch) -> None:
     monkeypatch.delenv("ADK_MEMORY_INGEST_ENABLED", raising=False)
     monkeypatch.delenv("ADK_MEMORY_PRELOAD_ENABLED", raising=False)
-    from agent_framework.memory.ingest import memory_ingest_enabled, memory_preload_enabled
+    from agent_platform.adk.memory.ingest import memory_ingest_enabled, memory_preload_enabled
 
     assert memory_ingest_enabled() is False
     assert memory_preload_enabled() is False

@@ -9,11 +9,11 @@ from google.adk.agents.callback_context import CallbackContext
 from google.adk.agents.context import Context
 from google.adk.models.llm_response import LlmResponse
 from google.adk.tools import BaseTool, ToolContext
-from agent_framework.routing.tool_guards import (
+from agent_platform.core.routing.tool_guards import (
     block_tools_on_flag,
     fail_closed_on_resolve_error,
 )
-from agent_framework.runtime.llm_short_circuit import plain_text_llm_response
+from agent_platform.adk.llm_short_circuit import plain_text_llm_response
 
 from .conversational_intent import (
     CHECKPOINT_LAST_RESPONSE_KIND_KEY,

@@ -74,7 +74,7 @@ run: ## Run the agent locally
 
 test: ## Run unit tests (CI-safe; no live Vertex evalsets)
 	$(call print_header,Running Unit Tests)
-	$(PYTEST) tests/ ../../agent_framework/tests/ -v
+	$(PYTEST) tests/ ../../../../agent-platform/packages/core/tests/ ../../../../agent-platform/packages/adk/tests/ -v
 
 test-all: test ## Alias for unit tests (ADK evalsets removed)
 

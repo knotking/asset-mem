@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
-from agent_framework.contracts.message_patch_v1 import (
+from agent_platform.core.contracts.message_patch_v1 import (
     message_patch_input_from_accumulator,
     state_delta_from_message_patch_input,
 )
-from agent_framework.contracts.v1 import MessagePatchInputV1
+from agent_platform.core.contracts.v1 import MessagePatchInputV1
 
 
 def build_state_delta_message_patch(

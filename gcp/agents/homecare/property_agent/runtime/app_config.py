@@ -6,7 +6,7 @@ from typing import Optional
 
 from google.adk.apps.app import App, EventsCompactionConfig
 
-from agent_framework.runtime.compaction_config import build_events_compaction_config_from_env
+from agent_platform.adk.compaction_config import build_events_compaction_config_from_env
 from property_agent.runtime.session_diet import (
     g4_compaction_event_retention_size,
     g4_compaction_token_threshold,

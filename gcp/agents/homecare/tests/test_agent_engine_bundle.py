@@ -24,9 +24,11 @@ from deployment.agent_engine_bundle import (
 def test_load_agent_engine_requirements_excludes_bundled_dists():
     requirements = load_agent_engine_requirements()
     validate_agent_engine_requirements(requirements)
-    assert "agent-framework" in AGENT_ENGINE_EXCLUDED_DISTS
+    assert "agent-platform-core" in AGENT_ENGINE_EXCLUDED_DISTS
+    assert "agent-platform-adk" in AGENT_ENGINE_EXCLUDED_DISTS
     assert all(
-        "agent-framework" not in req and "tabulate" not in req for req in requirements
+        "agent-platform-core" not in req and "agent-platform-adk" not in req
+        for req in requirements
     )
 
 
@@ -36,7 +38,8 @@ def test_stage_extra_packages_tar_has_flat_import_roots():
         assert len(staged_paths) == 2
         assert all(os.path.isdir(path) for path in staged_paths)
         assert (staging_dir / "property_agent" / "__init__.py").is_file()
-        assert (staging_dir / "agent_framework" / "__init__.py").is_file()
+        assert (staging_dir / "agent_platform" / "core").is_dir()
+        assert (staging_dir / "agent_platform" / "adk").is_dir()
 
         tar_bytes = build_extra_packages_tar(staged_paths)
         validate_extra_packages_tar(tar_bytes)
@@ -44,7 +47,7 @@ def test_stage_extra_packages_tar_has_flat_import_roots():
         with tarfile.open(fileobj=io.BytesIO(tar_bytes), mode="r:gz") as tar:
             names = tar.getnames()
         top_level = {name.split("/", 1)[0] for name in names if name}
-        assert top_level == {"property_agent", "agent_framework"}
+        assert top_level == {"property_agent", "agent_platform"}
         assert not any(".." in name for name in names)
     finally:
         import shutil
@@ -69,9 +72,11 @@ def test_extracted_bundle_imports_property_agent_without_repo_paths():
                 (
                     "import sys; "
                     f"sys.path.insert(0, {str(extract_dir)!r}); "
-                    "import property_agent, agent_framework; "
+                    "import property_agent; "
+                    "import agent_platform.core.execution.thread_context; "
+                    "import agent_platform.adk.build_root_agent; "
                     "print(property_agent.__file__); "
-                    "print(agent_framework.__file__)"
+                    "print(agent_platform.core.execution.thread_context.__file__)"
                 ),
             ],
             check=True,
@@ -80,7 +85,7 @@ def test_extracted_bundle_imports_property_agent_without_repo_paths():
         )
         lines = probe.stdout.strip().splitlines()
         assert str(extract_dir / "property_agent") in lines[0]
-        assert str(extract_dir / "agent_framework") in lines[1]
+        assert str(extract_dir / "agent_platform") in lines[1]
     finally:
         import shutil
 
@@ -89,5 +94,7 @@ def test_extracted_bundle_imports_property_agent_without_repo_paths():
 
 
 def test_validate_agent_engine_requirements_rejects_leaks():
-    with pytest.raises(ValueError, match="agent-framework"):
-        validate_agent_engine_requirements(["google-adk==1.33.0", "agent-framework"])
+    with pytest.raises(ValueError, match="agent-platform-core"):
+        validate_agent_engine_requirements(
+            ["google-adk==1.33.0", "agent-platform-core"]
+        )

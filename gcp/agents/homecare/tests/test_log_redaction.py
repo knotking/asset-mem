@@ -1,6 +1,6 @@
 """Tests for property_agent.log_redaction."""
 
-from agent_framework.observability.log_redaction import redact_gcs_uris, safe_text_preview
+from agent_platform.core.observability.log_redaction import redact_gcs_uris, safe_text_preview
 from property_agent.observability.log_redaction import redact_tool_args_for_log
 
 

@@ -9,8 +9,8 @@ from unittest.mock import MagicMock
 import pytest
 from google.genai import types
 
-from agent_framework.routing.resolved_turn import RESOLVED_TURN_STATE_KEY
-from agent_framework.state.session_state import state_take
+from agent_platform.core.routing.resolved_turn import RESOLVED_TURN_STATE_KEY
+from agent_platform.core.state.session_state import state_take
 
 from property_agent.routing.conversational_callbacks import (
     conversational_before_tool,

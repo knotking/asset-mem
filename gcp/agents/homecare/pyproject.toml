@@ -7,7 +7,8 @@ license = "Apache-2.0"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "agent-framework",
+    "agent-platform-core",
+    "agent-platform-adk",
     "google-adk==1.33.0",
     "google-cloud-aiplatform[adk,agent-engines]==1.151.0",
     "google-auth==2.52.0",
@@ -45,7 +46,8 @@ where = ["."]
 include = ["property_agent*"]
 
 [tool.uv.sources]
-agent-framework = { path = "../../agent_framework", editable = true }
+agent-platform-core = { path = "../../../../agent-platform/packages/core", editable = true }
+agent-platform-adk = { path = "../../../../agent-platform/packages/adk", editable = true }
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

@@ -9,7 +9,7 @@ import pytest
 from datetime import datetime, timezone
 from google.genai import types
 
-from agent_framework.routing.resolved_turn import RESOLVE_APPLIED_INVOCATION_KEY
+from agent_platform.core.routing.resolved_turn import RESOLVE_APPLIED_INVOCATION_KEY
 from property_agent.model_config import (
     SINGLE_LOOP_GEMINI_MODEL,
     SINGLE_LOOP_GEMINI_MODEL_NAME,

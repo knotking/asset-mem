@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from agent_framework.observability.log_redaction import (
+from agent_platform.core.observability.log_redaction import (
     redact_tool_args_for_log as _platform_redact_tool_args_for_log,
 )
-from agent_framework.observability.redaction_policy import LogRedactionPolicy
+from agent_platform.core.observability.redaction_policy import LogRedactionPolicy
 
 HOMECARE_LOG_REDACTION_POLICY = LogRedactionPolicy(
     sensitive_keys=frozenset(

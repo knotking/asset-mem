@@ -8,14 +8,14 @@ import logging
 import time
 from typing import Any, Dict, List, Optional, Protocol, Sequence, Tuple
 
-from agent_framework.execution.thread_context import to_thread
+from agent_platform.core.execution.thread_context import to_thread
 
 from google.adk.agents import Agent
 from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
 
-from agent_framework.execution import run_orchestrated_branches
-from agent_framework.registry.orchestration import build_execution_plan
+from agent_platform.core.execution import run_orchestrated_branches
+from agent_platform.core.registry.orchestration import build_execution_plan
 
 from property_agent.checkpoint.branch_registry import (
     CHECKPOINT_OPTIONAL_BRANCH_SPECS,

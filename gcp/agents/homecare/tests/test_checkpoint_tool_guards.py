@@ -5,7 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from agent_framework.routing.resolved_turn import RESOLVED_TURN_STATE_KEY
+from agent_platform.core.routing.resolved_turn import RESOLVED_TURN_STATE_KEY
 
 from property_agent.checkpoint.constants import (
     CHECKPOINT_ANALYSIS_TOOL,

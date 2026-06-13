@@ -10,7 +10,7 @@ from typing import Any, Callable, Dict, Optional, Tuple
 
 from google.genai import types
 
-from agent_framework.observability.logging_context import auth_uid_scope
+from agent_platform.core.observability.logging_context import auth_uid_scope
 from property_agent.model_config import (
     direct_gemini_thinking_config,
     global_direct_generate_client_and_model,

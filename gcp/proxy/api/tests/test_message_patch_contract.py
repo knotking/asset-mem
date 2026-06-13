@@ -1,4 +1,4 @@
-from agent_framework.contracts.message_patch_types import MessagePatchInputV1
+from agent_platform.core.contracts.message_patch_types import MessagePatchInputV1
 from utils.message_content_persist import apply_message_patch_from_state_delta
 from utils.message_patch_state import build_assistant_message_patch, validate_assistant_message_patch
 

@@ -81,7 +81,7 @@ class ResolvedTurn:
 def resolved_turn_from_state(state: SessionStateLike | None) -> Optional[ResolvedTurn]:
     if not state:
         return None
-    from agent_framework.routing.resolved_turn import RESOLVED_TURN_STATE_KEY
+    from agent_platform.core.routing.resolved_turn import RESOLVED_TURN_STATE_KEY
 
     raw = state.get(RESOLVED_TURN_STATE_KEY)
     if not isinstance(raw, dict):

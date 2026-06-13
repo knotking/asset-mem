@@ -12,7 +12,7 @@ from vertexai.preview import rag
 from dotenv import load_dotenv
 from .prompts import user_docs_agent_instruction
 import logging
-from agent_framework.execution.thread_context import to_thread
+from agent_platform.core.execution.thread_context import to_thread
 from property_agent.shared.inputs import DocsInput
 from ...model_config import GLOBAL_GEMINI_MODEL
 

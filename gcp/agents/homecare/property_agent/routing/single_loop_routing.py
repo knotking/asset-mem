@@ -13,12 +13,12 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Mapping, Optional
 
-from agent_framework.routing.resolved_turn import (
+from agent_platform.core.routing.resolved_turn import (
     RESOLVE_APPLIED_INVOCATION_KEY,
     inject_resolved_turn_into_llm_request,
     invocation_id,
 )
-from agent_framework.runtime.llm_short_circuit import plain_text_llm_response
+from agent_platform.adk.llm_short_circuit import plain_text_llm_response
 from google.genai import types
 
 from property_agent.memory_bank import resolve_property_id
@@ -231,7 +231,7 @@ def resolve_turn_from_pending_offer(
     if payload.get("discourse_act") != "accept_offer":
         return None
 
-    from agent_framework.routing.resolved_turn import RESOLVED_TURN_STATE_KEY
+    from agent_platform.core.routing.resolved_turn import RESOLVED_TURN_STATE_KEY
 
     resolved = resolved_turn_from_state({RESOLVED_TURN_STATE_KEY: payload})
     if resolved is None:

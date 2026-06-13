@@ -541,7 +541,7 @@ def ask_checkpoints_retrieval(
                 len(checkpoints),
             )
             if not checkpoints:
-                from agent_framework.observability.log_redaction import safe_text_preview
+                from agent_platform.core.observability.log_redaction import safe_text_preview
 
                 logger.warning(
                     "No checkpoints found for query_len=%d preview=%r",

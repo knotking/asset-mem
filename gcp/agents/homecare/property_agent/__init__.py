@@ -1,1 +1,1 @@
-"""Property agent package: agent_framework orchestration + property plugin."""
+"""Property agent package: agent_platform orchestration + property plugin."""

@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from .prompts import service_agent_instructions
 from property_agent.shared.inputs import DocsInput, SearchLocation
 from ...model_config import GLOBAL_GEMINI_MODEL
-from agent_framework.execution.thread_context import to_thread
+from agent_platform.core.execution.thread_context import to_thread
 from property_agent.geo.address_parse import (
     enrich_search_location_label,
     merge_search_location_sources,

@@ -61,7 +61,7 @@ def _get_histogram(name: str, *, unit: str, description: str):
 
 
 def _base_attributes(*, source: str, state: Any = None) -> dict[str, str]:
-    from agent_framework.observability.logging_context import get_correlation_id
+    from agent_platform.core.observability.logging_context import get_correlation_id
 
     attrs: dict[str, str] = {
         "source": source,

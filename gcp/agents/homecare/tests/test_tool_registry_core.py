@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from agent_framework.registry.tool_spec import ToolSpec, build_tools
+from agent_platform.core.registry.tool_spec import ToolSpec, build_tools
 
 
 def test_build_tools_instantiates_all_specs() -> None:
