@@ -1,7 +1,7 @@
 # gcloud run deploy --source uploads this directory; by default it respects .gitignore,
-# which excludes staged copies of gcp/common and gcp/agent_framework. Include them in the upload.
+# which excludes staged copies of gcp/common and gcp/agent_platform. Include them in the upload.
 #!include:.gitignore
 !/common
 !/common/**
-!/agent_framework
-!/agent_framework/**
+!/agent_platform
+!/agent_platform/**

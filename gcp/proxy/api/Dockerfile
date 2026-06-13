@@ -1,7 +1,7 @@
 # Local Docker only: stage shared packages before build:
 #   cp -R ../../common ./common
-#   bash ../scripts/stage-agent-framework-contracts.sh
-# Or from repo root: `docker build -f gcp/Dockerfile.proxy gcp` (full framework).
+#   bash ../scripts/stage-agent-platform-for-proxy.sh
+# Or from repo root: `docker build -f gcp/Dockerfile.proxy gcp`
 FROM python:3.13.5-slim
 
 WORKDIR /app

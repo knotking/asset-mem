@@ -153,8 +153,9 @@ Extend `test_boundaries.py` → `test_core_does_not_import_adk.py` when `core/` 
 
 ### Phase 4 — Gateway (optional, weeks 6–7)
 
-- Extract `message_content_persist` / `message_patch_state` patterns to `gateway/`
-- Proxy imports published package; retire `stage-agent-framework-contracts.sh` staging hack
+- [x] Extract `message_content_persist` / `message_patch_state` to `packages/gateway`
+- [x] Proxy imports `agent_platform.gateway`; stage `agent_platform` for Cloud Run deploy
+- [x] Retire `stage-agent-framework-contracts.sh` (delegates to `stage-agent-platform-for-proxy.sh`)
 - **Exit:** proxy tests pass with gateway package
 
 ### Phase 5 — Publish OSS (week 8+)

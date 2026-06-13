@@ -15,16 +15,20 @@
 import sys
 from pathlib import Path
 
-# Shared code: `gcp/common` (import `common.*`) and `gcp/agent_framework` (import `agent_framework.*`).
-# - Local dev: main.py is gcp/proxy/api/main.py → gcp root is parent.parent.
-# - Docker/CI: staged copies live next to main.py (./common, ./agent_framework).
+# Shared code: `gcp/common` (import `common.*`) and staged `agent_platform` (contracts + gateway).
+# - Local dev: main.py is gcp/proxy/api/main.py → bootstrap finds sibling agent-platform or staged copy.
+# - Docker/CI: staged tree lives next to main.py (./agent_platform).
+from bootstrap_agent_platform import ensure_agent_platform_on_path
+
+ensure_agent_platform_on_path()
+
 _here = Path(__file__).resolve().parent
 for root in (_here.parent.parent, _here):
     if not root:
         continue
     has_common = (root / "common").is_dir()
-    has_agent_framework = (root / "agent_framework" / "__init__.py").is_file()
-    if (has_common or has_agent_framework) and str(root) not in sys.path:
+    has_agent_platform = (root / "agent_platform" / "core" / "contracts").is_dir()
+    if (has_common or has_agent_platform) and str(root) not in sys.path:
         sys.path.insert(0, str(root))
         break
 

@@ -138,10 +138,11 @@ File-by-file inventory for agent platform extraction.
 
 | File | Target | Notes |
 |------|--------|-------|
-| `utils/message_content_persist.py` | gateway | Uses `agent_framework.contracts` |
-| `utils/message_patch_state.py` | gateway | Revision monotonicity |
-| `services/vertex_service.py` | proxy | Stays; imports gateway + contracts |
-| `scripts/stage-agent-framework-contracts.sh` | delete | After gateway package ships |
+| `utils/message_content_persist.py` | shim → `agent_platform.gateway.persist` | Done |
+| `utils/message_patch_state.py` | shim → `agent_platform.gateway.patch_state` | Done |
+| `services/vertex_service.py` | proxy | Stays; imports utils shims |
+| `scripts/stage-agent-platform-for-proxy.sh` | deploy | Stages contracts + gateway |
+| `scripts/stage-agent-framework-contracts.sh` | deprecated | Delegates to stage-agent-platform |
 
 ---
 

@@ -37,6 +37,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout agent-platform
+        uses: actions/checkout@v4
+        with:
+          repository: BuildGeekAI/agent-platform
+          path: agent-platform
+
       - name: Validate required GitHub variables
         run: |
           missing_vars=()
@@ -147,13 +153,13 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      # Stage gcp/common and slim agent_framework contracts (gitignored). .gcloudignore
-      # forces these into the upload; proxy only needs message_patch_v1 + message_patch_types.
+      # Stage gcp/common and agent_platform contracts + gateway (gitignored). .gcloudignore
+      # forces these into the upload; proxy imports agent_platform.core.contracts + gateway.
       - name: Stage gcp/common for Docker build
         run: rm -rf gcp/proxy/api/common && cp -R gcp/common gcp/proxy/api/common
 
-      - name: Stage agent_framework contracts for Docker build
-        run: bash gcp/proxy/scripts/stage-agent-framework-contracts.sh
+      - name: Stage agent_platform for Docker build
+        run: bash gcp/proxy/scripts/stage-agent-platform-for-proxy.sh
 
       # STRIPE_B2C_PRICE_TOKEN_CAPS_JSON is base64 in env_vars (deploy-cloudrun uses comma delimiters).
       - name: Prepare STRIPE_B2C_PRICE_TOKEN_CAPS_JSON for deploy
