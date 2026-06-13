@@ -223,14 +223,16 @@ def test_ask_checkpoints_retrieval_falls_back_to_vector_on_by_id_miss(
         state=state, _invocation_context=SimpleNamespace(session=session)
     )
 
+    # Scope-neutral query so by_id runs; invalid id misses and falls back to vector.
+    user_query = "Summarize the selected checkpoint"
     out = ask_checkpoints_retrieval(
-        user_query="Are there any issues in the garage?",
+        user_query=user_query,
         property_id="p1",
         checkpoint_ids=["garage"],
         tool_context=tool_context,
     )
 
-    assert vector_called["query_text"] == "Are there any issues in the garage?"
+    assert vector_called["query_text"] == user_query
     assert len(out["checkpoints"]) == 1
     assert out["checkpoints"][0]["checkpointId"] == "ZCeYq22NbWJynQBmlmyt"
 
