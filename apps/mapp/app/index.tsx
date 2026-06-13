@@ -3,6 +3,7 @@ import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useEffect } from 'react';
 import { createLogger } from '@/lib/logger';
+import { LANDING_BACKGROUND } from '@/lib/landing-background';
 
 const routesLog = createLogger('routes');
 
@@ -15,7 +16,13 @@ export default function Index() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0a0f' }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: LANDING_BACKGROUND,
+        }}>
         <ActivityIndicator size="large" color="#22d3ee" />
       </View>
     );

@@ -105,16 +105,17 @@ module.exports = {
       [
         'expo-splash-screen',
         {
-          backgroundColor: '#1a2332',
+          // Match LANDING_BACKGROUND in lib/landing-background.ts
+          backgroundColor: '#0a0a0f',
           image: './assets/images/splash.png',
           imageWidth: 100,
           resizeMode: 'contain',
           ios: {
-            backgroundColor: '#1a2332',
+            backgroundColor: '#0a0a0f',
             image: './assets/images/splash.png',
           },
           android: {
-            backgroundColor: '#1a2332',
+            backgroundColor: '#0a0a0f',
             image: './assets/images/splash.png',
           },
         },

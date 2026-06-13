@@ -8,7 +8,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import * as SplashScreen from 'expo-splash-screen';
 import * as React from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
+import { LANDING_BACKGROUND } from '@/lib/landing-background';
 import { FirebaseProvider } from '@homeapp/common/contexts/firebase-context';
 import { AuthProvider, useAuth } from '@homeapp/common/contexts/auth-context';
 import { PropertiesListProvider } from '@homeapp/common/contexts/properties-list-context';
@@ -29,6 +30,10 @@ import {
 } from '@/hooks/useAndroidImmersiveMode';
 
 const routesLog = createLogger('routes');
+
+void SplashScreen.preventAutoHideAsync().catch(() => {
+  /* dev reload or splash already hidden */
+});
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -74,13 +79,17 @@ function Routes() {
   const isLoaded = !loading;
   const router = useRouter();
   const segments = useSegments();
+  const splashHiddenRef = React.useRef(false);
 
   React.useEffect(() => {
     routesLog.debug('auth.state', { isSignedIn, isLoaded, loading });
-    if (isLoaded) {
-      SplashScreen.hideAsync();
-    }
   }, [isLoaded, loading, isSignedIn]);
+
+  const onAppReadyLayout = React.useCallback(() => {
+    if (!isLoaded || splashHiddenRef.current) return;
+    splashHiddenRef.current = true;
+    void SplashScreen.hideAsync();
+  }, [isLoaded]);
 
   // Handle navigation based on auth state
   React.useEffect(() => {
@@ -111,17 +120,23 @@ function Routes() {
   }, [isSignedIn, isLoaded, segments, router]);
 
   if (!isLoaded) {
-    return null;
+    return <View style={{ flex: 1, backgroundColor: LANDING_BACKGROUND }} />;
   }
 
   return (
     <AppUpdateGate enabled={isLoaded}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="auth" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
+      <View style={{ flex: 1, backgroundColor: LANDING_BACKGROUND }} onLayout={onAppReadyLayout}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: LANDING_BACKGROUND },
+          }}>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="auth" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      </View>
     </AppUpdateGate>
   );
 }
