@@ -6,8 +6,10 @@ import re
 
 _CHECKPOINT_INVENTORY_LIST_RE = re.compile(
     r"\b("
-    r"what checkpoints?|which checkpoints?|list (?:my )?checkpoints?|"
-    r"how many checkpoints?"
+    r"what checkpoints?|which checkpoints?|"
+    r"list\b.{0,40}\bcheckpoints?|"
+    r"how many checkpoints?|"
+    r"available checkpoints?"
     r")\b",
     re.IGNORECASE,
 )

@@ -11,6 +11,7 @@ from typing import Any, Dict, Mapping, Optional
 from property_agent.checkpoint.constants import (
     CHECKPOINT_ANALYSIS_TOOL,
     CHECKPOINT_EXPLICIT_BRANCHES_KEY,
+    CHECKPOINT_LOCATION_META_STATE_KEY,
 )
 from property_agent.checkpoint.executor_tools import CHECKPOINT_ROUTING_TOOLS
 from property_agent.checkpoint.session_input import (
@@ -219,6 +220,28 @@ def prepare_list_checkpoints_tool(
     sync_checkpoint_tool_args_to_state(state, args)
 
 
+def _apply_retrieval_scope_carryover_to_tool_args(
+    state: Any,
+    args: Dict[str, Any],
+) -> None:
+    from property_agent.checkpoint.retrieval.retrieval_scope import (
+        query_defines_retrieval_scope,
+    )
+
+    if not isinstance(args, dict) or state is None or not hasattr(state, "get"):
+        return
+    user_query = str(args.get("user_query") or state.get("user_query") or "")
+    if query_defines_retrieval_scope(user_query):
+        return
+    if args.get("location"):
+        return
+    prior_location = state.get(CHECKPOINT_LOCATION_META_STATE_KEY)
+    if isinstance(prior_location, dict):
+        matched = str(prior_location.get("matched_field") or "").strip()
+        if matched:
+            args["location"] = matched
+
+
 def prepare_analyze_checkpoints_tool(
     state: Any,
     args: Dict[str, Any],
@@ -231,6 +254,16 @@ def prepare_analyze_checkpoints_tool(
     """
     if not isinstance(args, dict):
         return None
+
+    from property_agent.checkpoint.retrieval.effective_query import (
+        resolve_effective_checkpoint_query,
+    )
+
+    effective_query = resolve_effective_checkpoint_query(
+        state, str(args.get("user_query") or user_query or "")
+    )
+    if effective_query:
+        args["user_query"] = effective_query
 
     uq = user_query or resolve_user_query_from_state(state) or str(
         args.get("user_query") or ""
@@ -257,6 +290,7 @@ def prepare_analyze_checkpoints_tool(
     args["checkpoint_optional_agents"] = branches
     apply_session_checkpoint_ids_to_tool_args(state, args)
     apply_session_location_to_tool_args(state, args)
+    _apply_retrieval_scope_carryover_to_tool_args(state, args)
     sync_checkpoint_tool_args_to_state(state, args)
     logger.info(
         "tool_guards: analyze_checkpoints branches=%r checkpoint_ids=%r",

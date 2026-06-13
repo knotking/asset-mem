@@ -20,9 +20,14 @@ from property_agent.checkpoint.constants import (
     CHECKPOINT_INVENTORY_META_STATE_KEY,
     CHECKPOINT_LIST_TOOL,
     CHECKPOINT_ANALYSIS_TOOL,
+    CHECKPOINT_TEMPORAL_META_STATE_KEY,
+    CHECKPOINT_LOCATION_META_STATE_KEY,
 )
 from property_agent.checkpoint.pipeline import run_checkpoint_pipeline
 from property_agent.checkpoint.retrieval.agent import _firestore_client
+from property_agent.checkpoint.retrieval.effective_query import (
+    resolve_effective_checkpoint_query,
+)
 from property_agent.checkpoint.retrieval.firestore_checkpoint_list import (
     list_recent_property_checkpoints,
 )
@@ -84,15 +89,20 @@ async def list_checkpoints(
         return "Missing user or property context for checkpoint listing."
 
     tool_context.state["property_id"] = property_id
-    if user_query:
-        tool_context.state["user_query"] = user_query
+    effective_query = resolve_effective_checkpoint_query(tool_context.state, user_query or "")
+    if effective_query:
+        tool_context.state["user_query"] = effective_query
 
     db = _firestore_client()
+    # Property-wide inventory — never apply scoped date/location carryover.
+    tool_context.state[CHECKPOINT_TEMPORAL_META_STATE_KEY] = None
+    tool_context.state[CHECKPOINT_LOCATION_META_STATE_KEY] = None
+
     list_result = list_recent_property_checkpoints(
         db,
         user_id=user_id,
         property_id=property_id,
-        location=location,
+        location=None,
     )
     raw_checkpoints = list_result.get("checkpoints") or []
     inventory_meta = list_result.get("inventory_meta")

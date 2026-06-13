@@ -320,6 +320,10 @@ def prepare_single_loop_before_model(
         # turn only sees toggles the client sent now.
         state["checkpoint_optional_agents"] = []
     user_query = hydrate_turn_state_from_context(ctx, llm_request=llm_request)
+    if state is not None and hasattr(state, "__setitem__"):
+        ref = datetime.now(timezone.utc)
+        state.setdefault("current_date_utc", ref.strftime("%Y-%m-%d"))
+        state.setdefault("current_year", ref.year)
 
     chip = resolve_turn_from_chip(state, user_query=user_query)
     if chip is not None:

@@ -142,6 +142,60 @@ def prepend_inventory_disclosure_to_blob(
     return f"{prefix}\n\n{body}" if body else prefix
 
 
+def prepend_temporal_disclosure_to_blob(
+    blob: str,
+    temporal_meta: Optional[Dict[str, Any]],
+) -> str:
+    from property_agent.checkpoint.retrieval.temporal_query import (
+        format_temporal_scope_disclosure,
+    )
+    from property_agent.checkpoint.retrieval.temporal_query import (
+        CheckpointDateRange,
+    )
+
+    if not isinstance(temporal_meta, dict):
+        return blob
+    label = str(temporal_meta.get("label") or "").strip()
+    start = str(temporal_meta.get("start_utc") or "").strip()
+    end = str(temporal_meta.get("end_utc") or "").strip()
+    if not label or not start or not end:
+        return blob
+    try:
+        date_range = CheckpointDateRange(
+            start_utc=datetime.fromisoformat(start.replace("Z", "+00:00")),
+            end_utc=datetime.fromisoformat(end.replace("Z", "+00:00")),
+            label=label,
+        )
+    except ValueError:
+        return blob
+    prefix = format_temporal_scope_disclosure(date_range)
+    body = (blob or "").strip()
+    return f"{prefix}\n\n{body}" if body else prefix
+
+
+def prepend_location_disclosure_to_blob(
+    blob: str,
+    location_meta: Optional[Dict[str, Any]],
+) -> str:
+    from property_agent.checkpoint.retrieval.location_query import (
+        format_location_scope_disclosure,
+    )
+
+    if not isinstance(location_meta, dict):
+        return blob
+    requested = str(location_meta.get("requested") or "").strip()
+    if not requested:
+        return blob
+    matched = location_meta.get("matched_field")
+    matched_field = str(matched).strip() if matched else None
+    prefix = format_location_scope_disclosure(
+        requested=requested,
+        matched_field=matched_field,
+    )
+    body = (blob or "").strip()
+    return f"{prefix}\n\n{body}" if body else prefix
+
+
 def build_initial_analysis(
     *,
     checkpoint_results: str,

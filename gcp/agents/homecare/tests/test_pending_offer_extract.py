@@ -101,3 +101,59 @@ def test_maybe_set_pending_from_suggested_actions() -> None:
     assert pending is not None
     assert pending.kind == "run_branch"
     assert pending.run_optional_agents == ["coverage", "cost"]
+
+
+def test_maybe_set_pending_skips_when_branches_already_completed(monkeypatch) -> None:
+    from property_agent.routing.pending_user_action import PendingUserAction
+
+    monkeypatch.setattr(
+        "property_agent.routing.pending_offer_extract.extract_pending_offer_from_text",
+        lambda *_a, **_k: PendingUserAction(
+            kind="run_branch",
+            expanded_user_query="Run coverage, diy, service analysis.",
+            run_optional_agents=["coverage", "diy", "service"],
+        ),
+    )
+    state = {
+        "_checkpoint_pipeline_completed": ["coverage", "diy", "service"],
+        "checkpoint_analysis": {
+            "analysis": {
+                "analysisStatus": {
+                    "coverage": "completed",
+                    "diy": "completed",
+                    "service": "completed",
+                    "cost": "completed",
+                },
+            },
+        },
+    }
+    maybe_set_pending_from_assistant_reply(
+        state,
+        assistant_text="Would you like coverage, diy, or service analysis?",
+    )
+    assert get_pending_user_action(state) is None
+
+
+def test_maybe_set_pending_keeps_uncompleted_branches(monkeypatch) -> None:
+    from property_agent.routing.pending_user_action import PendingUserAction
+
+    monkeypatch.setattr(
+        "property_agent.routing.pending_offer_extract.extract_pending_offer_from_text",
+        lambda *_a, **_k: PendingUserAction(
+            kind="run_branch",
+            expanded_user_query="Run coverage, diy, service analysis.",
+            run_optional_agents=["coverage", "diy", "service"],
+        ),
+    )
+    state = {
+        "checkpoint_analysis": {
+            "costEstimationResults": {"costEstimates": {"total": 100}},
+        },
+    }
+    maybe_set_pending_from_assistant_reply(
+        state,
+        assistant_text="Would you like coverage, diy, or service analysis?",
+    )
+    pending = get_pending_user_action(state)
+    assert pending is not None
+    assert set(pending.run_optional_agents) == {"coverage", "diy", "service"}

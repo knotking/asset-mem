@@ -93,12 +93,12 @@ def get_rag_file_ids(
     return file_ids
 
 
-def _ask_user_docs_retreival_sync(
+def _ask_user_docs_retrieval_sync(
     user_query: str,
     context_doc_uris: Optional[List[str]],
     user_id: str,
 ):
-    """GCS + Vertex RAG retrieval (blocking); runs in a worker thread from ask_user_docs_retreival."""
+    """GCS + Vertex RAG retrieval (blocking); runs in a worker thread from ask_user_docs_retrieval."""
     rag_file_ids = get_rag_file_ids(user_id, context_doc_uris)
 
     rag_resources = []
@@ -130,7 +130,7 @@ def _ask_user_docs_retreival_sync(
     )
 
 
-async def ask_user_docs_retreival(
+async def ask_user_docs_retrieval(
     user_query: str,
     context_doc_uris: Optional[List[str]] = None,
     tool_context: ToolContext | None = None,
@@ -142,7 +142,7 @@ async def ask_user_docs_retreival(
         or tool_context._invocation_context.session.user_id
     )
     return await to_thread(
-        _ask_user_docs_retreival_sync,
+        _ask_user_docs_retrieval_sync,
         user_query,
         context_doc_uris,
         user_id,
@@ -154,9 +154,9 @@ user_docs_agent = Agent(
     name="ask_user_docs_agent",
     instruction=user_docs_agent_instruction(),
     input_schema=DocsInput,
-    tools=[ask_user_docs_retreival],
+    tools=[ask_user_docs_retrieval],
     disallow_transfer_to_parent=True,
     output_key="user_docs_result",
 )
 
-__all__ = ["user_docs_agent"]
+__all__ = ["user_docs_agent", "ask_user_docs_retrieval"]

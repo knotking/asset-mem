@@ -1,10 +1,8 @@
-"""Checkpoint retrieval instructions for ``run_checkpoint_pipeline`` step 1.
+"""Checkpoint retrieval instructions — NOT ACTIVE.
 
-Structured UI output is assembled downstream into ``contentJson`` / ``contentMarkdown``
-via state_delta — not fenced dual-format wire strings.
-
-Note: ``checkpoint_retrieval_instruction`` is retained for reference / future wiring;
-the live retrieval path uses inline prompts in the pipeline today.
+The live retrieval path uses inline prompts inside ``run_checkpoint_pipeline``
+(``property_agent/checkpoint/pipeline.py``). This function is retained for
+reference only and is not wired into any agent or tool.
 """
 
 

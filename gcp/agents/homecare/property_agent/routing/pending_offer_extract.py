@@ -12,6 +12,7 @@ from google.genai import types
 from ..model_config import global_flash_lite_client_and_model
 from .optional_branches import OPTIONAL_CHECKPOINT_BRANCHES
 from .pending_user_action import PendingUserAction, set_pending_user_action
+from .query_mode.branch_analysis import session_optional_branches_completed
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +129,49 @@ def extract_pending_offer_from_text(
     )
 
 
+def filter_completed_pending_branches(
+    branches: list[str],
+    state: Any,
+) -> list[str]:
+    """Drop optional branches that already have session analysis content."""
+    completed = session_optional_branches_completed(state)
+    filtered = [b for b in branches if b not in completed]
+    if filtered != branches:
+        logger.info(
+            "pending_offer_extract: filtered completed branches %r -> %r",
+            branches,
+            filtered,
+        )
+    return filtered
+
+
+def _apply_pending_branch_filter(
+    pending: PendingUserAction,
+    state: Any,
+) -> Optional[PendingUserAction]:
+    if pending.kind != "run_branch":
+        return pending
+    filtered = filter_completed_pending_branches(pending.run_optional_agents, state)
+    if not filtered:
+        logger.info(
+            "pending_offer_extract: skip offer; branches already completed %r",
+            pending.run_optional_agents,
+        )
+        return None
+    if filtered == pending.run_optional_agents:
+        return pending
+    expanded = pending.expanded_user_query
+    if expanded.startswith("Run ") and "analysis" in expanded.lower():
+        expanded = f"Run {', '.join(filtered)} analysis."
+    return PendingUserAction(
+        kind=pending.kind,
+        expanded_user_query=expanded,
+        run_optional_agents=filtered,
+        capability_key=pending.capability_key,
+        offered_summary=pending.offered_summary,
+    )
+
+
 def _heuristic_pending_from_offer(assistant_text: str) -> Optional[PendingUserAction]:
     """Fallback when micro-LLM extract misses a trailing offer question."""
     text = (assistant_text or "").strip()
@@ -161,6 +205,9 @@ def maybe_set_pending_from_suggested_actions(state: Any) -> bool:
     pending = pending_from_suggested_actions(state)
     if pending is None:
         return False
+    pending = _apply_pending_branch_filter(pending, state)
+    if pending is None:
+        return False
     set_pending_user_action(state, pending)
     logger.info(
         "pending_offer_extract: source=suggested_actions kind=%s branches=%r",
@@ -181,6 +228,8 @@ def maybe_set_pending_from_assistant_reply(
     if pending is None:
         pending = _heuristic_pending_from_offer(assistant_text)
         source = "heuristic"
+    if pending is not None:
+        pending = _apply_pending_branch_filter(pending, state)
     if pending is not None:
         set_pending_user_action(state, pending)
         logger.info(

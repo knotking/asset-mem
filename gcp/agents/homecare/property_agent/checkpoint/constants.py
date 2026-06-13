@@ -56,7 +56,12 @@ CHECKPOINT_SESSION_INPUT_KEYS: tuple[str, ...] = (
 # Max checkpoints returned for inventory/status list queries (recency-ordered).
 CHECKPOINT_INVENTORY_LIST_LIMIT = 20
 
+# Minimum cosine similarity (0–1) for vector search results; weaker matches are dropped.
+CHECKPOINT_VECTOR_SIMILARITY_MIN = 0.5
+
 CHECKPOINT_INVENTORY_META_STATE_KEY = "checkpoint_inventory_meta"
+CHECKPOINT_TEMPORAL_META_STATE_KEY = "checkpoint_temporal_meta"
+CHECKPOINT_LOCATION_META_STATE_KEY = "checkpoint_location_meta"
 
 # Phase 2 executor tool names (registry exposes these instead of run_checkpoint_pipeline).
 CHECKPOINT_LIST_TOOL = "list_checkpoints"

@@ -6,7 +6,12 @@ import re
 from typing import Any, Mapping
 
 from ..optional_branches import OPTIONAL_CHECKPOINT_BRANCHES
-from .session_memory import _analysis_object_from_state, _branch_payload_has_content
+from .session_memory import (
+    SESSION_WORKING_MEMORY_SNAPSHOT_KEY,
+    _analysis_object_from_state,
+    _branch_payload_has_content,
+    _branches_completed_from_analysis,
+)
 
 _ENTITY_DETAIL_RE = re.compile(
     r"\b("
@@ -43,14 +48,38 @@ def branches_mentioned_in_query(user_query: str) -> list[str]:
 
 
 def prior_analysis_branches_completed(state: Mapping[str, Any] | None) -> frozenset[str]:
-    """Return branches that have completed content in the current session analysis."""
-    analysis = _analysis_object_from_state(state)
-    if not analysis:
+    """Return optional branches already completed in session analysis."""
+    return session_optional_branches_completed(state)
+
+
+def session_optional_branches_completed(state: Mapping[str, Any] | None) -> frozenset[str]:
+    """Union of completed optional branches from analysis payloads and pipeline status."""
+    if not state:
         return frozenset()
+
     completed: set[str] = set()
-    for branch in OPTIONAL_CHECKPOINT_BRANCHES:
-        if _branch_payload_has_content(branch, analysis):
-            completed.add(branch)
+
+    analysis = _analysis_object_from_state(state)
+    if isinstance(analysis, dict):
+        completed.update(_branches_completed_from_analysis(analysis))
+
+    pipeline_done = state.get("_checkpoint_pipeline_completed")
+    if isinstance(pipeline_done, list):
+        for branch in pipeline_done:
+            if branch in OPTIONAL_CHECKPOINT_BRANCHES:
+                completed.add(str(branch))
+
+    snapshot = state.get(SESSION_WORKING_MEMORY_SNAPSHOT_KEY)
+    if isinstance(snapshot, dict):
+        for branch in snapshot.get("branches_completed") or []:
+            if branch in OPTIONAL_CHECKPOINT_BRANCHES:
+                completed.add(str(branch))
+
+    if not completed:
+        for branch in OPTIONAL_CHECKPOINT_BRANCHES:
+            if _branch_payload_has_content(branch, analysis or {}):
+                completed.add(branch)
+
     return frozenset(completed)
 
 
