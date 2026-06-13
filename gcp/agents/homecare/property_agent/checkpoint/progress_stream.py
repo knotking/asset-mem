@@ -4,10 +4,24 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 from typing import Any, Dict, Optional
 
 from google.adk.events.event import Event
+
+from agent_platform.core.streaming import (
+    bind_progress_stream_event_loop,
+    clear_progress_queue_registry,
+    enqueue_progress_item,
+    get_any_registered_progress_queue,
+    get_progress_queue,
+    get_progress_queue_for_invocation_id,
+    has_registered_progress_queues,
+    init_progress_queue,
+    progress_streaming_enabled,
+    release_progress_queue,
+    release_progress_queue_for_invocation_id,
+    set_progress_queue_context_attr,
+)
 
 from property_agent.checkpoint.analysis.assembler import (
     apply_tool_context_state_delta,
@@ -18,124 +32,36 @@ from property_agent.checkpoint.progress_events import build_checkpoint_progress_
 
 logger = logging.getLogger(__name__)
 
-_PROGRESS_QUEUE_ATTR = "_checkpoint_progress_queue"
-# Agent Engine may pass distinct InvocationContext objects for the runner vs tools;
-# key by invocation_id so enqueue and multiplex share one queue.
-_progress_queues_by_invocation_id: dict[str, asyncio.Queue[Event]] = {}
-# Event loop driving ``async_stream_query`` / ``stream_query`` multiplex (Agent Engine).
-_bound_stream_loop: Optional[asyncio.AbstractEventLoop] = None
+set_progress_queue_context_attr("_checkpoint_progress_queue")
 
-
-def _invocation_key(invocation_context: Any) -> str:
-    return str(getattr(invocation_context, "invocation_id", "") or "").strip()
-
-
-def _attach_queue_to_context(
-    invocation_context: Any, queue: asyncio.Queue[Event]
-) -> asyncio.Queue[Event]:
-    setattr(invocation_context, _PROGRESS_QUEUE_ATTR, queue)
-    key = _invocation_key(invocation_context)
-    if key:
-        _progress_queues_by_invocation_id[key] = queue
-    return queue
+_PROGRESS_RUNNER_ENV = "HOMEAPP_CHECKPOINT_PROGRESS_RUNNER"
 
 
 def clear_checkpoint_progress_queue_registry() -> None:
-    """Drop registry entries (tests only)."""
-    _progress_queues_by_invocation_id.clear()
-    global _bound_stream_loop
-    _bound_stream_loop = None
-
-
-def bind_progress_stream_event_loop(
-    loop: Optional[asyncio.AbstractEventLoop] = None,
-) -> None:
-    """Record the loop that multiplexes ``async_stream_query`` (for cross-thread enqueue)."""
-    global _bound_stream_loop
-    _bound_stream_loop = loop or asyncio.get_running_loop()
-
-
-def has_registered_progress_queues() -> bool:
-    return bool(_progress_queues_by_invocation_id)
+    clear_progress_queue_registry()
 
 
 def checkpoint_progress_streaming_enabled() -> bool:
-    """When true, branch updates are enqueued for ``HomecareRunner`` to stream."""
-    raw = (os.getenv("HOMEAPP_CHECKPOINT_PROGRESS_RUNNER") or "1").strip().lower()
-    return raw not in ("0", "false", "no", "off")
+    return progress_streaming_enabled(env_var=_PROGRESS_RUNNER_ENV, default=True)
 
 
 def init_checkpoint_progress_queue(invocation_context: Any) -> asyncio.Queue[Event]:
-    """Register a per-invocation queue (``HomecareRunner`` multiplexes it).
-
-    Idempotent: ``run_checkpoint_pipeline`` must not replace a queue that
-    ``HomecareRunner`` is already draining (that silences incremental SSE).
-
-    When runner and tool see different ``InvocationContext`` instances (common
-    on Agent Engine), reuse the queue registered for ``invocation_id``.
-    """
-    existing = get_checkpoint_progress_queue(invocation_context)
-    if existing is not None:
-        key = _invocation_key(invocation_context)
-        if key:
-            _progress_queues_by_invocation_id.setdefault(key, existing)
-        return existing
-
-    key = _invocation_key(invocation_context)
-    if key and key in _progress_queues_by_invocation_id:
-        queue = _progress_queues_by_invocation_id[key]
-        setattr(invocation_context, _PROGRESS_QUEUE_ATTR, queue)
-        return queue
-
-    return _attach_queue_to_context(invocation_context, asyncio.Queue())
-
-
-def get_any_registered_progress_queue() -> Optional[asyncio.Queue[Event]]:
-    """Return the sole registry queue when exactly one invocation is active."""
-    if len(_progress_queues_by_invocation_id) == 1:
-        return next(iter(_progress_queues_by_invocation_id.values()))
-    return None
-
-
-def get_progress_queue_for_invocation_id(
-    invocation_id: str,
-) -> Optional[asyncio.Queue[Event]]:
-    """Registry lookup for Plan B ``async_stream_query`` multiplex (no context object)."""
-    key = str(invocation_id or "").strip()
-    if not key:
-        return None
-    queue = _progress_queues_by_invocation_id.get(key)
-    if isinstance(queue, asyncio.Queue):
-        return queue
-    return None
-
-
-def release_progress_queue_for_invocation_id(invocation_id: str) -> None:
-    """Drop registry entry after ``async_stream_query`` completes."""
-    key = str(invocation_id or "").strip()
-    if key:
-        _progress_queues_by_invocation_id.pop(key, None)
+    return init_progress_queue(invocation_context)  # type: ignore[return-value]
 
 
 def get_checkpoint_progress_queue(invocation_context: Any) -> Optional[asyncio.Queue[Event]]:
-    queue = getattr(invocation_context, _PROGRESS_QUEUE_ATTR, None)
-    if isinstance(queue, asyncio.Queue):
-        return queue
-    key = _invocation_key(invocation_context)
-    if key and key in _progress_queues_by_invocation_id:
-        queue = _progress_queues_by_invocation_id[key]
-        setattr(invocation_context, _PROGRESS_QUEUE_ATTR, queue)
-        return queue
-    return None
+    return get_progress_queue(invocation_context)  # type: ignore[return-value]
 
 
 def release_checkpoint_progress_queue(invocation_context: Any) -> None:
-    """Remove registry entry after invocation completes."""
-    key = _invocation_key(invocation_context)
-    if key:
-        release_progress_queue_for_invocation_id(key)
-    if getattr(invocation_context, _PROGRESS_QUEUE_ATTR, None) is not None:
-        delattr(invocation_context, _PROGRESS_QUEUE_ATTR)
+    release_progress_queue(invocation_context)
+
+
+async def enqueue_checkpoint_progress_event(
+    queue: asyncio.Queue[Event],
+    event: Event,
+) -> None:
+    await enqueue_progress_item(queue, event)
 
 
 async def emit_checkpoint_progress_event(
@@ -185,19 +111,3 @@ async def emit_checkpoint_progress_event(
         len(progress_text),
         queue.qsize(),
     )
-
-
-async def enqueue_checkpoint_progress_event(
-    queue: asyncio.Queue[Event],
-    event: Event,
-) -> None:
-    """Put on the multiplex loop (safe when tools run on another thread)."""
-    try:
-        running = asyncio.get_running_loop()
-    except RuntimeError:
-        running = None
-    bound = _bound_stream_loop
-    if bound is not None and running is not bound:
-        await asyncio.wrap_future(asyncio.run_coroutine_threadsafe(queue.put(event), bound))
-        return
-    await queue.put(event)

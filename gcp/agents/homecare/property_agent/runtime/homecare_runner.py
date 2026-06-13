@@ -7,6 +7,7 @@ import logging
 from collections.abc import AsyncGenerator, Callable
 from typing import TYPE_CHECKING, Any
 
+from agent_platform.core.streaming import multiplex_agent_and_progress_queue as _multiplex_core
 from google.adk.agents.run_config import RunConfig
 from google.adk.events.event import Event
 from google.adk.runners import Runner
@@ -49,72 +50,25 @@ async def multiplex_agent_and_progress_queue(
     agent_agen: AsyncGenerator[Event, None],
     progress_queue: asyncio.Queue[Event],
 ) -> AsyncGenerator[Event, None]:
-    """Yield agent events and queued checkpoint progress without cancelling the agent.
+    """Yield agent events and queued checkpoint progress without cancelling the agent."""
 
-    When progress arrives while the agent is blocked inside a tool, only the
-    progress ``queue.get()`` wait is cancelled — never the pending
-    ``agent_agen.__anext__()`` (cancelling that propagates into the tool and
-    kills ``run_checkpoint_pipeline`` / parallel branches).
-    """
-    agent_task: asyncio.Task | None = asyncio.create_task(agent_agen.__anext__())
-    progress_task: asyncio.Task | None = None
+    def _log_progress(progress_event: Event) -> None:
+        text = ""
+        if progress_event.content and progress_event.content.parts:
+            text = progress_event.content.parts[0].text or ""
+        logger.info(
+            "checkpoint progress yielded author=%s text_len=%d queue_size=%d",
+            getattr(progress_event, "author", "") or "",
+            len(text),
+            progress_queue.qsize(),
+        )
 
-    try:
-        while agent_task is not None:
-            progress_task = asyncio.create_task(progress_queue.get())
-            done, pending = await asyncio.wait(
-                {agent_task, progress_task},
-                return_when=asyncio.FIRST_COMPLETED,
-            )
-
-            if progress_task in done:
-                try:
-                    progress_event = progress_task.result()
-                    text = ""
-                    if progress_event.content and progress_event.content.parts:
-                        text = progress_event.content.parts[0].text or ""
-                    logger.info(
-                        "checkpoint progress yielded author=%s text_len=%d queue_size=%d",
-                        getattr(progress_event, "author", "") or "",
-                        len(text),
-                        progress_queue.qsize(),
-                    )
-                    yield progress_event
-                except Exception:
-                    logger.exception("checkpoint progress queue get failed")
-
-            if agent_task in done:
-                if progress_task in pending:
-                    progress_task.cancel()
-                    try:
-                        await progress_task
-                    except asyncio.CancelledError:
-                        pass
-                try:
-                    yield agent_task.result()
-                except StopAsyncIteration:
-                    agent_task = None
-                    break
-                agent_task = asyncio.create_task(agent_agen.__anext__())
-    finally:
-        if progress_task is not None and not progress_task.done():
-            progress_task.cancel()
-            try:
-                await progress_task
-            except asyncio.CancelledError:
-                pass
-        while not progress_queue.empty():
-            try:
-                yield progress_queue.get_nowait()
-            except asyncio.QueueEmpty:
-                break
-        if agent_task is not None and not agent_task.done():
-            agent_task.cancel()
-            try:
-                await agent_task
-            except (asyncio.CancelledError, StopAsyncIteration):
-                pass
-        await agent_agen.aclose()
+    async for event in _multiplex_core(
+        agent_agen,
+        progress_queue,
+        on_progress_yielded=_log_progress,
+    ):
+        yield event
 
 
 class HomecareRunner(Runner):
