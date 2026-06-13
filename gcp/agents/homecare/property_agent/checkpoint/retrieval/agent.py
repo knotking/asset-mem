@@ -242,7 +242,7 @@ def ask_checkpoints_retrieval(
         db = _firestore_client()
 
         # If specific checkpoint IDs are provided, fetch those checkpoints directly
-        if checkpoint_ids and len(checkpoint_ids) > 0:
+        if ck_mode == "by_id" and checkpoint_ids and len(checkpoint_ids) > 0:
             logger.debug(
                 "checkpoint_retrieval: fetching by id count=%d ids=%r",
                 len(checkpoint_ids),

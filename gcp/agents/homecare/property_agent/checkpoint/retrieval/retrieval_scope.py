@@ -123,6 +123,14 @@ def apply_prior_scope_from_state(
     return date_range, explicit_location, location_intent, carried_over
 
 
+def query_scope_overrides_checkpoint_ids(
+    user_query: str,
+    checkpoint_ids: Optional[list[str]],
+) -> bool:
+    """True when the question names area/time/inventory and should not lock to UI ids."""
+    return bool(checkpoint_ids) and query_defines_retrieval_scope(user_query or "")
+
+
 def plan_checkpoint_retrieval(
     user_query: str,
     *,
@@ -133,6 +141,8 @@ def plan_checkpoint_retrieval(
 ) -> CheckpointRetrievalPlan:
     """Choose retrieval mode and merge prior scope for vague follow-up turns."""
     has_ids = bool(checkpoint_ids and len(checkpoint_ids) > 0)
+    if query_scope_overrides_checkpoint_ids(user_query or "", checkpoint_ids):
+        has_ids = False
     inventory_query = bool(
         not has_ids and query_requests_checkpoint_inventory(user_query or "")
     )
@@ -194,4 +204,5 @@ __all__ = [
     "date_range_from_temporal_meta",
     "plan_checkpoint_retrieval",
     "query_defines_retrieval_scope",
+    "query_scope_overrides_checkpoint_ids",
 ]

@@ -34,6 +34,31 @@ def test_query_defines_retrieval_scope() -> None:
     assert not query_defines_retrieval_scope("run cost analysis")
 
 
+def test_plan_prefers_query_scope_over_session_checkpoint_ids() -> None:
+    plan = plan_checkpoint_retrieval(
+        "Any issues in kitchen last year?",
+        location=None,
+        checkpoint_ids=["vehicle-cp-1"],
+        reference_date="2026-06-13",
+        state=None,
+    )
+    assert plan.mode == "date_range"
+    assert plan.location_intent is not None
+    assert plan.location_intent.label == "kitchen"
+    assert plan.date_range is not None
+
+
+def test_plan_keeps_by_id_when_query_does_not_define_scope() -> None:
+    plan = plan_checkpoint_retrieval(
+        "Summarize the selected checkpoint",
+        location=None,
+        checkpoint_ids=["vehicle-cp-1"],
+        reference_date="2026-06-13",
+        state=None,
+    )
+    assert plan.mode == "by_id"
+
+
 def test_plan_combined_date_and_location() -> None:
     plan = plan_checkpoint_retrieval(
         "Any kitchen issues from May 2026?",
@@ -283,6 +308,52 @@ def test_ask_checkpoints_retrieval_scope_carryover_followup(
 
     assert out["checkpoints"] == []
     assert "date_kwargs" not in captured
+    assert out["location_meta"]["requested"] == "kitchen"
+
+
+def test_ask_checkpoints_retrieval_ignores_ids_when_query_defines_kitchen_scope(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "property_agent.checkpoint.retrieval.agent.list_checkpoint_location_values",
+        lambda *_a, **_k: ["Garage", "Vehicle - Exterior"],
+    )
+    monkeypatch.setattr(
+        "property_agent.checkpoint.retrieval.agent.list_checkpoints_in_date_range",
+        lambda *_a, **_k: {
+            "checkpoints": [],
+            "temporal_meta": {
+                "label": "2025",
+                "start_utc": "2025-01-01T00:00:00+00:00",
+                "end_utc": "2026-01-01T00:00:00+00:00",
+                "returned_count": 0,
+                "scope": "temporal",
+            },
+        },
+    )
+
+    def _fake_get_all(_refs):
+        pytest.fail("by_id fetch should not run when kitchen scoped")
+
+    mock_db = MagicMock()
+    mock_db.get_all = _fake_get_all
+    monkeypatch.setattr("property_agent.checkpoint.retrieval.agent._firestore_client", lambda: mock_db)
+
+    state = {"user_id": "u1", "current_date_utc": "2026-06-13"}
+    session = SimpleNamespace(user_id="u1")
+    tool_context = SimpleNamespace(
+        state=state, _invocation_context=SimpleNamespace(session=session)
+    )
+
+    out = ask_checkpoints_retrieval(
+        user_query="Any issues in kitchen last year?",
+        property_id="p1",
+        checkpoint_ids=["vehicle-cp-1"],
+        tool_context=tool_context,
+        refine_branch_intents=False,
+    )
+
+    assert out["checkpoints"] == []
     assert out["location_meta"]["requested"] == "kitchen"
 
 

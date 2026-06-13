@@ -26,7 +26,7 @@ Authentication: Uses Application Default Credentials (ADC) for Firestore and Ver
 
 ## How it works
 
-1. **By ID** (when UI `checkpoint_ids` are provided): direct Firestore document fetches. `before_tool` forces tool args to match session UI ids only — the executor cannot pass slug names like `garage`.
+1. **By ID** (when UI `checkpoint_ids` are provided): direct Firestore document fetches. `before_tool` forces tool args to match session UI ids only — the executor cannot pass slug names like `garage`. When the user question names a **new** area or time scope (e.g. “kitchen last year”) while a checkpoint is pinned, retrieval prefers the query scope over the selection (`query_scope_overrides_checkpoint_ids` in `retrieval_scope.py` / `tool_guards.py`).
 2. **Inventory list** (when the query asks to list checkpoints or report live status): `order_by(createdAt desc)` with a cap of 20; disclosure notes when truncated (e.g. “20 most recent of 127”)
 3. **Date range** (when the query names a calendar window — “previous month”, “April”, “last year”): Firestore `createdAt` filter on `[start, end)`; returns empty when no captures fall in that window (does **not** fall back to vector search). When the query also names a location (“kitchen issues in May”), the date filter and location resolve run together.
 4. **Location filter** (when the query names an area — “kitchen”, “garage”, “vehicle”): resolves against this property’s stored `location` values using whole-word token matching; returns empty when no checkpoint matches (does **not** fall back to vector search).
