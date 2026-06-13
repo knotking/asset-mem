@@ -77,7 +77,7 @@ File-by-file inventory for agent platform extraction.
 | Geo | `geo/*` | SerpAPI, Maps, property locations |
 | Reports | `reports/*` | Property reports |
 | Routing schema | `routing/schema.py`, `constants.py` | Homecare `ResolvedTurn` |
-| Single-loop routing | `routing/single_loop_routing.py` | Could generalize later; homecare-specific fields today |
+| Single-loop adapters | `routing/single_loop_hooks.py`, `single_loop_common.py` | Homecare `PropertySingleLoopHarnessHooks` + turn builders |
 | Bindings | `bindings/*` | Homecare state merge keys |
 | Prompts | `prompts.py` | Executor instructions |
 | Evals cases | `evals/routing/*` | Homecare routing fixtures |
@@ -101,10 +101,11 @@ File-by-file inventory for agent platform extraction.
 | File | Target | Notes |
 |------|--------|-------|
 | `routing/pending_offer_extract.py` | core pattern | Parameterize branch enum / schema |
-| `routing/chip_action.py` | core pattern | Chip fast-path protocol |
+| `routing/chip_action.py` | **done** → `core/routing/fast_paths.py` | Chip consume-once + `ChipFastPathHooks`; homecare keeps `ChipAction` schema |
+| `routing/single_loop_routing.py` | **done** → `core/routing/single_loop_harness.py` | Generic pre-executor loop; homecare `single_loop_hooks.py` |
 | `routing/post_structured_analysis.py` | core | Short-circuit post-tool executor hop |
 | `checkpoint/tool_guards.py` | core | Structural guards (parameterize tool names) |
-| `evals/routing/run_routing_eval.py` | core | Generic YAML routing eval harness |
+| `evals/routing/run_routing_eval.py` | **done** → `core/evals/routing_eval.py` | Generic YAML harness; homecare keeps `cases.yaml` |
 | `checkpoint/branch_registry.py` | vertical | Uses core `BranchToolSpec`; stays as data |
 
 ### ADK-touched `property_agent` files (24 files)

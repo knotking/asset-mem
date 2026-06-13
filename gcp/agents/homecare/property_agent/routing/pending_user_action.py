@@ -123,3 +123,54 @@ def consume_pending_for_resolve(
         out["user_goal"] = out.get("user_goal") or "answer_from_context"
         out["retrieval_only"] = True
     return out
+
+
+def resolve_turn_from_pending_offer(
+    state: Any,
+    *,
+    user_query: str,
+) -> Optional[Any]:
+    """Deterministic accept-offer fast-path when user short-replies to a pending offer."""
+    from agent_platform.core.routing.fast_paths import (
+        AcceptOfferFastPathHooks,
+        default_is_short_affirmative_reply,
+        try_accept_offer_fast_path,
+    )
+
+    from .conversational_intent import is_closure_phrase
+    from .schema import resolved_turn_from_state
+    from .single_loop_common import minimal_substantive_resolved_turn
+    from agent_platform.core.routing.resolved_turn import RESOLVED_TURN_STATE_KEY
+
+    class _AcceptHooks(AcceptOfferFastPathHooks):
+        def get_pending_offer(self, work: Any) -> Any | None:
+            return get_pending_user_action(work)
+
+        def is_accept_reply(self, query: str, *, state: Any) -> bool:
+            _ = state
+            return default_is_short_affirmative_reply(
+                query, closure_checker=is_closure_phrase
+            )
+
+        def build_base_substantive_turn(self, work: Any, *, user_query: str) -> Any:
+            return minimal_substantive_resolved_turn(work, user_query=user_query)
+
+        def apply_pending_to_turn(
+            self, base_turn: Any, *, user_query: str, state: Any
+        ) -> Any | None:
+            payload = consume_pending_for_resolve(
+                {**base_turn.to_dict(), "resolve_source": "single_loop"},
+                user_query=user_query,
+                state=state,
+                discourse_act="accept_offer",
+            )
+            if payload.get("discourse_act") != "accept_offer":
+                return None
+            return resolved_turn_from_state({RESOLVED_TURN_STATE_KEY: payload})
+
+        def clear_pending_offer(self, work: Any) -> None:
+            clear_pending_user_action(work)
+
+    return try_accept_offer_fast_path(
+        state, user_query=user_query, hooks=_AcceptHooks()
+    )

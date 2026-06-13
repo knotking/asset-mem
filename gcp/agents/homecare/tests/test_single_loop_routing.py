@@ -95,7 +95,7 @@ def test_prepare_single_loop_skips_re_resolve_same_invocation() -> None:
     )
     llm_request = SimpleNamespace(config=None)
     with patch(
-        "property_agent.routing.single_loop_routing.hydrate_turn_state_from_context"
+        "property_agent.routing.single_loop_hooks.hydrate_turn_state_from_context"
     ) as mock_hydrate:
         assert prepare_single_loop_before_model(ctx, llm_request=llm_request) is None
         mock_hydrate.assert_not_called()

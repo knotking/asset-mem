@@ -16,9 +16,14 @@ from typing import Any, Optional
 from .optional_branches import OPTIONAL_CHECKPOINT_BRANCHES
 from .schema import ResolvedTurn
 
-logger = logging.getLogger(__name__)
+from agent_platform.core.routing.fast_paths import (
+    CHIP_ACTION_STATE_KEY,
+    ChipFastPathHooks,
+    consume_state_value,
+    try_chip_fast_path,
+)
 
-CHIP_ACTION_STATE_KEY = "chip_action"
+logger = logging.getLogger(__name__)
 
 _DISCUSS_TOPICS = frozenset(
     {"checkpoint", "coverage", "diy", "service", "cost", "documents"}
@@ -53,18 +58,10 @@ def parse_chip_action(value: Any) -> Optional[ChipAction]:
 
 
 def take_chip_action(state: Any) -> Optional[ChipAction]:
-    """Read and consume ``chip_action`` from session state.
-
-    Consume-once: session state persists across turns, so a stale chip action
-    must never leak into the next free-text turn.
-    """
-    if state is None or not hasattr(state, "get"):
-        return None
-    raw = state.get(CHIP_ACTION_STATE_KEY)
+    """Read and consume ``chip_action`` from session state."""
+    raw = consume_state_value(state, CHIP_ACTION_STATE_KEY)
     if raw is None:
         return None
-    if hasattr(state, "__setitem__"):
-        state[CHIP_ACTION_STATE_KEY] = None
     return parse_chip_action(raw)
 
 
@@ -116,29 +113,38 @@ def resolved_turn_from_chip_action(
     )
 
 
+class _ChipFastPathHooks(ChipFastPathHooks):
+    def parse_chip_payload(self, raw: Any) -> ChipAction | None:
+        return parse_chip_action(raw)
+
+    def resolved_turn_from_chip(
+        self, chip: ChipAction, *, user_query: str, state: Any
+    ) -> ResolvedTurn:
+        _ = state
+        return resolved_turn_from_chip_action(chip, user_query=user_query)
+
+    def on_chip_resolved(self, state: Any) -> None:
+        from .pending_user_action import clear_pending_user_action
+
+        clear_pending_user_action(state)
+
+
+_CHIP_FAST_PATH_HOOKS = _ChipFastPathHooks()
+
+
 def resolve_turn_from_chip(
     state: Any,
     *,
     user_query: str,
 ) -> Optional[ResolvedTurn]:
     """Deterministic chip fast-path; None when no (valid) chip action present."""
-    action = take_chip_action(state)
-    if action is None:
+    resolved = try_chip_fast_path(
+        state, user_query=user_query, hooks=_CHIP_FAST_PATH_HOOKS
+    )
+    if resolved is None:
         return None
-    resolved = resolved_turn_from_chip_action(action, user_query=user_query)
-
-    # A chip tap supersedes any dangling assistant offer; clearing prevents the
-    # next short reply from accidentally accepting a stale offer.
-    from .pending_user_action import clear_pending_user_action
-
-    clear_pending_user_action(state)
-
     logger.info(
-        "resolve_turn chip type=%s branch=%s topic=%s route=%s retrieval_only=%s "
-        "optional=%r query=%r",
-        action.type,
-        action.branch,
-        action.topic,
+        "resolve_turn chip route=%s retrieval_only=%s optional=%r query=%r",
         resolved.route,
         resolved.retrieval_only,
         resolved.run_optional_agents,
