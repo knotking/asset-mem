@@ -416,7 +416,10 @@ def _resolve_assistant_message_fields_for_persist(
             if accum_stripped != patch_stripped and accum_stripped.startswith(
                 patch_stripped
             ):
-                patch_markdown = normalized_accumulated
+                trailing = accum_stripped[len(patch_stripped) :].lstrip()
+                patch_markdown = (
+                    f"{patch_stripped}\n\n{trailing}" if trailing else patch_stripped
+                )
         patch_json = message_content_patch.get("contentJson")
         patch_json_dict = patch_json if isinstance(patch_json, dict) else None
         content_markdown, content_json = finalize_assistant_message(

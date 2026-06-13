@@ -85,6 +85,20 @@ Following the inspection, paint chipping was found.
     expect(parts.summaryMarkdown).toContain('### Next Steps');
     expect(parts.summaryMarkdown).not.toContain('Following the inspection');
   });
+
+  it('extracts executor prose glued to the last checkpoint summary bullet', () => {
+    const message = {
+      ...messageFixtures.garageDoorDualFormatMessage,
+      contentMarkdown: `# Checkpoint analysis
+
+## Checkpoint Summary
+- **Overall Condition**: damaged, needs maintenanceThe analysis does not show any kitchen issues.`,
+    };
+    const parts = getMessageDisplayParts(message);
+    expect(parts.structuredData).toBeTruthy();
+    expect(parts.summaryMarkdown).toContain('kitchen issues');
+    expect(parts.summaryMarkdown).not.toContain('maintenanceThe');
+  });
 });
 
 describe('assistantMessageHasDisplayableContent', () => {
