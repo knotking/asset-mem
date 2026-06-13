@@ -47,7 +47,7 @@ Today these live in a monorepo split (`agent_framework` + `property_agent`), but
 | LangGraph / CrewAI / other adapters at launch | ADK adapter only; others are community or v0.2+ |
 | Open-sourcing homecare domain (`property_agent` agents, checkpoint retrieval) | Reference vertical stays private or separate example repo |
 | Full proxy / Firebase gateway OSS | Optional `agent-platform-gateway` later; contracts in core suffice for v0.1 |
-| LLM-vendor neutrality in v0.1 | Gemini/`google-genai` OK in adapters; `ModelClient` port deferred |
+| LLM-vendor neutrality in v0.1 | Gemini/`google-genai` in adapters; `ModelClient` port in core + `GeminiModelClient` in adk |
 
 ---
 

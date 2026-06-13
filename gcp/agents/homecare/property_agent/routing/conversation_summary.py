@@ -5,12 +5,12 @@ from __future__ import annotations
 import json
 import logging
 import os
-import re
 from typing import Any, Mapping, Optional, Sequence
 
-from google.genai import types
+from agent_platform.core.model.response_text import json_from_generate_response
+from agent_platform.core.ports import GenerateRequest
 
-from ..model_config import global_flash_lite_client_and_model
+from ..model_config import flash_lite_model_client
 from .analysis_digest import build_analysis_digest_blob
 from .pending_user_action import get_pending_user_action
 from .recent_dialogue import recent_dialogue
@@ -62,21 +62,6 @@ def conversation_summary_from_state(state: Mapping[str, Any] | None) -> Optional
     return None
 
 
-def _json_from_response(response: Any) -> Optional[dict[str, Any]]:
-    parsed = getattr(response, "parsed", None)
-    if isinstance(parsed, dict):
-        return parsed
-    primary = (getattr(response, "text", None) or "").strip()
-    if primary.startswith("```"):
-        primary = re.sub(r"^```(?:json)?\s*", "", primary, flags=re.I)
-        primary = re.sub(r"\s*```\s*$", "", primary).strip()
-    try:
-        data = json.loads(primary)
-    except json.JSONDecodeError:
-        return None
-    return data if isinstance(data, dict) else None
-
-
 def _task_context_blob(state: Mapping[str, Any]) -> dict[str, Any]:
     blob: dict[str, Any] = {}
     pending = get_pending_user_action(state)
@@ -120,22 +105,21 @@ def maybe_update_conversation_summary(
         f"TASK_STATE:\n{json.dumps(task_blob, indent=2)}\n\n"
         f"RECENT_DIALOGUE:\n{dialogue}\n"
     )
-    client, model = global_flash_lite_client_and_model()
+    client = flash_lite_model_client()
     try:
-        response = client.models.generate_content(
-            model=model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
+        response = client.generate(
+            GenerateRequest(
+                contents=prompt,
                 temperature=0.1,
                 max_output_tokens=512,
                 response_mime_type="application/json",
                 response_json_schema=_SUMMARY_SCHEMA,
-            ),
+            )
         )
     except Exception:
         logger.debug("conversation_summary: generate_content failed", exc_info=True)
         return
-    raw = _json_from_response(response)
+    raw = json_from_generate_response(response)
     if not raw:
         return
     summary = str(raw.get("summary") or "").strip()

@@ -125,6 +125,47 @@ ADK adapter builds `google.adk.events.event.Event` + `EventActions`. Homecare us
 
 ---
 
+## `ModelClient`
+
+Direct LLM calls outside the runtime executor (micro-LLMs, JSON extraction, grounded search helpers).
+
+```python
+@dataclass(frozen=True)
+class GenerateRequest:
+  contents: str | list[Any]
+  model: str | None = None
+  temperature: float | None = None
+  max_output_tokens: int | None = None
+  response_mime_type: str | None = None
+  response_json_schema: dict[str, Any] | None = None
+  extra_config: dict[str, Any] | None = None  # adapter-specific (tools, thinking_level, …)
+
+@dataclass(frozen=True)
+class GenerateResponse:
+  text: str
+  parsed: Any | None = None
+  raw: Any | None = None
+
+class ModelClient(Protocol):
+  default_model: str
+  def generate(self, request: GenerateRequest) -> GenerateResponse: ...
+  async def generate_async(self, request: GenerateRequest) -> GenerateResponse: ...
+```
+
+**ADK / Gemini adapter (`agent-platform-adk`):**
+
+| Port | Implementation |
+|------|----------------|
+| `ModelClient` | `GeminiModelClient` — wraps `google.genai.Client` |
+| Factory | `create_gemini_model_client(model=GeminiModel \| str, backend=GeminiBackend)` |
+| Model ids | `GeminiModel` enum (`GEMINI_3_1_FLASH_LITE`, `GEMINI_3_5_FLASH`, `GEMINI_2_5_FLASH`) + raw strings for future ids |
+| Env helper | `gemini_model_from_env("SINGLE_LOOP_GEMINI_MODEL", default=GeminiModel.…)` |
+| Response helpers | `agent_platform.core.model.response_text` |
+
+Homecare keeps semantic names in `model_config.py` (`flash_lite_model_client()`, etc.) built on the factory.
+
+---
+
 ## `HookRegistry`
 
 Vertical + platform callbacks. Registered on the runtime adapter, not in core.

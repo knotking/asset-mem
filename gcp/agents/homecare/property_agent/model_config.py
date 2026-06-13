@@ -8,6 +8,12 @@ from functools import cached_property, lru_cache
 import os
 from typing import ClassVar
 
+from agent_platform.adk.gemini_models import GeminiModel, gemini_model_from_env
+from agent_platform.adk.model_client import (
+    GeminiBackend,
+    GeminiModelClient,
+    create_gemini_model_client,
+)
 from google import genai
 from google.adk.models import Gemini
 from google.genai import Client, types
@@ -38,17 +44,17 @@ class Gemini3(Gemini):
 
 
 # ADK sub-agents (coverage, service, shopping, …): fast routing + streaming.
-GLOBAL_GEMINI_MODEL = Gemini3(model="gemini-3.1-flash-lite")
+GLOBAL_GEMINI_MODEL = Gemini3(model=GeminiModel.GEMINI_3_1_FLASH_LITE)
 
 # Root executor + direct ``generate_content`` (DIY web/steps, cost, refiner, synthesis).
 # A/B on perf branch: default ``gemini-3.1-flash-lite``; set ``SINGLE_LOOP_GEMINI_MODEL=gemini-3.5-flash`` to compare.
-SINGLE_LOOP_GEMINI_MODEL_NAME: str = (
-    os.getenv("SINGLE_LOOP_GEMINI_MODEL", "gemini-3.1-flash-lite").strip()
-    or "gemini-3.1-flash-lite"
+SINGLE_LOOP_GEMINI_MODEL_NAME: str = gemini_model_from_env(
+    "SINGLE_LOOP_GEMINI_MODEL",
+    default=GeminiModel.GEMINI_3_1_FLASH_LITE,
 )
 SINGLE_LOOP_GEMINI_MODEL = Gemini3(model=SINGLE_LOOP_GEMINI_MODEL_NAME)
 
-GLOBAL_FLASH_LITE_MODEL_NAME: str = GLOBAL_GEMINI_MODEL.model
+GLOBAL_FLASH_LITE_MODEL_NAME: str = GeminiModel.GEMINI_3_1_FLASH_LITE
 
 
 def global_agent_gemini_model() -> Gemini3:
@@ -59,6 +65,24 @@ def global_agent_gemini_model() -> Gemini3:
 def global_flash_lite_client_and_model() -> tuple[Client, str]:
     """Vertex ``location=global`` client + ``gemini-3.1-flash-lite`` for routing micro-LLMs."""
     return GLOBAL_GEMINI_MODEL.api_client, GLOBAL_GEMINI_MODEL.model
+
+
+@lru_cache(maxsize=1)
+def flash_lite_model_client() -> GeminiModelClient:
+    """``ModelClient`` for routing micro-LLMs (offer extract, conversation summary)."""
+    return create_gemini_model_client(
+        model=GeminiModel.GEMINI_3_1_FLASH_LITE,
+        backend=GeminiBackend.VERTEX_GLOBAL,
+    )
+
+
+@lru_cache(maxsize=1)
+def direct_generate_model_client() -> GeminiModelClient:
+    """``ModelClient`` for direct ``generate_content`` (DIY, cost, synthesis, refiner)."""
+    return create_gemini_model_client(
+        model=SINGLE_LOOP_GEMINI_MODEL_NAME,
+        backend=GeminiBackend.VERTEX_GLOBAL,
+    )
 
 
 def global_direct_generate_model_name() -> str:
@@ -101,9 +125,9 @@ def _legacy_vertex_genai_client() -> genai.Client:
 
 
 class _LegacyApiGemini:
-    """Vertex `genai.Client` + `gemini-2.5-flash` for direct `generate_content` call sites."""
+    """Vertex `genai.Client` + legacy flash model for direct `generate_content` call sites."""
 
-    model: ClassVar[str] = "gemini-2.5-flash"
+    model: ClassVar[str] = GeminiModel.GEMINI_2_5_FLASH
 
     @property
     def api_client(self) -> genai.Client:
@@ -115,3 +139,12 @@ LEGACY_API_GEMINI = _LegacyApiGemini()
 
 # Same Vertex client as LEGACY_API_GEMINI (not ADK Gemini3 / location=global).
 LEGACY_GEMINI_MODEL = LEGACY_API_GEMINI
+
+
+@lru_cache(maxsize=1)
+def legacy_regional_model_client() -> GeminiModelClient:
+    """Regional Vertex client for legacy ``gemini-2.5-flash`` call sites."""
+    return create_gemini_model_client(
+        model=GeminiModel.GEMINI_2_5_FLASH,
+        backend=GeminiBackend.VERTEX_REGIONAL,
+    )

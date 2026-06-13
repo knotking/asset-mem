@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 from typing import Any, Optional
 
-from google.genai import types
+from agent_platform.core.model.response_text import json_from_generate_response
+from agent_platform.core.ports import GenerateRequest
 
-from ..model_config import global_flash_lite_client_and_model
+from ..model_config import flash_lite_model_client
 from .optional_branches import OPTIONAL_CHECKPOINT_BRANCHES
 from .pending_user_action import PendingUserAction, set_pending_user_action
 from .query_mode.branch_analysis import session_optional_branches_completed
@@ -65,21 +65,6 @@ run_optional_agents: subset of coverage,diy,service,cost when kind=run_branch; e
 Never invent branches the assistant did not offer."""
 
 
-def _json_from_response(response: Any) -> Optional[dict[str, Any]]:
-    parsed = getattr(response, "parsed", None)
-    if isinstance(parsed, dict):
-        return parsed
-    primary = (getattr(response, "text", None) or "").strip()
-    if primary.startswith("```"):
-        primary = re.sub(r"^```(?:json)?\s*", "", primary, flags=re.I)
-        primary = re.sub(r"\s*```\s*$", "", primary).strip()
-    try:
-        data = json.loads(primary)
-    except json.JSONDecodeError:
-        return None
-    return data if isinstance(data, dict) else None
-
-
 def extract_pending_offer_from_text(
     assistant_text: str,
     *,
@@ -93,22 +78,21 @@ def extract_pending_offer_from_text(
         f"USER_QUERY_BEFORE_REPLY: {user_query[:200]}\n\n"
         f"ASSISTANT_REPLY:\n{text[:2000]}\n"
     )
-    client, model = global_flash_lite_client_and_model()
+    client = flash_lite_model_client()
     try:
-        response = client.models.generate_content(
-            model=model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
+        response = client.generate(
+            GenerateRequest(
+                contents=prompt,
                 temperature=0.0,
                 max_output_tokens=256,
                 response_mime_type="application/json",
                 response_json_schema=_EXTRACT_SCHEMA,
-            ),
+            )
         )
     except Exception:
         logger.debug("pending_offer_extract: generate_content failed", exc_info=True)
         return None
-    raw = _json_from_response(response)
+    raw = json_from_generate_response(response)
     if not raw or not raw.get("has_offer"):
         return None
     kind = raw.get("kind")

@@ -23,7 +23,7 @@ def test_conversation_summary_skips_llm_when_disabled(monkeypatch) -> None:
     monkeypatch.delenv("HOMEAPP_CONVERSATION_SUMMARY", raising=False)
     state: dict[str, object] = {}
     with patch(
-        "property_agent.routing.conversation_summary.global_flash_lite_client_and_model"
+        "property_agent.routing.conversation_summary.flash_lite_model_client"
     ) as mock_client:
         maybe_update_conversation_summary(state, [MagicMock()] * 20)
     mock_client.assert_not_called()
