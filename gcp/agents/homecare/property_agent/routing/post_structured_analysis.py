@@ -6,6 +6,7 @@ from typing import Any, Mapping, Optional
 
 from .optional_branches import OPTIONAL_CHECKPOINT_BRANCHES
 from .pending_user_action import PendingUserAction
+from .query_mode.branch_analysis import session_optional_branches_completed
 
 
 def structured_analysis_ran(
@@ -52,13 +53,24 @@ def run_branch_names_from_state(state: Mapping[str, Any] | None) -> list[str]:
         return []
     content_json = state.get("contentJson")
     if not isinstance(content_json, dict):
-        return []
+        checkpoint = state.get("checkpoint_analysis")
+        if isinstance(checkpoint, dict):
+            content_json = checkpoint
     return run_branch_names_from_content_json(content_json)
+
+
+def pending_run_branch_names_from_state(state: Mapping[str, Any] | None) -> list[str]:
+    """Run-branch chips not already completed in session analysis."""
+    branches = run_branch_names_from_state(state)
+    if not branches or not state:
+        return branches
+    completed = session_optional_branches_completed(state)
+    return [b for b in branches if b not in completed]
 
 
 def brief_post_structured_analysis_reply(state: Mapping[str, Any] | None) -> Optional[str]:
     """Deterministic wrap-up when synthesis already streamed structured UI."""
-    branches = run_branch_names_from_state(state)
+    branches = pending_run_branch_names_from_state(state)
     if branches:
         parts = ", ".join(f"**{b}**" for b in branches)
         return (
@@ -69,7 +81,7 @@ def brief_post_structured_analysis_reply(state: Mapping[str, Any] | None) -> Opt
 
 
 def pending_from_suggested_actions(state: Any) -> Optional[PendingUserAction]:
-    branches = run_branch_names_from_state(state)
+    branches = pending_run_branch_names_from_state(state)
     if not branches:
         return None
     labels: list[str] = []

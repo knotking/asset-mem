@@ -16,6 +16,8 @@ from property_agent.checkpoint.analysis.assembler import (
     format_checkpoints_for_analysis_blob,
     merge_branch_result,
     prepend_inventory_disclosure_to_blob,
+    prepend_location_disclosure_to_blob,
+    prepend_temporal_disclosure_to_blob,
     render_markdown,
     stash_checkpoint_analysis_in_state,
 )
@@ -31,6 +33,8 @@ from property_agent.checkpoint.constants import (
     CHECKPOINT_EXPLICIT_BRANCHES_KEY,
     CHECKPOINT_INVENTORY_META_STATE_KEY,
     CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY,
+    CHECKPOINT_TEMPORAL_META_STATE_KEY,
+    CHECKPOINT_LOCATION_META_STATE_KEY,
 )
 from property_agent.checkpoint.session_input import normalize_checkpoint_optional_agents
 from property_agent.checkpoint.retrieval.agent import ask_checkpoints_retrieval
@@ -200,13 +204,43 @@ async def run_checkpoint_pipeline(
     inventory_meta = (
         retrieval.get("inventory_meta") if isinstance(retrieval, dict) else None
     )
+    temporal_meta = (
+        retrieval.get("temporal_meta") if isinstance(retrieval, dict) else None
+    )
+    location_meta = (
+        retrieval.get("location_meta") if isinstance(retrieval, dict) else None
+    )
     if isinstance(inventory_meta, dict) and tool_context is not None:
         tool_context.state[CHECKPOINT_INVENTORY_META_STATE_KEY] = inventory_meta
+    if isinstance(temporal_meta, dict) and tool_context is not None:
+        tool_context.state[CHECKPOINT_TEMPORAL_META_STATE_KEY] = temporal_meta
+    if isinstance(location_meta, dict) and tool_context is not None:
+        tool_context.state[CHECKPOINT_LOCATION_META_STATE_KEY] = location_meta
     if not checkpoints:
-        summary = (
-            "No matching checkpoints found for your query. "
-            "Try rephrasing or check that checkpoints exist for this property."
+        label = (
+            str(temporal_meta.get("label") or "").strip()
+            if isinstance(temporal_meta, dict)
+            else ""
         )
+        requested_location = (
+            str(location_meta.get("requested") or "").strip()
+            if isinstance(location_meta, dict)
+            else ""
+        )
+        if label:
+            summary = (
+                f"No checkpoints were captured during {label} (UTC) for this property."
+            )
+        elif requested_location:
+            summary = (
+                f"No checkpoints were captured for {requested_location} "
+                "on this property."
+            )
+        else:
+            summary = (
+                "No matching checkpoints found for your query. "
+                "Try rephrasing or check that checkpoints exist for this property."
+            )
         patch = {
             "contentMarkdown": summary,
             "contentJson": None,
@@ -217,6 +251,8 @@ async def run_checkpoint_pipeline(
 
     blob = format_checkpoints_for_analysis_blob(checkpoints)
     blob = prepend_inventory_disclosure_to_blob(blob, inventory_meta)
+    blob = prepend_temporal_disclosure_to_blob(blob, temporal_meta)
+    blob = prepend_location_disclosure_to_blob(blob, location_meta)
     tool_context.state["checkpoint_results"] = blob
     search_query = ""
     if isinstance(retrieval, dict):

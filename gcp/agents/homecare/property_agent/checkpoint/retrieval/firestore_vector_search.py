@@ -110,6 +110,7 @@ def search_checkpoints_by_vector(
     limit: int = 5,
     location: Optional[str] = None,
     distance_measure: str = "COSINE",
+    min_similarity: Optional[float] = None,
 ) -> List[Dict[str, Any]]:
     """
     Performs a KNN vector search on checkpoints using Firestore's findNearest API.
@@ -122,6 +123,7 @@ def search_checkpoints_by_vector(
         limit: Maximum number of results to return (default: 10, max: 1000)
         location: Optional location filter (e.g., "Kitchen", "Car")
         distance_measure: Distance measure for vector comparison ("COSINE", "EUCLIDEAN", or "DOT_PRODUCT")
+        min_similarity: Optional minimum similarity score (0–1 for COSINE); weaker matches are dropped
 
     Returns:
         List of checkpoint dictionaries with similarity information, sorted by relevance
@@ -220,6 +222,7 @@ def search_checkpoints_by_vector(
         # Convert results to dictionaries with checkpoint data
         checkpoints = []
         result_count = 0
+        dropped_below_threshold = 0
         for doc in results:
             result_count += 1
             logger.debug(f"Processing search result {result_count}: doc_id={doc.id}")
@@ -243,13 +246,33 @@ def search_checkpoints_by_vector(
                             else 1.0
                         )
 
+                similarity_score = checkpoint_data.get("similarity_score")
+                if (
+                    min_similarity is not None
+                    and similarity_score is not None
+                    and similarity_score < min_similarity
+                ):
+                    dropped_below_threshold += 1
+                    logger.debug(
+                        "Dropped checkpoint %s below similarity threshold score=%s min=%s",
+                        doc.id,
+                        similarity_score,
+                        min_similarity,
+                    )
+                    continue
+
                 checkpoints.append(checkpoint_data)
                 logger.debug(
                     f"Added checkpoint {result_count}: id={doc.id}, has_aiAnalysis={bool(checkpoint_data.get('aiAnalysis'))}, similarity_score={checkpoint_data.get('similarity_score', 'N/A')}"
                 )
 
         logger.info(
-            f"Vector search completed: processed {result_count} results, returning {len(checkpoints)} checkpoints"
+            "Vector search completed: processed %d results, returning %d checkpoints "
+            "dropped_below_threshold=%d min_similarity=%s",
+            result_count,
+            len(checkpoints),
+            dropped_below_threshold,
+            min_similarity,
         )
         if checkpoints:
             logger.info(

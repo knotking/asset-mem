@@ -12,15 +12,32 @@ from typing import Any, Dict, List, Optional
 
 from google.adk.tools import ToolContext
 from dotenv import load_dotenv
-from .firestore_checkpoint_list import list_recent_property_checkpoints
+from .firestore_checkpoint_list import (
+    list_checkpoint_location_values,
+    list_checkpoints_in_date_range,
+    list_recent_property_checkpoints,
+)
 from .format_checkpoints import format_raw_checkpoints
 from .firestore_vector_search import search_checkpoints_by_vector
 from property_agent.checkpoint.constants import (
     CHECKPOINT_BRANCH_SEARCH_INTENTS_KEY,
     CHECKPOINT_INVENTORY_META_STATE_KEY,
     CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY,
+    CHECKPOINT_TEMPORAL_META_STATE_KEY,
+    CHECKPOINT_LOCATION_META_STATE_KEY,
+    CHECKPOINT_VECTOR_SIMILARITY_MIN,
 )
-from property_agent.checkpoint.retrieval.inventory_query import query_requests_checkpoint_inventory
+from property_agent.checkpoint.retrieval.effective_query import (
+    resolve_effective_checkpoint_query,
+)
+from property_agent.checkpoint.retrieval.location_query import (
+    CheckpointLocationIntent,
+    resolve_location_field,
+)
+from property_agent.checkpoint.retrieval.retrieval_scope import plan_checkpoint_retrieval
+from property_agent.checkpoint.retrieval.temporal_query import (
+    parse_reference_date_utc,
+)
 from .media_search_query_refiner import refine_checkpoint_branch_search_intents
 from property_agent.checkpoint.timing import record_retrieval_ms
 
@@ -74,6 +91,33 @@ def build_search_query_from_checkpoints(
     return q
 
 
+def _resolve_location_scope(
+    db: Any,
+    *,
+    user_id: str,
+    property_id: str,
+    explicit_location: Optional[str],
+    location_intent: Optional[CheckpointLocationIntent],
+) -> tuple[Optional[str], Optional[str], list[str]]:
+    """Resolve a location filter to a stored Firestore ``location`` value."""
+    known_locations = list_checkpoint_location_values(
+        db,
+        user_id=user_id,
+        property_id=property_id,
+    )
+    resolved_field: Optional[str] = None
+    requested_label = explicit_location
+    if explicit_location:
+        intent = CheckpointLocationIntent(label=explicit_location)
+        resolved_field = resolve_location_field(intent, known_locations)
+        if resolved_field is None and explicit_location in known_locations:
+            resolved_field = explicit_location
+    elif location_intent is not None:
+        requested_label = location_intent.label
+        resolved_field = resolve_location_field(location_intent, known_locations)
+    return resolved_field, requested_label, known_locations
+
+
 def ask_checkpoints_retrieval(
     user_query: str,
     property_id: str,  # Mandatory - required for property-specific checkpoint queries
@@ -111,25 +155,37 @@ def ask_checkpoints_retrieval(
             record_retrieval_ms(tool_context.state, _elapsed_ms())
 
     try:
-        inventory_query = bool(
-            not (checkpoint_ids and len(checkpoint_ids) > 0)
-            and query_requests_checkpoint_inventory(user_query or "")
+        if tool_context is not None:
+            user_query = resolve_effective_checkpoint_query(
+                tool_context.state, user_query or ""
+            )
+        reference_date = None
+        if tool_context is not None:
+            reference_date = tool_context.state.get("current_date_utc")
+        plan = plan_checkpoint_retrieval(
+            user_query or "",
+            location=location,
+            checkpoint_ids=checkpoint_ids,
+            reference_date=reference_date or parse_reference_date_utc(None),
+            state=tool_context.state if tool_context is not None else None,
         )
-        if checkpoint_ids and len(checkpoint_ids) > 0:
-            ck_mode = "by_id"
-        elif inventory_query:
-            ck_mode = "inventory_recent"
-        else:
-            ck_mode = "vector"
+        ck_mode = plan.mode
+        date_range = plan.date_range
+        explicit_location = plan.explicit_location
+        location_intent = plan.location_intent
+        inventory_query = plan.inventory_query
         inventory_meta: dict | None = None
+        temporal_meta: dict | None = None
+        location_meta: dict | None = None
         logger.info(
             "checkpoint_retrieval: start mode=%s property_id=%s "
-            "user_query_len=%d location_set=%s checkpoint_id_count=%d",
+            "user_query_len=%d location_set=%s checkpoint_id_count=%d carried_over=%s",
             ck_mode,
             property_id or "",
             len(user_query or ""),
             bool(location and str(location).strip()),
             len(checkpoint_ids or []),
+            plan.carried_over,
         )
         logger.debug(
             "checkpoint_retrieval: args user_query=%r location=%r checkpoint_ids=%r",
@@ -253,6 +309,7 @@ def ask_checkpoints_retrieval(
                     query_text=user_query,
                     limit=5,
                     location=location,
+                    min_similarity=CHECKPOINT_VECTOR_SIMILARITY_MIN,
                 )
                 logger.info(
                     "checkpoint_retrieval: vector_search_after_by_id_miss "
@@ -271,7 +328,161 @@ def ask_checkpoints_retrieval(
                         "checkpoints": [],
                         "search_query": "",
                         "inventory_meta": None,
+                        "temporal_meta": None,
                     }
+        elif date_range is not None:
+            _temporal = time.monotonic()
+            resolved_field: Optional[str] = None
+            requested_label: Optional[str] = None
+            known_locations: list[str] = []
+            if explicit_location or location_intent is not None:
+                resolved_field, requested_label, known_locations = _resolve_location_scope(
+                    db,
+                    user_id=user_id,
+                    property_id=property_id,
+                    explicit_location=explicit_location,
+                    location_intent=location_intent,
+                )
+                location_meta = {
+                    "requested": requested_label or "",
+                    "matched_field": resolved_field,
+                    "known_locations": known_locations,
+                    "returned_count": 0,
+                    "scope": "location",
+                }
+                if tool_context is not None:
+                    tool_context.state[CHECKPOINT_LOCATION_META_STATE_KEY] = location_meta
+                if not resolved_field:
+                    logger.info(
+                        "checkpoint_retrieval: date_range+location duration_ms=%d "
+                        "requested=%r matched=None known=%r",
+                        int((time.monotonic() - _temporal) * 1000),
+                        requested_label,
+                        known_locations,
+                    )
+                    logger.info(
+                        "checkpoint_retrieval: end duration_ms=%d "
+                        "outcome=no_location_matches checkpoints=0",
+                        _elapsed_ms(),
+                    )
+                    _record_retrieval_timing()
+                    return {
+                        "checkpoints": [],
+                        "search_query": "",
+                        "inventory_meta": None,
+                        "temporal_meta": None,
+                        "location_meta": location_meta,
+                    }
+
+            list_result = list_checkpoints_in_date_range(
+                db,
+                user_id=user_id,
+                property_id=property_id,
+                date_range=date_range,
+                location=resolved_field,
+            )
+            checkpoints = list_result.get("checkpoints") or []
+            raw_temporal = list_result.get("temporal_meta")
+            temporal_meta = raw_temporal if isinstance(raw_temporal, dict) else None
+            if tool_context is not None and temporal_meta is not None:
+                tool_context.state[CHECKPOINT_TEMPORAL_META_STATE_KEY] = temporal_meta
+            if location_meta is not None:
+                location_meta["returned_count"] = len(checkpoints)
+                if tool_context is not None:
+                    tool_context.state[CHECKPOINT_LOCATION_META_STATE_KEY] = location_meta
+            logger.info(
+                "checkpoint_retrieval: date_range duration_ms=%d returned=%d label=%r location=%r",
+                int((time.monotonic() - _temporal) * 1000),
+                len(checkpoints),
+                date_range.label,
+                resolved_field,
+            )
+            if not checkpoints:
+                logger.info(
+                    "checkpoint_retrieval: end duration_ms=%d outcome=no_temporal_matches checkpoints=0",
+                    _elapsed_ms(),
+                )
+                _record_retrieval_timing()
+                return {
+                    "checkpoints": [],
+                    "search_query": "",
+                    "inventory_meta": None,
+                    "temporal_meta": temporal_meta,
+                    "location_meta": location_meta,
+                }
+        elif ck_mode == "location_filter":
+            _loc = time.monotonic()
+            resolved_field, requested_label, known_locations = _resolve_location_scope(
+                db,
+                user_id=user_id,
+                property_id=property_id,
+                explicit_location=explicit_location,
+                location_intent=location_intent,
+            )
+
+            location_meta = {
+                "requested": requested_label or "",
+                "matched_field": resolved_field,
+                "known_locations": known_locations,
+                "returned_count": 0,
+                "scope": "location",
+            }
+            if tool_context is not None:
+                tool_context.state[CHECKPOINT_LOCATION_META_STATE_KEY] = location_meta
+
+            if not resolved_field:
+                logger.info(
+                    "checkpoint_retrieval: location_filter duration_ms=%d "
+                    "requested=%r matched=None known=%r",
+                    int((time.monotonic() - _loc) * 1000),
+                    requested_label,
+                    known_locations,
+                )
+                logger.info(
+                    "checkpoint_retrieval: end duration_ms=%d outcome=no_location_matches checkpoints=0",
+                    _elapsed_ms(),
+                )
+                _record_retrieval_timing()
+                return {
+                    "checkpoints": [],
+                    "search_query": "",
+                    "inventory_meta": None,
+                    "temporal_meta": None,
+                    "location_meta": location_meta,
+                }
+
+            list_result = list_recent_property_checkpoints(
+                db,
+                user_id=user_id,
+                property_id=property_id,
+                location=resolved_field,
+            )
+            checkpoints = list_result.get("checkpoints") or []
+            location_meta["matched_field"] = resolved_field
+            location_meta["returned_count"] = len(checkpoints)
+            if tool_context is not None:
+                tool_context.state[CHECKPOINT_LOCATION_META_STATE_KEY] = location_meta
+            logger.info(
+                "checkpoint_retrieval: location_filter duration_ms=%d returned=%d "
+                "requested=%r matched=%r",
+                int((time.monotonic() - _loc) * 1000),
+                len(checkpoints),
+                requested_label,
+                resolved_field,
+            )
+            if not checkpoints:
+                logger.info(
+                    "checkpoint_retrieval: end duration_ms=%d outcome=no_location_matches checkpoints=0",
+                    _elapsed_ms(),
+                )
+                _record_retrieval_timing()
+                return {
+                    "checkpoints": [],
+                    "search_query": "",
+                    "inventory_meta": None,
+                    "temporal_meta": None,
+                    "location_meta": location_meta,
+                }
         elif inventory_query:
             _inv = time.monotonic()
             list_result = list_recent_property_checkpoints(
@@ -305,13 +516,24 @@ def ask_checkpoints_retrieval(
                 "checkpoint_retrieval: vector_search start query_len=%d",
                 len(user_query or ""),
             )
+            vector_location = location
+            if not vector_location and explicit_location:
+                _resolved, _, _known = _resolve_location_scope(
+                    db,
+                    user_id=user_id,
+                    property_id=property_id,
+                    explicit_location=explicit_location,
+                    location_intent=location_intent,
+                )
+                vector_location = _resolved
             checkpoints = search_checkpoints_by_vector(
                 db=db,
                 user_id=user_id,
                 property_id=property_id,
                 query_text=user_query,
                 limit=5,
-                location=location,
+                location=vector_location,
+                min_similarity=CHECKPOINT_VECTOR_SIMILARITY_MIN,
             )
             logger.info(
                 "checkpoint_retrieval: vector_search duration_ms=%d returned=%d",
@@ -391,6 +613,8 @@ def ask_checkpoints_retrieval(
             "checkpoints": formatted_results,
             "search_query": search_query,
             "inventory_meta": inventory_meta,
+            "temporal_meta": temporal_meta,
+            "location_meta": location_meta,
         }
     except Exception as e:
         logger.error(f"Error retrieving checkpoints: {e}", exc_info=True)
@@ -399,7 +623,13 @@ def ask_checkpoints_retrieval(
             _elapsed_ms(),
         )
         _record_retrieval_timing()
-        return {"checkpoints": [], "search_query": "", "inventory_meta": None}
+        return {
+            "checkpoints": [],
+            "search_query": "",
+            "inventory_meta": None,
+            "temporal_meta": None,
+            "location_meta": None,
+        }
 
 
 __all__ = ["ask_checkpoints_retrieval", "build_search_query_from_checkpoints"]

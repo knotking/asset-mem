@@ -103,3 +103,42 @@ def test_pending_from_suggested_actions_builds_run_branch_pending() -> None:
 def test_pending_from_suggested_actions_none_without_run_branch_chips() -> None:
     assert pending_from_suggested_actions({"contentJson": {"suggestedActions": []}}) is None
     assert pending_from_suggested_actions({}) is None
+
+
+def test_brief_reply_omits_completed_branches() -> None:
+    reply = brief_post_structured_analysis_reply(
+        {
+            "checkpoint_analysis": {
+                "suggestedActions": [
+                    {"label": "Run cost", "action": {"type": "run_branch", "branch": "cost"}},
+                    {"label": "Run diy", "action": {"type": "run_branch", "branch": "diy"}},
+                ],
+                "analysis": {
+                    "analysisStatus": {"cost": "completed"},
+                    "costEstimationResults": {"costEstimates": {"total": 100}},
+                },
+            },
+        }
+    )
+    assert reply is not None
+    assert "**cost**" not in reply
+    assert "**diy**" in reply
+
+
+def test_pending_from_suggested_actions_skips_completed_branches() -> None:
+    pending = pending_from_suggested_actions(
+        {
+            "checkpoint_analysis": {
+                "suggestedActions": [
+                    {"label": "Run cost analysis", "action": {"type": "run_branch", "branch": "cost"}},
+                    {"label": "Find providers", "action": {"type": "run_branch", "branch": "service"}},
+                ],
+                "analysis": {
+                    "analysisStatus": {"cost": "completed"},
+                    "costEstimationResults": {"costEstimates": {"total": 100}},
+                },
+            },
+        }
+    )
+    assert pending is not None
+    assert pending.run_optional_agents == ["service"]

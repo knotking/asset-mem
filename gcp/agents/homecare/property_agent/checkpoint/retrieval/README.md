@@ -28,8 +28,11 @@ Authentication: Uses Application Default Credentials (ADC) for Firestore and Ver
 
 1. **By ID** (when UI `checkpoint_ids` are provided): direct Firestore document fetches. `before_tool` forces tool args to match session UI ids only — the executor cannot pass slug names like `garage`.
 2. **Inventory list** (when the query asks to list checkpoints or report live status): `order_by(createdAt desc)` with a cap of 20; disclosure notes when truncated (e.g. “20 most recent of 127”)
-3. **Vector search** (semantic queries with no UI chips, or after by-id miss): query embedding via text-embedding-004, then Firestore `findNearest` (top 5)
-4. **Result Formatting**: Retrieved checkpoints are formatted with summaries, status, detected items, conditions, and issues
+3. **Date range** (when the query names a calendar window — “previous month”, “April”, “last year”): Firestore `createdAt` filter on `[start, end)`; returns empty when no captures fall in that window (does **not** fall back to vector search). When the query also names a location (“kitchen issues in May”), the date filter and location resolve run together.
+4. **Location filter** (when the query names an area — “kitchen”, “garage”, “vehicle”): resolves against this property’s stored `location` values using whole-word token matching; returns empty when no checkpoint matches (does **not** fall back to vector search).
+5. **Vector search** (semantic queries with no UI chips, or after by-id miss): query embedding via text-embedding-004, then Firestore `findNearest` (top 5). Results below `CHECKPOINT_VECTOR_SIMILARITY_MIN` (default 0.5) are dropped.
+6. **Follow-up scope carryover**: when a turn does not redefine temporal/location scope (e.g. “yes, run cost”), the prior turn’s `checkpoint_temporal_meta` / `checkpoint_location_meta` are reused so retrieval does not widen to property-wide vector search.
+7. **Result Formatting**: Retrieved checkpoints are formatted with summaries, status, detected items, conditions, and issues
 
 ## Firestore Index Requirements
 

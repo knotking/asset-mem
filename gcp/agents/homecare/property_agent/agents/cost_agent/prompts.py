@@ -187,7 +187,9 @@ def get_comprehensive_cost_estimate_prompt(
         )
 
     year = datetime.date.today().year
-    return f"""You are a home repair cost estimation expert. Provide accurate, detailed cost estimates for the following repair{location_context}.
+    return f"""You are a home repair cost estimation expert. Provide realistic cost estimate ranges for the following repair{location_context}.
+
+**Important:** All figures are estimates based on typical market data and may not reflect current local pricing. Recommend the homeowner get 2–3 quotes from licensed contractors before committing to any work.
 
 **Repair Diagnosis:** {diagnosis}{repair_context}{severity_context}{complexity_context}
 
@@ -297,7 +299,7 @@ def get_cost_validation_prompt(
     location_context = f" in {location}" if location else ""
     year = datetime.date.today().year
 
-    return f"""Please validate and refine these cost estimates for accuracy:
+    return f"""Review these cost estimates for plausibility. Note that model-generated estimates have uncertainty — flag any range that appears unrealistically low or high, and explain why.
 
 **Repair:** {diagnosis}
 **Location:** {location or "Not specified"}
@@ -332,7 +334,7 @@ def get_cost_validation_prompt(
    - Revised professional range
    - Explanation for adjustments
 
-Please provide validated cost ranges or confirm the current estimates are accurate."""
+Provide validated ranges or flag specific estimates as potentially inaccurate with a brief explanation. Do not simply confirm estimates without evidence."""
 
 
 __all__ = [

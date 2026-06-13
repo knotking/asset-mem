@@ -1,7 +1,7 @@
 from google.adk.agents import Agent
 from dotenv import load_dotenv
 from .prompts import coverage_agent_instructions
-from ..user_docs_agent.agent import ask_user_docs_retreival
+from ..user_docs_agent.agent import ask_user_docs_retrieval
 from property_agent.shared.inputs import DocsInput
 from ...model_config import GLOBAL_GEMINI_MODEL
 
@@ -12,7 +12,7 @@ coverage_agent = Agent(
     name="coverage_agent",
     description="Retrieves warranty and insurance coverage information from user documents.",
     instruction=coverage_agent_instructions(),
-    tools=[ask_user_docs_retreival],
+    tools=[ask_user_docs_retrieval],
     input_schema=DocsInput,
 )
 
