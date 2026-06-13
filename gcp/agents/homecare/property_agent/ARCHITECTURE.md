@@ -57,9 +57,9 @@ Orchestration waves and `depends_on` edges: `agent_platform.core.registry.orches
 
 ## Naming
 
-- **Plugin** — `manifest.PropertyPlugin`, `PropertyRootAgentPlugin`
+- **Plugin** — `manifest.PropertyPlugin`, `PropertyRootAgentPlugin`, `PropertyHookRegistry`
 - **Hooks** — removed (`ResolveTurnHooks` / resolve LLM pipeline deleted in Phase 5)
-- **Callbacks** — ADK `before_model` / `after_model` / `before_tool` only
+- **Callbacks** — ADK façade delegates to `PropertyHookRegistry` (`HookRegistry`) via platform ADK builders
 
 ## State keys
 
