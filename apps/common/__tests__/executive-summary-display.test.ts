@@ -86,6 +86,20 @@ I checked your recorded checkpoints, and there are currently **no kitchen issues
     expect(narrative).toContain("no kitchen issues");
   });
 
+  it("extracts executor prose glued to the last checkpoint summary bullet", () => {
+    const md = `# Checkpoint analysis
+
+## Checkpoint Summary
+- **Property**: 1982 Helena Way
+- **Overall Condition**: damaged, needs maintenanceThe analysis of the checkpoint from last year does not show any recorded issues for the kitchen.`;
+
+    const narrative = extractExecutiveSummaryNarrative(md, {
+      omitCheckpointSummaryMarkdown: true,
+    });
+    expect(narrative).not.toContain("damaged, needs maintenanceThe");
+    expect(narrative).toContain("recorded issues for the kitchen");
+  });
+
   it("returns empty when markdown is title only", () => {
     expect(
       extractExecutiveSummaryNarrative("# Garage Door Maintenance Analysis: 1982 Helena Way")

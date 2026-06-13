@@ -93,8 +93,9 @@ def test_checkpoint_stream_does_not_duplicate_synthesis_markdown() -> None:
         agent_steps_by_name=None,
         optional_agent_keys=None,
     )
-    assert markdown == accumulated
-    assert legacy == accumulated
+    expected_markdown = f"{summary}\n\n{brief}"
+    assert markdown == expected_markdown
+    assert legacy == expected_markdown
 
 
 def test_retrieval_only_kitchen_stream_keeps_summary_and_executor_prose() -> None:
@@ -231,6 +232,36 @@ def test_resolve_assistant_message_fields_keeps_executor_prose_after_checkpoint_
     assert markdown == accumulated
     assert legacy == accumulated
     assert content_json == {"analysis": {"checkpointSummary": {"checkpointsAnalyzed": 2}}}
+
+
+def test_resolve_assistant_message_fields_separates_glued_executor_prose() -> None:
+    """Executor prose appended without newline after last summary bullet."""
+    summary = (
+        "# Checkpoint analysis\n\n"
+        "## Checkpoint Summary\n"
+        "- **Property**: 1982 Helena Way\n"
+        "- **Overall Condition**: damaged, needs maintenance"
+    )
+    glued_executor = (
+        "The analysis of the checkpoint from last year does not show any "
+        "recorded issues for the kitchen."
+    )
+    accumulated = summary + glued_executor
+    legacy, markdown, _ = _resolve_assistant_message_fields_for_persist(
+        assistant_content_accumulated=accumulated,
+        user_query="any issues in kitchen last year?",
+        message_content_patch={
+            "contentMarkdown": summary,
+            "contentJson": {"analysis": {"checkpointSummary": {"checkpointsAnalyzed": 1}}},
+        },
+        prose_only_persist=True,
+        finalize=True,
+        agent_steps_by_name=None,
+        optional_agent_keys=None,
+    )
+    assert "damaged, needs maintenance\n\nThe analysis" in markdown
+    assert "kitchen" in markdown
+    assert legacy == markdown
 
 
 def test_resolve_assistant_message_fields_no_fence_fallback_without_state_delta() -> None:

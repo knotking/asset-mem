@@ -21,6 +21,20 @@ export type ExtractExecutiveSummaryOptions = {
   omitCheckpointSummaryMarkdown?: boolean;
 };
 
+/** Prose glued to the end of a summary bullet (missing newline before executor reply). */
+function inlineProseFromGluedBulletLine(line: string): string {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith("- ") && !trimmed.startsWith("* ")) {
+    return "";
+  }
+  const body = trimmed.slice(2);
+  const match = body.match(/(?<=[a-z])(?=[A-Z][a-z]{2,})/);
+  if (!match || match.index == null || match.index < 8) {
+    return "";
+  }
+  return body.slice(match.index).trim();
+}
+
 /** Prose after checkpoint-summary bullets in the same markdown section (executor reply). */
 function trailingProseAfterCheckpointSummarySection(section: string): string {
   const lines = section.split("\n");
@@ -46,7 +60,12 @@ function trailingProseAfterCheckpointSummarySection(section: string): string {
   if (!skippedSummaryBullets) {
     return "";
   }
-  return lines.slice(index).join("\n").trim();
+  const trailing = lines.slice(index).join("\n").trim();
+  if (trailing) {
+    return trailing;
+  }
+  const lastLine = lines[lines.length - 1]?.trim() ?? "";
+  return inlineProseFromGluedBulletLine(lastLine);
 }
 
 /** Extract overview / recommendation prose from synthesis markdown for hybrid UI. */
