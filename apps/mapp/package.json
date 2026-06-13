@@ -10,7 +10,8 @@
     "clean": "rm -rf .expo node_modules",
     "lint": "eslint .",
     "test": "jest --ci",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "generate:splash": "python3 scripts/generate-splash.py"
   },
   "dependencies": {
     "@homeapp/common": "*",
