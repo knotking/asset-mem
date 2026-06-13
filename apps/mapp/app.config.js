@@ -81,7 +81,7 @@ module.exports = {
       edgeToEdgeEnabled: true,
       adaptiveIcon: {
         foregroundImage: './assets/images/adaptive-icon.png',
-        backgroundColor: '#1a2332',
+        backgroundColor: '#0a0a0f',
       },
       package: process.env.ANDROID_PACKAGE || 'com.assetmem.staging',
     },
