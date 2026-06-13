@@ -21,6 +21,7 @@ import inspect
 import json
 
 import pytest
+from agent_platform.core.ports import GenerateResponse
 from google.adk.tools.agent_tool import AgentTool
 
 from property_agent.agents.cost_agent.agent import cost_estimation_diy_from_library
@@ -681,18 +682,19 @@ def test_diy_web_search_grounded_retries_empty_response(
     class _Ok:
         text = "1. Wash area. 2. Sand scratches."
 
-    class _FakeModels:
-        def generate_content(self, **_kwargs):
-            calls.append(1)
-            return _Empty() if len(calls) == 1 else _Ok()
-
     class _FakeClient:
-        models = _FakeModels()
+        default_model = "gemini-test"
+
+        def generate(self, _request):
+            calls.append(1)
+            raw = _Empty() if len(calls) == 1 else _Ok()
+            text = getattr(raw, "text", None) or ""
+            return GenerateResponse(text=text, raw=raw)
 
     monkeypatch.setattr(
         diy_prefetch,
-        "global_direct_generate_client_and_model",
-        lambda: (_FakeClient(), "gemini-3.5-flash"),
+        "direct_generate_model_client",
+        lambda: _FakeClient(),
     )
     out = diy_prefetch._diy_web_search_grounded(
         "vehicle bumper paint scratch repair", "Brentwood, CA"

@@ -9,6 +9,7 @@ from typing import Any, Dict, Optional
 
 from google.genai import types
 
+from agent_platform.core.ports import GenerateRequest
 from property_agent.shared.google_search_grounding import (
     google_search_grounding_tool,
     grounded_prose_with_retry,
@@ -16,8 +17,7 @@ from property_agent.shared.google_search_grounding import (
 from property_agent.shared.inputs import SearchLocation
 from property_agent.model_config import (
     direct_gemini_thinking_config,
-    global_direct_generate_client_and_model,
-    global_direct_generate_model_name,
+    direct_generate_model_client,
 )
 from property_agent.geo.search_location_utils import market_label
 from property_agent.agents.diy_agent.youtube import youtube_search
@@ -40,7 +40,7 @@ from .checkpoint_parse import (
 logger = logging.getLogger(__name__)
 
 def _web_search_model() -> str:
-    return global_direct_generate_model_name()
+    return direct_generate_model_client().default_model
 
 
 def _web_grounding_max_output_tokens() -> int:
@@ -94,7 +94,7 @@ def fetch_repair_web_context(web_query: str, market_location: str) -> str:
 
 def _diy_web_search_grounded(diagnosis: str, market_location: str) -> str:
     """One Gemini call with Google Search grounding for DIY steps context."""
-    client, _ = global_direct_generate_client_and_model()
+    model_client = direct_generate_model_client()
     addr = market_location.strip() if market_location else "not provided"
     checkpoint_ctx = parse_checkpoint_structured_context(diagnosis)
     ctx_block = ""
@@ -109,18 +109,20 @@ def _diy_web_search_grounded(diagnosis: str, market_location: str) -> str:
         "Do not fabricate URLs."
     )
     def _generate() -> Any:
-        return client.models.generate_content(
-            model=_web_search_model(),
-            contents=prompt,
-            config=types.GenerateContentConfig(
+        return model_client.generate(
+            GenerateRequest(
+                model=_web_search_model(),
+                contents=prompt,
                 temperature=0.35,
-                top_p=0.9,
                 max_output_tokens=_web_grounding_max_output_tokens(),
-                response_modalities=["TEXT"],
-                tools=[google_search_grounding_tool()],
-                thinking_config=_web_thinking_config(),
-            ),
-        )
+                extra_config={
+                    "top_p": 0.9,
+                    "response_modalities": ["TEXT"],
+                    "tools": [google_search_grounding_tool()],
+                    "thinking_config": _web_thinking_config(),
+                },
+            )
+        ).raw
 
     text = grounded_prose_with_retry(
         _generate,

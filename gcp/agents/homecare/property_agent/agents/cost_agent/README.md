@@ -8,7 +8,7 @@ The Cost Agent provides intelligent, location-aware cost estimates for home repa
 
 ### 🤖 AI-Powered Estimation
 
-- **Google Search Grounding**: Prefetches live market pricing (current year) via `global_direct_generate_client_and_model()` before structured JSON estimation
+- **Google Search Grounding**: Prefetches live market pricing (current year) via `direct_generate_model_client()` before structured JSON estimation
 - **Location-Aware Pricing**: Adjusts costs based on regional labor rates and cost-of-living
 - **Complexity Analysis**: AI-driven assessment of repair difficulty and safety factors
 - **Market Trends**: Incorporates current material costs and seasonal variations

@@ -7,11 +7,11 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 **Where:** ADK sub-agents wired through `property_agent/model_config.py`:
 
 - Checkpoint analysis sub-agents, coverage / service / shopping ADK agents
-- Pending-offer extract and conversation summary helpers on the root agent
+- Pending-offer extract and conversation summary helpers (`flash_lite_model_client()`)
 
 **Why:** Low latency, streaming-friendly orchestration; most turns are tool routing or separate `contentJson` / `contentMarkdown` fields via `state_delta`.
 
-**Client:** ADK `Gemini3` wrapper with Vertex `location=global`.
+**Client:** `direct_generate_model_client()` / `GeminiModel.GEMINI_3_1_FLASH_LITE` on Vertex `location=global`.
 
 ## `SINGLE_LOOP_GEMINI_MODEL` (default `gemini-3.1-flash-lite` on perf branch)
 
@@ -20,7 +20,7 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 **Where:**
 
 - Root `property_agent` executor (`global_agent_gemini_model()`)
-- Direct `generate_content` via `global_direct_generate_client_and_model()`:
+- Direct LLM calls via `direct_generate_model_client()` (`ModelClient` port):
   - DIY web grounding + steps synthesis
   - Cost market web grounding + AI cost JSON
   - Checkpoint media search query refiner
@@ -44,7 +44,7 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 |------|-----|
 | New ADK sub-agent with tools / transfer | `GLOBAL_GEMINI_MODEL` |
 | Root orchestrator tool selection | `SINGLE_LOOP_GEMINI_MODEL` via `global_agent_gemini_model()` |
-| One-shot `generate_content` (JSON, web grounding, synthesis) | `global_direct_generate_client_and_model()` + `direct_gemini_thinking_config()`; grounded prose uses `grounded_prose_with_retry()` (`GROUNDED_GENERATE_MAX_ATTEMPTS`, default 2) |
+| One-shot LLM (JSON, web grounding, synthesis) | `direct_generate_model_client().generate(GenerateRequest(...))` + `direct_gemini_thinking_config()`; grounded prose uses `grounded_prose_with_retry()` |
 | Embeddings | `text-embedding-004` in `firestore_vector_search.py` (not chat models) |
 
 Changing the default chat model for ADK agents: edit `Gemini3(model=...)` in `model_config.py`, run `make test`, and exercise key flows via `adk web` on staging.

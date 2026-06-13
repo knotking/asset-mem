@@ -12,16 +12,14 @@ import logging
 import re
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from typing import Any, Dict, Optional, Tuple
-from google import genai
-from google.genai import types
 
 from agent_platform.core.execution.thread_context import executor_submit
+from agent_platform.core.ports import GenerateRequest, ModelClient
+from .config import CostEstimationConfig
 from ...model_config import (
     direct_gemini_thinking_config,
-    global_direct_generate_client_and_model,
-    global_direct_generate_model_name,
+    direct_generate_model_client,
 )
-from .config import CostEstimationConfig
 
 logger = logging.getLogger(__name__)
 
@@ -376,13 +374,13 @@ def _parse_ai_response_to_json(
 
 
 def _generate_cost_estimate_content(
-    client: genai.Client,
+    model_client: ModelClient,
     prompt: str,
     *,
     web_context: Optional[str] = None,
 ):
     """
-    Sync Vertex generate_content call (run in a thread for timeout).
+    Sync structured cost JSON call (run in a thread for timeout).
 
     JSON mode (response_mime_type="application/json") is always used so the
     response can be parsed with json.loads rather than regex.  Google Search
@@ -390,30 +388,33 @@ def _generate_cost_estimate_content(
     mode, and the model's built-in knowledge is sufficient for cost estimation.
     If live market data is needed, pass it pre-fetched via `web_context`.
     """
+    _ = web_context
     ai_cfg = CostEstimationConfig.get_ai_config()
-    default_model = global_direct_generate_model_name()
-    return client.models.generate_content(
-        model=ai_cfg.get("model") or default_model,
-        contents=prompt,
-        config=types.GenerateContentConfig(
+    model = ai_cfg.get("model") or model_client.default_model
+    return model_client.generate(
+        GenerateRequest(
+            model=model,
+            contents=prompt,
             temperature=ai_cfg["temperature"],
-            top_p=0.8,
-            top_k=40,
             max_output_tokens=ai_cfg["max_output_tokens"],
             response_mime_type="application/json",
-            thinking_config=direct_gemini_thinking_config(
-                "COST_AI_THINKING",
-                default="minimal",
-            ),
-        ),
-    )
+            extra_config={
+                "top_p": 0.8,
+                "top_k": 40,
+                "thinking_config": direct_gemini_thinking_config(
+                    "COST_AI_THINKING",
+                    default="minimal",
+                ),
+            },
+        )
+    ).raw
 
 
 def estimate_costs_with_ai(
     diagnosis: str,
     property_address: Optional[str] = None,
     service_provider_data: Optional[Dict[str, Any]] = None,
-    client: Optional[genai.Client] = None,
+    model_client: Optional[ModelClient] = None,
     *,
     web_context: Optional[str] = None,
 ) -> Tuple[Optional[Dict[str, Any]], float]:
@@ -439,15 +440,15 @@ def estimate_costs_with_ai(
             web_context=web_context,
         )
 
-        if client is None:
-            client, _ = global_direct_generate_client_and_model()
+        if model_client is None:
+            model_client = direct_generate_model_client()
 
         timeout_s = CostEstimationConfig.AI_ESTIMATION_TIMEOUT
         with ThreadPoolExecutor(max_workers=1) as pool:
             future = executor_submit(
                 pool,
                 _generate_cost_estimate_content,
-                client,
+                model_client,
                 prompt,
                 web_context=web_context,
             )

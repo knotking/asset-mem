@@ -3,11 +3,23 @@
 import json
 from unittest.mock import MagicMock
 
+from agent_platform.core.ports import GenerateResponse
+
 from property_agent.checkpoint.branch_search_intents import (
     BranchSearchIntents,
     compact_youtube_search_query,
 )
 from property_agent.checkpoint.retrieval import media_search_query_refiner as msqr
+
+
+def _mock_model_client(raw_response: object) -> MagicMock:
+    mock_client = MagicMock()
+    mock_client.generate.return_value = GenerateResponse(
+        text=getattr(raw_response, "text", None) or "",
+        parsed=getattr(raw_response, "parsed", None),
+        raw=raw_response,
+    )
+    return mock_client
 
 
 def test_branch_intents_from_dict_full():
@@ -96,9 +108,8 @@ def test_refiner_branch_intents_full_schema(monkeypatch):
         candidates = None
         prompt_feedback = None
 
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _Resp()
-    monkeypatch.setattr(msqr, "_vertex_genai_client", lambda: mock_client)
+    mock_client = _mock_model_client(_Resp())
+    monkeypatch.setattr(msqr, "_direct_generate_model_client", lambda: mock_client)
 
     intents = msqr.refine_checkpoint_branch_search_intents(
         "Garage paint chips", _fake_formatted()

@@ -14,12 +14,10 @@ import re
 import time
 from typing import Any, Dict, List, Optional
 
-from google.genai import types
-
+from agent_platform.core.ports import GenerateRequest
 from property_agent.model_config import (
     direct_gemini_thinking_config,
-    global_direct_generate_client_and_model,
-    global_direct_generate_model_name,
+    direct_generate_model_client,
 )
 
 from property_agent.checkpoint.branch_search_intents import (
@@ -30,10 +28,9 @@ from property_agent.checkpoint.branch_search_intents import (
 logger = logging.getLogger(__name__)
 
 
-def _vertex_genai_client():
-    """Indirection so tests can monkeypatch without replacing a read-only property."""
-    client, _ = global_direct_generate_client_and_model()
-    return client
+def _direct_generate_model_client():
+    """Indirection so tests can monkeypatch without replacing a cached factory."""
+    return direct_generate_model_client()
 
 
 _REFINE_SCHEMA: Dict[str, Any] = {
@@ -307,27 +304,27 @@ def refine_checkpoint_branch_search_intents(
         return BranchSearchIntents.fallback_from_raw_query(raw)
 
     hints = _hints_from_formatted(formatted_results)
-    client = _vertex_genai_client()
-    model = global_direct_generate_model_name()
+    model_client = _direct_generate_model_client()
     prompt = _refiner_prompt(raw, hints)
     t0 = time.monotonic()
     try:
-        response = client.models.generate_content(
-            model=model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
+        response = model_client.generate(
+            GenerateRequest(
+                contents=prompt,
                 temperature=0.15,
-                top_p=0.85,
                 max_output_tokens=512,
                 response_mime_type="application/json",
                 response_json_schema=_REFINE_SCHEMA,
-                thinking_config=direct_gemini_thinking_config(
-                    "MEDIA_SEARCH_REFINE_THINKING",
-                    default="minimal",
-                ),
-            ),
+                extra_config={
+                    "top_p": 0.85,
+                    "thinking_config": direct_gemini_thinking_config(
+                        "MEDIA_SEARCH_REFINE_THINKING",
+                        default="minimal",
+                    ),
+                },
+            )
         )
-        data = _refiner_json_from_response(response)
+        data = _refiner_json_from_response(response.raw)
         if not isinstance(data, dict):
             fb = getattr(response, "prompt_feedback", None)
             logger.warning(

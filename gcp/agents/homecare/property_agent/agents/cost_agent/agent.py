@@ -9,6 +9,7 @@ from google.genai import types
 from pydantic import BaseModel, Field
 
 from agent_platform.core.execution.thread_context import to_thread
+from agent_platform.core.ports import GenerateRequest
 
 from .config import config
 from .ai_cost_estimator import estimate_costs_with_ai, validate_cost_ranges
@@ -20,7 +21,7 @@ from property_agent.shared.inputs import CheckpointOptionalAgent
 from ...model_config import (
     GLOBAL_GEMINI_MODEL,
     direct_gemini_thinking_config,
-    global_direct_generate_client_and_model,
+    direct_generate_model_client,
 )
 from ...shared.google_search_grounding import (
     google_search_grounding_tool,
@@ -363,8 +364,8 @@ def _fetch_market_pricing_context(
     """
     Pre-fetch live market pricing via a Google Search grounding call.
 
-    Same pattern as DIY ``_diy_web_search_grounded``: direct ``generate_content``
-    on ``global_direct_generate_client_and_model()`` (global Vertex ``generate_content``).
+    Same pattern as DIY ``_diy_web_search_grounded``: ``ModelClient.generate`` via
+    ``direct_generate_model_client()`` (global Vertex ``generate_content``).
     Grounding tools are incompatible with JSON mode, so this prose summary becomes
     ``web_context`` for the structured cost call.
 
@@ -385,24 +386,25 @@ def _fetch_market_pricing_context(
     )
 
     try:
-        client, model = global_direct_generate_client_and_model()
+        model_client = direct_generate_model_client()
 
         def _generate() -> Any:
-            return client.models.generate_content(
-                model=model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
+            return model_client.generate(
+                GenerateRequest(
+                    contents=prompt,
                     temperature=0.1,
-                    top_p=0.9,
                     max_output_tokens=500,
-                    response_modalities=["TEXT"],
-                    tools=[google_search_grounding_tool()],
-                    thinking_config=direct_gemini_thinking_config(
-                        "COST_MARKET_THINKING",
-                        default="low",
-                    ),
-                ),
-            )
+                    extra_config={
+                        "top_p": 0.9,
+                        "response_modalities": ["TEXT"],
+                        "tools": [google_search_grounding_tool()],
+                        "thinking_config": direct_gemini_thinking_config(
+                            "COST_MARKET_THINKING",
+                            default="low",
+                        ),
+                    },
+                )
+            ).raw
 
         text = grounded_prose_with_retry(
             _generate,

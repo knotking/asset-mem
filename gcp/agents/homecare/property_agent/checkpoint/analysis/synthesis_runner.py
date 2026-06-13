@@ -6,11 +6,12 @@ import json
 import logging
 from typing import Any, Dict
 
-from google.genai import types
+from agent_platform.core.model.response_text import text_from_generate_response
+from agent_platform.core.ports import GenerateRequest
 
 from property_agent.model_config import (
     direct_gemini_thinking_config,
-    global_direct_generate_client_and_model,
+    direct_generate_model_client,
 )
 
 logger = logging.getLogger(__name__)
@@ -46,24 +47,25 @@ async def synthesize_checkpoint_markdown(
     user_query: str,
 ) -> str:
     """Run synthesis LLM; returns markdown prose only."""
-    client, model = global_direct_generate_client_and_model()
+    model_client = direct_generate_model_client()
     contents = _synthesis_user_content(
         analysis,
         checkpoint_results=checkpoint_results,
         user_query=user_query,
     )
     try:
-        response = await client.aio.models.generate_content(
-            model=model,
-            contents=contents,
-            config=types.GenerateContentConfig(
+        response = await model_client.generate_async(
+            GenerateRequest(
+                contents=contents,
                 temperature=0.3,
                 max_output_tokens=2048,
-                thinking_config=direct_gemini_thinking_config(
-                    "CHECKPOINT_SYNTHESIS_THINKING",
-                    default="low",
-                ),
-            ),
+                extra_config={
+                    "thinking_config": direct_gemini_thinking_config(
+                        "CHECKPOINT_SYNTHESIS_THINKING",
+                        default="low",
+                    ),
+                },
+            )
         )
     except Exception:
         logger.exception("checkpoint synthesis: generate_content failed")
@@ -71,13 +73,7 @@ async def synthesize_checkpoint_markdown(
 
         return render_markdown(analysis)
 
-    text = ""
-    if response and response.candidates:
-        content = response.candidates[0].content
-        for part in (content.parts if content else None) or []:
-            if part.text:
-                text += part.text
-    text = (text or "").strip()
+    text = text_from_generate_response(response).strip()
     if not text:
         from .assembler import render_markdown
 

@@ -11,10 +11,10 @@ from typing import Any, Callable, Dict, Optional, Tuple
 from google.genai import types
 
 from agent_platform.core.observability.logging_context import auth_uid_scope
+from agent_platform.core.ports import GenerateRequest
 from property_agent.model_config import (
     direct_gemini_thinking_config,
-    global_direct_generate_client_and_model,
-    global_direct_generate_model_name,
+    direct_generate_model_client,
 )
 
 from .checkpoint_parse import (
@@ -67,7 +67,7 @@ _DIY_STEPS_ONLY_JSON_SCHEMA: Dict[str, Any] = {
 
 
 def _synthesis_model() -> str:
-    return global_direct_generate_model_name()
+    return direct_generate_model_client().default_model
 
 
 def _steps_llm_max_output_tokens() -> int:
@@ -238,7 +238,7 @@ def _generate_diy_steps_llm(
 
     Returns ``(hire_professional_recommended, diySteps dict)``.
     """
-    client, _ = global_direct_generate_client_and_model()
+    model_client = direct_generate_model_client()
     checkpoint_ctx = parse_checkpoint_structured_context(diagnosis)
     web_excerpt = _web_excerpt_for_steps(web_summary)
     payload: Dict[str, Any] = {
@@ -257,22 +257,24 @@ def _generate_diy_steps_llm(
     last_exc: Optional[Exception] = None
     for use_response_schema in (True, False):
         try:
-            cfg_kwargs: Dict[str, Any] = {
-                "temperature": 0.2,
+            extra_config: Dict[str, Any] = {
                 "top_p": 0.85,
-                "max_output_tokens": _steps_llm_max_output_tokens(),
-                "response_mime_type": "application/json",
                 "thinking_config": _steps_thinking_config(),
             }
             if use_response_schema:
-                cfg_kwargs["response_json_schema"] = _DIY_STEPS_ONLY_JSON_SCHEMA
-            response = client.models.generate_content(
-                model=_synthesis_model(),
-                contents=prompt,
-                config=types.GenerateContentConfig(**cfg_kwargs),
-            )
+                extra_config["response_json_schema"] = _DIY_STEPS_ONLY_JSON_SCHEMA
+            response = model_client.generate(
+                GenerateRequest(
+                    model=_synthesis_model(),
+                    contents=prompt,
+                    temperature=0.2,
+                    max_output_tokens=_steps_llm_max_output_tokens(),
+                    response_mime_type="application/json",
+                    extra_config=extra_config,
+                )
+            ).raw
             _log_steps_finish_reason(response)
-            raw = _strip_code_fences((response.text or "").strip())
+            raw = _strip_code_fences((getattr(response, "text", None) or "").strip())
             parsed = _load_steps_parsed(raw)
             if parsed is None:
                 raise ValueError("steps LLM JSON invalid or missing diySteps")

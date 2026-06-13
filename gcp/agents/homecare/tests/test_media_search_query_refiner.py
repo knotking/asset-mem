@@ -4,6 +4,8 @@ import json
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+from agent_platform.core.ports import GenerateResponse
+
 from property_agent.checkpoint.retrieval import (
     media_search_query_refiner as msqr,
 )
@@ -24,6 +26,16 @@ def _fake_formatted():
     ]
 
 
+def _mock_model_client(raw_response: object) -> MagicMock:
+    mock_client = MagicMock()
+    mock_client.generate.return_value = GenerateResponse(
+        text=getattr(raw_response, "text", None) or "",
+        parsed=getattr(raw_response, "parsed", None),
+        raw=raw_response,
+    )
+    return mock_client
+
+
 def test_refiner_disabled_returns_raw(monkeypatch):
     monkeypatch.setenv("HOMEAPP_REFINE_MEDIA_SEARCH_QUERY", "0")
     raw = "Garage paint chips door"
@@ -33,14 +45,9 @@ def test_refiner_disabled_returns_raw(monkeypatch):
 def test_refiner_returns_raw_when_generate_raises(monkeypatch):
     monkeypatch.setenv("HOMEAPP_REFINE_MEDIA_SEARCH_QUERY", "1")
 
-    def _boom(*_a, **_k):
-        raise RuntimeError("no vertex")
-
-    monkeypatch.setattr(
-        msqr,
-        "_vertex_genai_client",
-        lambda: SimpleNamespace(models=SimpleNamespace(generate_content=_boom)),
-    )
+    mock_client = MagicMock()
+    mock_client.generate.side_effect = RuntimeError("no vertex")
+    monkeypatch.setattr(msqr, "_direct_generate_model_client", lambda: mock_client)
     raw = "Garage Significant paint chipping"
     assert msqr.refine_checkpoint_media_search_query(raw, _fake_formatted()) == raw
 
@@ -61,13 +68,12 @@ def test_refiner_uses_model_json(monkeypatch):
         candidates = None
         prompt_feedback = None
 
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _Resp()
-    monkeypatch.setattr(msqr, "_vertex_genai_client", lambda: mock_client)
+    mock_client = _mock_model_client(_Resp())
+    monkeypatch.setattr(msqr, "_direct_generate_model_client", lambda: mock_client)
 
     out = msqr.refine_checkpoint_media_search_query(raw, _fake_formatted())
     assert "garage door" in out.lower()
-    mock_client.models.generate_content.assert_called_once()
+    mock_client.generate.assert_called_once()
 
 
 def test_refiner_uses_minimal_thinking_level(monkeypatch):
@@ -80,15 +86,14 @@ def test_refiner_uses_minimal_thinking_level(monkeypatch):
         candidates = None
         prompt_feedback = None
 
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _Resp()
-    monkeypatch.setattr(msqr, "_vertex_genai_client", lambda: mock_client)
+    mock_client = _mock_model_client(_Resp())
+    monkeypatch.setattr(msqr, "_direct_generate_model_client", lambda: mock_client)
 
     msqr.refine_checkpoint_media_search_query("Garage paint", _fake_formatted())
-    _kwargs = mock_client.models.generate_content.call_args.kwargs
-    cfg = _kwargs["config"]
-    assert cfg.thinking_config is not None
-    assert str(cfg.thinking_config.thinking_level).lower().endswith("minimal")
+    request = mock_client.generate.call_args.args[0]
+    thinking = request.extra_config["thinking_config"]
+    assert thinking is not None
+    assert str(thinking.thinking_level).lower().endswith("minimal")
 
 
 def test_refiner_uses_response_parsed_when_text_empty(monkeypatch):
@@ -101,9 +106,8 @@ def test_refiner_uses_response_parsed_when_text_empty(monkeypatch):
         candidates = None
         prompt_feedback = None
 
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _Resp()
-    monkeypatch.setattr(msqr, "_vertex_genai_client", lambda: mock_client)
+    mock_client = _mock_model_client(_Resp())
+    monkeypatch.setattr(msqr, "_direct_generate_model_client", lambda: mock_client)
 
     out = msqr.refine_checkpoint_media_search_query("Garage paint", _fake_formatted())
     assert "garage door" in out.lower()
@@ -123,9 +127,8 @@ def test_refiner_parses_json_from_thought_tagged_part(monkeypatch):
         candidates = [candidate]
         prompt_feedback = None
 
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _Resp()
-    monkeypatch.setattr(msqr, "_vertex_genai_client", lambda: mock_client)
+    mock_client = _mock_model_client(_Resp())
+    monkeypatch.setattr(msqr, "_direct_generate_model_client", lambda: mock_client)
 
     out = msqr.refine_checkpoint_media_search_query("Garage paint", _fake_formatted())
     assert "garage door" in out.lower()
@@ -141,9 +144,8 @@ def test_refiner_truncates_long_output(monkeypatch):
         candidates = None
         prompt_feedback = None
 
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _Resp()
-    monkeypatch.setattr(msqr, "_vertex_genai_client", lambda: mock_client)
+    mock_client = _mock_model_client(_Resp())
+    monkeypatch.setattr(msqr, "_direct_generate_model_client", lambda: mock_client)
 
     out = msqr.refine_checkpoint_media_search_query(
         "x", _fake_formatted(), max_out_chars=50
@@ -154,9 +156,9 @@ def test_refiner_truncates_long_output(monkeypatch):
 def test_refiner_empty_formatted_skips_call(monkeypatch):
     monkeypatch.setenv("HOMEAPP_REFINE_MEDIA_SEARCH_QUERY", "1")
     mock_client = MagicMock()
-    monkeypatch.setattr(msqr, "_vertex_genai_client", lambda: mock_client)
+    monkeypatch.setattr(msqr, "_direct_generate_model_client", lambda: mock_client)
     assert msqr.refine_checkpoint_media_search_query("seed", []) == "seed"
-    mock_client.models.generate_content.assert_not_called()
+    mock_client.generate.assert_not_called()
 
 
 def test_refiner_prompt_is_issue_type_general_not_garage_only():
@@ -191,9 +193,8 @@ def test_refiner_compacts_verbose_youtube_query_from_model(monkeypatch):
         candidates = None
         prompt_feedback = None
 
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _Resp()
-    monkeypatch.setattr(msqr, "_vertex_genai_client", lambda: mock_client)
+    mock_client = _mock_model_client(_Resp())
+    monkeypatch.setattr(msqr, "_direct_generate_model_client", lambda: mock_client)
 
     intents = msqr.refine_checkpoint_branch_search_intents(
         "Garage paint chips", _fake_formatted()

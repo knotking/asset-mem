@@ -6,6 +6,8 @@ import json
 
 import pytest
 
+from agent_platform.core.ports import GenerateResponse
+
 from property_agent.agents.cost_agent import agent as cost_mod
 from property_agent.agents.cost_agent.config import CostEstimationConfig
 from property_agent.agents.cost_agent import ai_cost_estimator as ai_cost_mod
@@ -278,7 +280,7 @@ def test_estimate_costs_with_ai_parses_structured_json(
     estimate, confidence = estimate_costs_with_ai(
         diagnosis="Kitchen faucet slow drip at base of spout",
         property_address="Brentwood, CA",
-        client=object(),  # unused when generate is mocked
+        model_client=object(),  # unused when generate is mocked
     )
     assert estimate is not None
     assert estimate["costEstimates"]["DIY"]["cost_range"] == "$40-120"
@@ -297,7 +299,7 @@ def test_estimate_costs_with_ai_rejects_invalid_structured_json(
     monkeypatch.setattr(ai_cost_mod, "_generate_cost_estimate_content", lambda *a, **k: _Resp())
     estimate, confidence = estimate_costs_with_ai(
         diagnosis="Kitchen faucet slow drip at base of spout",
-        client=object(),
+        model_client=object(),
     )
     assert estimate is None
     assert confidence == 0.0
@@ -314,7 +316,7 @@ def test_estimate_costs_with_ai_falls_back_to_prose_on_non_json(
     monkeypatch.setattr(ai_cost_mod, "_generate_cost_estimate_content", lambda *a, **k: _Resp())
     estimate, confidence = estimate_costs_with_ai(
         diagnosis="Plumbing pipe leak under sink requires repair",
-        client=object(),
+        model_client=object(),
     )
     assert estimate is not None
     assert "$" in estimate["costEstimates"]["DIY"]["cost_range"]
@@ -329,22 +331,22 @@ def test_generate_cost_estimate_always_uses_json_mode_no_tools() -> None:
     captured: dict = {}
 
     class _FakeClient:
-        class _Models:
-            def generate_content(self, **_kwargs):
-                captured.update(_kwargs)
+        default_model = "gemini-test"
 
-                class _Resp:
-                    text = json.dumps(_valid_structured_response())
+        def generate(self, request):
+            captured["request"] = request
 
-                return _Resp()
+            class _Resp:
+                text = json.dumps(_valid_structured_response())
 
-        models = _Models()
+            return GenerateResponse(text=_Resp.text, raw=_Resp())
 
-    ai_cost_mod._generate_cost_estimate_content(_FakeClient(), "prompt")  # type: ignore[arg-type]
-    config = captured.get("config")
-    assert config is not None
-    assert getattr(config, "tools", None) is None
-    assert getattr(config, "response_mime_type", None) == "application/json"
+    ai_cost_mod._generate_cost_estimate_content(_FakeClient(), "prompt")
+    request = captured.get("request")
+    assert request is not None
+    assert request.response_mime_type == "application/json"
+    assert request.extra_config is not None
+    assert request.extra_config.get("tools") is None
 
 
 def test_generate_cost_estimate_json_mode_with_web_context_no_tools() -> None:
@@ -352,25 +354,26 @@ def test_generate_cost_estimate_json_mode_with_web_context_no_tools() -> None:
     captured: dict = {}
 
     class _FakeClient:
-        class _Models:
-            def generate_content(self, **_kwargs):
-                captured.update(_kwargs)
+        default_model = "gemini-test"
 
-                class _Resp:
-                    text = json.dumps(_valid_structured_response())
+        def generate(self, request):
+            captured["request"] = request
 
-                return _Resp()
+            class _Resp:
+                text = json.dumps(_valid_structured_response())
 
-        models = _Models()
+            return GenerateResponse(text=_Resp.text, raw=_Resp())
 
     ai_cost_mod._generate_cost_estimate_content(
-        _FakeClient(),  # type: ignore[arg-type]
+        _FakeClient(),
         "prompt",
         web_context="already fetched web notes",
     )
-    config = captured.get("config")
-    assert getattr(config, "tools", None) is None
-    assert getattr(config, "response_mime_type", None) == "application/json"
+    request = captured.get("request")
+    assert request is not None
+    assert request.response_mime_type == "application/json"
+    assert request.extra_config is not None
+    assert request.extra_config.get("tools") is None
 
 
 def test_extract_grounding_web_summary_from_query() -> None:
@@ -395,7 +398,7 @@ def test_estimate_costs_with_ai_timeout(monkeypatch: pytest.MonkeyPatch) -> None
     estimate, confidence = estimate_costs_with_ai(
         diagnosis="Kitchen faucet leak requiring cartridge replacement",
         property_address="Brentwood, CA",
-        client=object(),  # unused when generate is mocked
+        model_client=object(),  # unused when generate is mocked
     )
     assert estimate is None
     assert confidence == 0.0
@@ -571,17 +574,16 @@ def test_fetch_market_pricing_context_returns_text(
     class _FakeResponse:
         text = "DIY: $40-80. Professional: $150-350 in Austin TX."
 
-    class _FakeModels:
-        def generate_content(self, **_kwargs):
-            return _FakeResponse()
-
     class _FakeClient:
-        models = _FakeModels()
+        default_model = "gemini-test"
+
+        def generate(self, _request):
+            return GenerateResponse(text=_FakeResponse.text, raw=_FakeResponse())
 
     monkeypatch.setattr(
         cost_mod,
-        "global_direct_generate_client_and_model",
-        lambda: (_FakeClient(), "gemini-3.5-flash"),
+        "direct_generate_model_client",
+        lambda: _FakeClient(),
     )
     result = cost_mod._fetch_market_pricing_context(
         "Kitchen faucet leak at base of faucet", "Austin, TX"
@@ -608,17 +610,16 @@ def test_fetch_market_pricing_context_reads_text_from_parts_when_response_text_e
         text = None
         candidates = [_Candidate()]
 
-    class _FakeModels:
-        def generate_content(self, **_kwargs):
-            return _FakeResponse()
-
     class _FakeClient:
-        models = _FakeModels()
+        default_model = "gemini-test"
+
+        def generate(self, _request):
+            return GenerateResponse(text="", raw=_FakeResponse())
 
     monkeypatch.setattr(
         cost_mod,
-        "global_direct_generate_client_and_model",
-        lambda: (_FakeClient(), "gemini-3.5-flash"),
+        "direct_generate_model_client",
+        lambda: _FakeClient(),
     )
     result = cost_mod._fetch_market_pricing_context(
         "Kitchen faucet leak at base of faucet", "Austin, TX"
@@ -641,18 +642,19 @@ def test_fetch_market_pricing_context_retries_when_first_response_empty(
 
     calls: list[int] = []
 
-    class _FakeModels:
-        def generate_content(self, **_kwargs):
-            calls.append(1)
-            return _Empty() if len(calls) == 1 else _Ok()
-
     class _FakeClient:
-        models = _FakeModels()
+        default_model = "gemini-test"
+
+        def generate(self, _request):
+            calls.append(1)
+            raw = _Empty() if len(calls) == 1 else _Ok()
+            text = getattr(raw, "text", None) or ""
+            return GenerateResponse(text=text, raw=raw)
 
     monkeypatch.setattr(
         cost_mod,
-        "global_direct_generate_client_and_model",
-        lambda: (_FakeClient(), "gemini-3.5-flash"),
+        "direct_generate_model_client",
+        lambda: _FakeClient(),
     )
     result = cost_mod._fetch_market_pricing_context(
         "Kitchen faucet leak at base of faucet", "Austin, TX"
@@ -667,17 +669,16 @@ def test_fetch_market_pricing_context_returns_none_on_error(
     monkeypatch.setattr(CostEstimationConfig, "USE_AI_COST_ESTIMATION", True)
     monkeypatch.setattr(CostEstimationConfig, "USE_MARKET_PRICING_SEARCH", True)
 
-    class _BrokenModels:
-        def generate_content(self, **_kwargs):
-            raise RuntimeError("network error")
-
     class _BrokenClient:
-        models = _BrokenModels()
+        default_model = "gemini-test"
+
+        def generate(self, _request):
+            raise RuntimeError("network error")
 
     monkeypatch.setattr(
         cost_mod,
-        "global_direct_generate_client_and_model",
-        lambda: (_BrokenClient(), "gemini-3.5-flash"),
+        "direct_generate_model_client",
+        lambda: _BrokenClient(),
     )
     result = cost_mod._fetch_market_pricing_context(
         "Kitchen faucet leak at base of faucet", None
