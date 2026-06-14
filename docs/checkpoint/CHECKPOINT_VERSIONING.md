@@ -1,6 +1,6 @@
 # Checkpoint Versioning — Design Spec
 
-**Status:** Proposed (documentation only; no implementation yet)  
+**Status:** Proposed — product decisions locked to recommended defaults (§8); implementation not started  
 **Audience:** Product, mobile/web, backend (analysis + metrics workers), agent/retrieval  
 **Related:** [Property Health Insights V2](./PROPERTY_HEALTH_INSIGHTS_V2.md), [Property Reports Plan](../property/PROPERTY_REPORTS_PLAN.md), [Checkpoint Feature Plan](./CHECKPOINT_FEATURE_PLAN.md)
 
@@ -194,10 +194,7 @@ Agent
 
 **Auto-match:** Reuse location logic from `gcp/proxy/workers/function/checkpoint_analysis/comparison_service.py` (`find_previous_checkpoint`) scoped to series lookup by normalized location.
 
-**Quota (open — see §8):**
-
-- **Option A:** Each capture counts toward monthly limit (unchanged behavior).
-- **Option B:** Only first capture per series per month counts; revisions discounted or free.
+**Quota:** Each capture counts toward the monthly checkpoint limit (same as today). Revisions in an existing series are not discounted.
 
 Analysis trigger remains via proxy (`gcp/proxy/api/routers/checkpoint.py`) → Pub/Sub → `checkpoint_analysis` worker.
 
@@ -261,7 +258,7 @@ Optional future session field: `checkpoint_series_ids` for “analyze this monit
 | Action | Behavior |
 |--------|----------|
 | Delete **capture** (latest) | Remove doc + media; update series `latestCaptureId` to previous; re-run metrics incremental |
-| Delete **capture** (non-latest) | **Block in v1** — or require series delete |
+| Delete **capture** (non-latest) | **Blocked** — user must delete latest capture repeatedly or delete the entire series |
 | Delete **series** | Batch delete all captures + series doc + storage |
 
 Saved providers and chat messages referencing `checkpointId` remain valid until that capture is deleted.
@@ -309,17 +306,19 @@ One-time job (Cloud Function or admin script):
 
 ---
 
-## 8. Open product decisions
+## 8. Product decisions (accepted defaults)
 
-| # | Question | Default if unanswered |
-|---|----------|------------------------|
-| 1 | Does a new capture in an existing series count toward monthly checkpoint quota? | Yes (same as today) |
-| 2 | Can series `location` label change after creation? | Immutable on series; capture may store detected override |
-| 3 | Auto-create series on first capture from location string? | Yes |
-| 4 | Delete middle revision (v2 of 3)? | Block; delete latest or entire series only |
-| 5 | Agent default for “kitchen” with no selection | Latest capture in series |
-| 6 | Baseline capture (move-in reference)? | Optional field on series; phase 2 |
-| 7 | Comparison history subcollection? | Defer to phase 3 |
+These defaults are **locked for v1** unless explicitly revisited before implementation.
+
+| # | Decision | Accepted default |
+|---|----------|------------------|
+| 1 | **Quota** | Each new capture counts toward the monthly checkpoint limit, including revisions in an existing series. |
+| 2 | **Series location** | Immutable on the series after creation. Individual captures may still store AI `detectedAsset` overrides. |
+| 3 | **Series creation** | Auto-create or match series from normalized location string on capture create; no required “new area vs add to existing” step in v1 (UI may still offer it). |
+| 4 | **Delete middle revision** | Blocked. Users delete the latest capture (repeat if needed) or delete the entire series. |
+| 5 | **Agent default** | Unpinned location queries (e.g. “kitchen”) resolve to the **latest capture** in that series only. Full history when the query asks for change over time. |
+| 6 | **Baseline capture** | Deferred to **phase 2** (`baselineCaptureId` on series). |
+| 7 | **Comparison history** | Single `visualDiff` on the capture doc in v1; append-only `comparisons/` subcollection deferred to **phase 3**. |
 
 ---
 
@@ -329,8 +328,8 @@ One-time job (Cloud Function or admin script):
 |-------|--------|--------------|
 | **P0** | Schema + backfill + series on create (server-side) | Types, Firestore rules/indexes, backfill script, no UI change |
 | **P1** | Create “add to series” + comparison scoped to series | Client create flow, worker compare logic, read-only grouped timeline |
-| **P2** | Metrics v3, agent defaults, report snapshot fields | Worker + agent + report builder updates |
-| **P3** | Comparison history, baseline capture, quota policy | Subcollection, product decision on limits |
+| **P2** | Metrics v3, agent defaults, report snapshot fields, baseline capture | Worker + agent + report builder; `baselineCaptureId` on series |
+| **P3** | Comparison history subcollection | Append-only `comparisons/`; denormalized `visualDiff` unchanged |
 
 ---
 
@@ -368,3 +367,4 @@ One-time job (Cloud Function or admin script):
 | Date | Change |
 |------|--------|
 | 2026-06-14 | Initial design spec (docs only) |
+| 2026-06-14 | Locked product decisions to recommended defaults (§8) |
