@@ -1,0 +1,215 @@
+id: ac7257e5-2847-4bf3-8241-bd22cfd47ff5
+app_name: property_agent
+user_id: adk_conformance_test_user
+state:
+  homeappLifecycle:
+    v: 1
+    phase: engine.before_model
+    ts: '2026-06-14T08:35:27.794004+00:00'
+    elapsed_ms: 8018
+    invocation_id: e-58ac5358-cf66-4336-9644-014fc11c715b
+    checkpoint_ids: []
+    checkpoint_optional_agents: []
+    context_doc_count: 0
+    message: Planning next moves...
+    primary_agent: docs
+  _executor_invocation_structured_analysis: false
+  checkpoint_optional_agents: []
+  user_query: what does my insurance policy say about water damage?
+  property_address: 1982 Helena Way, Brentwood, CA 94513
+  property_id: EVALPROP0001
+  primary_agent: docs
+  context_doc_uris:
+    - gs://homegeek-user-data-staging/docs/policy.pdf
+  current_date_utc: '2026-06-14'
+  current_year: 2026
+  resolved_turn:
+    intent: substantive
+    route: user_docs
+    expanded_user_query: what does my insurance policy say about water damage?
+    retrieval_only: true
+    run_optional_agents: []
+    user_goal: answer_from_context
+    query_mode: interpret_session
+    resolve_source: single_loop
+  conversational_turn: false
+  _resolve_turn_invocation_id: e-58ac5358-cf66-4336-9644-014fc11c715b
+  user_id: adk_conformance_test_user
+  user_docs_result: No relevant information could be found in your uploaded documents to answer this question.
+  _executor_user_docs_passthrough: false
+events:
+  - content:
+      parts:
+        - text: |
+            {"user_query": "what does my insurance policy say about water damage?", "primary_agent": "docs", "property_id": "EVALPROP0001", "property_address": "1982 Helena Way, Brentwood, CA 94513", "context_doc_uris": ["gs://homegeek-user-data-staging/docs/policy.pdf"]}
+      role: user
+    invocation_id: e-58ac5358-cf66-4336-9644-014fc11c715b
+    author: user
+    actions:
+      state_delta: {}
+    id: a62704e4-c35b-44f0-8217-08a8e2d22237
+    timestamp: 1781426119.772629
+  - content:
+      parts:
+        - text: Working on it...
+      role: model
+    invocation_id: e-58ac5358-cf66-4336-9644-014fc11c715b
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.runner_exec
+          ts: '2026-06-14T08:35:19.776090+00:00'
+          elapsed_ms: 0
+          correlation_id: null
+          session_id: ac7257e5-2847-4bf3-8241-bd22cfd47ff5
+          invocation_id: e-58ac5358-cf66-4336-9644-014fc11c715b
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Working on it...
+    id: 5b1a4f4b-d9d5-45c3-b6f4-ba0bf69030d1
+    timestamp: 1781426119.7762492
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - function_call:
+            id: adk-36972316-2a20-4e41-8856-a769f9cf2156
+            args:
+              user_query: what does my insurance policy say about water damage?
+              property_address: 1982 Helena Way, Brentwood, CA 94513
+              context_doc_uris:
+                - gs://homegeek-user-data-staging/docs/policy.pdf
+              property_id: EVALPROP0001
+            name: user_docs_retrieval
+          thought_signature: AY89a1_OrMHD64cVxKAtZDeRCZbm0zMGkuAvtpj19rxviXH6zb7bfvwyyH5SDWngUC8=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 93
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 93
+      prompt_token_count: 1778
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 1778
+      total_token_count: 1871
+      traffic_type: ON_DEMAND
+    invocation_id: e-58ac5358-cf66-4336-9644-014fc11c715b
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+        checkpoint_optional_agents: []
+        user_query: what does my insurance policy say about water damage?
+        property_address: 1982 Helena Way, Brentwood, CA 94513
+        property_id: EVALPROP0001
+        primary_agent: docs
+        context_doc_uris:
+          - gs://homegeek-user-data-staging/docs/policy.pdf
+        current_date_utc: '2026-06-14'
+        current_year: 2026
+        resolved_turn:
+          intent: substantive
+          route: user_docs
+          expanded_user_query: what does my insurance policy say about water damage?
+          retrieval_only: true
+          run_optional_agents: []
+          user_goal: answer_from_context
+          query_mode: interpret_session
+          menu_index: null
+          capability_key: null
+          discourse_act: null
+          focus_branch: null
+          resolve_source: single_loop
+        conversational_turn: false
+        _resolve_turn_invocation_id: e-58ac5358-cf66-4336-9644-014fc11c715b
+    long_running_tool_ids: []
+    id: 33868ff2-bc72-4bec-bab8-29713e98e4ef
+    timestamp: 1781426119.9965901
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-58ac5358-cf66-4336-9644-014fc11c715b
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:35:19.996728+00:00'
+          elapsed_ms: 220
+          correlation_id: null
+          session_id: null
+          invocation_id: e-58ac5358-cf66-4336-9644-014fc11c715b
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Planning next moves...
+    id: f03e179d-ddb1-4ca1-837b-33888474539d
+    timestamp: 1781426119.996765
+  - content:
+      parts:
+        - function_response:
+            id: adk-36972316-2a20-4e41-8856-a769f9cf2156
+            name: user_docs_retrieval
+            response:
+              result: No relevant information could be found in your uploaded documents to answer this question.
+      role: user
+    invocation_id: e-58ac5358-cf66-4336-9644-014fc11c715b
+    author: property_agent
+    actions:
+      state_delta:
+        user_id: adk_conformance_test_user
+        property_id: EVALPROP0001
+        user_docs_result: No relevant information could be found in your uploaded documents to answer this question.
+        _executor_user_docs_passthrough: true
+    id: 15141d42-cfe9-476a-8595-a56499bd8645
+    timestamp: 1781426127.782966
+  - content:
+      parts:
+        - text: No relevant information could be found in your uploaded documents to answer this question.
+      role: model
+    invocation_id: e-58ac5358-cf66-4336-9644-014fc11c715b
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_user_docs_passthrough: false
+    id: df8aea61-3ef9-4b5b-be99-2fcf2010e592
+    timestamp: 1781426127.7937732
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-58ac5358-cf66-4336-9644-014fc11c715b
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:35:27.794004+00:00'
+          elapsed_ms: 8018
+          correlation_id: null
+          session_id: null
+          invocation_id: e-58ac5358-cf66-4336-9644-014fc11c715b
+          primary_agent: docs
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Planning next moves...
+    id: 86d43ef9-a2b4-49c3-ad62-ee00fdc0fc43
+    timestamp: 1781426127.794067
+  - invocation_id: e-58ac5358-cf66-4336-9644-014fc11c715b
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+    id: a8a732c4-23b8-4a1e-ad36-57109c63c8a5
+    timestamp: 1781426127.801458
+last_update_time: 1781426127.801458

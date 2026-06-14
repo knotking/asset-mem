@@ -1,0 +1,123 @@
+{
+  "generated_at": "2026-06-14T13:18:15+0530",
+  "summary": {
+    "total": 7,
+    "passed": 7,
+    "failed": 0,
+    "errors": 0,
+    "pass_rate": 1.0,
+    "latency_ms": {
+      "p50": 0,
+      "p95": 1332,
+      "mean": 190
+    },
+    "field_mismatch_counts": {}
+  },
+  "results": [
+    {
+      "case_id": "conversational_blocks_analyze",
+      "passed": true,
+      "elapsed_ms": 1332,
+      "mismatches": {},
+      "error": null,
+      "outcome": {
+        "blocked": true,
+        "result": "Skipped: conversational turn \u2014 respond in plain text only."
+      }
+    },
+    {
+      "case_id": "conversational_blocks_list_checkpoints",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "outcome": {
+        "blocked": true,
+        "result": "Skipped: conversational turn \u2014 respond in plain text only."
+      }
+    },
+    {
+      "case_id": "report_mode_blocks_analyze",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "outcome": {
+        "blocked": true,
+        "result": "Skipped: report mode \u2014 saved report snapshots contain condition findings only, not cost/DIY/service/coverage analysis. Do not call analyze_checkpoints. Answer in markdown from the report snapshot or prior report summary; explain that branch analysis is outside report chat."
+      }
+    },
+    {
+      "case_id": "report_mode_allows_report_retrieval",
+      "passed": true,
+      "elapsed_ms": 1,
+      "mismatches": {},
+      "error": null,
+      "outcome": {
+        "blocked": false,
+        "result": null
+      }
+    },
+    {
+      "case_id": "invented_checkpoint_ids_dropped",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "outcome": {
+        "blocked": false,
+        "result": null,
+        "args": {
+          "branches": [],
+          "checkpoint_ids": [
+            "CKPT0000000000000001"
+          ],
+          "user_query": "Summarize issues",
+          "checkpoint_optional_agents": [],
+          "property_address": null,
+          "search_location": null
+        }
+      }
+    },
+    {
+      "case_id": "chip_forces_cost_branches",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "outcome": {
+        "blocked": false,
+        "result": null,
+        "args": {
+          "branches": [
+            "cost"
+          ],
+          "user_query": "Run cost analysis",
+          "checkpoint_optional_agents": [
+            "cost"
+          ],
+          "checkpoint_ids": null,
+          "property_address": null,
+          "search_location": null
+        }
+      }
+    },
+    {
+      "case_id": "completed_cost_branch_short_circuits",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "outcome": {
+        "blocked": true,
+        "result": "Skipped: optional branch analysis already completed this session. Answer from prior analysis in session history.",
+        "args": {
+          "branches": [
+            "cost"
+          ],
+          "user_query": "Summarize the issues for the selected checkpoint"
+        }
+      }
+    }
+  ]
+}

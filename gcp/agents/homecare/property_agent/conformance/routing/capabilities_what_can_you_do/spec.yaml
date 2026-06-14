@@ -1,0 +1,7 @@
+description: >
+  Capabilities question in checkpoint mode — plain markdown only, no tools.
+agent: property_agent
+initial_state: {}
+user_messages:
+  - text: |
+      {"user_query": "what can you do?", "primary_agent": "checkpoint", "property_address": "1982 Helena Way, Brentwood, CA 94513"}

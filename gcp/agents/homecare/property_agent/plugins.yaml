@@ -1,0 +1,15 @@
+# ADK plugin manifest for property_agent.
+#
+# Conformance record/replay: enable via HOMEAPP_ADK_CONFORMANCE_PLUGINS (see Makefile
+# conformance-web-* targets). Plugins are wired in runtime/app_config.py.
+#
+# BigQuery analytics (optional; read natively by adk web when all fields are set):
+# bigquery_agent_analytics:
+#   project_id: your-gcp-project
+#   dataset_id: your_dataset
+#   dataset_location: US
+#   table_id: agent_events
+
+conformance:
+  record: google.adk.cli.plugins.recordings_plugin.RecordingsPlugin
+  replay: google.adk.cli.plugins.replay_plugin.ReplayPlugin

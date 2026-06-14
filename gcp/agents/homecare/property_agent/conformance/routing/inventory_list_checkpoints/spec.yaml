@@ -1,0 +1,7 @@
+description: >
+  Property-wide checkpoint inventory list — executor should call list_checkpoints.
+agent: property_agent
+initial_state: {}
+user_messages:
+  - text: |
+      {"user_query": "What checkpoints do I have for this property?", "primary_agent": "checkpoint", "property_id": "EVALPROP0001", "property_address": "1982 Helena Way, Brentwood, CA 94513", "checkpoint_ids": ["CKPT0000000000000001"]}

@@ -30,11 +30,13 @@ def build_events_compaction_config() -> Optional[EventsCompactionConfig]:
 
 def build_property_app() -> App:
     from property_agent.runtime.agent import root_agent
+    from property_agent.runtime.conformance_plugins import load_conformance_plugins
 
     return App(
         name="property_agent",
         root_agent=root_agent,
         events_compaction_config=build_events_compaction_config(),
+        plugins=load_conformance_plugins(),
     )
 
 

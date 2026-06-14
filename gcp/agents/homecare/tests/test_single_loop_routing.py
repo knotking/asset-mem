@@ -17,7 +17,9 @@ from property_agent.model_config import (
 )
 from property_agent.routing.conversational_intent import CONVERSATIONAL_TURN_STATE_KEY
 from property_agent.routing.single_loop_routing import (
+    arm_user_docs_passthrough,
     bare_casual_intent,
+    extract_tool_result_text,
     format_slim_session_context_block,
     inject_slim_session_context_into_llm_request,
     minimal_substantive_resolved_turn,
@@ -266,3 +268,43 @@ def test_inject_slim_session_context_strips_resolved_turn() -> None:
     assert "[RESOLVED_TURN]" not in si
     assert "[SESSION_CONTEXT]" in si
     assert "base" in si
+
+
+def test_arm_user_docs_passthrough_seeds_result_for_replay_tool_response() -> None:
+    state: dict[str, object] = {
+        "resolved_turn": {"route": "user_docs"},
+        "primary_agent": "docs",
+    }
+    arm_user_docs_passthrough(
+        state,
+        tool_response={"result": "No relevant information could be found."},
+        route="user_docs",
+        primary_agent="docs",
+    )
+    assert state["user_docs_result"] == "No relevant information could be found."
+    assert state["_executor_user_docs_passthrough"] is True
+
+
+def test_prepare_single_loop_user_docs_passthrough_short_circuits() -> None:
+    state = {
+        "_executor_user_docs_passthrough": True,
+        "user_docs_result": "Policy excerpt about water damage.",
+    }
+    ctx = _ctx(query="water damage?", state=state)
+    response = prepare_single_loop_before_model(ctx)
+    assert response is not None
+    assert "Policy excerpt" in str(response)
+    assert ctx.state["_executor_user_docs_passthrough"] is False
+
+
+def test_prepare_single_loop_user_docs_passthrough_without_result_does_not_clear_flag() -> None:
+    state = {"_executor_user_docs_passthrough": True}
+    ctx = _ctx(query="water damage?", state=state)
+    assert prepare_single_loop_before_model(ctx) is None
+    assert ctx.state["_executor_user_docs_passthrough"] is True
+
+
+def test_extract_tool_result_text_accepts_string_or_dict() -> None:
+    assert extract_tool_result_text("  hello  ") == "hello"
+    assert extract_tool_result_text({"result": "from dict"}) == "from dict"
+    assert extract_tool_result_text({}) == ""

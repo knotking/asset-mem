@@ -1,0 +1,9 @@
+description: >
+  Turn 1 docs policy question; turn 2 lease end follow-up (markdown-only second turn).
+agent: property_agent
+initial_state: {}
+user_messages:
+  - text: |
+      {"user_query": "what does my insurance policy say about water damage?", "primary_agent": "docs", "property_id": "EVALPROP0001", "context_doc_uris": ["gs://homegeek-user-data-staging/docs/policy.pdf"]}
+  - text: |
+      {"user_query": "when does my lease end?", "primary_agent": "docs", "property_id": "EVALPROP0001", "context_doc_uris": ["gs://homegeek-user-data-staging/docs/lease.pdf"]}

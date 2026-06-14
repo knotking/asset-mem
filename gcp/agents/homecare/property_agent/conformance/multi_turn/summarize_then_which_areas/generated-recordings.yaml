@@ -1,0 +1,1129 @@
+recordings:
+  - user_message_index: 0
+    agent_name: property_agent
+    llm_recording:
+      llm_request:
+        model: gemini-3.1-flash-lite
+        contents:
+          - parts:
+              - text: |
+                  {"user_query": "Summarize the issues for the selected checkpoints", "primary_agent": "checkpoint", "property_id": "EVALPROP0001", "property_address": "1982 Helena Way, Brentwood, CA 94513", "checkpoint_ids": ["CKPT0000000000000001"]}
+            role: user
+        config:
+          http_options:
+            headers:
+              x-goog-api-client: google-adk/1.33.0 gl-python/3.11.14
+              user-agent: google-adk/1.33.0 gl-python/3.11.14
+          system_instruction: |-
+            You are the Property Care AI assistant for AssetMem AI.
+
+            **Persona and tone**
+            - Warm, direct, and practical. Homeowners often reach out because something is wrong — acknowledge concern before diving into details.
+            - Lead with the most actionable finding. Avoid lengthy preamble.
+            - Use plain language; avoid jargon unless the user introduced it.
+            - Never be alarmist. Present issues factually with relative severity (minor/moderate/urgent) only when the data supports it.
+
+            **Session context**
+            - Use prior turns and [SESSION_CONTEXT] when present — do not re-fetch facts you already have.
+            - For calendar or timeline questions (current year, today, previous month, when was), use
+              `current_date_utc` and `current_year` from [SESSION_CONTEXT] and checkpoint capture dates
+              from tool output — do not infer years from month/day alone or mirror user corrections without
+              checking those fields.
+            - Prior checkpoint accordions live in earlier messages' structured fields; answer follow-ups from that history when possible.
+
+            **When to use tools**
+            * `list_checkpoints` — Property-wide inventory or status ("what checkpoints do I have?", "list my checkpoints").
+              Returns recent checkpoints with analysis status. Does not run branch analysis.
+            * `analyze_checkpoints` — Retrieve and summarize checkpoint issues for the user's question.
+              See tool description for `branches` and `checkpoint_ids` parameter rules.
+            * `user_docs_retrieval` — Questions about the user's uploaded documents (`context_doc_uris` when provided).
+            * `report_retrieval` — Questions about saved property reports (`report_ids` when `primary_agent` is report).
+              Call it **at most once per turn**; then answer in markdown from that result — never call it again in the same reply.
+
+            **When NOT to use tools**
+            * Greetings, thanks, and casual chat — short markdown only.
+            * General home-care questions without uploaded docs or checkpoints — answer from session history and best-effort knowledge in markdown only.
+            * Follow-ups — answer from session history **only when the prior turn already contains the specific data the user is asking about** (e.g. "explain the DIY steps", "which provider did you recommend?"). If the user is asking about something not yet retrieved or wants a fresh analysis, call the appropriate tool.
+            * When offering optional work, name the branch explicitly ("Want me to run **cost** analysis?") so short affirmations route correctly.
+
+            **Report mode (highest precedence when [REPORT_MODE] is active)**
+            When `[REPORT_MODE]` is present in the resolved-turn block, these rules take precedence over all others:
+            - Answers must cite the frozen report snapshot only — not live checkpoints or generic home-inspection templates.
+            - Mention ONLY section headings and issues that appear in the tool output. Never invent systems (roofing, HVAC, plumbing, etc.) unless named in the snapshot. Use exact area names (e.g. "Vehicle - Exterior", "Garage").
+            - Never call `analyze_checkpoints` or offer checkpoint optional branches.
+            - If the user asks vaguely (e.g. "reports please") while `report_ids` are attached, summarize what the snapshot actually contains.
+
+            **Output contract**
+            * Default: natural, concise markdown — 1–2 sentences for simple questions, a short bullet list for status checks, structured sections only for full analysis summaries.
+            * After `analyze_checkpoints`: return a brief prose summary for the user; structured accordions are written to the message by the system (you do not emit ```json).
+            * Never embed fenced JSON analysis blocks in your reply.
+
+            **Presentation**
+            * Return tool output faithfully; no meta-commentary about tools or routing.
+            * If retrieval is empty, say so briefly. Offer a best-effort answer only for general knowledge questions — never for property-specific claims.
+            * Never expose internal identifiers in user-facing text: report ids, checkpoint ids, file ids,
+              `gs://` storage URIs, or `context_doc_uris`. Cite human-readable names (report title, area,
+              document title, date/period) instead.
+            * When multiple checkpoints are in scope, lead with the highest-severity cross-cutting issues before going area-by-area.
+
+            **Safety guardrails**
+            * Do not provide cost estimates beyond what the tool output explicitly returns.
+            * Do not give legal, insurance, or financial advice (e.g. "you should file a claim", "this voids your warranty").
+            * Do not promise contractor quality, availability, or timelines.
+            * Do not diagnose structural, safety-critical, or code-compliance issues beyond what the checkpoint data states — recommend a licensed professional when the issue warrants it.
+
+            Never ask the user to upload URIs or documents.
+
+
+            You are an agent. Your internal name is "property_agent". The description about you is "Agent that manages and executes homecare-related tasks.".
+
+            [SESSION_CONTEXT]
+            {
+              "current_date_utc": "2026-06-14",
+              "current_year": 2026,
+              "property_address": "1982 Helena Way, Brentwood, CA 94513",
+              "search_location": null,
+              "property_id": "EVALPROP0001",
+              "primary_agent": "checkpoint",
+              "checkpoint_ids_count": 1,
+              "context_doc_uris_count": 0,
+              "report_ids_count": 0,
+              "checkpoint_optional_agents": [],
+              "routing_mode": "single_loop"
+            }
+            [/SESSION_CONTEXT]
+          tools:
+            - function_declarations:
+                - description: ''
+                  name: user_docs_retrieval
+                  parameters:
+                    properties:
+                      user_query:
+                        type: STRING
+                      correlation_id:
+                        nullable: true
+                        type: STRING
+                      context_doc_uris:
+                        items:
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      checkpoint_ids:
+                        items:
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      property_address:
+                        nullable: true
+                        type: STRING
+                      property_id:
+                        nullable: true
+                        type: STRING
+                      search_location:
+                        nullable: true
+                        type: OBJECT
+                      checkpoint_retrieval_search_query:
+                        nullable: true
+                        type: STRING
+                      checkpoint_service_trade_query:
+                        nullable: true
+                        type: STRING
+                      checkpoint_branch_search_intents:
+                        nullable: true
+                        type: OBJECT
+                      checkpoint_optional_agents:
+                        items:
+                          enum:
+                            - coverage
+                            - diy
+                            - service
+                            - cost
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                    required:
+                      - user_query
+                    type: OBJECT
+                  response:
+                    type: STRING
+                - description: Load persisted report snapshots (contentSnapshot / chatMarkdown) for Q&A.
+                  name: report_retrieval
+                  parameters:
+                    properties:
+                      user_query:
+                        type: STRING
+                    required:
+                      - user_query
+                    type: OBJECT
+                  response:
+                    type: STRING
+                - description: "List recent checkpoints for this property (inventory / status queries).\n\n    Returns a markdown summary of the most recent checkpoints with analysis status.\n    Use when the user asks what checkpoints exist or wants a property-wide status\n    overview — not when analyzing specific selected checkpoints.\n    "
+                  name: list_checkpoints
+                  parameters:
+                    properties:
+                      property_id:
+                        type: STRING
+                      user_query:
+                        default: ''
+                        type: STRING
+                      location:
+                        nullable: true
+                        type: STRING
+                    required:
+                      - property_id
+                    type: OBJECT
+                  response:
+                    type: STRING
+                - description: "Retrieve and analyze checkpoints for this property.\n\n    ``branches`` selects optional analysis sections:\n    - ``[]`` (default) — retrieval + issue summary only (no coverage/diy/service/cost).\n    - ``[\"cost\"]``, ``[\"diy\", \"cost\"]``, etc. — run those branch analyses after retrieval.\n\n    Pass ``checkpoint_ids`` only when the client attached real Firestore ids in session\n    context; omit them for semantic search across the property.\n    "
+                  name: analyze_checkpoints
+                  parameters:
+                    properties:
+                      user_query:
+                        type: STRING
+                      property_id:
+                        type: STRING
+                      branches:
+                        items:
+                          enum:
+                            - coverage
+                            - diy
+                            - service
+                            - cost
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      checkpoint_ids:
+                        items:
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      context_doc_uris:
+                        items:
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      property_address:
+                        nullable: true
+                        type: STRING
+                      search_location:
+                        nullable: true
+                        type: OBJECT
+                    required:
+                      - user_query
+                      - property_id
+                    type: OBJECT
+                  response:
+                    type: STRING
+          labels:
+            adk_agent_name: property_agent
+        live_connect_config:
+          input_audio_transcription: {}
+          output_audio_transcription: {}
+      llm_responses:
+        - model_version: gemini-3.1-flash-lite
+          content:
+            parts:
+              - function_call:
+                  args:
+                    user_query: Summarize the issues for the selected checkpoints
+                    property_id: EVALPROP0001
+                    property_address: 1982 Helena Way, Brentwood, CA 94513
+                    checkpoint_ids:
+                      - CKPT0000000000000001
+                  name: analyze_checkpoints
+                thought_signature: AY89a1-GGuFKmwWvxVHE2BIR2ffyv_yYXkm54EK3oG7CQeESdcH1qStEbhL8F4UCkd0=
+            role: model
+          finish_reason: STOP
+          usage_metadata:
+            candidates_token_count: 88
+            candidates_tokens_details:
+              - modality: TEXT
+                token_count: 88
+            prompt_token_count: 1777
+            prompt_tokens_details:
+              - modality: TEXT
+                token_count: 1777
+            total_token_count: 1865
+            traffic_type: ON_DEMAND
+  - user_message_index: 0
+    agent_name: property_agent
+    tool_recording:
+      tool_call:
+        id: adk-b6e21184-0354-4eab-80a0-9afded72e06f
+        args:
+          user_query: Summarize the issues for the selected checkpoints
+          property_id: EVALPROP0001
+          property_address: 1982 Helena Way, Brentwood, CA 94513
+          checkpoint_ids:
+            - CKPT0000000000000001
+        name: analyze_checkpoints
+      tool_response:
+        id: adk-b6e21184-0354-4eab-80a0-9afded72e06f
+        name: analyze_checkpoints
+        response:
+          result: No matching checkpoints found for your query. Try rephrasing or check that checkpoints exist for this property.
+  - user_message_index: 0
+    agent_name: property_agent
+    llm_recording:
+      llm_request:
+        model: gemini-3.1-flash-lite
+        contents:
+          - parts:
+              - text: |
+                  {"user_query": "Summarize the issues for the selected checkpoints", "primary_agent": "checkpoint", "property_id": "EVALPROP0001", "property_address": "1982 Helena Way, Brentwood, CA 94513", "checkpoint_ids": ["CKPT0000000000000001"]}
+            role: user
+          - parts:
+              - text: 'For context:'
+              - text: '[homeapp_lifecycle] said: Working on it...'
+            role: user
+          - parts:
+              - text: 'For context:'
+              - text: '[homeapp_lifecycle] said: Planning next moves...'
+            role: user
+          - parts:
+              - function_call:
+                  args:
+                    user_query: Summarize the issues for the selected checkpoints
+                    property_id: EVALPROP0001
+                    property_address: 1982 Helena Way, Brentwood, CA 94513
+                    checkpoint_ids:
+                      - CKPT0000000000000001
+                  name: analyze_checkpoints
+                thought_signature: AY89a1-GGuFKmwWvxVHE2BIR2ffyv_yYXkm54EK3oG7CQeESdcH1qStEbhL8F4UCkd0=
+            role: model
+          - parts:
+              - function_response:
+                  name: analyze_checkpoints
+                  response:
+                    result: No matching checkpoints found for your query. Try rephrasing or check that checkpoints exist for this property.
+            role: user
+        config:
+          http_options:
+            headers:
+              x-goog-api-client: google-adk/1.33.0 gl-python/3.11.14
+              user-agent: google-adk/1.33.0 gl-python/3.11.14
+          system_instruction: |-
+            You are the Property Care AI assistant for AssetMem AI.
+
+            **Persona and tone**
+            - Warm, direct, and practical. Homeowners often reach out because something is wrong — acknowledge concern before diving into details.
+            - Lead with the most actionable finding. Avoid lengthy preamble.
+            - Use plain language; avoid jargon unless the user introduced it.
+            - Never be alarmist. Present issues factually with relative severity (minor/moderate/urgent) only when the data supports it.
+
+            **Session context**
+            - Use prior turns and [SESSION_CONTEXT] when present — do not re-fetch facts you already have.
+            - For calendar or timeline questions (current year, today, previous month, when was), use
+              `current_date_utc` and `current_year` from [SESSION_CONTEXT] and checkpoint capture dates
+              from tool output — do not infer years from month/day alone or mirror user corrections without
+              checking those fields.
+            - Prior checkpoint accordions live in earlier messages' structured fields; answer follow-ups from that history when possible.
+
+            **When to use tools**
+            * `list_checkpoints` — Property-wide inventory or status ("what checkpoints do I have?", "list my checkpoints").
+              Returns recent checkpoints with analysis status. Does not run branch analysis.
+            * `analyze_checkpoints` — Retrieve and summarize checkpoint issues for the user's question.
+              See tool description for `branches` and `checkpoint_ids` parameter rules.
+            * `user_docs_retrieval` — Questions about the user's uploaded documents (`context_doc_uris` when provided).
+            * `report_retrieval` — Questions about saved property reports (`report_ids` when `primary_agent` is report).
+              Call it **at most once per turn**; then answer in markdown from that result — never call it again in the same reply.
+
+            **When NOT to use tools**
+            * Greetings, thanks, and casual chat — short markdown only.
+            * General home-care questions without uploaded docs or checkpoints — answer from session history and best-effort knowledge in markdown only.
+            * Follow-ups — answer from session history **only when the prior turn already contains the specific data the user is asking about** (e.g. "explain the DIY steps", "which provider did you recommend?"). If the user is asking about something not yet retrieved or wants a fresh analysis, call the appropriate tool.
+            * When offering optional work, name the branch explicitly ("Want me to run **cost** analysis?") so short affirmations route correctly.
+
+            **Report mode (highest precedence when [REPORT_MODE] is active)**
+            When `[REPORT_MODE]` is present in the resolved-turn block, these rules take precedence over all others:
+            - Answers must cite the frozen report snapshot only — not live checkpoints or generic home-inspection templates.
+            - Mention ONLY section headings and issues that appear in the tool output. Never invent systems (roofing, HVAC, plumbing, etc.) unless named in the snapshot. Use exact area names (e.g. "Vehicle - Exterior", "Garage").
+            - Never call `analyze_checkpoints` or offer checkpoint optional branches.
+            - If the user asks vaguely (e.g. "reports please") while `report_ids` are attached, summarize what the snapshot actually contains.
+
+            **Output contract**
+            * Default: natural, concise markdown — 1–2 sentences for simple questions, a short bullet list for status checks, structured sections only for full analysis summaries.
+            * After `analyze_checkpoints`: return a brief prose summary for the user; structured accordions are written to the message by the system (you do not emit ```json).
+            * Never embed fenced JSON analysis blocks in your reply.
+
+            **Presentation**
+            * Return tool output faithfully; no meta-commentary about tools or routing.
+            * If retrieval is empty, say so briefly. Offer a best-effort answer only for general knowledge questions — never for property-specific claims.
+            * Never expose internal identifiers in user-facing text: report ids, checkpoint ids, file ids,
+              `gs://` storage URIs, or `context_doc_uris`. Cite human-readable names (report title, area,
+              document title, date/period) instead.
+            * When multiple checkpoints are in scope, lead with the highest-severity cross-cutting issues before going area-by-area.
+
+            **Safety guardrails**
+            * Do not provide cost estimates beyond what the tool output explicitly returns.
+            * Do not give legal, insurance, or financial advice (e.g. "you should file a claim", "this voids your warranty").
+            * Do not promise contractor quality, availability, or timelines.
+            * Do not diagnose structural, safety-critical, or code-compliance issues beyond what the checkpoint data states — recommend a licensed professional when the issue warrants it.
+
+            Never ask the user to upload URIs or documents.
+
+
+            You are an agent. Your internal name is "property_agent". The description about you is "Agent that manages and executes homecare-related tasks.".
+
+            [SESSION_CONTEXT]
+            {
+              "current_date_utc": "2026-06-14",
+              "current_year": 2026,
+              "property_address": "1982 Helena Way, Brentwood, CA 94513",
+              "search_location": null,
+              "property_id": "EVALPROP0001",
+              "primary_agent": "checkpoint",
+              "checkpoint_ids_count": 1,
+              "context_doc_uris_count": 0,
+              "report_ids_count": 0,
+              "checkpoint_optional_agents": [],
+              "routing_mode": "single_loop"
+            }
+            [/SESSION_CONTEXT]
+          tools:
+            - function_declarations:
+                - description: ''
+                  name: user_docs_retrieval
+                  parameters:
+                    properties:
+                      user_query:
+                        type: STRING
+                      correlation_id:
+                        nullable: true
+                        type: STRING
+                      context_doc_uris:
+                        items:
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      checkpoint_ids:
+                        items:
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      property_address:
+                        nullable: true
+                        type: STRING
+                      property_id:
+                        nullable: true
+                        type: STRING
+                      search_location:
+                        nullable: true
+                        type: OBJECT
+                      checkpoint_retrieval_search_query:
+                        nullable: true
+                        type: STRING
+                      checkpoint_service_trade_query:
+                        nullable: true
+                        type: STRING
+                      checkpoint_branch_search_intents:
+                        nullable: true
+                        type: OBJECT
+                      checkpoint_optional_agents:
+                        items:
+                          enum:
+                            - coverage
+                            - diy
+                            - service
+                            - cost
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                    required:
+                      - user_query
+                    type: OBJECT
+                  response:
+                    type: STRING
+                - description: Load persisted report snapshots (contentSnapshot / chatMarkdown) for Q&A.
+                  name: report_retrieval
+                  parameters:
+                    properties:
+                      user_query:
+                        type: STRING
+                    required:
+                      - user_query
+                    type: OBJECT
+                  response:
+                    type: STRING
+                - description: "List recent checkpoints for this property (inventory / status queries).\n\n    Returns a markdown summary of the most recent checkpoints with analysis status.\n    Use when the user asks what checkpoints exist or wants a property-wide status\n    overview — not when analyzing specific selected checkpoints.\n    "
+                  name: list_checkpoints
+                  parameters:
+                    properties:
+                      property_id:
+                        type: STRING
+                      user_query:
+                        default: ''
+                        type: STRING
+                      location:
+                        nullable: true
+                        type: STRING
+                    required:
+                      - property_id
+                    type: OBJECT
+                  response:
+                    type: STRING
+                - description: "Retrieve and analyze checkpoints for this property.\n\n    ``branches`` selects optional analysis sections:\n    - ``[]`` (default) — retrieval + issue summary only (no coverage/diy/service/cost).\n    - ``[\"cost\"]``, ``[\"diy\", \"cost\"]``, etc. — run those branch analyses after retrieval.\n\n    Pass ``checkpoint_ids`` only when the client attached real Firestore ids in session\n    context; omit them for semantic search across the property.\n    "
+                  name: analyze_checkpoints
+                  parameters:
+                    properties:
+                      user_query:
+                        type: STRING
+                      property_id:
+                        type: STRING
+                      branches:
+                        items:
+                          enum:
+                            - coverage
+                            - diy
+                            - service
+                            - cost
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      checkpoint_ids:
+                        items:
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      context_doc_uris:
+                        items:
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      property_address:
+                        nullable: true
+                        type: STRING
+                      search_location:
+                        nullable: true
+                        type: OBJECT
+                    required:
+                      - user_query
+                      - property_id
+                    type: OBJECT
+                  response:
+                    type: STRING
+          labels:
+            adk_agent_name: property_agent
+        live_connect_config:
+          input_audio_transcription: {}
+          output_audio_transcription: {}
+      llm_responses:
+        - model_version: gemini-3.1-flash-lite
+          content:
+            parts:
+              - text: |-
+                  I'm sorry, but I couldn't retrieve information for the selected checkpoint. It's possible the data is unavailable or has been archived.
+
+                  Would you like me to **list all active checkpoints** for 1982 Helena Way to help you find the current status?
+                thought_signature: AY89a1_A3zPjREu50r0CDM1fZBqYTgpNP-mZ0cJVL3v_2xS2sLFpifyiezsQ_6_oqrw=
+            role: model
+          finish_reason: STOP
+          usage_metadata:
+            candidates_token_count: 58
+            candidates_tokens_details:
+              - modality: TEXT
+                token_count: 58
+            prompt_token_count: 1905
+            prompt_tokens_details:
+              - modality: TEXT
+                token_count: 1905
+            total_token_count: 1963
+            traffic_type: ON_DEMAND
+  - user_message_index: 1
+    agent_name: property_agent
+    llm_recording:
+      llm_request:
+        model: gemini-3.1-flash-lite
+        contents:
+          - parts:
+              - text: |
+                  {"user_query": "Summarize the issues for the selected checkpoints", "primary_agent": "checkpoint", "property_id": "EVALPROP0001", "property_address": "1982 Helena Way, Brentwood, CA 94513", "checkpoint_ids": ["CKPT0000000000000001"]}
+            role: user
+          - parts:
+              - text: 'For context:'
+              - text: '[homeapp_lifecycle] said: Working on it...'
+            role: user
+          - parts:
+              - function_call:
+                  args:
+                    user_query: Summarize the issues for the selected checkpoints
+                    property_id: EVALPROP0001
+                    property_address: 1982 Helena Way, Brentwood, CA 94513
+                    checkpoint_ids:
+                      - CKPT0000000000000001
+                  name: analyze_checkpoints
+                thought_signature: AY89a1-GGuFKmwWvxVHE2BIR2ffyv_yYXkm54EK3oG7CQeESdcH1qStEbhL8F4UCkd0=
+            role: model
+          - parts:
+              - function_response:
+                  name: analyze_checkpoints
+                  response:
+                    result: No matching checkpoints found for your query. Try rephrasing or check that checkpoints exist for this property.
+            role: user
+          - parts:
+              - text: 'For context:'
+              - text: '[homeapp_lifecycle] said: Planning next moves...'
+            role: user
+          - parts:
+              - text: |-
+                  I'm sorry, but I couldn't retrieve information for the selected checkpoint. It's possible the data is unavailable or has been archived.
+
+                  Would you like me to **list all active checkpoints** for 1982 Helena Way to help you find the current status?
+                thought_signature: AY89a1_A3zPjREu50r0CDM1fZBqYTgpNP-mZ0cJVL3v_2xS2sLFpifyiezsQ_6_oqrw=
+            role: model
+          - parts:
+              - text: 'For context:'
+              - text: '[homeapp_lifecycle] said: Planning next moves...'
+            role: user
+          - parts:
+              - text: |
+                  {"user_query": "Which areas are affected?", "primary_agent": "checkpoint", "property_id": "EVALPROP0001", "property_address": "1982 Helena Way, Brentwood, CA 94513", "checkpoint_ids": ["CKPT0000000000000001"]}
+            role: user
+        config:
+          http_options:
+            headers:
+              x-goog-api-client: google-adk/1.33.0 gl-python/3.11.14
+              user-agent: google-adk/1.33.0 gl-python/3.11.14
+          system_instruction: |-
+            You are the Property Care AI assistant for AssetMem AI.
+
+            **Persona and tone**
+            - Warm, direct, and practical. Homeowners often reach out because something is wrong — acknowledge concern before diving into details.
+            - Lead with the most actionable finding. Avoid lengthy preamble.
+            - Use plain language; avoid jargon unless the user introduced it.
+            - Never be alarmist. Present issues factually with relative severity (minor/moderate/urgent) only when the data supports it.
+
+            **Session context**
+            - Use prior turns and [SESSION_CONTEXT] when present — do not re-fetch facts you already have.
+            - For calendar or timeline questions (current year, today, previous month, when was), use
+              `current_date_utc` and `current_year` from [SESSION_CONTEXT] and checkpoint capture dates
+              from tool output — do not infer years from month/day alone or mirror user corrections without
+              checking those fields.
+            - Prior checkpoint accordions live in earlier messages' structured fields; answer follow-ups from that history when possible.
+
+            **When to use tools**
+            * `list_checkpoints` — Property-wide inventory or status ("what checkpoints do I have?", "list my checkpoints").
+              Returns recent checkpoints with analysis status. Does not run branch analysis.
+            * `analyze_checkpoints` — Retrieve and summarize checkpoint issues for the user's question.
+              See tool description for `branches` and `checkpoint_ids` parameter rules.
+            * `user_docs_retrieval` — Questions about the user's uploaded documents (`context_doc_uris` when provided).
+            * `report_retrieval` — Questions about saved property reports (`report_ids` when `primary_agent` is report).
+              Call it **at most once per turn**; then answer in markdown from that result — never call it again in the same reply.
+
+            **When NOT to use tools**
+            * Greetings, thanks, and casual chat — short markdown only.
+            * General home-care questions without uploaded docs or checkpoints — answer from session history and best-effort knowledge in markdown only.
+            * Follow-ups — answer from session history **only when the prior turn already contains the specific data the user is asking about** (e.g. "explain the DIY steps", "which provider did you recommend?"). If the user is asking about something not yet retrieved or wants a fresh analysis, call the appropriate tool.
+            * When offering optional work, name the branch explicitly ("Want me to run **cost** analysis?") so short affirmations route correctly.
+
+            **Report mode (highest precedence when [REPORT_MODE] is active)**
+            When `[REPORT_MODE]` is present in the resolved-turn block, these rules take precedence over all others:
+            - Answers must cite the frozen report snapshot only — not live checkpoints or generic home-inspection templates.
+            - Mention ONLY section headings and issues that appear in the tool output. Never invent systems (roofing, HVAC, plumbing, etc.) unless named in the snapshot. Use exact area names (e.g. "Vehicle - Exterior", "Garage").
+            - Never call `analyze_checkpoints` or offer checkpoint optional branches.
+            - If the user asks vaguely (e.g. "reports please") while `report_ids` are attached, summarize what the snapshot actually contains.
+
+            **Output contract**
+            * Default: natural, concise markdown — 1–2 sentences for simple questions, a short bullet list for status checks, structured sections only for full analysis summaries.
+            * After `analyze_checkpoints`: return a brief prose summary for the user; structured accordions are written to the message by the system (you do not emit ```json).
+            * Never embed fenced JSON analysis blocks in your reply.
+
+            **Presentation**
+            * Return tool output faithfully; no meta-commentary about tools or routing.
+            * If retrieval is empty, say so briefly. Offer a best-effort answer only for general knowledge questions — never for property-specific claims.
+            * Never expose internal identifiers in user-facing text: report ids, checkpoint ids, file ids,
+              `gs://` storage URIs, or `context_doc_uris`. Cite human-readable names (report title, area,
+              document title, date/period) instead.
+            * When multiple checkpoints are in scope, lead with the highest-severity cross-cutting issues before going area-by-area.
+
+            **Safety guardrails**
+            * Do not provide cost estimates beyond what the tool output explicitly returns.
+            * Do not give legal, insurance, or financial advice (e.g. "you should file a claim", "this voids your warranty").
+            * Do not promise contractor quality, availability, or timelines.
+            * Do not diagnose structural, safety-critical, or code-compliance issues beyond what the checkpoint data states — recommend a licensed professional when the issue warrants it.
+
+            Never ask the user to upload URIs or documents.
+
+
+            You are an agent. Your internal name is "property_agent". The description about you is "Agent that manages and executes homecare-related tasks.".
+
+            [SESSION_CONTEXT]
+            {
+              "current_date_utc": "2026-06-14",
+              "current_year": 2026,
+              "property_address": "1982 Helena Way, Brentwood, CA 94513",
+              "search_location": null,
+              "property_id": "EVALPROP0001",
+              "primary_agent": "checkpoint",
+              "checkpoint_ids_count": 1,
+              "context_doc_uris_count": 0,
+              "report_ids_count": 0,
+              "checkpoint_optional_agents": [],
+              "routing_mode": "single_loop"
+            }
+            [/SESSION_CONTEXT]
+          tools:
+            - function_declarations:
+                - description: ''
+                  name: user_docs_retrieval
+                  parameters:
+                    properties:
+                      user_query:
+                        type: STRING
+                      correlation_id:
+                        nullable: true
+                        type: STRING
+                      context_doc_uris:
+                        items:
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      checkpoint_ids:
+                        items:
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      property_address:
+                        nullable: true
+                        type: STRING
+                      property_id:
+                        nullable: true
+                        type: STRING
+                      search_location:
+                        nullable: true
+                        type: OBJECT
+                      checkpoint_retrieval_search_query:
+                        nullable: true
+                        type: STRING
+                      checkpoint_service_trade_query:
+                        nullable: true
+                        type: STRING
+                      checkpoint_branch_search_intents:
+                        nullable: true
+                        type: OBJECT
+                      checkpoint_optional_agents:
+                        items:
+                          enum:
+                            - coverage
+                            - diy
+                            - service
+                            - cost
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                    required:
+                      - user_query
+                    type: OBJECT
+                  response:
+                    type: STRING
+                - description: Load persisted report snapshots (contentSnapshot / chatMarkdown) for Q&A.
+                  name: report_retrieval
+                  parameters:
+                    properties:
+                      user_query:
+                        type: STRING
+                    required:
+                      - user_query
+                    type: OBJECT
+                  response:
+                    type: STRING
+                - description: "List recent checkpoints for this property (inventory / status queries).\n\n    Returns a markdown summary of the most recent checkpoints with analysis status.\n    Use when the user asks what checkpoints exist or wants a property-wide status\n    overview — not when analyzing specific selected checkpoints.\n    "
+                  name: list_checkpoints
+                  parameters:
+                    properties:
+                      property_id:
+                        type: STRING
+                      user_query:
+                        default: ''
+                        type: STRING
+                      location:
+                        nullable: true
+                        type: STRING
+                    required:
+                      - property_id
+                    type: OBJECT
+                  response:
+                    type: STRING
+                - description: "Retrieve and analyze checkpoints for this property.\n\n    ``branches`` selects optional analysis sections:\n    - ``[]`` (default) — retrieval + issue summary only (no coverage/diy/service/cost).\n    - ``[\"cost\"]``, ``[\"diy\", \"cost\"]``, etc. — run those branch analyses after retrieval.\n\n    Pass ``checkpoint_ids`` only when the client attached real Firestore ids in session\n    context; omit them for semantic search across the property.\n    "
+                  name: analyze_checkpoints
+                  parameters:
+                    properties:
+                      user_query:
+                        type: STRING
+                      property_id:
+                        type: STRING
+                      branches:
+                        items:
+                          enum:
+                            - coverage
+                            - diy
+                            - service
+                            - cost
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      checkpoint_ids:
+                        items:
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      context_doc_uris:
+                        items:
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      property_address:
+                        nullable: true
+                        type: STRING
+                      search_location:
+                        nullable: true
+                        type: OBJECT
+                    required:
+                      - user_query
+                      - property_id
+                    type: OBJECT
+                  response:
+                    type: STRING
+          labels:
+            adk_agent_name: property_agent
+        live_connect_config:
+          input_audio_transcription: {}
+          output_audio_transcription: {}
+      llm_responses:
+        - model_version: gemini-3.1-flash-lite
+          content:
+            parts:
+              - function_call:
+                  args:
+                    user_query: Which areas are affected?
+                    property_id: EVALPROP0001
+                  name: list_checkpoints
+                thought_signature: AY89a19Wc8KawoT5Djt-f81J3pLGyol6pW3rwOl5rPsla9-LwcZ6Pp2qrl3xw4TSGGI=
+            role: model
+          finish_reason: STOP
+          usage_metadata:
+            candidates_token_count: 37
+            candidates_tokens_details:
+              - modality: TEXT
+                token_count: 37
+            prompt_token_count: 2059
+            prompt_tokens_details:
+              - modality: TEXT
+                token_count: 2059
+            total_token_count: 2096
+            traffic_type: ON_DEMAND
+  - user_message_index: 1
+    agent_name: property_agent
+    tool_recording:
+      tool_call:
+        id: adk-ee867a15-e339-4d58-8fd9-38956ead7606
+        args:
+          user_query: Which areas are affected?
+          property_id: EVALPROP0001
+        name: list_checkpoints
+      tool_response:
+        id: adk-ee867a15-e339-4d58-8fd9-38956ead7606
+        name: list_checkpoints
+        response:
+          result: No checkpoints found for this property yet.
+  - user_message_index: 1
+    agent_name: property_agent
+    llm_recording:
+      llm_request:
+        model: gemini-3.1-flash-lite
+        contents:
+          - parts:
+              - text: |
+                  {"user_query": "Summarize the issues for the selected checkpoints", "primary_agent": "checkpoint", "property_id": "EVALPROP0001", "property_address": "1982 Helena Way, Brentwood, CA 94513", "checkpoint_ids": ["CKPT0000000000000001"]}
+            role: user
+          - parts:
+              - text: 'For context:'
+              - text: '[homeapp_lifecycle] said: Working on it...'
+            role: user
+          - parts:
+              - function_call:
+                  args:
+                    user_query: Summarize the issues for the selected checkpoints
+                    property_id: EVALPROP0001
+                    property_address: 1982 Helena Way, Brentwood, CA 94513
+                    checkpoint_ids:
+                      - CKPT0000000000000001
+                  name: analyze_checkpoints
+                thought_signature: AY89a1-GGuFKmwWvxVHE2BIR2ffyv_yYXkm54EK3oG7CQeESdcH1qStEbhL8F4UCkd0=
+            role: model
+          - parts:
+              - function_response:
+                  name: analyze_checkpoints
+                  response:
+                    result: No matching checkpoints found for your query. Try rephrasing or check that checkpoints exist for this property.
+            role: user
+          - parts:
+              - text: 'For context:'
+              - text: '[homeapp_lifecycle] said: Planning next moves...'
+            role: user
+          - parts:
+              - text: |-
+                  I'm sorry, but I couldn't retrieve information for the selected checkpoint. It's possible the data is unavailable or has been archived.
+
+                  Would you like me to **list all active checkpoints** for 1982 Helena Way to help you find the current status?
+                thought_signature: AY89a1_A3zPjREu50r0CDM1fZBqYTgpNP-mZ0cJVL3v_2xS2sLFpifyiezsQ_6_oqrw=
+            role: model
+          - parts:
+              - text: 'For context:'
+              - text: '[homeapp_lifecycle] said: Planning next moves...'
+            role: user
+          - parts:
+              - text: |
+                  {"user_query": "Which areas are affected?", "primary_agent": "checkpoint", "property_id": "EVALPROP0001", "property_address": "1982 Helena Way, Brentwood, CA 94513", "checkpoint_ids": ["CKPT0000000000000001"]}
+            role: user
+          - parts:
+              - text: 'For context:'
+              - text: '[homeapp_lifecycle] said: Working on it...'
+            role: user
+          - parts:
+              - text: 'For context:'
+              - text: '[homeapp_lifecycle] said: Planning next moves...'
+            role: user
+          - parts:
+              - function_call:
+                  args:
+                    user_query: Which areas are affected?
+                    property_id: EVALPROP0001
+                  name: list_checkpoints
+                thought_signature: AY89a19Wc8KawoT5Djt-f81J3pLGyol6pW3rwOl5rPsla9-LwcZ6Pp2qrl3xw4TSGGI=
+            role: model
+          - parts:
+              - function_response:
+                  name: list_checkpoints
+                  response:
+                    result: No checkpoints found for this property yet.
+            role: user
+        config:
+          http_options:
+            headers:
+              x-goog-api-client: google-adk/1.33.0 gl-python/3.11.14
+              user-agent: google-adk/1.33.0 gl-python/3.11.14
+          system_instruction: |-
+            You are the Property Care AI assistant for AssetMem AI.
+
+            **Persona and tone**
+            - Warm, direct, and practical. Homeowners often reach out because something is wrong — acknowledge concern before diving into details.
+            - Lead with the most actionable finding. Avoid lengthy preamble.
+            - Use plain language; avoid jargon unless the user introduced it.
+            - Never be alarmist. Present issues factually with relative severity (minor/moderate/urgent) only when the data supports it.
+
+            **Session context**
+            - Use prior turns and [SESSION_CONTEXT] when present — do not re-fetch facts you already have.
+            - For calendar or timeline questions (current year, today, previous month, when was), use
+              `current_date_utc` and `current_year` from [SESSION_CONTEXT] and checkpoint capture dates
+              from tool output — do not infer years from month/day alone or mirror user corrections without
+              checking those fields.
+            - Prior checkpoint accordions live in earlier messages' structured fields; answer follow-ups from that history when possible.
+
+            **When to use tools**
+            * `list_checkpoints` — Property-wide inventory or status ("what checkpoints do I have?", "list my checkpoints").
+              Returns recent checkpoints with analysis status. Does not run branch analysis.
+            * `analyze_checkpoints` — Retrieve and summarize checkpoint issues for the user's question.
+              See tool description for `branches` and `checkpoint_ids` parameter rules.
+            * `user_docs_retrieval` — Questions about the user's uploaded documents (`context_doc_uris` when provided).
+            * `report_retrieval` — Questions about saved property reports (`report_ids` when `primary_agent` is report).
+              Call it **at most once per turn**; then answer in markdown from that result — never call it again in the same reply.
+
+            **When NOT to use tools**
+            * Greetings, thanks, and casual chat — short markdown only.
+            * General home-care questions without uploaded docs or checkpoints — answer from session history and best-effort knowledge in markdown only.
+            * Follow-ups — answer from session history **only when the prior turn already contains the specific data the user is asking about** (e.g. "explain the DIY steps", "which provider did you recommend?"). If the user is asking about something not yet retrieved or wants a fresh analysis, call the appropriate tool.
+            * When offering optional work, name the branch explicitly ("Want me to run **cost** analysis?") so short affirmations route correctly.
+
+            **Report mode (highest precedence when [REPORT_MODE] is active)**
+            When `[REPORT_MODE]` is present in the resolved-turn block, these rules take precedence over all others:
+            - Answers must cite the frozen report snapshot only — not live checkpoints or generic home-inspection templates.
+            - Mention ONLY section headings and issues that appear in the tool output. Never invent systems (roofing, HVAC, plumbing, etc.) unless named in the snapshot. Use exact area names (e.g. "Vehicle - Exterior", "Garage").
+            - Never call `analyze_checkpoints` or offer checkpoint optional branches.
+            - If the user asks vaguely (e.g. "reports please") while `report_ids` are attached, summarize what the snapshot actually contains.
+
+            **Output contract**
+            * Default: natural, concise markdown — 1–2 sentences for simple questions, a short bullet list for status checks, structured sections only for full analysis summaries.
+            * After `analyze_checkpoints`: return a brief prose summary for the user; structured accordions are written to the message by the system (you do not emit ```json).
+            * Never embed fenced JSON analysis blocks in your reply.
+
+            **Presentation**
+            * Return tool output faithfully; no meta-commentary about tools or routing.
+            * If retrieval is empty, say so briefly. Offer a best-effort answer only for general knowledge questions — never for property-specific claims.
+            * Never expose internal identifiers in user-facing text: report ids, checkpoint ids, file ids,
+              `gs://` storage URIs, or `context_doc_uris`. Cite human-readable names (report title, area,
+              document title, date/period) instead.
+            * When multiple checkpoints are in scope, lead with the highest-severity cross-cutting issues before going area-by-area.
+
+            **Safety guardrails**
+            * Do not provide cost estimates beyond what the tool output explicitly returns.
+            * Do not give legal, insurance, or financial advice (e.g. "you should file a claim", "this voids your warranty").
+            * Do not promise contractor quality, availability, or timelines.
+            * Do not diagnose structural, safety-critical, or code-compliance issues beyond what the checkpoint data states — recommend a licensed professional when the issue warrants it.
+
+            Never ask the user to upload URIs or documents.
+
+
+            You are an agent. Your internal name is "property_agent". The description about you is "Agent that manages and executes homecare-related tasks.".
+
+            [SESSION_CONTEXT]
+            {
+              "current_date_utc": "2026-06-14",
+              "current_year": 2026,
+              "property_address": "1982 Helena Way, Brentwood, CA 94513",
+              "search_location": null,
+              "property_id": "EVALPROP0001",
+              "primary_agent": "checkpoint",
+              "checkpoint_ids_count": 1,
+              "context_doc_uris_count": 0,
+              "report_ids_count": 0,
+              "checkpoint_optional_agents": [],
+              "routing_mode": "single_loop"
+            }
+            [/SESSION_CONTEXT]
+          tools:
+            - function_declarations:
+                - description: ''
+                  name: user_docs_retrieval
+                  parameters:
+                    properties:
+                      user_query:
+                        type: STRING
+                      correlation_id:
+                        nullable: true
+                        type: STRING
+                      context_doc_uris:
+                        items:
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      checkpoint_ids:
+                        items:
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      property_address:
+                        nullable: true
+                        type: STRING
+                      property_id:
+                        nullable: true
+                        type: STRING
+                      search_location:
+                        nullable: true
+                        type: OBJECT
+                      checkpoint_retrieval_search_query:
+                        nullable: true
+                        type: STRING
+                      checkpoint_service_trade_query:
+                        nullable: true
+                        type: STRING
+                      checkpoint_branch_search_intents:
+                        nullable: true
+                        type: OBJECT
+                      checkpoint_optional_agents:
+                        items:
+                          enum:
+                            - coverage
+                            - diy
+                            - service
+                            - cost
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                    required:
+                      - user_query
+                    type: OBJECT
+                  response:
+                    type: STRING
+                - description: Load persisted report snapshots (contentSnapshot / chatMarkdown) for Q&A.
+                  name: report_retrieval
+                  parameters:
+                    properties:
+                      user_query:
+                        type: STRING
+                    required:
+                      - user_query
+                    type: OBJECT
+                  response:
+                    type: STRING
+                - description: "List recent checkpoints for this property (inventory / status queries).\n\n    Returns a markdown summary of the most recent checkpoints with analysis status.\n    Use when the user asks what checkpoints exist or wants a property-wide status\n    overview — not when analyzing specific selected checkpoints.\n    "
+                  name: list_checkpoints
+                  parameters:
+                    properties:
+                      property_id:
+                        type: STRING
+                      user_query:
+                        default: ''
+                        type: STRING
+                      location:
+                        nullable: true
+                        type: STRING
+                    required:
+                      - property_id
+                    type: OBJECT
+                  response:
+                    type: STRING
+                - description: "Retrieve and analyze checkpoints for this property.\n\n    ``branches`` selects optional analysis sections:\n    - ``[]`` (default) — retrieval + issue summary only (no coverage/diy/service/cost).\n    - ``[\"cost\"]``, ``[\"diy\", \"cost\"]``, etc. — run those branch analyses after retrieval.\n\n    Pass ``checkpoint_ids`` only when the client attached real Firestore ids in session\n    context; omit them for semantic search across the property.\n    "
+                  name: analyze_checkpoints
+                  parameters:
+                    properties:
+                      user_query:
+                        type: STRING
+                      property_id:
+                        type: STRING
+                      branches:
+                        items:
+                          enum:
+                            - coverage
+                            - diy
+                            - service
+                            - cost
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      checkpoint_ids:
+                        items:
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      context_doc_uris:
+                        items:
+                          type: STRING
+                        nullable: true
+                        type: ARRAY
+                      property_address:
+                        nullable: true
+                        type: STRING
+                      search_location:
+                        nullable: true
+                        type: OBJECT
+                    required:
+                      - user_query
+                      - property_id
+                    type: OBJECT
+                  response:
+                    type: STRING
+          labels:
+            adk_agent_name: property_agent
+        live_connect_config:
+          input_audio_transcription: {}
+          output_audio_transcription: {}
+      llm_responses:
+        - model_version: gemini-3.1-flash-lite
+          content:
+            parts:
+              - text: "It appears there are no active checkpoints currently associated with 1982 Helena Way. \n\nIf you recently performed an inspection or added documentation, please let me know, and I can double-check the system. Otherwise, would you like to start a new property assessment?"
+                thought_signature: AY89a1_ELqlENEi5EFR-nB9fWUAiqlxtwandBuUOV1YSvXtyMCKq8UlP3fgDEsUoa80=
+            role: model
+          finish_reason: STOP
+          usage_metadata:
+            candidates_token_count: 56
+            candidates_tokens_details:
+              - modality: TEXT
+                token_count: 56
+            prompt_token_count: 2130
+            prompt_tokens_details:
+              - modality: TEXT
+                token_count: 2130
+            total_token_count: 2186
+            traffic_type: ON_DEMAND

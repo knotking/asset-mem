@@ -180,14 +180,44 @@ def inject_slim_session_context_into_llm_request(
     config.system_instruction = combined
 
 
+def extract_tool_result_text(tool_response: Any) -> str:
+    """Normalize ADK tool responses (str or ``{"result": ...}``) to plain text."""
+    if isinstance(tool_response, str):
+        return tool_response.strip()
+    if isinstance(tool_response, dict):
+        raw = tool_response.get("result")
+        if isinstance(raw, str):
+            return raw.strip()
+    return ""
+
+
+def arm_user_docs_passthrough(
+    state: Any,
+    *,
+    tool_response: Any,
+    route: str | None,
+    primary_agent: str | None,
+) -> None:
+    """Seed passthrough state after ``user_docs_retrieval`` (replay-safe for AgentTool)."""
+    if state is None or not hasattr(state, "__setitem__"):
+        return
+    if route != "user_docs" and str(primary_agent or "").strip().lower() != "docs":
+        return
+    result_text = extract_tool_result_text(tool_response)
+    if not result_text:
+        return
+    state["user_docs_result"] = result_text
+    state[USER_DOCS_PASSTHROUGH_STATE_KEY] = True
+
+
 def _take_user_docs_passthrough(state: Any) -> Optional[str]:
     if state is None or not hasattr(state, "get"):
         return None
     if not state.get(USER_DOCS_PASSTHROUGH_STATE_KEY):
         return None
     result = state.get("user_docs_result")
-    state[USER_DOCS_PASSTHROUGH_STATE_KEY] = False
     if isinstance(result, str) and result.strip():
+        state[USER_DOCS_PASSTHROUGH_STATE_KEY] = False
         return result.strip()
     return None
 

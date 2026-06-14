@@ -56,3 +56,6 @@ jobs:
 
       - name: Run trajectory eval (baseline gate)
         run: make trajectory-eval-ci
+
+      - name: Run conformance guard eval (baseline gate)
+        run: make conformance-guard-ci

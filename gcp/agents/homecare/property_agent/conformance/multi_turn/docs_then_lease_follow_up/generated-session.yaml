@@ -1,0 +1,382 @@
+id: 7b7403ef-a0d0-4eed-8fa2-b270950c01c5
+app_name: property_agent
+user_id: adk_conformance_test_user
+state:
+  homeappLifecycle:
+    v: 1
+    phase: engine.before_model
+    ts: '2026-06-14T08:35:39.342873+00:00'
+    elapsed_ms: 5951
+    invocation_id: e-0e4e2914-1444-42a0-858b-40ce288463f3
+    checkpoint_ids: []
+    checkpoint_optional_agents: []
+    context_doc_count: 0
+    message: Planning next moves...
+    primary_agent: docs
+  _executor_invocation_structured_analysis: false
+  checkpoint_optional_agents: []
+  user_query: when does my lease end?
+  property_id: EVALPROP0001
+  primary_agent: docs
+  context_doc_uris:
+    - gs://homegeek-user-data-staging/docs/lease.pdf
+  current_date_utc: '2026-06-14'
+  current_year: 2026
+  resolved_turn:
+    intent: substantive
+    route: user_docs
+    expanded_user_query: when does my lease end?
+    retrieval_only: true
+    run_optional_agents: []
+    user_goal: answer_from_context
+    query_mode: interpret_session
+    resolve_source: single_loop
+  conversational_turn: false
+  _resolve_turn_invocation_id: e-0e4e2914-1444-42a0-858b-40ce288463f3
+  user_id: adk_conformance_test_user
+  user_docs_result: No relevant information could be found in your uploaded documents to answer this question.
+  _executor_user_docs_passthrough: false
+events:
+  - content:
+      parts:
+        - text: |
+            {"user_query": "what does my insurance policy say about water damage?", "primary_agent": "docs", "property_id": "EVALPROP0001", "context_doc_uris": ["gs://homegeek-user-data-staging/docs/policy.pdf"]}
+      role: user
+    invocation_id: e-4735aa95-26e7-40f8-a10c-a11af044b806
+    author: user
+    actions:
+      state_delta: {}
+    id: 4fe32895-6c6a-43ce-aea1-b18e1213169f
+    timestamp: 1781426127.845481
+  - content:
+      parts:
+        - text: Working on it...
+      role: model
+    invocation_id: e-4735aa95-26e7-40f8-a10c-a11af044b806
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.runner_exec
+          ts: '2026-06-14T08:35:27.846948+00:00'
+          elapsed_ms: 0
+          correlation_id: null
+          session_id: 7b7403ef-a0d0-4eed-8fa2-b270950c01c5
+          invocation_id: e-4735aa95-26e7-40f8-a10c-a11af044b806
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Working on it...
+    id: 0b7d7361-59ba-4fa3-9c15-21a8122b2d96
+    timestamp: 1781426127.8469849
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - function_call:
+            id: adk-9a5f55b2-c7eb-4e44-9afa-ed6a948744f3
+            args:
+              property_id: EVALPROP0001
+              user_query: what does my insurance policy say about water damage?
+              context_doc_uris:
+                - gs://homegeek-user-data-staging/docs/policy.pdf
+            name: user_docs_retrieval
+          thought_signature: AY89a1_8s0145oWtvYFw-y0E5v2ryXV8dQmsMlVXhVSwSBg4lh8lUTLxjRWTJXft9Uw=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 70
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 70
+      prompt_token_count: 1739
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 1739
+      total_token_count: 1809
+      traffic_type: ON_DEMAND
+    invocation_id: e-4735aa95-26e7-40f8-a10c-a11af044b806
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+        checkpoint_optional_agents: []
+        user_query: what does my insurance policy say about water damage?
+        property_id: EVALPROP0001
+        primary_agent: docs
+        context_doc_uris:
+          - gs://homegeek-user-data-staging/docs/policy.pdf
+        current_date_utc: '2026-06-14'
+        current_year: 2026
+        resolved_turn:
+          intent: substantive
+          route: user_docs
+          expanded_user_query: what does my insurance policy say about water damage?
+          retrieval_only: true
+          run_optional_agents: []
+          user_goal: answer_from_context
+          query_mode: interpret_session
+          menu_index: null
+          capability_key: null
+          discourse_act: null
+          focus_branch: null
+          resolve_source: single_loop
+        conversational_turn: false
+        _resolve_turn_invocation_id: e-4735aa95-26e7-40f8-a10c-a11af044b806
+    long_running_tool_ids: []
+    id: 047b1c38-5289-4662-acd5-13c7fc1c99b8
+    timestamp: 1781426127.849267
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-4735aa95-26e7-40f8-a10c-a11af044b806
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:35:27.849343+00:00'
+          elapsed_ms: 2
+          correlation_id: null
+          session_id: null
+          invocation_id: e-4735aa95-26e7-40f8-a10c-a11af044b806
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Planning next moves...
+    id: caa1c740-411c-4c47-ab40-4f7ea0a5bd7e
+    timestamp: 1781426127.84937
+  - content:
+      parts:
+        - function_response:
+            id: adk-9a5f55b2-c7eb-4e44-9afa-ed6a948744f3
+            name: user_docs_retrieval
+            response:
+              result: No relevant information could be found in your uploaded documents to answer this question.
+      role: user
+    invocation_id: e-4735aa95-26e7-40f8-a10c-a11af044b806
+    author: property_agent
+    actions:
+      state_delta:
+        user_id: adk_conformance_test_user
+        property_id: EVALPROP0001
+        user_docs_result: No relevant information could be found in your uploaded documents to answer this question.
+        _executor_user_docs_passthrough: true
+    id: efa1c74e-09a5-4f7d-be89-14d19da7c05c
+    timestamp: 1781426133.352708
+  - content:
+      parts:
+        - text: No relevant information could be found in your uploaded documents to answer this question.
+      role: model
+    invocation_id: e-4735aa95-26e7-40f8-a10c-a11af044b806
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_user_docs_passthrough: false
+    id: 311ca7ea-741f-4836-a0e0-9036346e88ec
+    timestamp: 1781426133.363015
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-4735aa95-26e7-40f8-a10c-a11af044b806
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:35:33.363292+00:00'
+          elapsed_ms: 5516
+          correlation_id: null
+          session_id: null
+          invocation_id: e-4735aa95-26e7-40f8-a10c-a11af044b806
+          primary_agent: docs
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Planning next moves...
+    id: eb4eaf0e-5368-4526-a58b-db20799aa96f
+    timestamp: 1781426133.3633568
+  - invocation_id: e-4735aa95-26e7-40f8-a10c-a11af044b806
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+    id: 476cc2a7-dd26-4728-b5c5-131fbe0e6a44
+    timestamp: 1781426133.3690681
+  - content:
+      parts:
+        - text: |
+            {"user_query": "when does my lease end?", "primary_agent": "docs", "property_id": "EVALPROP0001", "context_doc_uris": ["gs://homegeek-user-data-staging/docs/lease.pdf"]}
+      role: user
+    invocation_id: e-0e4e2914-1444-42a0-858b-40ce288463f3
+    author: user
+    actions:
+      state_delta: {}
+    id: 859fb5ab-6c73-4ab9-b4d4-021737e4ec0a
+    timestamp: 1781426133.3901749
+  - content:
+      parts:
+        - text: Working on it...
+      role: model
+    invocation_id: e-0e4e2914-1444-42a0-858b-40ce288463f3
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.runner_exec
+          ts: '2026-06-14T08:35:33.391446+00:00'
+          elapsed_ms: 0
+          correlation_id: null
+          session_id: 7b7403ef-a0d0-4eed-8fa2-b270950c01c5
+          invocation_id: e-0e4e2914-1444-42a0-858b-40ce288463f3
+          primary_agent: docs
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Working on it...
+    id: cef62d6a-aa45-4938-a185-fc43d1d9db08
+    timestamp: 1781426133.391479
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - function_call:
+            id: adk-b64ec759-4654-47d2-b797-8eb6a2199714
+            args:
+              context_doc_uris:
+                - gs://homegeek-user-data-staging/docs/lease.pdf
+              property_id: EVALPROP0001
+              user_query: when does my lease end?
+            name: user_docs_retrieval
+          thought_signature: AY89a19eg7piKvZAR5V20vktXvquKuGGthYGt5iDR2PdN0n4N1LX4nYPTXj5Ti3mXpY=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 66
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 66
+      prompt_token_count: 1938
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 1938
+      total_token_count: 2004
+      traffic_type: ON_DEMAND
+    invocation_id: e-0e4e2914-1444-42a0-858b-40ce288463f3
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+        checkpoint_optional_agents: []
+        user_query: when does my lease end?
+        property_id: EVALPROP0001
+        primary_agent: docs
+        context_doc_uris:
+          - gs://homegeek-user-data-staging/docs/lease.pdf
+        resolved_turn:
+          intent: substantive
+          route: user_docs
+          expanded_user_query: when does my lease end?
+          retrieval_only: true
+          run_optional_agents: []
+          user_goal: answer_from_context
+          query_mode: interpret_session
+          menu_index: null
+          capability_key: null
+          discourse_act: null
+          focus_branch: null
+          resolve_source: single_loop
+        conversational_turn: false
+        _resolve_turn_invocation_id: e-0e4e2914-1444-42a0-858b-40ce288463f3
+    long_running_tool_ids: []
+    id: 9c4845e8-9fd7-4d4e-b66b-9a68b50ccf08
+    timestamp: 1781426133.4055839
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-0e4e2914-1444-42a0-858b-40ce288463f3
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:35:33.405670+00:00'
+          elapsed_ms: 14
+          correlation_id: null
+          session_id: null
+          invocation_id: e-0e4e2914-1444-42a0-858b-40ce288463f3
+          primary_agent: docs
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Planning next moves...
+    id: 7ef1cef1-9767-4e0a-8d49-e541b6a90200
+    timestamp: 1781426133.405698
+  - content:
+      parts:
+        - function_response:
+            id: adk-b64ec759-4654-47d2-b797-8eb6a2199714
+            name: user_docs_retrieval
+            response:
+              result: No relevant information could be found in your uploaded documents to answer this question.
+      role: user
+    invocation_id: e-0e4e2914-1444-42a0-858b-40ce288463f3
+    author: property_agent
+    actions:
+      state_delta:
+        user_id: adk_conformance_test_user
+        property_id: EVALPROP0001
+        user_docs_result: No relevant information could be found in your uploaded documents to answer this question.
+        _executor_user_docs_passthrough: true
+    id: 0f035a1f-ec70-416f-b24f-e818465d77df
+    timestamp: 1781426139.333933
+  - content:
+      parts:
+        - text: No relevant information could be found in your uploaded documents to answer this question.
+      role: model
+    invocation_id: e-0e4e2914-1444-42a0-858b-40ce288463f3
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_user_docs_passthrough: false
+    id: 487ec2f0-7666-4d87-85b5-d32d31563335
+    timestamp: 1781426139.342527
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-0e4e2914-1444-42a0-858b-40ce288463f3
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:35:39.342873+00:00'
+          elapsed_ms: 5951
+          correlation_id: null
+          session_id: null
+          invocation_id: e-0e4e2914-1444-42a0-858b-40ce288463f3
+          primary_agent: docs
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Planning next moves...
+    id: 4e7c091b-57ca-418c-b05f-16e8736ae2af
+    timestamp: 1781426139.3429399
+  - invocation_id: e-0e4e2914-1444-42a0-858b-40ce288463f3
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+    id: ba54cae8-a5c7-44d2-8655-4a32e9e4805e
+    timestamp: 1781426139.346764
+last_update_time: 1781426139.346764

@@ -46,6 +46,13 @@ def _assert_turn_expectation(turn: dict, *, case_dir: Path, turn_index: int) -> 
         raise AssertionError(f"{label}: content_markdown_present=false not supported in fixtures")
 
 
+def test_conformance_catalog_meets_phase3_minimum() -> None:
+    specs = list(CONFORMANCE_ROOT.rglob("spec.yaml"))
+    assert len(specs) >= 15, (
+        f"Phase 3 target is ≥15 conformance specs; found {len(specs)}"
+    )
+
+
 def test_conformance_specs_load() -> None:
     specs = list(CONFORMANCE_ROOT.rglob("spec.yaml"))
     assert specs, f"No spec.yaml under {CONFORMANCE_ROOT}"

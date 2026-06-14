@@ -12,9 +12,10 @@ ADK web-recorded `*.evalset.json` golden files and the `make test-eval*` pytest 
 | Routing eval (single-loop) | `make routing-eval` / `make routing-eval-ci` |
 | Contract scoring (schema + rubric) | `make contract-check` |
 | Trajectory eval (stub planner) | `make trajectory-eval` / `make trajectory-eval-ci` |
+| Conformance guard (tool boundaries) | `make conformance-guard` / `make conformance-guard-ci` |
 | Full-turn A/B from web logs | `make weblog-summarize ARGS="--out property_agent/evals/routing/single_loop/baselines/weblog-ab-$(date +%F).json"` |
 | Manual QA | `uv run adk web` → select `property_agent`, exercise flows on staging |
-| Replay fixtures | `make conformance-record` / `make conformance-test` (see `property_agent/conformance/`) |
+| Replay fixtures | `make conformance-web-record` + `make conformance-record` / `make conformance-web` + `make conformance-test` |
 | Draft cases from `adk web` logs | `make weblog-extract ARGS="web-log*"` → `evals/routing/drafts/` (review, merge into `single_loop/cases.yaml`) |
 
 ### Web log → test fixtures
@@ -64,4 +65,18 @@ make trajectory-eval ARGS="--out property_agent/evals/trajectory/baselines/basel
 Canonical CI baseline: `trajectory/baselines/baseline.json` (11 cases).
 Seed more cases from `make weblog-extract` / `make weblog-summarize` tool-call columns.
 
-Conformance YAML under `property_agent/conformance/` is separate from evalsets and remains supported. Per-turn message-field expectations live in `expected_messages.yaml` beside each spec; rubrics for manual scoring in `evals/rubrics/checkpoint_response.json`.
+## Conformance guard eval (`property_agent/evals/conformance/`)
+
+Deterministic tool-boundary scenarios (no Vertex): casual-turn blocks, report-mode
+blocks, invented checkpoint IDs dropped, chip branch forcing, idempotent skip.
+**CI-gated** via `make conformance-guard-ci` (baseline `conformance/baselines/guard_baseline.json`).
+
+```bash
+make conformance-guard
+make conformance-guard-ci
+make conformance-guard ARGS="--filter report"
+```
+
+ADK multi-turn specs: `property_agent/conformance/` (15 cases). Per-turn expectations in `expected_messages.yaml`; rubrics in `evals/rubrics/checkpoint_response.json`.
+
+**Web + replay:** `make conformance-web` then `make conformance-test` (uses `replay_validators.py` to ignore lifecycle UUID/timing noise). **Record:** `make conformance-web-record` then `make conformance-record`.

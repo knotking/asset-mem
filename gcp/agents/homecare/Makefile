@@ -91,14 +91,31 @@ test-eval-checkpoint test-eval-cost test-eval-shopping test-eval-service test-si
 	$(eval_removed_msg)
 
 CONFORMANCE_DIR := property_agent/conformance
+CONFORMANCE_PLUGINS_RECORD := HOMEAPP_ADK_CONFORMANCE_PLUGINS=record
+CONFORMANCE_PLUGINS_REPLAY := HOMEAPP_ADK_CONFORMANCE_PLUGINS=replay
+CONFORMANCE_PLUGINS_BOTH := HOMEAPP_ADK_CONFORMANCE_PLUGINS=both
 
-conformance-record: ## Record conformance YAML (requires `uv run adk web` on :8000)
+conformance-web-record: ## Start adk web for conformance record (plugins: record)
+	$(call print_header,Conformance Web — Record)
+	$(call print_info,Listening on :8000 — run make conformance-record in another terminal)
+	$(CONFORMANCE_PLUGINS_RECORD) uv run adk web
+
+conformance-web: ## Start adk web for conformance replay (plugins: replay)
+	$(call print_header,Conformance Web — Replay)
+	$(call print_info,Listening on :8000 — run make conformance-test in another terminal)
+	$(CONFORMANCE_PLUGINS_REPLAY) uv run adk web
+
+conformance-web-both: ## Start adk web with record + replay plugins
+	$(call print_header,Conformance Web — Record + Replay)
+	$(CONFORMANCE_PLUGINS_BOTH) uv run adk web
+
+conformance-record: ## Record conformance YAML (requires `make conformance-web-record`)
 	$(call print_header,Recording Conformance Fixtures)
-	uv run adk conformance record $(CONFORMANCE_DIR) none
+	uv run python -m property_agent.evals.conformance.run_conformance_record
 
-conformance-test: ## Replay conformance tests (requires recordings + adk web)
+conformance-test: ## Replay conformance (requires `make conformance-web`; optional CONFORMANCE_USER_ID)
 	$(call print_header,Running Conformance Tests)
-	uv run adk conformance test $(CONFORMANCE_DIR) --mode replay --streaming-mode none
+	uv run python -m property_agent.evals.conformance.run_conformance_test
 
 routing-eval: ## Single-loop routing eval (deterministic; ARGS="--filter weblog")
 	$(call print_header,Running Routing Eval)
@@ -119,6 +136,14 @@ trajectory-eval: ## Executor trajectory eval (stub planner; ARGS="--filter chip"
 trajectory-eval-ci: ## CI trajectory eval with baseline gate (Phase 2)
 	$(call print_header,Running Trajectory Eval CI)
 	uv run python -m property_agent.evals.trajectory.run_trajectory_eval --baseline-check
+
+conformance-guard: ## Tool-boundary guard eval (deterministic; ARGS="--filter chip")
+	$(call print_header,Running Conformance Guard Eval)
+	uv run python -m property_agent.evals.conformance.run_conformance_guard_eval $(ARGS)
+
+conformance-guard-ci: ## CI guard eval with baseline gate (Phase 3)
+	$(call print_header,Running Conformance Guard Eval CI)
+	uv run python -m property_agent.evals.conformance.run_conformance_guard_eval --baseline-check
 
 weblog-extract: ## Draft routing/conformance cases from adk web stdout logs (ARGS="web-log*")
 	$(call print_header,Extracting Weblog Cases)

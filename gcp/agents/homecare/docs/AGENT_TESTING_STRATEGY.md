@@ -10,9 +10,9 @@ Audit and phased plan to align homecare agent tests with industry-standard LLM/a
 
 HomeApp’s homecare agent has **strong L0/L1 coverage** (~70 pytest modules, CI-safe, heavily mocked). That matches industry practice for deterministic agent plumbing (guards, state merge, parsers, parallel orchestration).
 
-The main gap versus production-grade agent testing is now **L3–L4**: conformance replay and qualitative eval are still manual. Phase 1 (routing + contract) and Phase 2 skeleton (trajectory stub planner) run in CI.
+The main gap versus production-grade agent testing is now **L4**: qualitative eval and nightly replay with committed recordings are still manual. Phases 1–3 deterministic gates (routing, contract, trajectory, conformance guard) run in CI.
 
-**Next:** expand trajectory catalog from weblogs, grow conformance specs, nightly replay (Phase 3).
+**Next:** commit ADK replay recordings, enable nightly pass-rate gate (Phase 3 remainder), Phase 4 observability.
 
 ---
 
@@ -25,7 +25,7 @@ The main gap versus production-grade agent testing is now **L3–L4**: conforman
 | **L0 — Unit** | `tests/` + `gcp/agent_framework/tests/` — routing, guards, assembler, leaf agents, streaming | Yes (`make test` on every PR) | Strong |
 | **L1 — Component (mocked LLM)** | Cost/DIY/media refiner with mocked `generate_content`; executor tools with mocked pipeline | Yes | Good |
 | **L2 — Offline dataset eval** | `evals/routing/single_loop/cases.yaml` (33 cases), `make routing-eval-ci` | Yes — baseline gate | Good |
-| **L3 — Trajectory / E2E replay** | ADK conformance (5 specs), `make conformance-test` | No — manual + needs recordings | Skeleton |
+| **L3 — Trajectory / E2E replay** | ADK conformance (15 specs), guard eval (7 cases), `make conformance-test` | Guard + spec validation in CI; replay nightly (alert-only) | Good skeleton |
 | **L4 — Qualitative / live** | Rubric JSON, weblog A/B, opt-in SerpAPI/YouTube | No — manual | Ad hoc |
 
 ### Strengths (already industry-aligned)
@@ -89,6 +89,7 @@ Terms like **trajectory** and **LLM-as-judge** are common in agent eval; **confo
 | **L2a — Routing eval** | `make routing-eval-ci` | No | No | Every PR | Deterministic pre-routing only; no executor tool choice |
 | **L2b — Contract / rubric** | `make contract-check` (schema + deterministic rubric) | No | No | Every PR | Structural checks on `contentJson`; no prose judging |
 | **L2 — Trajectory eval** | `make trajectory-eval-ci` | No | Yes (stub planner) | Every PR | Asserts `tools_called` / branches without calling Gemini |
+| **L3 — Conformance guard** | `make conformance-guard-ci` | No | Yes | Every PR | Tool-boundary negatives (report mode, casual, idempotency) |
 | **L3 — Conformance replay** | `make conformance-test` (ADK replay) | Usually no | No | Nightly / manual | Replays `generated-recordings.yaml`; live model only if recordings missing |
 | **L3 — Conformance record** | `make conformance-record` + `uv run adk web` | **Yes — full stack** | No | Manual / staging | Records real multi-turn traces for replay |
 | **L3 — Manual QA** | `uv run adk web` | **Yes — full stack** | No | Manual / staging | End-to-end executor + pipeline + branch agents |
@@ -202,12 +203,13 @@ Reuse `extract_weblog_cases.py` and `summarize_weblog_ab.py` to seed trajectory 
 
 ### Phase 3 — Conformance & E2E hardening (2–3 weeks)
 
-| Action | Detail |
-|--------|--------|
-| Check in recordings | Commit `generated-recordings.yaml` for conformance specs (or mock ADK replay layer). |
-| Nightly conformance job | `make conformance-test` on schedule with Vertex credentials (staging). |
-| Grow conformance catalog | Target 15–20 cases: greeting, inventory list, single-branch analysis, multi-turn follow-up, user_docs, report mode, accept-offer chain. |
-| Negative cases | Invented checkpoint IDs blocked, report route blocks `analyze_checkpoints`, conversational turn blocks tools. |
+| Action | Detail | Status |
+|--------|--------|--------|
+| Grow conformance catalog | 15 cases: greeting, inventory, branches, multi-turn follow-up, user_docs, report, accept-offer | **Done** |
+| Guard eval harness | `guard_cases.yaml` + `make conformance-guard-ci` (7 deterministic negatives) | **Done** |
+| Spec + rubric CI | All 15 `expected_messages.yaml` in `make contract-check` | **Done** |
+| Nightly conformance job | `nightly-homecare-conformance.yaml` → `make conformance-test` (staging, alert-only) | **Done** (scaffold) |
+| Check in recordings | Commit `generated-recordings.yaml` per spec via `make conformance-record` | Pending |
 
 ### Phase 4 — Observability-linked eval (optional, 4+ weeks)
 
@@ -227,6 +229,7 @@ LangSmith is already a transitive dependency; adopt for L4 without changing CI s
 | **routing-eval** | Every PR | `make routing-eval-ci` | Yes |
 | **contract** | Every PR | `make contract-check` | Yes |
 | **trajectory-eval** | Every PR | `make trajectory-eval-ci` | Yes |
+| **conformance-guard** | Every PR | `make conformance-guard-ci` | Yes |
 | **conformance-replay** | Nightly | `make conformance-test` (staging creds) | Alert only initially |
 | **live-external** | Weekly | `RUN_EXTERNAL_DIY_SEARCH_TESTS=1` subset | No |
 | **weblog-ab** | On demand / release | `make weblog-summarize` vs last baseline | Release gate |
@@ -275,8 +278,9 @@ tests/
 | **P0** | Run `routing-eval` in CI with baseline gate | Low | High — **done** (`make routing-eval-ci`) |
 | **P0** | JSON Schema + deterministic rubric scorer | Medium | High — **done** (`make contract-check`) |
 | **P1** | Trajectory eval suite (stubbed executor) | Medium | Very high — **done** (`make trajectory-eval-ci`, 11 cases) |
-| **P1** | Expand conformance + commit recordings | Medium | High |
-| **P2** | Nightly conformance replay job | Low | Medium |
+| **P1** | Expand conformance + guard eval | Medium | High — **done** (15 specs, `make conformance-guard-ci`) |
+| **P1** | Commit conformance recordings | Medium | High — pending `make conformance-record` |
+| **P2** | Nightly conformance replay job | Low | Medium — **done** (scaffold; alert-only) |
 | **P3** | LangSmith / LLM-judge for prose | High | Medium |
 
 ---
@@ -287,8 +291,9 @@ tests/
 |------|---------|
 | Fast regression (CI) | `make test` from `gcp/agents/homecare` |
 | Routing eval (deterministic) | `make routing-eval` |
+| Conformance guard | `make conformance-guard-ci` |
 | Full-turn A/B from web logs | `make weblog-summarize ARGS="--out ..."` |
 | Manual QA | `uv run adk web` → `property_agent` on staging |
-| Replay fixtures | `make conformance-record` / `make conformance-test` |
+| Replay fixtures | `make conformance-web-record` + `make conformance-record` / `make conformance-web` + `make conformance-test` |
 | Draft cases from logs | `make weblog-extract ARGS="web-log*"` |
 | Live SerpAPI/YouTube (opt-in) | `RUN_EXTERNAL_DIY_SEARCH_TESTS=1 uv run pytest tests/test_diy_external_integration.py -v` |

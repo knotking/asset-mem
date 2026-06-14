@@ -1,0 +1,181 @@
+id: 1d3bf754-059b-439e-a9c8-ca1dc6ab8df6
+app_name: property_agent
+user_id: adk_conformance_test_user
+state:
+  homeappLifecycle:
+    v: 1
+    phase: engine.before_model
+    ts: '2026-06-14T08:27:43.722003+00:00'
+    elapsed_ms: 2
+    invocation_id: e-6eb9b470-9ead-4f8e-8b89-17d20a599259
+    checkpoint_ids: []
+    checkpoint_optional_agents: []
+    context_doc_count: 0
+    message: Planning next moves...
+  _executor_invocation_structured_analysis: false
+  checkpoint_optional_agents: []
+  user_query: hello
+  property_address: 1982 Helena Way, Brentwood, CA 94513
+  primary_agent: checkpoint
+  search_location:
+    source: device_gps
+    coordinates:
+      lat: 37.9
+      lng: -121.7
+    radius_miles: 5
+  current_date_utc: '2026-06-14'
+  current_year: 2026
+  resolved_turn:
+    intent: greeting
+    route: none
+    expanded_user_query: hello
+    retrieval_only: true
+    run_optional_agents: []
+    user_goal: answer_from_context
+    query_mode: interpret_session
+    resolve_source: single_loop
+  conversational_turn: true
+  _saved_checkpoint_optional_agents: []
+  _resolve_turn_invocation_id: e-6eb9b470-9ead-4f8e-8b89-17d20a599259
+  last_offered_options:
+    - checkpoints
+    - documents
+    - coverage
+    - diy
+    - service
+    - cost
+  pending_user_action:
+    kind: pick_capability
+    expanded_user_query: Explore property maintenance, documents, coverage, DIY, service, or cost analysis
+    run_optional_agents: []
+    offered_summary: The assistant offered a menu of capabilities including maintenance checkpoints, property documents, coverage, DIY, service, and cost analysis.
+events:
+  - content:
+      parts:
+        - text: |
+            {"user_query": "hello", "primary_agent": "checkpoint", "property_address": "1982 Helena Way, Brentwood, CA 94513", "search_location": {"source": "device_gps", "coordinates": {"lat": 37.9, "lng": -121.7}, "radius_miles": 5}}
+      role: user
+    invocation_id: e-6eb9b470-9ead-4f8e-8b89-17d20a599259
+    author: user
+    actions:
+      state_delta: {}
+    id: 962fddeb-aeb6-4a5a-82cc-1bb0726c68fa
+    timestamp: 1781425663.7186959
+  - content:
+      parts:
+        - text: Working on it...
+      role: model
+    invocation_id: e-6eb9b470-9ead-4f8e-8b89-17d20a599259
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.runner_exec
+          ts: '2026-06-14T08:27:43.719795+00:00'
+          elapsed_ms: 0
+          correlation_id: null
+          session_id: 1d3bf754-059b-439e-a9c8-ca1dc6ab8df6
+          invocation_id: e-6eb9b470-9ead-4f8e-8b89-17d20a599259
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Working on it...
+    id: 6bd93e8a-4284-4bb8-8acc-44e38aaf15f4
+    timestamp: 1781425663.719831
+  - content:
+      parts:
+        - text: |-
+            Hello! I'm here to help with your property at 1982 Helena Way, Brentwood, CA 94513.
+
+            Here is what I can do:
+
+            - **Maintenance checkpoints:** Review areas of your home over time and inspection findings.
+            - **Property documents:** Answer questions from your uploaded lease, home policy, insurance, and similar files.
+            - **Coverage:** Explain warranty and insurance points using your documents.
+            - **DIY:** Suggest step-by-step fixes, videos, and products when you want to do it yourself.
+            - **Service:** Recommend local contractors and service providers near your property.
+            - **Cost:** Estimate repair costs and compare DIY vs professional options.
+
+            What would you like to explore first?
+      role: model
+    invocation_id: e-6eb9b470-9ead-4f8e-8b89-17d20a599259
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+        checkpoint_optional_agents: []
+        user_query: hello
+        property_address: 1982 Helena Way, Brentwood, CA 94513
+        primary_agent: checkpoint
+        search_location:
+          source: device_gps
+          coordinates:
+            lat: 37.9
+            lng: -121.7
+          radius_miles: 5
+        current_date_utc: '2026-06-14'
+        current_year: 2026
+        resolved_turn:
+          intent: greeting
+          route: none
+          expanded_user_query: hello
+          retrieval_only: true
+          run_optional_agents: []
+          user_goal: answer_from_context
+          query_mode: interpret_session
+          menu_index: null
+          capability_key: null
+          discourse_act: null
+          focus_branch: null
+          resolve_source: single_loop
+        conversational_turn: true
+        _saved_checkpoint_optional_agents: []
+        _resolve_turn_invocation_id: e-6eb9b470-9ead-4f8e-8b89-17d20a599259
+        last_offered_options:
+          - checkpoints
+          - documents
+          - coverage
+          - diy
+          - service
+          - cost
+    id: 4904c629-7d9d-406f-b593-1d431e013216
+    timestamp: 1781425663.72193
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-6eb9b470-9ead-4f8e-8b89-17d20a599259
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:27:43.722003+00:00'
+          elapsed_ms: 2
+          correlation_id: null
+          session_id: null
+          invocation_id: e-6eb9b470-9ead-4f8e-8b89-17d20a599259
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Planning next moves...
+    id: 81fac36f-a68e-4627-ae31-922276cc944c
+    timestamp: 1781425663.722031
+  - invocation_id: e-6eb9b470-9ead-4f8e-8b89-17d20a599259
+    author: property_agent
+    actions:
+      state_delta:
+        pending_user_action:
+          kind: pick_capability
+          expanded_user_query: Explore property maintenance, documents, coverage, DIY, service, or cost analysis
+          run_optional_agents: []
+          capability_key: null
+          offered_summary: The assistant offered a menu of capabilities including maintenance checkpoints, property documents, coverage, DIY, service, and cost analysis.
+        _executor_invocation_structured_analysis: false
+    id: 0e87d4e3-8cf6-42fa-bf97-379a8c0a4464
+    timestamp: 1781425664.972694
+last_update_time: 1781425664.972694

@@ -1,0 +1,272 @@
+id: 5f759281-61a9-422e-94a0-d4852e23b849
+app_name: property_agent
+user_id: adk_conformance_test_user
+state:
+  checkpoint_ids: []
+  homeappLifecycle:
+    v: 1
+    phase: engine.before_model
+    ts: '2026-06-14T08:27:19.137562+00:00'
+    elapsed_ms: 1359
+    invocation_id: e-72e7b430-7588-4eb6-9b33-267cf93d7a9e
+    checkpoint_ids: []
+    checkpoint_optional_agents:
+      - cost
+    context_doc_count: 0
+    message: Planning next moves...
+    primary_agent: checkpoint
+  _executor_invocation_structured_analysis: false
+  checkpoint_optional_agents:
+    - cost
+  user_query: Run cost analysis for the garage paint damage
+  property_address: 1982 Helena Way, Brentwood, CA 94513
+  property_id: EVALPROP0001
+  primary_agent: checkpoint
+  current_date_utc: '2026-06-14'
+  current_year: 2026
+  resolved_turn:
+    intent: substantive
+    route: checkpoint
+    expanded_user_query: Run cost analysis for the garage paint damage
+    retrieval_only: false
+    run_optional_agents:
+      - cost
+    user_goal: new_analysis
+    query_mode: interpret_session
+    discourse_act: accept_offer
+    resolve_source: single_loop
+  conversational_turn: false
+  _resolve_turn_invocation_id: e-72e7b430-7588-4eb6-9b33-267cf93d7a9e
+  user_id: adk_conformance_test_user
+  checkpoint_request_timing:
+    started_at: 134763.116881541
+    emitted: false
+    retrieval_ms: 353
+  analysis_run_id: 5e99ba2a-f1af-4cfb-a7a9-06311476c9a1
+  checkpoint_location_meta:
+    requested: garage
+    known_locations: []
+    returned_count: 0
+    scope: location
+  contentMarkdown: No checkpoints were captured for garage on this property.
+  analysisRunId: 5e99ba2a-f1af-4cfb-a7a9-06311476c9a1
+events:
+  - content:
+      parts:
+        - text: |
+            {"user_query": "yes", "primary_agent": "checkpoint", "property_id": "EVALPROP0001", "property_address": "1982 Helena Way, Brentwood, CA 94513", "checkpoint_ids": ["CKPT0000000000000001"]}
+      role: user
+    invocation_id: e-72e7b430-7588-4eb6-9b33-267cf93d7a9e
+    author: user
+    actions:
+      state_delta: {}
+    id: 682d48c2-ccf4-4fbe-8001-9c3e798b08a8
+    timestamp: 1781425637.776962
+  - content:
+      parts:
+        - text: Working on it...
+      role: model
+    invocation_id: e-72e7b430-7588-4eb6-9b33-267cf93d7a9e
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.runner_exec
+          ts: '2026-06-14T08:27:17.778022+00:00'
+          elapsed_ms: 0
+          correlation_id: null
+          session_id: 5f759281-61a9-422e-94a0-d4852e23b849
+          invocation_id: e-72e7b430-7588-4eb6-9b33-267cf93d7a9e
+          primary_agent: null
+          checkpoint_ids:
+            - CKPT0000000000000001
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Working on it...
+    id: b4577e23-85b1-4eea-95c6-74e580a73fc7
+    timestamp: 1781425637.778053
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - function_call:
+            id: adk-23fbc46a-5703-46df-ad6b-65f0ac8e90bf
+            args:
+              branches:
+                - cost
+              property_id: EVALPROP0001
+              checkpoint_ids:
+                - CKPT0000000000000001
+              user_query: Run cost analysis for the garage paint damage
+            name: analyze_checkpoints
+          thought_signature: AY89a1_sl7YEx90SlNdu0NH2pPzLBriEr-0NURqxP9Qkmgo4p5nvJFxAvSR12kKOZ44=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 71
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 71
+      prompt_token_count: 1806
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 1806
+      total_token_count: 1877
+      traffic_type: ON_DEMAND
+    invocation_id: e-72e7b430-7588-4eb6-9b33-267cf93d7a9e
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+        checkpoint_optional_agents:
+          - cost
+        user_query: Run cost analysis for the garage paint damage
+        property_address: 1982 Helena Way, Brentwood, CA 94513
+        property_id: EVALPROP0001
+        primary_agent: checkpoint
+        checkpoint_ids:
+          - CKPT0000000000000001
+        current_date_utc: '2026-06-14'
+        current_year: 2026
+        pending_user_action: null
+        resolved_turn:
+          intent: substantive
+          route: checkpoint
+          expanded_user_query: Run cost analysis for the garage paint damage
+          retrieval_only: false
+          run_optional_agents:
+            - cost
+          user_goal: new_analysis
+          query_mode: interpret_session
+          menu_index: null
+          capability_key: null
+          discourse_act: accept_offer
+          focus_branch: null
+          resolve_source: single_loop
+        conversational_turn: false
+        checkpoint_analysis: null
+        checkpoint_parallel_results: null
+        _resolve_turn_invocation_id: e-72e7b430-7588-4eb6-9b33-267cf93d7a9e
+    long_running_tool_ids: []
+    id: be0375a7-5806-4e11-8f46-a4bf4b284a16
+    timestamp: 1781425637.779947
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-72e7b430-7588-4eb6-9b33-267cf93d7a9e
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:27:17.780011+00:00'
+          elapsed_ms: 2
+          correlation_id: null
+          session_id: null
+          invocation_id: e-72e7b430-7588-4eb6-9b33-267cf93d7a9e
+          primary_agent: null
+          checkpoint_ids:
+            - CKPT0000000000000001
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Planning next moves...
+    id: f3cda5bf-1138-4247-a2c9-fc84a085455a
+    timestamp: 1781425637.780033
+  - content:
+      parts:
+        - function_response:
+            id: adk-23fbc46a-5703-46df-ad6b-65f0ac8e90bf
+            name: analyze_checkpoints
+            response:
+              result: No checkpoints were captured for garage on this property.
+      role: user
+    invocation_id: e-72e7b430-7588-4eb6-9b33-267cf93d7a9e
+    author: property_agent
+    actions:
+      state_delta:
+        user_id: adk_conformance_test_user
+        checkpoint_optional_agents:
+          - cost
+        checkpoint_ids: []
+        user_query: Run cost analysis for the garage paint damage
+        property_address: 1982 Helena Way, Brentwood, CA 94513
+        property_id: EVALPROP0001
+        checkpoint_request_timing:
+          started_at: 134763.116881541
+          emitted: false
+          retrieval_ms: 353
+          parallel_ms: null
+          diy_ms: null
+          synthesis_ms: null
+          synthesis_started_at: null
+          executor_started_at: null
+          executor_ms: null
+          return_chars: null
+        analysis_run_id: 5e99ba2a-f1af-4cfb-a7a9-06311476c9a1
+        checkpoint_location_meta:
+          requested: garage
+          matched_field: null
+          known_locations: []
+          returned_count: 0
+          scope: location
+        contentMarkdown: No checkpoints were captured for garage on this property.
+        contentJson: null
+        analysisRunId: 5e99ba2a-f1af-4cfb-a7a9-06311476c9a1
+    id: cf55f003-9252-419d-b1c0-e32549633867
+    timestamp: 1781425639.1266508
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - text: "I've checked the records for 1982 Helena Way, but I couldn't find any captured checkpoints related to a garage or garage paint damage to analyze. \n\nIf you have a specific report or inspection document that mentions this, let me know, and I can search through those for you instead."
+          thought_signature: AY89a18Lw1moQsddtIWDTBnXe8SVjUtztsW7X49LUbEueAUHSCgvY6gDbVjiwyzZuow=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 64
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 64
+      prompt_token_count: 1905
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 1905
+      total_token_count: 1969
+      traffic_type: ON_DEMAND
+    invocation_id: e-72e7b430-7588-4eb6-9b33-267cf93d7a9e
+    author: property_agent
+    id: 8c0b7e6c-5a68-440c-b5db-ddcc61575565
+    timestamp: 1781425639.137365
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-72e7b430-7588-4eb6-9b33-267cf93d7a9e
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:27:19.137562+00:00'
+          elapsed_ms: 1359
+          correlation_id: null
+          session_id: null
+          invocation_id: e-72e7b430-7588-4eb6-9b33-267cf93d7a9e
+          primary_agent: checkpoint
+          checkpoint_ids: []
+          checkpoint_optional_agents:
+            - cost
+          context_doc_count: 0
+          message: Planning next moves...
+    id: 48106aab-5534-4b16-bac8-c8dcdceb3d51
+    timestamp: 1781425639.137623
+  - invocation_id: e-72e7b430-7588-4eb6-9b33-267cf93d7a9e
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+    id: 272742e2-72cc-448c-8801-a56b49c3d7bb
+    timestamp: 1781425640.199053
+last_update_time: 1781425640.199053
