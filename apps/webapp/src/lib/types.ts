@@ -417,6 +417,31 @@ export type Checkpoint = {
   embedding?: number[]; // 768-dimensional vector from text-embedding-004
   embeddingModel?: string; // e.g., "text-embedding-004"
   embeddingGeneratedAt?: Timestamp; // When the embedding was generated
+  seriesId?: string;
+  revisionNumber?: number;
+  isLatestInSeries?: boolean;
+  supersedesCaptureId?: string | null;
+  captureKind?: CheckpointCaptureKind;
+};
+
+export type CheckpointCaptureKind =
+  | "scheduled"
+  | "ad_hoc"
+  | "baseline"
+  | "reanalysis";
+
+export type CheckpointSeries = {
+  id: string;
+  userId: string;
+  propertyId: string;
+  name: string;
+  location: string;
+  assetType?: "real_estate" | "vehicle" | "appliance" | "other";
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  latestCaptureId: string | null;
+  captureCount: number;
+  baselineCaptureId?: string;
 };
 
 export type CheckpointMedia = {
@@ -464,7 +489,13 @@ export type VisualDiffAnalysis = {
   heatmapUrl?: string;
   regions: ChangeRegion[];
   similarityScore: number;
-  matchReason?: "same_location" | "same_detected_asset" | "manual";
+  matchReason?:
+    | "series_previous"
+    | "series_baseline"
+    | "same_location"
+    | "same_detected_asset"
+    | "manual";
+  comparedWithRevisionNumber?: number;
   completedAt: Timestamp;
 };
 

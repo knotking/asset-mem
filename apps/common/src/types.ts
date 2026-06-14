@@ -472,6 +472,36 @@ export type Checkpoint = {
   embedding?: number[]; // 768-dimensional vector from text-embedding-004
   embeddingModel?: string; // e.g., "text-embedding-004"
   embeddingGeneratedAt?: Timestamp; // When the embedding was generated
+  /** Checkpoint series (monitoring point) — see CHECKPOINT_VERSIONING.md */
+  seriesId?: string;
+  /** 1-based revision within the series. */
+  revisionNumber?: number;
+  /** Denormalized: newest capture in the series. */
+  isLatestInSeries?: boolean;
+  /** Previous capture in chronological chain within the series. */
+  supersedesCaptureId?: string | null;
+  captureKind?: CheckpointCaptureKind;
+};
+
+export type CheckpointCaptureKind =
+  | "scheduled"
+  | "ad_hoc"
+  | "baseline"
+  | "reanalysis";
+
+export type CheckpointSeries = {
+  id: string;
+  userId: string;
+  propertyId: string;
+  name: string;
+  /** Canonical normalized location key (immutable after create). */
+  location: string;
+  assetType?: "real_estate" | "vehicle" | "appliance" | "other";
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  latestCaptureId: string | null;
+  captureCount: number;
+  baselineCaptureId?: string;
 };
 
 export type CheckpointMedia = {
@@ -519,7 +549,13 @@ export type VisualDiffAnalysis = {
   heatmapUrl?: string; // URL to the generated overlay image
   regions: ChangeRegion[]; // Bounding boxes from Gemini
   similarityScore: number; // 0-1 score
-  matchReason?: "same_location" | "same_detected_asset" | "manual";
+  comparedWithRevisionNumber?: number;
+  matchReason?:
+    | "series_previous"
+    | "series_baseline"
+    | "same_location"
+    | "same_detected_asset"
+    | "manual";
   completedAt: Timestamp;
 };
 

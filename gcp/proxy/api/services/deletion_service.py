@@ -17,6 +17,10 @@ from google.cloud import firestore, storage
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 from common.rag.delete import delete_rag_files_by_gcs_uris
+from common.checkpoint.series import (
+    assert_capture_deletable,
+    recompute_series_after_capture_delete,
+)
 from services.vertex_service import delete_reasoning_engine_session
 
 logger = logging.getLogger(__name__)
@@ -426,9 +430,11 @@ def delete_checkpoint_asset(
     )
     snap = cp_ref.get()
     storage_paths: list[str] = []
+    checkpoint_data: dict[str, Any] = {}
     if snap.exists:
-        data = snap.to_dict() or {}
-        for media in data.get("media") or []:
+        checkpoint_data = snap.to_dict() or {}
+        assert_capture_deletable(checkpoint_data)
+        for media in checkpoint_data.get("media") or []:
             if isinstance(media, dict):
                 _append_storage_path(storage_paths, media.get("storagePath"))
                 if media.get("gsURI"):
@@ -441,7 +447,27 @@ def delete_checkpoint_asset(
             warnings.extend(path_warnings)
 
     if snap.exists:
+        series_id = checkpoint_data.get("seriesId")
         _delete_doc_with_retry(cp_ref)
+        if series_id:
+            try:
+                recompute_series_after_capture_delete(
+                    db,
+                    user_id,
+                    property_id,
+                    str(series_id),
+                    checkpoint_id,
+                    checkpoint_data,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Failed to recompute series after checkpoint delete user=%s property=%s checkpoint=%s: %s",
+                    user_id,
+                    property_id,
+                    checkpoint_id,
+                    exc,
+                )
+                warnings.append(f"series recompute: {exc}")
 
     if rebuild_metrics:
         from services.checkpoint_service import publish_checkpoint_metrics_rebuild

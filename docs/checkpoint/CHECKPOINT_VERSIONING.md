@@ -1,6 +1,6 @@
 # Checkpoint Versioning — Design Spec
 
-**Status:** Proposed — product decisions locked to recommended defaults (§8); implementation not started  
+**Status:** P0 implemented (types, series on create, worker assignment, indexes, backfill script); P1+ pending  
 **Audience:** Product, mobile/web, backend (analysis + metrics workers), agent/retrieval  
 **Related:** [Property Health Insights V2](./PROPERTY_HEALTH_INSIGHTS_V2.md), [Property Reports Plan](../property/PROPERTY_REPORTS_PLAN.md), [Checkpoint Feature Plan](./CHECKPOINT_FEATURE_PLAN.md)
 
@@ -368,3 +368,4 @@ These defaults are **locked for v1** unless explicitly revisited before implemen
 |------|--------|
 | 2026-06-14 | Initial design spec (docs only) |
 | 2026-06-14 | Locked product decisions to recommended defaults (§8) |
+| 2026-06-14 | P0: types, client create with series, worker assignment, deletion guard, indexes, backfill script |

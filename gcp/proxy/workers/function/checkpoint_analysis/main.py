@@ -48,6 +48,9 @@ from common.plan_limits import (
     PlanLimitExceeded,
     check_monthly_checkpoint_creations_allowed,
 )
+from common.checkpoint.series import (
+    assign_capture_to_series,
+)
 from prompt_builder import get_asset_category
 
 from google.cloud import pubsub_v1
@@ -306,6 +309,25 @@ def pubsub_checkpoint_analysis(request, context):
                 # Update checkpoint with analysis results first
                 checkpoint_ref.update(update_data)
                 logger.info(f"Successfully updated checkpoint {checkpoint_id} with analysis results")
+
+                if not existing_checkpoint.get("seriesId"):
+                    series_assignment = assign_capture_to_series(
+                        db,
+                        user_id,
+                        property_id,
+                        checkpoint_id,
+                        location=final_location,
+                        name=update_data.get("name") or existing_name,
+                        asset_type=existing_checkpoint.get("assetType"),
+                    )
+                    if series_assignment:
+                        existing_checkpoint.update(series_assignment)
+                        logger.info(
+                            "Assigned checkpoint %s to series %s rev %s",
+                            checkpoint_id,
+                            series_assignment.get("seriesId"),
+                            series_assignment.get("revisionNumber"),
+                        )
             
                 # Generate and store embedding for semantic search (Firestore Vector Search)
                 try:
@@ -430,7 +452,7 @@ def pubsub_checkpoint_analysis(request, context):
                         get_user_preferences=get_user_preferences,
                     )
 
-                    # Find previous checkpoint for the same location
+                    # Find previous capture in series (or legacy location match)
                     previous_checkpoint = find_previous_checkpoint(
                         db=db,
                         user_id=user_id,
@@ -439,7 +461,9 @@ def pubsub_checkpoint_analysis(request, context):
                         location=final_location,
                         detected_asset=detected_asset,
                         max_age_days=None,  # Will use user preference or default
-                        user_preferences=user_preferences
+                        user_preferences=user_preferences,
+                        series_id=existing_checkpoint.get("seriesId"),
+                        revision_number=existing_checkpoint.get("revisionNumber"),
                     )
             
                     skip_comparison = bool(existing_checkpoint.get("skipComparison", False))
@@ -506,7 +530,15 @@ def pubsub_checkpoint_analysis(request, context):
                                 comparison_update["visualDiff"]["summary"] = comparison_result.get(
                                     "summary", ""
                                 )
-                                comparison_update["visualDiff"]["matchReason"] = "same_location"
+                                if existing_checkpoint.get("seriesId"):
+                                    comparison_update["visualDiff"]["matchReason"] = "series_previous"
+                                    prev_rev = previous_checkpoint.get("revisionNumber")
+                                    if prev_rev is not None:
+                                        comparison_update["visualDiff"][
+                                            "comparedWithRevisionNumber"
+                                        ] = prev_rev
+                                else:
+                                    comparison_update["visualDiff"]["matchReason"] = "same_location"
                                 checkpoint_ref.update(comparison_update)
                                 logger.info(f"Successfully updated checkpoint {checkpoint_id} with comparison results")
             

@@ -110,6 +110,21 @@ def test_delete_checkpoint_asset_publishes_metrics_rebuild(
     )
 
 
+def test_delete_checkpoint_asset_blocks_non_latest_in_series():
+    db = MagicMock()
+    cp_ref = MagicMock()
+    cp_ref.get.return_value.exists = True
+    cp_ref.get.return_value.to_dict.return_value = {
+        "seriesId": "series_kitchen",
+        "isLatestInSeries": False,
+        "media": [],
+    }
+    db.collection.return_value.document.return_value.collection.return_value.document.return_value.collection.return_value.document.return_value = cp_ref
+
+    with pytest.raises(ValueError, match="non-latest"):
+        deletion_service.delete_checkpoint_asset(db, "u1", "p1", "c1")
+
+
 @patch("services.deletion_service._commit_with_retry")
 def test_update_job_refreshes_heartbeat_when_running(mock_commit):
     db = MagicMock()

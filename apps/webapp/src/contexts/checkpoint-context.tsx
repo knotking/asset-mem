@@ -18,7 +18,6 @@ import {
   onSnapshot,
   getDocs,
   startAfter,
-  addDoc,
   updateDoc,
   deleteDoc,
   doc,
@@ -35,6 +34,7 @@ import { useFirebase } from "@/contexts/firebase-context";
 import { createLogger, truncateId } from "@/lib/logger";
 import { useDeletionConfig } from "@/contexts/deletion-config-context";
 import { useOptimisticDeletionOverlay } from "@/hooks/use-optimistic-deletion-overlay";
+import { createCheckpointWithSeries } from "@/lib/checkpoint-series";
 
 const checkpointLog = createLogger("checkpoint");
 
@@ -272,15 +272,16 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
           analysisStatus: "pending" as const,
         };
 
-        const docRef = await addDoc(
-          collection(
-            db,
-            `users/${user.uid}/properties/${property.id}/checkpoints`
-          ),
-          checkpointData
-        );
+        const { id } = await createCheckpointWithSeries(db, {
+          userId: user.uid,
+          propertyId: property.id,
+          checkpointData,
+          location: data.location,
+          name: data.name,
+          assetType: data.assetType,
+        });
 
-        return { id: docRef.id, media: uploadedMedia };
+        return { id, media: uploadedMedia };
       } catch (error) {
         checkpointLog.error("checkpoint.create.failed", undefined, error);
         throw error;

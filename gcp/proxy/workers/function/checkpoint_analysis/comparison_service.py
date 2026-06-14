@@ -49,24 +49,42 @@ def find_previous_checkpoint(
     location: Optional[str],
     detected_asset: Optional[str],
     max_age_days: Optional[int] = None,
-    user_preferences: Optional[Dict[str, Any]] = None
+    user_preferences: Optional[Dict[str, Any]] = None,
+    *,
+    series_id: Optional[str] = None,
+    revision_number: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
     """
-    Finds the most recent previous checkpoint for the same location/asset.
-    
-    Args:
-        db: Firestore client
-        user_id: User ID
-        property_id: Property ID
-        current_checkpoint_id: ID of the current checkpoint (to exclude from results)
-        location: Location string (user-provided or auto-detected)
-        detected_asset: Auto-detected asset name
-        max_age_days: Maximum age in days (if None, uses user preference or default 180)
-        user_preferences: User preferences dictionary from Firestore
-        
-    Returns:
-        Dictionary with checkpoint data if found, None otherwise
+    Finds the most recent previous checkpoint for comparison.
+
+    When series_id is set, prefers the prior capture in the same series
+    (revision N-1). Falls back to location-based matching during migration.
     """
+    if series_id:
+        from common.checkpoint.series import find_previous_capture_in_series
+
+        previous = find_previous_capture_in_series(
+            db,
+            user_id,
+            property_id,
+            series_id,
+            current_checkpoint_id,
+            revision_number=revision_number,
+        )
+        if previous:
+            logger.info(
+                "Found previous capture in series %s: %s",
+                series_id,
+                previous.get("id"),
+            )
+            return previous
+        logger.info(
+            "No prior capture in series %s for checkpoint %s",
+            series_id,
+            current_checkpoint_id,
+        )
+        return None
+
     try:
         # Get max_age_days from preferences if not provided
         if max_age_days is None:

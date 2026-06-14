@@ -49,6 +49,34 @@
       ]
     },
     {
+      "collectionGroup": "checkpoints",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "seriesId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "revisionNumber",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "checkpoints",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "seriesId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "revisionNumber",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "docs",
       "queryScope": "COLLECTION",
       "fields": [
