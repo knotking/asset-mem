@@ -1,0 +1,61 @@
+# Phase 4 qualitative eval (staging Vertex). Manual only (workflow_dispatch).
+# PR CI uses dry-run only via pytest + make prose-judge-ci.
+
+name: Weekly Homecare Prose Judge
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prose-judge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync agent dependencies
+        working-directory: gcp/agents/homecare
+        run: uv sync
+
+      - name: Run live prose judge eval
+        working-directory: gcp/agents/homecare
+        env:
+          GOOGLE_CLOUD_PROJECT: homegeek-staging
+          RUN_PROSE_JUDGE_EVAL: "1"
+        run: |
+          uv run python -m property_agent.evals.judge.run_prose_judge_eval \
+            --live \
+            --out property_agent/evals/judge/baselines/prose_weekly.json
+
+      - name: Build eval dashboard
+        working-directory: gcp/agents/homecare
+        run: |
+          uv run python -m property_agent.evals.observability.build_eval_dashboard \
+            --out property_agent/evals/observability/baselines/dashboard.json
+
+      - name: Upload Phase 4 artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: homecare-phase4-eval
+          path: |
+            gcp/agents/homecare/property_agent/evals/judge/baselines/prose_weekly.json
+            gcp/agents/homecare/property_agent/evals/observability/baselines/dashboard.json
+          if-no-files-found: ignore

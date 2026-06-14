@@ -59,3 +59,6 @@ jobs:
 
       - name: Run conformance guard eval (baseline gate)
         run: make conformance-guard-ci
+
+      - name: Run prose judge eval (dry-run baseline gate)
+        run: make prose-judge-ci

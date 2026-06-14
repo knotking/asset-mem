@@ -1,11 +1,9 @@
 name: Nightly Homecare Conformance Replay
 
 # ADK replay against committed generated-recordings.yaml (staging creds when live).
-# Alert-only until recordings are checked in — see AGENT_TESTING_STRATEGY.md Phase 3.
+# Manual only (workflow_dispatch) — see AGENT_TESTING_STRATEGY.md Phase 3.
 
 on:
-  schedule:
-    - cron: "0 6 * * *" # 06:00 UTC daily
   workflow_dispatch:
 
 env:

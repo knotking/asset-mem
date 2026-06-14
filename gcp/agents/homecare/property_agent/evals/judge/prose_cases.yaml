@@ -1,0 +1,90 @@
+# Phase 4 LLM-judge dataset: markdown prose samples (no Vertex in CI).
+# Seed from contract golden messages + conformance-style assistant replies.
+# Live eval: make prose-judge (weekly / staging; RUN_PROSE_JUDGE_EVAL=1).
+
+defaults:
+  expect:
+    min_score: 0.7
+
+cases:
+  - id: greeting_markdown_only
+    tags: [casual, greeting]
+    user_query: "hello"
+    content_markdown: "Hello! How can I help with your property today?"
+    expect:
+      passed: true
+
+  - id: capabilities_plain_prose
+    tags: [casual, capabilities]
+    user_query: "what can you do?"
+    content_markdown: |
+      I can help you review checkpoint photos, summarize issues, run optional cost or DIY analysis,
+      and answer questions about documents you've uploaded.
+    expect:
+      passed: true
+
+  - id: follow_up_markdown_only
+    tags: [follow_up, checkpoint]
+    user_query: "which areas had the worst issues?"
+    content_markdown: "The main issue is paint chipping on the garage door near the handle."
+    context: "Prior turn included structured checkpoint analysis accordions."
+    expect:
+      passed: true
+
+  - id: docs_empty_result_prose
+    tags: [user_docs]
+    user_query: "what does my policy say about water damage?"
+    content_markdown: |
+      No relevant information could be found in your uploaded documents to answer this question.
+    expect:
+      passed: true
+
+  - id: inventory_list_prose
+    tags: [checkpoint, inventory]
+    user_query: "what checkpoints do I have?"
+    content_markdown: |
+      You have 3 recent checkpoints: Garage (analyzed), Kitchen (pending), and Roof (analyzed).
+    expect:
+      passed: true
+
+  - id: thanks_closure
+    tags: [casual, closure]
+    user_query: "thanks!"
+    content_markdown: "You're welcome — let me know if you want to dig into any area further."
+    expect:
+      passed: true
+
+  - id: embedded_json_fence_fail
+    tags: [negative, dual_format]
+    user_query: "summarize my checkpoints"
+    content_markdown: |
+      Here is the analysis:
+      ```json
+      {"analysis": {"title": "Leaks"}}
+      ```
+    expect:
+      passed: false
+
+  - id: empty_markdown_fail
+    tags: [negative]
+    user_query: "summarize issues"
+    content_markdown: "   "
+    expect:
+      passed: false
+
+  - id: meta_tool_commentary_fail
+    tags: [negative, meta]
+    user_query: "run cost analysis"
+    content_markdown: |
+      I called analyze_checkpoints with branches cost and here is the tool output...
+    expect:
+      passed: false
+
+  - id: report_summary_prose
+    tags: [report]
+    user_query: "summarize the inspection report"
+    content_markdown: |
+      The saved report highlights garage paint damage and minor grading concerns near the driveway.
+      No urgent safety issues were noted in the snapshot.
+    expect:
+      passed: true

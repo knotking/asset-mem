@@ -1,0 +1,96 @@
+{
+  "generated_at": "2026-06-14T17:52:26+0530",
+  "live_latency": {
+    "paired_session_1_count": 4,
+    "single_loop_executor_first_model_ms": {
+      "mean": 3681,
+      "p50": 3613,
+      "p95": 8778
+    },
+    "single_loop_substantive_stream_complete_ms": {
+      "mean": 18990,
+      "p50": 14223,
+      "p95": 33258
+    },
+    "source": [
+      "web-log",
+      "web-log-legacy-session-1",
+      "web-log-legacy-session-2",
+      "web-log-legacy-smoke",
+      "web-log-session-1",
+      "web-log-session-2",
+      "web-log-session-3",
+      "web-log-session-4",
+      "web-log-session-5",
+      "web-log-session-6",
+      "web-log-session-7"
+    ]
+  },
+  "overall_pass_rate": 1.0,
+  "phase": 4,
+  "routing_pass_rate_by_tag": {
+    "accept_offer": 1.0,
+    "capabilities": 1.0,
+    "casual": 1.0,
+    "checkpoint": 1.0,
+    "chip": 1.0,
+    "greeting": 1.0,
+    "pending": 1.0,
+    "report": 1.0,
+    "selection": 1.0,
+    "single_loop": 1.0,
+    "user_docs": 1.0,
+    "weblog": 1.0,
+    "weblog_session_1": 1.0,
+    "weblog_session_2": 1.0,
+    "weblog_session_3": 1.0,
+    "weblog_session_4": 1.0,
+    "weblog_session_5": 1.0,
+    "weblog_session_6": 1.0,
+    "weblog_session_7": 1.0
+  },
+  "suites": [
+    {
+      "failed": 0,
+      "field_mismatch_counts": {},
+      "generated_at": "2026-06-11T18:25:18+0530",
+      "latency_ms": {
+        "mean": 25,
+        "p50": 0,
+        "p95": 0
+      },
+      "pass_rate": 1.0,
+      "passed": 33,
+      "suite": "routing",
+      "total": 33
+    },
+    {
+      "failed": 0,
+      "field_mismatch_counts": {},
+      "generated_at": "2026-06-14T13:14:29+0530",
+      "latency_ms": {
+        "mean": 0,
+        "p50": 0,
+        "p95": 1
+      },
+      "pass_rate": 1.0,
+      "passed": 11,
+      "suite": "trajectory",
+      "total": 11
+    },
+    {
+      "failed": 0,
+      "field_mismatch_counts": {},
+      "generated_at": "2026-06-14T13:18:15+0530",
+      "latency_ms": {
+        "mean": 190,
+        "p50": 0,
+        "p95": 1332
+      },
+      "pass_rate": 1.0,
+      "passed": 7,
+      "suite": "conformance_guard",
+      "total": 7
+    }
+  ]
+}
