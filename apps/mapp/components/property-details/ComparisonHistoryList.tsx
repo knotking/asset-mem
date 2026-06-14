@@ -19,6 +19,7 @@ type ComparisonHistoryListProps = {
   checkpoint: Checkpoint;
   checkpoints: Checkpoint[];
   onSelect: (record: CheckpointComparisonRecord) => void;
+  onOpenExplorer?: () => void;
 };
 
 export function ComparisonHistoryList({
@@ -28,6 +29,7 @@ export function ComparisonHistoryList({
   checkpoint,
   checkpoints,
   onSelect,
+  onOpenExplorer,
 }: ComparisonHistoryListProps) {
   const [loading, setLoading] = React.useState(true);
   const [records, setRecords] = React.useState<CheckpointComparisonRecord[]>([]);
@@ -70,12 +72,19 @@ export function ComparisonHistoryList({
 
   return (
     <View className="gap-2">
-      <View className="flex-row items-center gap-2">
-        <Icon as={History} size={16} className="text-muted-foreground" />
-        <Text className="text-sm font-semibold text-foreground">Comparison history</Text>
-        <Badge variant="secondary">
-          <Text className="text-xs">{records.length}</Text>
-        </Badge>
+      <View className="flex-row items-center justify-between">
+        <View className="flex-row items-center gap-2">
+          <Icon as={History} size={16} className="text-muted-foreground" />
+          <Text className="text-sm font-semibold text-foreground">Comparison history</Text>
+          <Badge variant="secondary">
+            <Text className="text-xs">{records.length}</Text>
+          </Badge>
+        </View>
+        {onOpenExplorer ? (
+          <Button variant="link" size="sm" onPress={onOpenExplorer}>
+            <Text>Browse all</Text>
+          </Button>
+        ) : null}
       </View>
       {records.map((record) => {
         const partner = checkpoints.find((c) => c.id === record.comparedWithCheckpointId);

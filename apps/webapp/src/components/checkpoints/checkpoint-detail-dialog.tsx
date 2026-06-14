@@ -34,6 +34,7 @@ import { getCheckpointAnalysisFailureMessage } from '@/lib/plan-limit-errors';
 import { createLogger } from '@/lib/logger';
 import { CheckpointComparisonDialog } from './checkpoint-comparison-dialog';
 import { ComparisonHistoryList } from './comparison-history-list';
+import { ComparisonHistoryExplorer } from './comparison-history-explorer';
 import {
   findPreviousCaptureInList,
   formatCaptureRevisionLabel,
@@ -60,6 +61,8 @@ export function CheckpointDetailDialog() {
   const [historyVisualDiff, setHistoryVisualDiff] = useState<CheckpointComparisonRecord | null>(
     null
   );
+  const [isExplorerOpen, setIsExplorerOpen] = useState(false);
+  const [explorerInitialEntryId, setExplorerInitialEntryId] = useState<string | null>(null);
 
   // Reset edit mode when dialog closes
   useEffect(() => {
@@ -416,7 +419,23 @@ export function CheckpointDetailDialog() {
                   setHistoryVisualDiff(record);
                   setIsComparisonOpen(true);
                 }}
+                onOpenExplorer={() => {
+                  setExplorerInitialEntryId(null);
+                  setIsExplorerOpen(true);
+                }}
               />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  setExplorerInitialEntryId(null);
+                  setIsExplorerOpen(true);
+                }}
+              >
+                Open comparison explorer
+              </Button>
             </>
           )}
 
@@ -474,6 +493,14 @@ export function CheckpointDetailDialog() {
         }
       />
     )}
+
+    <ComparisonHistoryExplorer
+      open={isExplorerOpen}
+      onOpenChange={setIsExplorerOpen}
+      checkpoint={checkpoint}
+      checkpoints={checkpoints}
+      initialEntryId={explorerInitialEntryId}
+    />
     </>
   );
 }

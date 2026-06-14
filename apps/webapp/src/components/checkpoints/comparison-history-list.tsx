@@ -18,12 +18,14 @@ type ComparisonHistoryListProps = {
   checkpoint: Checkpoint;
   checkpoints: Checkpoint[];
   onSelect: (record: CheckpointComparisonRecord) => void;
+  onOpenExplorer?: () => void;
 };
 
 export function ComparisonHistoryList({
   checkpoint,
   checkpoints,
   onSelect,
+  onOpenExplorer,
 }: ComparisonHistoryListProps) {
   const { user } = useAuth();
   const { property } = useProperty();
@@ -72,10 +74,17 @@ export function ComparisonHistoryList({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2 text-sm font-medium">
-        <History className="h-4 w-4 text-muted-foreground" />
-        Comparison history
-        <Badge variant="secondary">{records.length}</Badge>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <History className="h-4 w-4 text-muted-foreground" />
+          Comparison history
+          <Badge variant="secondary">{records.length}</Badge>
+        </div>
+        {onOpenExplorer ? (
+          <Button type="button" variant="link" size="sm" className="h-auto px-0" onClick={onOpenExplorer}>
+            Browse all
+          </Button>
+        ) : null}
       </div>
       <ul className="space-y-1">
         {records.map((record) => {

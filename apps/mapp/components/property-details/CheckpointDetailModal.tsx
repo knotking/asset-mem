@@ -41,6 +41,7 @@ import { getCheckpointAnalysisFailureMessage } from '@homeapp/common/lib/documen
 import { AnalysisResults } from './AnalysisResults';
 import { Separator } from '@/components/ui/separator';
 import { ComparisonHistoryList } from './ComparisonHistoryList';
+import { ComparisonHistoryExplorer } from './ComparisonHistoryExplorer';
 import { CheckpointComparisonModal } from './CheckpointComparisonModal';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useProperty } from '@homeapp/common/contexts/property-context';
@@ -124,6 +125,7 @@ export function CheckpointDetailModal({
   const [historyRecord, setHistoryRecord] = React.useState<CheckpointComparisonRecord | null>(
     null
   );
+  const [isExplorerOpen, setIsExplorerOpen] = React.useState(false);
 
   // Reset active index when checkpoint changes
   React.useEffect(() => {
@@ -429,7 +431,11 @@ export function CheckpointDetailModal({
                       setHistoryRecord(record);
                       setIsComparisonOpen(true);
                     }}
+                    onOpenExplorer={() => setIsExplorerOpen(true)}
                   />
+                  <Button variant="secondary" onPress={() => setIsExplorerOpen(true)}>
+                    <Text>Open comparison explorer</Text>
+                  </Button>
                 </View>
               </>
             )}
@@ -489,6 +495,18 @@ export function CheckpointDetailModal({
             setIsComparisonOpen(false);
             setHistoryRecord(null);
           }}
+        />
+      ) : null}
+
+      {user && property ? (
+        <ComparisonHistoryExplorer
+          visible={isExplorerOpen}
+          db={db}
+          userId={user.uid}
+          propertyId={property.id}
+          checkpoint={checkpoint}
+          checkpoints={checkpoints}
+          onClose={() => setIsExplorerOpen(false)}
         />
       ) : null}
     </Modal>

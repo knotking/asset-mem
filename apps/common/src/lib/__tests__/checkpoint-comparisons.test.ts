@@ -1,9 +1,17 @@
 import {
   buildVisualDiffFromCompareResult,
+  buildComparisonExplorerEntries,
   formatComparisonHistoryLabel,
+  formatExplorerEntryTitle,
+  formatMatchReasonLabel,
+  getSeriesCapturesForCheckpoint,
   mergeComparisonHistory,
 } from '../checkpoint-comparisons';
-import type { CheckpointComparisonRecord, VisualDiffAnalysis } from '../../types';
+import type { Checkpoint, CheckpointComparisonRecord, VisualDiffAnalysis } from '../../types';
+
+function cp(partial: Partial<Checkpoint> & { id: string }): Checkpoint {
+  return partial as Checkpoint;
+}
 
 describe('checkpoint-comparisons', () => {
   it('mergeComparisonHistory falls back to visualDiff when subcollection empty', () => {
@@ -66,5 +74,46 @@ describe('checkpoint-comparisons', () => {
     expect(label).toContain('Auto');
     expect(label).toContain('Kitchen v1');
     expect(label).toContain('rev 2');
+  });
+
+  it('buildComparisonExplorerEntries resolves before/after checkpoints', () => {
+    const all = [
+      cp({ id: 'c1', seriesId: 's1', revisionNumber: 1, name: 'Kitchen v1' }),
+      cp({ id: 'c2', seriesId: 's1', revisionNumber: 2, name: 'Kitchen v2' }),
+    ];
+    const record: CheckpointComparisonRecord = {
+      id: 'diff_1',
+      status: 'completed',
+      comparedWithCheckpointId: 'c1',
+      comparedWithRevisionNumber: 1,
+      semanticChanges: ['stain'],
+      regions: [],
+      similarityScore: 0.8,
+      matchReason: 'series_previous',
+      completedAt: { seconds: 1000 } as CheckpointComparisonRecord['completedAt'],
+      source: 'auto',
+    };
+    const entries = buildComparisonExplorerEntries(
+      [all[1]],
+      new Map([[ 'c2', [record] ]]),
+      all
+    );
+    expect(entries).toHaveLength(1);
+    expect(entries[0].beforeCheckpoint?.id).toBe('c1');
+    expect(entries[0].afterCheckpoint?.id).toBe('c2');
+    expect(formatExplorerEntryTitle(entries[0])).toContain('v1 → v2');
+  });
+
+  it('getSeriesCapturesForCheckpoint orders by revision', () => {
+    const focus = cp({ id: 'c2', seriesId: 's1', revisionNumber: 2 });
+    const all = [
+      cp({ id: 'c2', seriesId: 's1', revisionNumber: 2 }),
+      cp({ id: 'c1', seriesId: 's1', revisionNumber: 1 }),
+    ];
+    expect(getSeriesCapturesForCheckpoint(focus, all).map((c) => c.id)).toEqual(['c1', 'c2']);
+  });
+
+  it('formatMatchReasonLabel maps series_previous', () => {
+    expect(formatMatchReasonLabel('series_previous')).toBe('Previous in series');
   });
 });

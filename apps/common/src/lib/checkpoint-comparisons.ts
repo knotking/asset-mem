@@ -8,7 +8,7 @@ import {
   type Firestore,
   type Timestamp,
 } from 'firebase/firestore';
-import type { ChangeRegion, CheckpointComparisonRecord, VisualDiffAnalysis } from '../types';
+import type { ChangeRegion, Checkpoint, CheckpointComparisonRecord, VisualDiffAnalysis } from '../types';
 
 export type PersistCheckpointComparisonParams = {
   userId: string;
@@ -130,4 +130,141 @@ export function formatComparisonHistoryLabel(
       : '';
   const source = record.source === 'manual' ? 'Manual' : 'Auto';
   return `${source}${partner}${rev}`;
+}
+
+export type ComparisonExplorerScope = 'capture' | 'series';
+
+export type ComparisonExplorerEntry = {
+  /** `${afterCaptureId}:${comparisonId}` */
+  id: string;
+  afterCaptureId: string;
+  beforeCaptureId: string;
+  record: CheckpointComparisonRecord;
+  afterCheckpoint?: Checkpoint;
+  beforeCheckpoint?: Checkpoint;
+  completedAtMs: number;
+};
+
+export function timestampToMs(value: unknown): number {
+  if (value == null) return 0;
+  if (typeof (value as { toDate?: () => Date }).toDate === 'function') {
+    return (value as { toDate: () => Date }).toDate().getTime();
+  }
+  if (typeof (value as { seconds?: number }).seconds === 'number') {
+    return (value as { seconds: number }).seconds * 1000;
+  }
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+  return 0;
+}
+
+export function formatMatchReasonLabel(
+  reason?: VisualDiffAnalysis['matchReason']
+): string | null {
+  switch (reason) {
+    case 'series_previous':
+      return 'Previous in series';
+    case 'series_baseline':
+      return 'Vs baseline';
+    case 'same_location':
+      return 'Same location';
+    case 'same_detected_asset':
+      return 'Same detected area';
+    case 'manual':
+      return 'Manual compare';
+    default:
+      return null;
+  }
+}
+
+export function getSeriesCapturesForCheckpoint(
+  focus: Checkpoint,
+  allCheckpoints: Checkpoint[]
+): Checkpoint[] {
+  if (!focus.seriesId) {
+    return [focus];
+  }
+  return allCheckpoints
+    .filter((c) => c.seriesId === focus.seriesId)
+    .sort((a, b) => (a.revisionNumber ?? 0) - (b.revisionNumber ?? 0));
+}
+
+export function buildComparisonExplorerEntries(
+  captures: Checkpoint[],
+  recordsByCaptureId: Map<string, CheckpointComparisonRecord[]>,
+  allCheckpoints: Checkpoint[]
+): ComparisonExplorerEntry[] {
+  const byId = new Map(allCheckpoints.map((c) => [c.id, c]));
+  const entries: ComparisonExplorerEntry[] = [];
+
+  for (const capture of captures) {
+    const records = recordsByCaptureId.get(capture.id) ?? [];
+    for (const record of records) {
+      const beforeId = record.comparedWithCheckpointId;
+      if (!beforeId) continue;
+      entries.push({
+        id: `${capture.id}:${record.id}`,
+        afterCaptureId: capture.id,
+        beforeCaptureId: beforeId,
+        record,
+        afterCheckpoint: byId.get(capture.id) ?? capture,
+        beforeCheckpoint: byId.get(beforeId),
+        completedAtMs: timestampToMs(record.completedAt),
+      });
+    }
+  }
+
+  return entries.sort((a, b) => b.completedAtMs - a.completedAtMs);
+}
+
+/** Load comparison history for one or all captures in a series. */
+export async function fetchComparisonExplorerEntries(
+  db: Firestore,
+  userId: string,
+  propertyId: string,
+  focusCheckpoint: Checkpoint,
+  allCheckpoints: Checkpoint[],
+  scope: ComparisonExplorerScope
+): Promise<ComparisonExplorerEntry[]> {
+  const captures =
+    scope === 'series'
+      ? getSeriesCapturesForCheckpoint(focusCheckpoint, allCheckpoints)
+      : [focusCheckpoint];
+
+  const recordsByCaptureId = new Map<string, CheckpointComparisonRecord[]>();
+
+  await Promise.all(
+    captures.map(async (capture) => {
+      const fetched = await fetchCheckpointComparisons(
+        db,
+        userId,
+        propertyId,
+        capture.id
+      );
+      recordsByCaptureId.set(
+        capture.id,
+        mergeComparisonHistory(fetched, capture.visualDiff)
+      );
+    })
+  );
+
+  return buildComparisonExplorerEntries(captures, recordsByCaptureId, allCheckpoints);
+}
+
+export function formatExplorerEntryTitle(
+  entry: ComparisonExplorerEntry,
+  latestVisualDiffId?: string
+): string {
+  const before = entry.beforeCheckpoint;
+  const after = entry.afterCheckpoint;
+  const beforeRev =
+    before?.revisionNumber != null ? `v${before.revisionNumber}` : before?.name ?? 'Before';
+  const afterRev =
+    after?.revisionNumber != null ? `v${after.revisionNumber}` : after?.name ?? 'After';
+  const latest =
+    entry.record.id === latestVisualDiffId || entry.record.id === after?.visualDiff?.id
+      ? ' · Latest'
+      : '';
+  return `${beforeRev} → ${afterRev}${latest}`;
 }

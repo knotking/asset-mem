@@ -372,3 +372,4 @@ These defaults are **locked for v1** unless explicitly revisited before implemen
 | 2026-06-14 | P1: grouped timeline (web accordion + mapp sections), revision badges, create hints, compare with previous in detail |
 | 2026-06-14 | P2: metrics v3 (latest per series), agent collapse to latest per series, report snapshot schema v2 + series fields, `baselineCaptureId` on series |
 | 2026-06-14 | P3: append-only `checkpoints/{id}/comparisons/` history, denormalized `visualDiff`, backfill script, history UI in checkpoint detail |
+| 2026-06-14 | P3+: full comparison history explorer (series-scoped timeline, in-explorer diff detail with slider/regions) on web + mapp |
