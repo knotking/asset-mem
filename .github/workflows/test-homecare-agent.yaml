@@ -47,3 +47,6 @@ jobs:
         env:
           # Opt-in live YouTube / SerpAPI tests stay skipped in CI.
           RUN_EXTERNAL_DIY_SEARCH_TESTS: ""
+
+      - name: Run routing eval (baseline gate)
+        run: make routing-eval-ci

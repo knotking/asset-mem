@@ -104,6 +104,10 @@ routing-eval: ## Single-loop routing eval (deterministic; ARGS="--filter weblog"
 	$(call print_header,Running Routing Eval)
 	uv run python -m property_agent.evals.routing.run_routing_eval $(ARGS)
 
+routing-eval-ci: ## CI routing eval with baseline gate (Phase 1)
+	$(call print_header,Running Routing Eval CI)
+	uv run python -m property_agent.evals.routing.run_routing_eval --baseline-check
+
 weblog-extract: ## Draft routing/conformance cases from adk web stdout logs (ARGS="web-log*")
 	$(call print_header,Extracting Weblog Cases)
 	uv run python -m property_agent.evals.routing.extract_weblog_cases $(ARGS)

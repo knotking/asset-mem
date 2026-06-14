@@ -29,15 +29,19 @@ Review draft YAML under `evals/routing/drafts/`, merge into `single_loop/cases.y
 ## Routing eval (`evals/routing/single_loop/`)
 
 Replays `single_loop/cases.yaml` through deterministic single-loop routing
-(no separate routing LLM). Not run in CI; schema validated by `tests/test_routing_eval_cases.py`.
+(no separate routing LLM). **CI-gated** via `make routing-eval-ci` (baseline
+`single_loop/baselines/baseline.json`). Schema validated by
+`tests/test_routing_eval_cases.py`.
 
 ```bash
 make routing-eval
+make routing-eval-ci   # CI: run all cases + --baseline-check
 make routing-eval ARGS="--filter weblog_session_1"
 make routing-eval ARGS="--out property_agent/evals/routing/single_loop/baselines/$(date +%F).json"
 ```
 
-Latest baseline: `single_loop/baselines/2026-06-11.json` (33/33 deterministic routing cases).
+Canonical CI baseline: `single_loop/baselines/baseline.json` (33/33 cases).
+Dated snapshot: `single_loop/baselines/2026-06-11.json`.
 Weblog cases (19) regenerated from `web-log-session-1` … `web-log-session-7` via `make weblog-extract`.
 Full-turn A/B: `single_loop/baselines/weblog-ab-2026-06-11.json` (33 turns from `web-log*` vs `web-log-legacy*`).
 Deterministic harness scores chip / accept-offer / casual / minimal-substantive only; use `make weblog-summarize` for end-to-end latency and tool choice from saved `adk web` stdout.
