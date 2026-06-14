@@ -38,6 +38,7 @@ dev = [
     "pytest-asyncio==0.26.0",
     "black==25.1.0",
     "mypy>=2.1.0",
+    "jsonschema>=4.25.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -51,6 +52,8 @@ agent-framework = { path = "../../agent_framework", editable = true }
 pythonpath = ["."]
 markers = [
     "integration_external: live YouTube / SerpAPI (opt-in via RUN_EXTERNAL_DIY_SEARCH_TESTS=1)",
+    "eval_dataset: offline eval datasets (routing, trajectory, contracts)",
+    "contract: contentJson schema and deterministic rubric scoring",
 ]
 
 [build-system]

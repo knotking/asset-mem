@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://asset-mem.com/schemas/homecare/content_json_v2.schema.json",
+  "title": "HomecareCheckpointContentJsonV2",
+  "description": "Wire shape for assistant message contentJson (V2). Structured UI data lives under analysis.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["analysis"],
+  "properties": {
+    "analysis": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["title"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "analysisStatus": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["pending", "running", "completed"]
+          }
+        },
+        "checkpointSummary": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "triageResult": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "coverageResult": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "diyResults": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "serviceResults": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "costEstimationResults": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "synthesis": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

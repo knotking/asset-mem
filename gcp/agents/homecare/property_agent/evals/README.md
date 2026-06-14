@@ -9,7 +9,8 @@ ADK web-recorded `*.evalset.json` golden files and the `make test-eval*` pytest 
 | Goal | Command |
 |------|---------|
 | Fast regression (CI) | `make test` from `gcp/agents/homecare` |
-| Routing eval (single-loop) | `make routing-eval` (see `evals/routing/single_loop/cases.yaml`) |
+| Routing eval (single-loop) | `make routing-eval` / `make routing-eval-ci` |
+| Contract scoring (schema + rubric) | `make contract-check` |
 | Full-turn A/B from web logs | `make weblog-summarize ARGS="--out property_agent/evals/routing/single_loop/baselines/weblog-ab-$(date +%F).json"` |
 | Manual QA | `uv run adk web` → select `property_agent`, exercise flows on staging |
 | Replay fixtures | `make conformance-record` / `make conformance-test` (see `property_agent/conformance/`) |
