@@ -45,13 +45,13 @@ on:
         required: false
         default: false
         type: boolean
-      deploy_webapp:
-        description: "Frontend — Firebase App Hosting webapp"
+      deploy_report_generation:
+        description: "Workers — report generation Cloud Function"
         required: false
         default: false
         type: boolean
-      deploy_mapp_build:
-        description: "Frontend — EAS native build (platform=all; run deploy-mapp-build.yaml alone for ios/android)"
+      deploy_webapp:
+        description: "Frontend — Firebase App Hosting webapp"
         required: false
         default: false
         type: boolean
@@ -86,8 +86,8 @@ jobs:
           FLAG_CP_METRICS: ${{ github.event.inputs.deploy_checkpoint_metrics }}
           FLAG_DOC_ANALYSIS: ${{ github.event.inputs.deploy_document_analysis }}
           FLAG_USER_DOCS: ${{ github.event.inputs.deploy_pubsub_user_docs }}
+          FLAG_REPORT_GENERATION: ${{ github.event.inputs.deploy_report_generation }}
           FLAG_WEBAPP: ${{ github.event.inputs.deploy_webapp }}
-          FLAG_MAPP_BUILD: ${{ github.event.inputs.deploy_mapp_build }}
           FLAG_MAPP_UPDATE: ${{ github.event.inputs.deploy_mapp_update }}
         with:
           script: |
@@ -145,20 +145,20 @@ jobs:
                 inputs: { environment: env },
               },
               {
+                key: 'report-generation',
+                group: 'Workers',
+                enabled: flag('FLAG_REPORT_GENERATION'),
+                id: 'deploy-report-generation.yaml',
+                label: 'Report Generation',
+                inputs: { environment: env },
+              },
+              {
                 key: 'webapp',
                 group: 'Frontend',
                 enabled: flag('FLAG_WEBAPP'),
                 id: 'deploy-webapp-apphosting.yaml',
                 label: 'Webapp App Hosting',
                 inputs: { environment: env },
-              },
-              {
-                key: 'mapp-build',
-                group: 'Frontend',
-                enabled: flag('FLAG_MAPP_BUILD'),
-                id: 'deploy-mapp-build.yaml',
-                label: 'Mapp EAS Build',
-                inputs: { environment: env, platform: 'all' },
               },
               {
                 key: 'mapp-update',
