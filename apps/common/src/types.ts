@@ -669,6 +669,8 @@ export type PropertyCheckpointIssueRow = {
   checkpointId: string;
   checkpointName: string;
   createdAt: string;
+  seriesId?: string;
+  revisionNumber?: number;
 };
 
 // Property-level checkpoint analytics (written by backend metrics worker)
@@ -681,17 +683,24 @@ export type PropertyCheckpointMetrics = {
     checkpoints_considered: number;
     checkpoints_with_score?: number;
     trend_points: number;
+    series_count?: number;
   };
   overall?: {
     headline?: {
       value: number | null;
-      source: "weighted_mean" | "latest_checkpoint" | null;
+      source: "weighted_mean" | "latest_checkpoint" | "latest_per_series" | null;
       latest_checkpoint_id: string | null;
       latest_checkpoint_score: number | null;
     } | null;
     /** @deprecated v1; use headline.value */
     latest_score?: number | null;
-    trend: Array<{ t: string; score: number; checkpointId?: string }>;
+    trend: Array<{
+      t: string;
+      score: number;
+      checkpointId?: string;
+      seriesId?: string;
+      revisionNumber?: number;
+    }>;
   };
   issues?: {
     total_by_severity: {
@@ -743,6 +752,8 @@ export type PropertyReportTemplate = {
 
 export type PropertyReportCheckpointSlice = {
   checkpointId: string;
+  seriesId?: string;
+  revisionNumber?: number;
   name: string;
   location?: string;
   capturedAt?: string;
@@ -752,7 +763,7 @@ export type PropertyReportCheckpointSlice = {
 };
 
 export type PropertyReportContentSnapshot = {
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
   property: {
     id: string;
     address?: string;
@@ -779,6 +790,8 @@ export type PropertyReportContentSnapshot = {
 
 export type ReportPreviewCheckpoint = {
   checkpointId: string;
+  seriesId?: string;
+  revisionNumber?: number;
   name: string;
   location?: string;
   analysisStatus?: string;

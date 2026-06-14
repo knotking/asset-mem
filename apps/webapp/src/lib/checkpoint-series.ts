@@ -222,6 +222,7 @@ export async function createCheckpointWithSeries(
         latestCaptureId: checkpointRef.id,
         captureCount: revisionNumber,
         updatedAt: serverTimestamp(),
+        ...(captureKind === "baseline" ? { baselineCaptureId: checkpointRef.id } : {}),
       });
     } else {
       revisionNumber = 1;
@@ -243,6 +244,7 @@ export async function createCheckpointWithSeries(
         updatedAt: serverTimestamp(),
         latestCaptureId: checkpointRef.id,
         captureCount: 1,
+        baselineCaptureId: checkpointRef.id,
       });
     }
 

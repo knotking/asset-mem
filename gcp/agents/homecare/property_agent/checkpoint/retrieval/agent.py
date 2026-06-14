@@ -27,6 +27,9 @@ from property_agent.checkpoint.constants import (
     CHECKPOINT_LOCATION_META_STATE_KEY,
     CHECKPOINT_VECTOR_SIMILARITY_MIN,
 )
+from property_agent.checkpoint.retrieval.series_retrieval import (
+    maybe_collapse_to_latest_per_series,
+)
 from property_agent.checkpoint.retrieval.effective_query import (
     resolve_effective_checkpoint_query,
 )
@@ -558,6 +561,16 @@ def ask_checkpoints_retrieval(
         logger.debug(
             "checkpoint_retrieval: formatting checkpoint_count=%d",
             len(checkpoints),
+        )
+        checkpoints = maybe_collapse_to_latest_per_series(
+            checkpoints,
+            user_query or "",
+            mode=ck_mode,
+        )
+        logger.debug(
+            "checkpoint_retrieval: after series collapse checkpoint_count=%d mode=%s",
+            len(checkpoints),
+            ck_mode,
         )
         t_fmt = time.monotonic()
         formatted_results = format_raw_checkpoints(checkpoints)

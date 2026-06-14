@@ -24,7 +24,7 @@ class _FakeTimestamp:
 
 def test_compute_metrics_handles_empty():
     metrics = compute_property_metrics_from_checkpoints([])
-    assert metrics["version"] == 2
+    assert metrics["version"] == 3
     assert metrics["status"] == "no_checkpoints"
     assert metrics["window"]["checkpoints_considered"] == 0
     assert metrics["overall"]["headline"] is None
@@ -93,7 +93,7 @@ def test_compute_metrics_builds_headline_and_trend():
     assert metrics["status"] == "ready"
     assert metrics["window"]["checkpoints_with_score"] == 2
     assert metrics["overall"]["headline"]["value"] == 92.5
-    assert metrics["overall"]["headline"]["source"] == "weighted_mean"
+    assert metrics["overall"]["headline"]["source"] == "latest_per_series"
     assert [p["score"] for p in metrics["overall"]["trend"]] == [95.0, 90.0]
     assert metrics["overall"]["latest_score"] == 90.0
 
@@ -104,12 +104,14 @@ def test_compute_metrics_deterioration_rate_positive_when_score_decreases():
     checkpoints = [
         {
             "id": "c1",
+            "location": "Kitchen",
             "createdAt": t1,
             "analysisStatus": "completed",
             "aiAnalysis": {"condition_scores": {"overall": 100}},
         },
         {
             "id": "c2",
+            "location": "Garage",
             "createdAt": t2,
             "analysisStatus": "completed",
             "aiAnalysis": {"condition_scores": {"overall": 90}},
@@ -183,7 +185,7 @@ def test_apply_incremental_appends_second_checkpoint():
 
 def test_should_use_full_aggregation_when_window_full():
     existing = {
-        "version": 2,
+        "version": 3,
         "window": {"checkpoints_considered": 60, "last_applied_checkpoint_id": "c60"},
     }
     assert should_use_full_aggregation(existing, {"id": "c61"}) is True
@@ -191,7 +193,49 @@ def test_should_use_full_aggregation_when_window_full():
 
 def test_should_use_full_aggregation_on_reanalysis_same_id():
     existing = {
-        "version": 2,
+        "version": 3,
         "window": {"checkpoints_considered": 2, "last_applied_checkpoint_id": "c1"},
     }
     assert should_use_full_aggregation(existing, {"id": "c1"}) is True
+
+
+def test_compute_metrics_collapses_to_latest_per_series():
+    t1 = _FakeTimestamp(datetime(2025, 1, 1, tzinfo=timezone.utc))
+    t2 = _FakeTimestamp(datetime(2025, 1, 2, tzinfo=timezone.utc))
+    checkpoints = [
+        {
+            "id": "kitchen-v1",
+            "seriesId": "series_kitchen",
+            "revisionNumber": 1,
+            "isLatestInSeries": False,
+            "createdAt": t1,
+            "analysisStatus": "completed",
+            "aiAnalysis": {"condition_scores": {"overall": 50}},
+        },
+        {
+            "id": "kitchen-v2",
+            "seriesId": "series_kitchen",
+            "revisionNumber": 2,
+            "isLatestInSeries": True,
+            "createdAt": t2,
+            "analysisStatus": "completed",
+            "aiAnalysis": {"condition_scores": {"overall": 90}},
+        },
+    ]
+    metrics = compute_property_metrics_from_checkpoints(checkpoints)
+    assert metrics["window"]["series_count"] == 1
+    assert metrics["overall"]["headline"]["value"] == 90.0
+    assert metrics["overall"]["headline"]["latest_checkpoint_id"] == "kitchen-v2"
+    assert len(metrics["overall"]["trend"]) == 1
+    assert metrics["overall"]["trend"][0]["seriesId"] == "series_kitchen"
+    assert metrics["overall"]["trend"][0]["revisionNumber"] == 2
+
+
+def test_should_use_full_aggregation_when_series_latest_updated():
+    existing = {
+        "version": 3,
+        "window": {"checkpoints_considered": 2, "last_applied_checkpoint_id": "c1"},
+    }
+    assert should_use_full_aggregation(
+        existing, {"id": "c2", "seriesId": "series_kitchen", "isLatestInSeries": True}
+    ) is True

@@ -43,6 +43,20 @@ def _media_slice(media_list: list[Any]) -> list[dict[str, str]]:
     return out
 
 
+def _checkpoint_slice(cp: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "checkpointId": cp.get("id"),
+        "seriesId": cp.get("seriesId"),
+        "revisionNumber": cp.get("revisionNumber"),
+        "name": cp.get("name") or "Checkpoint",
+        "location": cp.get("location"),
+        "capturedAt": _iso_timestamp(cp.get("capturedAt") or cp.get("createdAt")),
+        "media": _media_slice(cp.get("media") or []),
+        "aiAnalysis": cp.get("aiAnalysis"),
+        "visualDiff": cp.get("visualDiff"),
+    }
+
+
 def build_snapshot_report_content(
     *,
     property_doc: dict[str, Any],
@@ -51,19 +65,7 @@ def build_snapshot_report_content(
     purpose: str,
     snapshot_range: Optional[dict[str, str]],
 ) -> tuple[dict[str, Any], str]:
-    slices = []
-    for cp in checkpoints:
-        slices.append(
-            {
-                "checkpointId": cp.get("id"),
-                "name": cp.get("name") or "Checkpoint",
-                "location": cp.get("location"),
-                "capturedAt": _iso_timestamp(cp.get("capturedAt") or cp.get("createdAt")),
-                "media": _media_slice(cp.get("media") or []),
-                "aiAnalysis": cp.get("aiAnalysis"),
-                "visualDiff": cp.get("visualDiff"),
-            }
-        )
+    slices = [_checkpoint_slice(cp) for cp in checkpoints]
 
     date_config: dict[str, Any] = {}
     if snapshot_range:
@@ -73,7 +75,7 @@ def build_snapshot_report_content(
         }
 
     content_snapshot: dict[str, Any] = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "property": {
             "id": property_id,
             "address": property_doc.get("address"),
@@ -119,18 +121,6 @@ def build_snapshot_report_content(
 
     chat_markdown = "\n".join(lines).strip()
     return content_snapshot, chat_markdown
-
-
-def _checkpoint_slice(cp: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "checkpointId": cp.get("id"),
-        "name": cp.get("name") or "Checkpoint",
-        "location": cp.get("location"),
-        "capturedAt": _iso_timestamp(cp.get("capturedAt") or cp.get("createdAt")),
-        "media": _media_slice(cp.get("media") or []),
-        "aiAnalysis": cp.get("aiAnalysis"),
-        "visualDiff": cp.get("visualDiff"),
-    }
 
 
 def build_comparison_report_content(
@@ -188,7 +178,7 @@ def build_comparison_report_content(
         }
 
     content_snapshot: dict[str, Any] = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "property": {
             "id": property_id,
             "address": property_doc.get("address"),

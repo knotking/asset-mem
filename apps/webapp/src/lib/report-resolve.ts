@@ -61,10 +61,19 @@ function displayLocation(cp: Checkpoint, normalizedLoc: string): string {
   return raw || normalizedLoc;
 }
 
+function seriesGroupingKey(cp: Checkpoint): string {
+  if (cp.seriesId) {
+    return cp.seriesId;
+  }
+  return normalizeReportLocation(cp.location);
+}
+
 function toPreviewCheckpoint(cp: Checkpoint): ReportPreviewCheckpoint {
   const captured = checkpointEffectiveDate(cp);
   return {
     checkpointId: cp.id,
+    seriesId: cp.seriesId,
+    revisionNumber: cp.revisionNumber,
     name: cp.name || 'Checkpoint',
     location: cp.location,
     analysisStatus: cp.analysisStatus,
@@ -90,9 +99,19 @@ export function pickLatestCheckpointPerLocation(
 ): Map<string, Checkpoint> {
   const byLocation = new Map<string, Checkpoint>();
   for (const cp of checkpoints) {
-    const loc = normalizeReportLocation(cp.location);
+    const loc = seriesGroupingKey(cp);
     const existing = byLocation.get(loc);
     if (!existing) {
+      byLocation.set(loc, cp);
+      continue;
+    }
+    const existingRev = existing.revisionNumber ?? 0;
+    const cpRev = cp.revisionNumber ?? 0;
+    if (cpRev > existingRev) {
+      byLocation.set(loc, cp);
+      continue;
+    }
+    if (cpRev === existingRev && cp.isLatestInSeries && !existing.isLatestInSeries) {
       byLocation.set(loc, cp);
       continue;
     }
@@ -181,7 +200,7 @@ export function resolveRentalComparisonFromCheckpoints(
 
   const byLocation = new Map<string, Checkpoint[]>();
   for (const cp of inRange) {
-    const loc = normalizeReportLocation(cp.location);
+    const loc = seriesGroupingKey(cp);
     const list = byLocation.get(loc) ?? [];
     list.push(cp);
     byLocation.set(loc, list);

@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
+from datetime import datetime, timezone
 
 from google.cloud import firestore
 from google.cloud.firestore_v1 import FieldFilter
@@ -166,6 +167,11 @@ def assign_capture_to_series(
                     "latestCaptureId": checkpoint_id,
                     "captureCount": revision_number,
                     "updatedAt": now,
+                    **(
+                        {"baselineCaptureId": checkpoint_id}
+                        if capture_kind == "baseline"
+                        else {}
+                    ),
                 },
             )
         else:
@@ -191,6 +197,7 @@ def assign_capture_to_series(
                     "updatedAt": now,
                     "latestCaptureId": checkpoint_id,
                     "captureCount": 1,
+                    "baselineCaptureId": checkpoint_id,
                 },
             )
 
@@ -268,3 +275,57 @@ def recompute_series_after_capture_delete(
         )
     else:
         series_ref.delete()
+
+
+def series_key_for_checkpoint(checkpoint: Dict[str, Any]) -> str:
+    series_id = checkpoint.get("seriesId")
+    if series_id:
+        return str(series_id)
+    location_key = normalize_series_location(
+        checkpoint.get("location") or checkpoint.get("name")
+    )
+    return f"legacy-loc:{location_key}"
+
+
+def _capture_sort_datetime(checkpoint: Dict[str, Any]) -> Optional[datetime]:
+    created_at = checkpoint.get("createdAt")
+    if hasattr(created_at, "to_datetime"):
+        dt = created_at.to_datetime()
+    elif hasattr(created_at, "seconds"):
+        dt = datetime.fromtimestamp(created_at.seconds, tz=timezone.utc)
+    elif isinstance(created_at, datetime):
+        dt = created_at if created_at.tzinfo else created_at.replace(tzinfo=timezone.utc)
+    else:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def _capture_is_newer_than(current: Dict[str, Any], other: Dict[str, Any]) -> bool:
+    if current.get("isLatestInSeries") and not other.get("isLatestInSeries"):
+        return True
+    if other.get("isLatestInSeries") and not current.get("isLatestInSeries"):
+        return False
+    rev_current = int(current.get("revisionNumber") or 0)
+    rev_other = int(other.get("revisionNumber") or 0)
+    if rev_current != rev_other:
+        return rev_current > rev_other
+    dt_current = _capture_sort_datetime(current)
+    dt_other = _capture_sort_datetime(other)
+    if dt_current and dt_other:
+        return dt_current > dt_other
+    return False
+
+
+def pick_latest_captures_per_series(
+    checkpoints: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Keep the newest capture per series (or legacy location bucket)."""
+    latest_by_key: Dict[str, Dict[str, Any]] = {}
+    for checkpoint in checkpoints:
+        key = series_key_for_checkpoint(checkpoint)
+        existing = latest_by_key.get(key)
+        if existing is None or _capture_is_newer_than(checkpoint, existing):
+            latest_by_key[key] = checkpoint
+    return list(latest_by_key.values())

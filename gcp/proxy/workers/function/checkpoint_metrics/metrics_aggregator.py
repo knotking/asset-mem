@@ -4,9 +4,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from firebase_admin import firestore
 
+from common.checkpoint.series import pick_latest_captures_per_series, series_key_for_checkpoint
+
 logger = logging.getLogger(__name__)
 
-METRICS_VERSION = 2
+METRICS_VERSION = 3
 MAX_CHECKPOINTS = 60
 TREND_POINTS = 12
 ISSUES_RECENT_MAX = 50
@@ -153,6 +155,8 @@ def _issue_rows_from_checkpoint(c: Dict[str, Any]) -> List[Dict[str, Any]]:
                     "checkpointId": c.get("id", ""),
                     "checkpointName": name,
                     "createdAt": created_iso,
+                    "seriesId": c.get("seriesId"),
+                    "revisionNumber": c.get("revisionNumber"),
                 }
             )
         elif isinstance(issue, dict):
@@ -169,6 +173,8 @@ def _issue_rows_from_checkpoint(c: Dict[str, Any]) -> List[Dict[str, Any]]:
                     "checkpointId": c.get("id", ""),
                     "checkpointName": name,
                     "createdAt": created_iso,
+                    "seriesId": c.get("seriesId"),
+                    "revisionNumber": c.get("revisionNumber"),
                 }
             )
     return rows
@@ -199,6 +205,7 @@ def compute_property_metrics_from_checkpoints(
 
     ordered = sorted(checkpoint_docs, key=_sort_key)
     completed = [c for c in ordered if (c.get("analysisStatus") == "completed" or c.get("aiAnalysis"))]
+    series_latest = pick_latest_captures_per_series(completed)
 
     issues_total = {"critical": 0, "major": 0, "moderate": 0, "minor": 0}
     scored_checkpoints: List[Tuple[Dict[str, Any], float, datetime]] = []
@@ -209,6 +216,8 @@ def compute_property_metrics_from_checkpoints(
         for k, v in sev_counts.items():
             issues_total[k] += int(v or 0)
 
+    for c in series_latest:
+        ai = c.get("aiAnalysis") or {}
         overall = _extract_overall_condition(ai)
         dt = _checkpoint_datetime(c.get("createdAt"))
         if overall is not None and dt is not None:
@@ -216,15 +225,18 @@ def compute_property_metrics_from_checkpoints(
 
     checkpoints_with_score = len(scored_checkpoints)
     checkpoints_considered = len(completed)
+    series_count = len(series_latest)
     status = _compute_status(checkpoints_considered, checkpoints_with_score)
 
     overall_trend: List[Dict[str, Any]] = []
-    for c, score, dt in scored_checkpoints:
+    for c, score, dt in sorted(scored_checkpoints, key=lambda item: item[2]):
         overall_trend.append(
             {
                 "t": dt.isoformat(),
                 "score": score,
                 "checkpointId": c.get("id", ""),
+                "seriesId": c.get("seriesId") or series_key_for_checkpoint(c),
+                "revisionNumber": c.get("revisionNumber"),
             }
         )
     overall_trend = overall_trend[-trend_points:]
@@ -238,7 +250,7 @@ def compute_property_metrics_from_checkpoints(
     if scored_checkpoints:
         scored_sum = sum(s for _, s, _ in scored_checkpoints)
         headline_value = scored_sum / float(len(scored_checkpoints))
-        headline_source = "weighted_mean"
+        headline_source = "latest_per_series"
         last_c, last_score, _ = scored_checkpoints[-1]
         latest_checkpoint_id = last_c.get("id")
         latest_checkpoint_score = last_score
@@ -284,6 +296,7 @@ def compute_property_metrics_from_checkpoints(
             "trend_points": len(overall_trend),
             "scored_sum": scored_sum,
             "last_applied_checkpoint_id": latest_checkpoint_id,
+            "series_count": series_count,
         },
         "overall": {
             "headline": headline,
@@ -318,6 +331,8 @@ def should_use_full_aggregation(
     if window.get("last_applied_checkpoint_id") == checkpoint.get("id"):
         return True
     if window.get("checkpoints_considered", 0) > 0 and window.get("scored_sum") is None:
+        return True
+    if checkpoint.get("seriesId") and checkpoint.get("isLatestInSeries") is not False:
         return True
     return False
 
@@ -413,7 +428,7 @@ def apply_incremental_checkpoint_to_metrics(
         latest_checkpoint_score = overall if overall is not None else None
         headline = {
             "value": headline_value,
-            "source": "weighted_mean",
+            "source": "latest_per_series",
             "latest_checkpoint_id": checkpoint.get("id"),
             "latest_checkpoint_score": latest_checkpoint_score,
         }
