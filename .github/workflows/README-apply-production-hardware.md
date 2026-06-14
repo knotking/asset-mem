@@ -36,7 +36,7 @@ Dispatches (in order), each with `traffic_tier`:
 
 1. `deploy-homecare-agent.yaml` (`action: update`)
 2. `deploy-homecare-agent-proxy.yaml`
-3. Worker deploy workflows (checkpoint-analysis, document-analysis, metrics, user-docs)
+3. Worker deploy workflows (checkpoint-analysis, document-analysis, metrics, user-docs, report-generation)
 4. `deploy-webapp-apphosting.yaml` (also runs App Hosting Cloud Run scaling via gcloud)
 
 Requires `actions: write` on `GITHUB_TOKEN`.

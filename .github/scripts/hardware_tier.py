@@ -24,6 +24,7 @@ WORKER_KEYS = {
     "pubsub-document-analysis": "WORKER_DOCUMENT_ANALYSIS",
     "pubsub-checkpoint-metrics": "WORKER_CHECKPOINT_METRICS",
     "pubsub-to-user-docs": "WORKER_USER_DOCS",
+    "pubsub-report-generation": "WORKER_REPORT_GENERATION",
 }
 
 
