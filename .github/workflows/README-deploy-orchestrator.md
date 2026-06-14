@@ -39,11 +39,11 @@ GitHub allows at most **10** `workflow_dispatch` inputs, so the UI uses checkbox
 | deploy_checkpoint_metrics | Workers |
 | deploy_document_analysis | Workers |
 | deploy_pubsub_user_docs | Workers |
+| deploy_report_generation | Workers |
 | deploy_webapp | Frontend |
-| deploy_mapp_build | Frontend |
 | deploy_mapp_update | Frontend |
 
-**Defaults when dispatched from the orchestrator:** agent `action=update`, mapp build `platform=all`. For `create` or `ios`/`android`, run [deploy-homecare-agent.yaml](deploy-homecare-agent.yaml) or [deploy-mapp-build.yaml](deploy-mapp-build.yaml) directly.
+**Defaults when dispatched from the orchestrator:** agent `action=update`. For agent `create`, EAS native builds (`ios`/`android`), run [deploy-homecare-agent.yaml](deploy-homecare-agent.yaml) or [deploy-mapp-build.yaml](deploy-mapp-build.yaml) directly.
 
 ## Permissions
 

@@ -35,7 +35,7 @@ gh workflow run deploy-homecare-agent-proxy.yaml -f environment=staging
 
 ## Orchestrator
 
-`deploy-orchestrator.yaml` is at the 10-input limit; run this workflow separately when shipping report changes.
+Included as **deploy_report_generation** in [deploy-orchestrator.yaml](deploy-orchestrator.yaml) (Workers group). Enable it alongside proxy deploy when shipping report PDF changes.
 
 ## Troubleshooting
 
