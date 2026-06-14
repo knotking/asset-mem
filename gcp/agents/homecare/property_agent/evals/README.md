@@ -80,3 +80,28 @@ make conformance-guard ARGS="--filter report"
 ADK multi-turn specs: `property_agent/conformance/` (15 cases). Per-turn expectations in `expected_messages.yaml`; rubrics in `evals/rubrics/checkpoint_response.json`.
 
 **Web + replay:** `make conformance-web` then `make conformance-test` (uses `replay_validators.py` to ignore lifecycle UUID/timing noise). **Record:** `make conformance-web-record` then `make conformance-record`.
+
+## Phase 4 observability (`property_agent/evals/observability/`)
+
+Aggregates Phases 1–3 CI baselines plus optional weblog latency into one JSON report. No Vertex calls.
+
+```bash
+make eval-dashboard
+make eval-dashboard ARGS="--out property_agent/evals/observability/baselines/dashboard.json"
+make export-turn-traces ARGS="web-log-session-1 --out property_agent/evals/observability/baselines/traces.json"
+```
+
+Canonical dashboard: `observability/baselines/dashboard.json` (routing/trajectory/guard pass rates, tag breakdown, p95 `executor_first_model_ms` from weblog A/B).
+
+## Phase 4 prose judge (`property_agent/evals/judge/`)
+
+Scores `content_markdown_prose` from `evals/rubrics/checkpoint_response.json`. **Dry-run** validates the dataset in CI; **live** calls Vertex (weekly / staging only).
+
+```bash
+make prose-judge
+make prose-judge-ci          # dry-run baseline gate
+make prose-judge-live        # RUN_PROSE_JUDGE_EVAL=1 + Vertex
+make prose-judge ARGS="--filter greeting"
+```
+
+Dataset: `judge/prose_cases.yaml` (10 samples: greetings, follow-ups, docs, negatives). Manual workflow: `.github/workflows/weekly-homecare-prose-judge.yaml` (Actions → Run workflow).

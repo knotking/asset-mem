@@ -153,6 +153,26 @@ weblog-summarize: ## Full-turn A/B metrics from adk web logs (ARGS="web-log* --o
 	$(call print_header,Summarizing Weblog A/B)
 	uv run python -m property_agent.evals.routing.summarize_weblog_ab $(ARGS)
 
+eval-dashboard: ## Phase 4: aggregate CI baselines + weblog latency (ARGS="--out ...")
+	$(call print_header,Building Eval Dashboard)
+	uv run python -m property_agent.evals.observability.build_eval_dashboard $(ARGS)
+
+export-turn-traces: ## Phase 4: export turn traces from adk web logs (ARGS="web-log* --out ...")
+	$(call print_header,Exporting Turn Traces)
+	uv run python -m property_agent.evals.observability.export_turn_traces $(ARGS)
+
+prose-judge: ## Phase 4 prose judge dry-run (no Vertex; ARGS="--filter greeting")
+	$(call print_header,Running Prose Judge Eval — Dry Run)
+	uv run python -m property_agent.evals.judge.run_prose_judge_eval $(ARGS)
+
+prose-judge-live: ## Phase 4 live LLM-judge (Vertex; RUN_PROSE_JUDGE_EVAL=1)
+	$(call print_header,Running Prose Judge Eval — Live)
+	RUN_PROSE_JUDGE_EVAL=1 uv run python -m property_agent.evals.judge.run_prose_judge_eval --live $(ARGS)
+
+prose-judge-ci: ## Phase 4 dry-run baseline gate (no Vertex)
+	$(call print_header,Running Prose Judge Eval CI)
+	uv run python -m property_agent.evals.judge.run_prose_judge_eval --baseline-check
+
 deploy: ## Deploy the agent to Vertex AI
 	$(call print_header,Deploying Agent)
 	@if [ ! -f .env ]; then \

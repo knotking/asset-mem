@@ -12,7 +12,7 @@ HomeApp’s homecare agent has **strong L0/L1 coverage** (~70 pytest modules, CI
 
 The main gap versus production-grade agent testing is now **L4**: qualitative eval and nightly replay with committed recordings are still manual. Phases 1–3 deterministic gates (routing, contract, trajectory, conformance guard) run in CI.
 
-**Next:** commit ADK replay recordings, enable nightly pass-rate gate (Phase 3 remainder), Phase 4 observability.
+**Next:** enable nightly conformance pass-rate gate; run weekly live prose judge on staging; LangSmith trace export (Phase 4 remainder).
 
 ---
 
@@ -208,16 +208,19 @@ Reuse `extract_weblog_cases.py` and `summarize_weblog_ab.py` to seed trajectory 
 | Grow conformance catalog | 15 cases: greeting, inventory, branches, multi-turn follow-up, user_docs, report, accept-offer | **Done** |
 | Guard eval harness | `guard_cases.yaml` + `make conformance-guard-ci` (7 deterministic negatives) | **Done** |
 | Spec + rubric CI | All 15 `expected_messages.yaml` in `make contract-check` | **Done** |
-| Nightly conformance job | `nightly-homecare-conformance.yaml` → `make conformance-test` (staging, alert-only) | **Done** (scaffold) |
+| Nightly conformance job | `nightly-homecare-conformance.yaml` → `make conformance-test` (manual dispatch, alert-only) | **Done** (scaffold) |
 | Check in recordings | Commit `generated-recordings.yaml` per spec via `make conformance-record` | Pending |
 
 ### Phase 4 — Observability-linked eval (optional, 4+ weeks)
 
-- Export turn traces (tool calls, latency, token usage) to a dataset store.
-- Weekly LLM-judge on prose criteria from rubric (`content_markdown_prose`) — sample ~20 turns; human review on failures.
-- Dashboard: pass rate by tag, p95 `executor_first_model_ms`, tool accuracy.
-
-LangSmith is already a transitive dependency; adopt for L4 without changing CI semantics if desired.
+| Action | Detail | Status |
+|--------|--------|--------|
+| Eval dashboard | `make eval-dashboard` aggregates routing/trajectory/guard baselines + weblog p95 latency | **Done** |
+| Turn trace export | `make export-turn-traces` normalizes adk web logs to JSON traces | **Done** |
+| Prose LLM-judge | `evals/judge/` — dry-run in CI; live via `make prose-judge-live` / weekly workflow | **Done** (skeleton) |
+| Weekly workflow | `weekly-homecare-prose-judge.yaml` — live judge + dashboard (manual dispatch) | **Done** (scaffold) |
+| LangSmith dataset store | Export traces to LangSmith for L4 dashboards | Pending |
+| Human review loop | Sample failures from weekly judge for calibration | Pending |
 
 ---
 
@@ -230,7 +233,7 @@ LangSmith is already a transitive dependency; adopt for L4 without changing CI s
 | **contract** | Every PR | `make contract-check` | Yes |
 | **trajectory-eval** | Every PR | `make trajectory-eval-ci` | Yes |
 | **conformance-guard** | Every PR | `make conformance-guard-ci` | Yes |
-| **conformance-replay** | Nightly | `make conformance-test` (staging creds) | Alert only initially |
+| **conformance-replay** | Manual (`workflow_dispatch`) | `make conformance-test` (staging creds) | Alert only initially |
 | **live-external** | Weekly | `RUN_EXTERNAL_DIY_SEARCH_TESTS=1` subset | No |
 | **weblog-ab** | On demand / release | `make weblog-summarize` vs last baseline | Release gate |
 
@@ -248,6 +251,11 @@ property_agent/evals/
 │   ├── content_json_v2.schema.json
 │   └── golden_messages/
 ├── rubrics/                   # existing — wire to automated scorer
+├── observability/             # Phase 4 — dashboard + turn trace export
+│   └── baselines/dashboard.json
+├── judge/                     # Phase 4 — prose LLM-judge dataset + runner
+│   ├── prose_cases.yaml
+│   └── baselines/prose_baseline.json
 └── README.md
 
 property_agent/conformance/    # multi-turn E2E (grow to ~20)
@@ -281,7 +289,7 @@ tests/
 | **P1** | Expand conformance + guard eval | Medium | High — **done** (15 specs, `make conformance-guard-ci`) |
 | **P1** | Commit conformance recordings | Medium | High — pending `make conformance-record` |
 | **P2** | Nightly conformance replay job | Low | Medium — **done** (scaffold; alert-only) |
-| **P3** | LangSmith / LLM-judge for prose | High | Medium |
+| **P3** | LangSmith / LLM-judge for prose | High | Medium — **skeleton done** (`make prose-judge`, weekly workflow) |
 
 ---
 
@@ -295,5 +303,8 @@ tests/
 | Full-turn A/B from web logs | `make weblog-summarize ARGS="--out ..."` |
 | Manual QA | `uv run adk web` → `property_agent` on staging |
 | Replay fixtures | `make conformance-web-record` + `make conformance-record` / `make conformance-web` + `make conformance-test` |
+| Eval dashboard (Phase 4) | `make eval-dashboard` |
+| Turn trace export | `make export-turn-traces ARGS="web-log* --out ..."` |
+| Prose judge (dry / live) | `make prose-judge` / `make prose-judge-live` |
 | Draft cases from logs | `make weblog-extract ARGS="web-log*"` |
 | Live SerpAPI/YouTube (opt-in) | `RUN_EXTERNAL_DIY_SEARCH_TESTS=1 uv run pytest tests/test_diy_external_integration.py -v` |
