@@ -1,6 +1,6 @@
 # Checkpoint Versioning — Design Spec
 
-**Status:** P0 complete; P1 UI (grouped timeline, create hints, series compare entry) implemented  
+**Status:** P0–P3 complete (series, UI, metrics/agent/reports, comparison history)  
 **Audience:** Product, mobile/web, backend (analysis + metrics workers), agent/retrieval  
 **Related:** [Property Health Insights V2](./PROPERTY_HEALTH_INSIGHTS_V2.md), [Property Reports Plan](../property/PROPERTY_REPORTS_PLAN.md), [Checkpoint Feature Plan](./CHECKPOINT_FEATURE_PLAN.md)
 
@@ -329,7 +329,7 @@ These defaults are **locked for v1** unless explicitly revisited before implemen
 | **P0** | Schema + backfill + series on create (server-side) | Types, Firestore rules/indexes, backfill script, no UI change |
 | **P1** | Create “add to series” + comparison scoped to series | ✅ Grouped timeline UI, create hints, detail compare with previous |
 | **P2** | Metrics v3, agent defaults, report snapshot fields, baseline capture | ✅ Worker + agent + report builder; `baselineCaptureId` on series |
-| **P3** | Comparison history subcollection | Append-only `comparisons/`; denormalized `visualDiff` unchanged |
+| **P3** | Comparison history subcollection | ✅ Append-only `comparisons/`; denormalized `visualDiff` unchanged |
 
 ---
 
@@ -371,3 +371,4 @@ These defaults are **locked for v1** unless explicitly revisited before implemen
 | 2026-06-14 | P0: types, client create with series, worker assignment, deletion guard, indexes, backfill script |
 | 2026-06-14 | P1: grouped timeline (web accordion + mapp sections), revision badges, create hints, compare with previous in detail |
 | 2026-06-14 | P2: metrics v3 (latest per series), agent collapse to latest per series, report snapshot schema v2 + series fields, `baselineCaptureId` on series |
+| 2026-06-14 | P3: append-only `checkpoints/{id}/comparisons/` history, denormalized `visualDiff`, backfill script, history UI in checkpoint detail |

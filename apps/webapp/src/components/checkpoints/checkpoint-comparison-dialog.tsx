@@ -21,6 +21,13 @@ import { compareCheckpoints } from '@/lib/api-checkpoint';
 import { getPlanLimitFailureMessage, defaultPlanLimitFailureMessage } from '@/lib/plan-limit-errors';
 import { createLogger } from '@/lib/logger';
 import { useCheckpoint } from '@/contexts/checkpoint-context';
+import { useAuth } from '@/contexts/auth-context';
+import { useProperty } from '@/contexts/property-context';
+import { db } from '@/lib/firebase';
+import {
+  buildVisualDiffFromCompareResult,
+  persistCheckpointComparison,
+} from '@/lib/checkpoint-comparisons';
 import { Timestamp } from 'firebase/firestore';
 
 const checkpointLog = createLogger('checkpoint');
@@ -37,6 +44,8 @@ interface CheckpointComparisonDialogProps {
   onOpenChange: (open: boolean) => void;
   checkpoint1: Checkpoint;
   checkpoint2: Checkpoint;
+  /** View a historical comparison without re-running Gemini. */
+  initialVisualDiff?: VisualDiffAnalysis | null;
 }
 
 export function CheckpointComparisonDialog({
@@ -44,8 +53,11 @@ export function CheckpointComparisonDialog({
   onOpenChange,
   checkpoint1,
   checkpoint2,
+  initialVisualDiff,
 }: CheckpointComparisonDialogProps) {
   const { updateCheckpoint } = useCheckpoint();
+  const { user } = useAuth();
+  const { property } = useProperty();
   const [isComparing, setIsComparing] = useState(false);
   const [comparisonResult, setComparisonResult] = useState<VisualDiffAnalysis | null>(null);
   const [comparisonError, setComparisonError] = useState<string | null>(null);
@@ -63,12 +75,15 @@ export function CheckpointComparisonDialog({
       return;
     }
     const diff = afterCheckpoint.visualDiff;
-    if (diff?.comparedWithCheckpointId === beforeCheckpoint.id) {
-      setComparisonResult(diff);
+    if (
+      initialVisualDiff?.comparedWithCheckpointId === beforeCheckpoint.id ||
+      diff?.comparedWithCheckpointId === beforeCheckpoint.id
+    ) {
+      setComparisonResult(initialVisualDiff ?? diff ?? null);
       return;
     }
     setComparisonResult(null);
-  }, [open, afterCheckpoint.id, beforeCheckpoint.id, afterCheckpoint.visualDiff]);
+  }, [open, afterCheckpoint.id, beforeCheckpoint.id, afterCheckpoint.visualDiff, initialVisualDiff]);
 
   const handleCompare = async () => {
     const image1 = beforeCheckpoint.media?.[0];
@@ -96,27 +111,24 @@ export function CheckpointComparisonDialog({
         location: afterCheckpoint.location,
       })) as VisualDiffAnalysis & { summary?: string };
 
-      const visualDiff: VisualDiffAnalysis = {
-        id: `diff_${Date.now()}`,
-        status: 'completed',
+      const visualDiff = buildVisualDiffFromCompareResult({
+        result,
         comparedWithCheckpointId: beforeCheckpoint.id,
-        summary: result.summary ?? '',
-        semanticChanges: result.semanticChanges ?? [],
-        regions: (result.regions ?? []).map((r: VisualDiffAnalysis['regions'][0], i: number) => ({
-          id: `region_${i}`,
-          bbox: r.bbox ?? { x: 0, y: 0, width: 0, height: 0 },
-          changeType: r.changeType as 'added' | 'removed' | 'modified',
-          severity: r.severity as 'minor' | 'moderate' | 'major' | 'critical',
-          confidence: r.confidence ?? 0.5,
-          description: r.description ?? '',
-          changePercentage: 0,
-        })),
-        similarityScore: result.similarityScore ?? 0,
         matchReason: 'manual',
         completedAt: Timestamp.now(),
-      };
+      });
 
-      await updateCheckpoint(afterCheckpoint.id, { visualDiff });
+      if (user && property) {
+        await persistCheckpointComparison(db, {
+          userId: user.uid,
+          propertyId: property.id,
+          checkpointId: afterCheckpoint.id,
+          visualDiff,
+          source: 'manual',
+        });
+      } else {
+        await updateCheckpoint(afterCheckpoint.id, { visualDiff });
+      }
       setComparisonResult(visualDiff);
     } catch (error) {
       checkpointLog.error('comparison.failed', undefined, error);

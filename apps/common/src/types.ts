@@ -559,6 +559,11 @@ export type VisualDiffAnalysis = {
   completedAt: Timestamp;
 };
 
+/** Append-only comparison history on checkpoints/{captureId}/comparisons/{id}. */
+export type CheckpointComparisonRecord = VisualDiffAnalysis & {
+  source: "auto" | "manual" | "legacy";
+};
+
 export type ChangeRegion = {
   id: string;
   bbox: { x: number; y: number; width: number; height: number }; // Bounding box

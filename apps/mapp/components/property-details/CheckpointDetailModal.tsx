@@ -40,6 +40,19 @@ import {
 import { getCheckpointAnalysisFailureMessage } from '@homeapp/common/lib/document-analysis-errors';
 import { AnalysisResults } from './AnalysisResults';
 import { Separator } from '@/components/ui/separator';
+import { ComparisonHistoryList } from './ComparisonHistoryList';
+import { CheckpointComparisonModal } from './CheckpointComparisonModal';
+import { useAuth } from '@homeapp/common/contexts/auth-context';
+import { useProperty } from '@homeapp/common/contexts/property-context';
+import { useFirebase } from '@homeapp/common/contexts/firebase-context';
+import {
+  findPreviousCaptureInList,
+} from '@homeapp/common/lib/checkpoint-series-grouping';
+import {
+  comparisonRecordToVisualDiff,
+} from '@homeapp/common/lib/checkpoint-comparisons';
+import type { CheckpointComparisonRecord } from '@homeapp/common/types';
+import { ArrowRightLeft } from 'lucide-react-native';
 
 interface CheckpointDetailModalProps {
   visible: boolean;
@@ -101,9 +114,16 @@ export function CheckpointDetailModal({
 
 }: CheckpointDetailModalProps) {
   const insets = useSafeAreaInsets();
-  const { deleteCheckpoint } = useCheckpoint();
+  const { deleteCheckpoint, checkpoints } = useCheckpoint();
+  const { user } = useAuth();
+  const { property } = useProperty();
+  const { db } = useFirebase();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
   const [activeMediaIndex, setActiveMediaIndex] = React.useState(0);
+  const [isComparisonOpen, setIsComparisonOpen] = React.useState(false);
+  const [historyRecord, setHistoryRecord] = React.useState<CheckpointComparisonRecord | null>(
+    null
+  );
 
   // Reset active index when checkpoint changes
   React.useEffect(() => {
@@ -125,6 +145,11 @@ export function CheckpointDetailModal({
 
   if (!checkpoint) return null;
   const date = checkpoint.createdAt?.toDate ? checkpoint.createdAt.toDate() : new Date();
+  const previousInSeries = findPreviousCaptureInList(checkpoints, checkpoint);
+  const comparisonPartner =
+    checkpoint.visualDiff?.comparedWithCheckpointId
+      ? checkpoints.find((c) => c.id === checkpoint.visualDiff?.comparedWithCheckpointId)
+      : previousInSeries;
   
   const hasIssues = (checkpoint.aiAnalysis?.issues?.length || 0) > 0;
   const mediaList = checkpoint.media || [];
@@ -372,6 +397,43 @@ export function CheckpointDetailModal({
               </>
             )}
 
+            {(checkpoint.visualDiff || previousInSeries) && user && property && (
+              <>
+                <Separator />
+                <View className="gap-3 rounded-lg border border-border bg-card p-4">
+                  <View className="flex-row items-center gap-2">
+                    <Icon as={ArrowRightLeft} size={16} className="text-muted-foreground" />
+                    <Text className="font-semibold text-foreground">
+                      {checkpoint.visualDiff ? 'Comparison' : 'Compare with previous'}
+                    </Text>
+                  </View>
+                  {comparisonPartner ? (
+                    <Button
+                      variant="outline"
+                      onPress={() => {
+                        setHistoryRecord(null);
+                        setIsComparisonOpen(true);
+                      }}>
+                      <Text>
+                        {checkpoint.visualDiff ? 'View comparison' : 'Compare'}
+                      </Text>
+                    </Button>
+                  ) : null}
+                  <ComparisonHistoryList
+                    db={db}
+                    userId={user.uid}
+                    propertyId={property.id}
+                    checkpoint={checkpoint}
+                    checkpoints={checkpoints}
+                    onSelect={(record) => {
+                      setHistoryRecord(record);
+                      setIsComparisonOpen(true);
+                    }}
+                  />
+                </View>
+              </>
+            )}
+
             {/* Actions */}
             <View className="mt-4 flex-row gap-4">
               <Button
@@ -409,6 +471,26 @@ export function CheckpointDetailModal({
 
       {/* Portal host inside the native Modal so dialogs/menus render above the modal layer */}
       <PortalHost name="checkpoint-detail-modal" />
+
+      {comparisonPartner ? (
+        <CheckpointComparisonModal
+          visible={isComparisonOpen}
+          checkpoint1={
+            historyRecord?.comparedWithCheckpointId
+              ? checkpoints.find((c) => c.id === historyRecord.comparedWithCheckpointId) ??
+                comparisonPartner
+              : comparisonPartner
+          }
+          checkpoint2={checkpoint}
+          initialVisualDiff={
+            historyRecord ? comparisonRecordToVisualDiff(historyRecord) : undefined
+          }
+          onClose={() => {
+            setIsComparisonOpen(false);
+            setHistoryRecord(null);
+          }}
+        />
+      ) : null}
     </Modal>
   );
 }

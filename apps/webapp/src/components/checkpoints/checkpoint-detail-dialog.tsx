@@ -33,10 +33,13 @@ import { checkpointDeleteConfirm } from '@/lib/deletion';
 import { getCheckpointAnalysisFailureMessage } from '@/lib/plan-limit-errors';
 import { createLogger } from '@/lib/logger';
 import { CheckpointComparisonDialog } from './checkpoint-comparison-dialog';
+import { ComparisonHistoryList } from './comparison-history-list';
 import {
   findPreviousCaptureInList,
   formatCaptureRevisionLabel,
 } from '@/lib/checkpoint-series-grouping';
+import type { CheckpointComparisonRecord } from '@/lib/types';
+import { comparisonRecordToVisualDiff } from '@/lib/checkpoint-comparisons';
 
 const checkpointLog = createLogger('checkpoint');
 
@@ -54,6 +57,9 @@ export function CheckpointDetailDialog() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
+  const [historyVisualDiff, setHistoryVisualDiff] = useState<CheckpointComparisonRecord | null>(
+    null
+  );
 
   // Reset edit mode when dialog closes
   useEffect(() => {
@@ -395,11 +401,22 @@ export function CheckpointDetailDialog() {
                   variant="outline"
                   size="sm"
                   disabled={!comparisonPartner}
-                  onClick={() => setIsComparisonOpen(true)}
+                  onClick={() => {
+                    setHistoryVisualDiff(null);
+                    setIsComparisonOpen(true);
+                  }}
                 >
                   {checkpoint.visualDiff ? 'View comparison' : 'Compare'}
                 </Button>
               </div>
+              <ComparisonHistoryList
+                checkpoint={checkpoint}
+                checkpoints={checkpoints}
+                onSelect={(record) => {
+                  setHistoryVisualDiff(record);
+                  setIsComparisonOpen(true);
+                }}
+              />
             </>
           )}
 
@@ -441,9 +458,20 @@ export function CheckpointDetailDialog() {
     {isComparisonOpen && comparisonPartner && (
       <CheckpointComparisonDialog
         open={isComparisonOpen}
-        onOpenChange={setIsComparisonOpen}
-        checkpoint1={comparisonPartner}
+        onOpenChange={(open) => {
+          setIsComparisonOpen(open);
+          if (!open) setHistoryVisualDiff(null);
+        }}
+        checkpoint1={
+          historyVisualDiff?.comparedWithCheckpointId
+            ? checkpoints.find((c) => c.id === historyVisualDiff.comparedWithCheckpointId) ??
+              comparisonPartner
+            : comparisonPartner
+        }
         checkpoint2={checkpoint}
+        initialVisualDiff={
+          historyVisualDiff ? comparisonRecordToVisualDiff(historyVisualDiff) : undefined
+        }
       />
     )}
     </>

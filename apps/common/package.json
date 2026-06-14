@@ -49,6 +49,7 @@
     "./lib/checkpoint-list-badge": "./src/lib/checkpoint-list-badge.ts",
     "./lib/checkpoint-series": "./src/lib/checkpoint-series.ts",
     "./lib/checkpoint-series-grouping": "./src/lib/checkpoint-series-grouping.ts",
+    "./lib/checkpoint-comparisons": "./src/lib/checkpoint-comparisons.ts",
     "./lib/checkpoint-summary-display": "./src/lib/checkpoint-summary-display.ts",
     "./lib/home-onboarding": "./src/lib/home-onboarding.ts",
     "./lib/my-pros-navigation": "./src/lib/my-pros-navigation.ts",

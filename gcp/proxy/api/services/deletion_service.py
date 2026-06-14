@@ -21,6 +21,7 @@ from common.checkpoint.series import (
     assert_capture_deletable,
     recompute_series_after_capture_delete,
 )
+from common.checkpoint.comparisons import delete_checkpoint_comparisons
 from services.vertex_service import delete_reasoning_engine_session
 
 logger = logging.getLogger(__name__)
@@ -448,6 +449,17 @@ def delete_checkpoint_asset(
 
     if snap.exists:
         series_id = checkpoint_data.get("seriesId")
+        try:
+            delete_checkpoint_comparisons(db, user_id, property_id, checkpoint_id)
+        except Exception as exc:
+            logger.warning(
+                "Failed to delete comparison history user=%s property=%s checkpoint=%s: %s",
+                user_id,
+                property_id,
+                checkpoint_id,
+                exc,
+            )
+            warnings.append(f"comparison history: {exc}")
         _delete_doc_with_retry(cp_ref)
         if series_id:
             try:

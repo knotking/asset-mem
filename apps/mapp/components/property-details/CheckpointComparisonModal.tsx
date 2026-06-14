@@ -4,11 +4,18 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { X, ArrowRight, Calendar } from 'lucide-react-native';
-import { Checkpoint } from '@homeapp/common/types';
+import { Checkpoint, VisualDiffAnalysis } from '@homeapp/common/types';
 import { format } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { compareCheckpoints, CompareCheckpointsOutput } from '../../lib/api';
 import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
+import { useAuth } from '@homeapp/common/contexts/auth-context';
+import { useProperty } from '@homeapp/common/contexts/property-context';
+import { useFirebase } from '@homeapp/common/contexts/firebase-context';
+import {
+  buildVisualDiffFromCompareResult,
+  persistCheckpointComparison,
+} from '@homeapp/common/lib/checkpoint-comparisons';
 import { Timestamp } from 'firebase/firestore';
 import { ActivityIndicator } from 'react-native';
 import { getPlanLimitFailureMessage } from '@homeapp/common/lib/document-analysis-errors';
@@ -21,6 +28,7 @@ interface CheckpointComparisonModalProps {
     checkpoint1: Checkpoint | null;
     checkpoint2: Checkpoint | null;
     onClose: () => void;
+    initialVisualDiff?: VisualDiffAnalysis | null;
 }
 
 export function CheckpointComparisonModal({
@@ -28,9 +36,13 @@ export function CheckpointComparisonModal({
     checkpoint1,
     checkpoint2,
     onClose,
+    initialVisualDiff,
 }: CheckpointComparisonModalProps) {
     const insets = useSafeAreaInsets();
     const { updateCheckpoint } = useCheckpoint();
+    const { user } = useAuth();
+    const { property } = useProperty();
+    const { db } = useFirebase();
     const [loading, setLoading] = React.useState(false);
     const [analysis, setAnalysis] = React.useState<CompareCheckpointsOutput | null>(null);
     const [comparisonError, setComparisonError] = React.useState<string | null>(null);
@@ -62,18 +74,23 @@ export function CheckpointComparisonModal({
 
     React.useEffect(() => {
         if (visible && before && after) {
-            // Reuse cached comparison only if it matches this before/after pair.
-            // Otherwise, compare-checkpoints (e.g. compare 1→3 should not reuse 1→2).
-            if (after.visualDiff?.comparedWithCheckpointId === before.id) {
-                const semanticChanges = Array.isArray(after.visualDiff.semanticChanges)
-                    ? after.visualDiff.semanticChanges
+            const cached =
+                initialVisualDiff?.comparedWithCheckpointId === before.id
+                    ? initialVisualDiff
+                    : after.visualDiff?.comparedWithCheckpointId === before.id
+                      ? after.visualDiff
+                      : null;
+
+            if (cached) {
+                const semanticChanges = Array.isArray(cached.semanticChanges)
+                    ? cached.semanticChanges
                     : [];
-                const regions = Array.isArray(after.visualDiff.regions) ? after.visualDiff.regions : [];
+                const regions = Array.isArray(cached.regions) ? cached.regions : [];
 
                 setAnalysis(
                     normalizeAnalysis({
-                        summary: after.visualDiff.summary || semanticChanges.join('\n'),
-                        similarityScore: after.visualDiff.similarityScore,
+                        summary: cached.summary || semanticChanges.join('\n'),
+                        similarityScore: cached.similarityScore,
                         semanticChanges,
                         regions: regions.map((r) => ({
                             description: r.description,
@@ -106,27 +123,24 @@ export function CheckpointComparisonModal({
                         const normalized = normalizeAnalysis(result);
                         setAnalysis(normalized);
 
-                        // Save to Firestore
-                        await updateCheckpoint(after.id, {
-                            visualDiff: {
-                                id: `diff_${Date.now()}`,
-                                status: 'completed',
-                                comparedWithCheckpointId: before.id,
-                                summary: normalized?.summary ?? '',
-                                semanticChanges: normalized?.semanticChanges ?? [],
-                                regions: (normalized?.regions ?? []).map((r, i) => ({
-                                    id: `region_${i}`,
-                                    bbox: r.bbox || { x: 0, y: 0, width: 0, height: 0 },
-                                    changeType: r.changeType,
-                                    severity: r.severity,
-                                    confidence: r.confidence,
-                                    description: r.description,
-                                    changePercentage: 0,
-                                })),
-                                similarityScore: normalized?.similarityScore ?? 0,
-                                completedAt: Timestamp.now(),
-                            },
+                        const visualDiff = buildVisualDiffFromCompareResult({
+                            result: normalized ?? {},
+                            comparedWithCheckpointId: before.id,
+                            matchReason: 'manual',
+                            completedAt: Timestamp.now(),
                         });
+
+                        if (user && property && db) {
+                            await persistCheckpointComparison(db, {
+                                userId: user.uid,
+                                propertyId: property.id,
+                                checkpointId: after.id,
+                                visualDiff,
+                                source: 'manual',
+                            });
+                        } else {
+                            await updateCheckpoint(after.id, { visualDiff });
+                        }
                     }
                 } catch (e) {
                     checkpointLog.error('comparison.failed', undefined, e);
@@ -142,7 +156,7 @@ export function CheckpointComparisonModal({
             setAnalysis(null);
             setLoading(false);
         }
-    }, [visible, before?.id, after?.id]);
+    }, [visible, before?.id, after?.id, initialVisualDiff, after?.visualDiff, normalizeAnalysis, user, property, db, updateCheckpoint]);
 
     const renderCheckpointPreview = (cp: Checkpoint | null | undefined, label: string) => {
         const imageUrl = cp?.media?.[0]?.url;

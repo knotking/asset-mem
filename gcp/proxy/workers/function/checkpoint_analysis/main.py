@@ -21,7 +21,10 @@ from comparison_service import (
     compare_checkpoints,
     get_user_preferences
 )
-from embedding_service import generate_checkpoint_embedding
+from common.checkpoint.comparisons import (
+    append_checkpoint_comparison,
+    build_visual_diff_from_result,
+)
 from name_generator import generate_checkpoint_name
 
 # Initialize observability
@@ -501,45 +504,29 @@ def pubsub_checkpoint_analysis(request, context):
             
                                 comparison_duration_ms = (time.time() - comparison_start_time) * 1000
                                 previous_checkpoint_id = previous_checkpoint.get("id")
-            
-                                # Update checkpoint with comparison results
-                                comparison_update = {
-                                    "visualDiff": {
-                                        "id": f"diff_{uuid.uuid4().hex[:8]}",
-                                        "status": "completed",
-                                        "comparedWithCheckpointId": previous_checkpoint_id,
-                                        "summary": comparison_result.get("summary", ""),
-                                        "semanticChanges": comparison_result.get("semanticChanges", []),
-                                        "regions": [
-                                            {
-                                                "id": f"region_{i}",
-                                                "bbox": region.get("bbox") or {"x": 0, "y": 0, "width": 0, "height": 0},
-                                                "changeType": region.get("changeType", "modified"),
-                                                "severity": region.get("severity", "minor"),
-                                                "confidence": region.get("confidence", 0.5),
-                                                "description": region.get("description", ""),
-                                                "changePercentage": 0
-                                            }
-                                            for i, region in enumerate(comparison_result.get("regions", []))
-                                        ],
-                                        "similarityScore": comparison_result.get("similarityScore", 1.0),
-                                        "completedAt": firestore.SERVER_TIMESTAMP
-                                    }
-                                }
-            
-                                comparison_update["visualDiff"]["summary"] = comparison_result.get(
-                                    "summary", ""
+                                match_reason = (
+                                    "series_previous"
+                                    if existing_checkpoint.get("seriesId")
+                                    else "same_location"
                                 )
-                                if existing_checkpoint.get("seriesId"):
-                                    comparison_update["visualDiff"]["matchReason"] = "series_previous"
-                                    prev_rev = previous_checkpoint.get("revisionNumber")
-                                    if prev_rev is not None:
-                                        comparison_update["visualDiff"][
-                                            "comparedWithRevisionNumber"
-                                        ] = prev_rev
-                                else:
-                                    comparison_update["visualDiff"]["matchReason"] = "same_location"
-                                checkpoint_ref.update(comparison_update)
+                                prev_rev = previous_checkpoint.get("revisionNumber")
+                                visual_diff = build_visual_diff_from_result(
+                                    comparison_result=comparison_result,
+                                    compared_with_checkpoint_id=previous_checkpoint_id,
+                                    match_reason=match_reason,
+                                    compared_with_revision_number=prev_rev
+                                    if prev_rev is not None
+                                    else None,
+                                )
+
+                                append_checkpoint_comparison(
+                                    db,
+                                    user_id,
+                                    property_id,
+                                    checkpoint_id,
+                                    visual_diff=visual_diff,
+                                    source="auto",
+                                )
                                 logger.info(f"Successfully updated checkpoint {checkpoint_id} with comparison results")
             
                                 # Log comparison completion
