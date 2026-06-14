@@ -160,6 +160,10 @@ def test_compare_events_ignores_working_memory_in_state_delta() -> None:
                     "analysis_run_id": "run-new",
                     "property_id": "EVALPROP0001",
                 },
+                "user_query": "thanks",
+            }
+        ),
+    )
     result = compare_events([actual_event], [recorded_event])
     assert result.success, result.error_message
 
