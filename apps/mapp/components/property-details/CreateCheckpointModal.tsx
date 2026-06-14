@@ -9,6 +9,8 @@ import { X, Camera, Image as ImageIcon, Loader2, Video as VideoIcon } from 'luci
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
+import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
+import { predictSeriesCaptureAssignment } from '@homeapp/common/lib/checkpoint-series-grouping';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { createLogger } from '@/lib/logger';
 
@@ -108,6 +110,7 @@ const LOCATION_OPTIONS = {
 
 export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateCheckpointModalProps) {
   const insets = useSafeAreaInsets();
+  const { checkpoints } = useCheckpoint();
   const [name, setName] = React.useState('');
   const [assetType, setAssetType] = React.useState<'real_estate' | 'vehicle' | 'appliance' | 'other'>('real_estate');
   const [location, setLocation] = React.useState<string>('');
@@ -137,6 +140,16 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
       setName(`${base} • ${format(new Date(), 'MMM d • h:mm a')}`);
     }
   }, [name, location, customLocation, useCustomLocation]);
+
+  const effectiveLocationPreview = useCustomLocation ? customLocation : location;
+  const seriesPrediction = React.useMemo(
+    () =>
+      predictSeriesCaptureAssignment(checkpoints, {
+        location: effectiveLocationPreview,
+        name,
+      }),
+    [checkpoints, effectiveLocationPreview, name]
+  );
 
   // Reset form when modal opens
   React.useEffect(() => {
@@ -402,6 +415,12 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
                   <Text className="mt-2 text-xs text-muted-foreground">
                     Enter any custom location description.
                   </Text>
+                  {seriesPrediction ? (
+                    <Text className="mt-1 text-xs text-primary">
+                      Adds capture v{seriesPrediction.nextRevision} to {seriesPrediction.label} (
+                      {seriesPrediction.existingCount} existing)
+                    </Text>
+                  ) : null}
                 </View>
               ) : (
                 <View>
@@ -428,6 +447,12 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
                   <Text className="mt-2 text-xs text-muted-foreground">
                     Optional — we'll auto-detect this from the photo when possible.
                   </Text>
+                  {seriesPrediction ? (
+                    <Text className="mt-1 text-xs text-primary">
+                      Adds capture v{seriesPrediction.nextRevision} to {seriesPrediction.label} (
+                      {seriesPrediction.existingCount} existing)
+                    </Text>
+                  ) : null}
                 </View>
               )}
             </View>

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { View, FlatList, Image, Pressable, Modal, ScrollView, Animated } from 'react-native';
+import { View, FlatList, SectionList, Image, Pressable, Modal, ScrollView, Animated } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -62,6 +62,10 @@ import {
   planLimitBlockMessage,
 } from '@homeapp/common/lib/plan-limit-slice';
 import { getCheckpointListConditionBadge } from '@homeapp/common/lib/checkpoint-list-badge';
+import {
+  formatCaptureRevisionLabel,
+  groupCheckpointsBySeries,
+} from '@homeapp/common/lib/checkpoint-series-grouping';
 import { checkpointListBadgeStyles } from '@/lib/checkpoint-list-badge-styles';
 import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
 import {
@@ -572,6 +576,7 @@ function CheckpointCard({
   const conditionBadgeStyles = conditionBadge
     ? checkpointListBadgeStyles(conditionBadge.variant)
     : null;
+  const revisionLabel = formatCaptureRevisionLabel(checkpoint);
 
   return (
     <Card className={`relative p-2 ${isSelected ? 'border-primary bg-primary/5' : ''} ${isDeleting ? 'opacity-90' : ''}`}>
@@ -637,6 +642,13 @@ function CheckpointCard({
                     <Text className={conditionBadgeStyles.textClass}>{conditionBadge.label}</Text>
                   </View>
                 )}
+                {revisionLabel ? (
+                  <View className="rounded-full border border-border bg-muted px-2 py-0.5">
+                    <Text className="text-[10px] font-medium text-muted-foreground">
+                      {revisionLabel}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
             </View>
 
@@ -731,6 +743,17 @@ export function PropertyCheckpointsTab({
   const { property } = useProperty();
   const { updatePreferences } = usePreferences();
   const { metrics: propertyMetrics } = usePropertyCheckpointMetrics();
+
+  const checkpointSections = React.useMemo(
+    () =>
+      groupCheckpointsBySeries(checkpoints).map((group) => ({
+        key: group.seriesId,
+        label: group.label,
+        captureCount: group.captureCount,
+        data: group.captures,
+      })),
+    [checkpoints]
+  );
 
   // Sub-tab state
   const [activeSubTab, setActiveSubTab] = React.useState<TimelineSubTab>(initialSubTab);
@@ -1219,9 +1242,21 @@ export function PropertyCheckpointsTab({
             </View>
           )}
 
-          <FlatList
-            data={checkpoints}
+          <SectionList
+            sections={checkpointSections}
             keyExtractor={(item) => item.id}
+            renderSectionHeader={({ section }) =>
+              section.captureCount > 1 ? (
+                <View className="mb-2 mt-1 rounded-lg border border-border bg-muted/40 px-3 py-2">
+                  <Text className="font-semibold text-foreground">{section.label}</Text>
+                  <Text className="text-xs text-muted-foreground">
+                    {section.captureCount} captures
+                  </Text>
+                </View>
+              ) : (
+                <View className="h-0" />
+              )
+            }
             renderItem={({ item }) => (
               <CheckpointCard
                 checkpoint={item}
@@ -1237,6 +1272,9 @@ export function PropertyCheckpointsTab({
             contentContainerStyle={{ gap: 12, paddingBottom: 16 }}
             showsVerticalScrollIndicator={false}
             style={{ flex: 1 }}
+            stickySectionHeadersEnabled={false}
+            ItemSeparatorComponent={() => <View className="h-3" />}
+            SectionSeparatorComponent={() => <View className="h-1" />}
             ListFooterComponent={
               hasMoreCheckpoints ? (
                 <View className="py-4">

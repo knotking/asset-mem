@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CheckpointCard } from './checkpoint-card';
+import { CheckpointSeriesGroups } from './checkpoint-series-groups';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -40,6 +41,7 @@ import { FeatureTipBanner } from '@/components/feature-discovery/feature-tip-ban
 import { usePreferences } from '@/contexts/preferences-context';
 import { useDismissFeatureTip } from '@/hooks/use-dismiss-feature-tip';
 import { shouldShowFeatureTip } from '@/lib/feature-discovery';
+import { groupCheckpointsBySeries } from '@/lib/checkpoint-series-grouping';
 
 const checkpointLog = createLogger('checkpoint');
 
@@ -100,6 +102,8 @@ export function CheckpointList({
 
     return matchesSearch && matchesLocation && matchesStatus;
   });
+
+  const seriesGroups = groupCheckpointsBySeries(filteredCheckpoints);
 
   const handleSelect = (checkpointId: string, selected: boolean) => {
     const newSelection = new Set(selectedCheckpoints);
@@ -363,43 +367,38 @@ export function CheckpointList({
           )}
         </div>
       ) : (
-        <div className="space-y-3">
-          {filteredCheckpoints.map((checkpoint) => (
-            <CheckpointCard
-              key={checkpoint.id}
-              checkpoint={checkpoint}
-              selected={selectedCheckpoints.has(checkpoint.id)}
-              selectionMode={selectionMode}
-              isDeleting={isCheckpointDeletingOverlay(checkpoint)}
-              isDeleteFailed={isResourceDeletionFailed(checkpoint)}
-              onRetryDelete={() => handleRetryDeleteCheckpoint(checkpoint)}
-              onClick={() => !selectionMode && onCheckpointClick(checkpoint)}
-              onSelect={(selected) => handleSelect(checkpoint.id, selected)}
-            />
-          ))}
-          {!selectionMode && hasMoreCheckpoints && (
-            <div className="flex justify-center pt-4">
-              <Button
-                variant="outline"
-                onClick={() => void loadMoreCheckpoints()}
-                disabled={isLoadingEarlier}
-              >
-                {isLoadingEarlier && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Load more checkpoints
-              </Button>
-            </div>
-          )}
-          {!selectionMode &&
-            !hasMoreCheckpoints &&
-            checkpoints.length > CHECKPOINT_PAGE_SIZE && (
-              <p className="pt-4 text-center text-sm text-muted-foreground">
-                No more checkpoints to load
-              </p>
+        <CheckpointSeriesGroups
+          groups={seriesGroups}
+          selectionMode={selectionMode}
+          selectedCheckpoints={selectedCheckpoints}
+          isCheckpointDeletingOverlay={isCheckpointDeletingOverlay}
+          isResourceDeletionFailed={isResourceDeletionFailed}
+          onCheckpointClick={onCheckpointClick}
+          onSelect={handleSelect}
+          onRetryDelete={handleRetryDeleteCheckpoint}
+        />
+      )}
+      {!selectionMode && filteredCheckpoints.length > 0 && hasMoreCheckpoints && (
+        <div className="flex justify-center pt-4">
+          <Button
+            variant="outline"
+            onClick={() => void loadMoreCheckpoints()}
+            disabled={isLoadingEarlier}
+          >
+            {isLoadingEarlier && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
+            Load more checkpoints
+          </Button>
         </div>
       )}
+      {!selectionMode &&
+        !hasMoreCheckpoints &&
+        checkpoints.length > CHECKPOINT_PAGE_SIZE && (
+          <p className="pt-4 text-center text-sm text-muted-foreground">
+            No more checkpoints to load
+          </p>
+        )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -39,6 +39,7 @@ import {
 } from '@/lib/plan-limit-errors';
 import { useLlmTokenUsage } from '@/contexts/llm-token-usage-context';
 import { createLogger } from '@/lib/logger';
+import { predictSeriesCaptureAssignment } from '@/lib/checkpoint-series-grouping';
 
 const checkpointLog = createLogger('checkpoint');
 
@@ -150,6 +151,11 @@ export function CreateCheckpointDialog({
     const base = location.trim() || 'Checkpoint';
     return `${base} • ${format(new Date(), 'MMM d • h:mm a')}`;
   }, [location]);
+
+  const seriesPrediction = useMemo(
+    () => predictSeriesCaptureAssignment(checkpoints, { location, name }),
+    [checkpoints, location, name]
+  );
 
   const handleCreate = async () => {
     // Name is now optional - will be AI-generated if empty
@@ -359,6 +365,12 @@ export function CreateCheckpointDialog({
             <p className="text-xs text-muted-foreground">
               Optional — we'll auto-detect this from the photo when possible
             </p>
+            {seriesPrediction ? (
+              <p className="text-xs text-primary">
+                Adds capture v{seriesPrediction.nextRevision} to {seriesPrediction.label} (
+                {seriesPrediction.existingCount} existing)
+              </p>
+            ) : null}
           </div>
 
           {/* Description */}

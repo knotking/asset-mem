@@ -17,6 +17,7 @@ import { Checkpoint } from '@/lib/types';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { formatCaptureRevisionLabel } from '@/lib/checkpoint-series-grouping';
 
 interface CheckpointCardProps {
   checkpoint: Checkpoint;
@@ -27,6 +28,7 @@ interface CheckpointCardProps {
   isDeleting?: boolean;
   isDeleteFailed?: boolean;
   onRetryDelete?: () => void;
+  compact?: boolean;
 }
 
 export function CheckpointCard({
@@ -38,6 +40,7 @@ export function CheckpointCard({
   isDeleting = false,
   isDeleteFailed = false,
   onRetryDelete,
+  compact = false,
 }: CheckpointCardProps) {
   const createdAt = checkpoint.createdAt?.toDate
     ? checkpoint.createdAt.toDate()
@@ -48,6 +51,7 @@ export function CheckpointCard({
   const hasAnalysis = !!checkpoint.aiAnalysis;
   const isAnalyzing = checkpoint.analysisStatus === 'processing' || checkpoint.analysisStatus === 'pending';
   const analysisFailed = checkpoint.analysisStatus === 'failed';
+  const revisionLabel = formatCaptureRevisionLabel(checkpoint);
 
   // Determine overall condition from analysis
   const getConditionBadge = () => {
@@ -103,10 +107,10 @@ export function CheckpointCard({
       )}
       onClick={handleClick}
     >
-      <CardContent className="p-4">
-        <div className="flex gap-4">
+      <CardContent className={cn('p-4', compact && 'p-3')}>
+        <div className={cn('flex gap-4', compact && 'gap-3')}>
           {/* Thumbnail */}
-          <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-md bg-muted">
+          <div className={cn('relative h-24 w-24 shrink-0 overflow-hidden rounded-md bg-muted', compact && 'h-16 w-16')}>
             {checkpoint.media && checkpoint.media.length > 0 ? (
               <>
                 <Image
@@ -146,13 +150,20 @@ export function CheckpointCard({
           {/* Content */}
           <div className="flex flex-1 flex-col justify-between">
             <div>
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-2">
                 <h3 className="font-semibold text-foreground line-clamp-1">
                   {checkpoint.name || (isAnalyzing ? 'Analyzing...' : 'Untitled Checkpoint')}
                 </h3>
-                {getConditionBadge()}
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+                  {revisionLabel ? (
+                    <Badge variant="outline" className="text-xs font-normal">
+                      {revisionLabel}
+                    </Badge>
+                  ) : null}
+                  {getConditionBadge()}
+                </div>
               </div>
-              {checkpoint.description && (
+              {!compact && checkpoint.description && (
                 <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{checkpoint.description}</p>
               )}
               {isDeleteFailed ? (

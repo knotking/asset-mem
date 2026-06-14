@@ -33,6 +33,10 @@ import { checkpointDeleteConfirm } from '@/lib/deletion';
 import { getCheckpointAnalysisFailureMessage } from '@/lib/plan-limit-errors';
 import { createLogger } from '@/lib/logger';
 import { CheckpointComparisonDialog } from './checkpoint-comparison-dialog';
+import {
+  findPreviousCaptureInList,
+  formatCaptureRevisionLabel,
+} from '@/lib/checkpoint-series-grouping';
 
 const checkpointLog = createLogger('checkpoint');
 
@@ -80,6 +84,9 @@ export function CheckpointDetailDialog() {
   const comparisonBefore = checkpoint.visualDiff?.comparedWithCheckpointId
     ? checkpoints.find((c) => c.id === checkpoint.visualDiff?.comparedWithCheckpointId)
     : undefined;
+  const previousInSeries = findPreviousCaptureInList(checkpoints, checkpoint);
+  const comparisonPartner = comparisonBefore ?? previousInSeries;
+  const revisionLabel = formatCaptureRevisionLabel(checkpoint);
 
   const handleStartEdit = () => {
     setEditedName(checkpoint.name);
@@ -207,7 +214,14 @@ export function CheckpointDetailDialog() {
             </div>
           ) : (
             <div className="flex items-center justify-between gap-2">
-              <DialogTitle className="text-xl">{checkpoint.name}</DialogTitle>
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <DialogTitle className="text-xl truncate">{checkpoint.name}</DialogTitle>
+                {revisionLabel ? (
+                  <Badge variant="outline" className="shrink-0 font-normal">
+                    {revisionLabel}
+                  </Badge>
+                ) : null}
+              </div>
               {isAnalyzed && (
                 <Button
                   variant="ghost"
@@ -359,27 +373,31 @@ export function CheckpointDetailDialog() {
             </>
           )}
 
-          {/* Visual Diff Notice */}
-          {checkpoint.visualDiff && (
+          {/* Visual Diff / series comparison */}
+          {(checkpoint.visualDiff || previousInSeries) && (
             <>
               <Separator />
               <div className="flex items-center gap-3 rounded-lg border bg-muted p-4">
                 <ArrowRightLeft className="h-5 w-5 text-muted-foreground" />
                 <div className="flex-1">
-                  <p className="font-medium">Comparison Available</p>
+                  <p className="font-medium">
+                    {checkpoint.visualDiff ? 'Comparison Available' : 'Compare with previous'}
+                  </p>
                   <p className="text-sm text-muted-foreground">
-                    {comparisonBefore
-                      ? `Compared with ${comparisonBefore.name}`
+                    {comparisonPartner
+                      ? checkpoint.visualDiff
+                        ? `Compared with ${comparisonPartner.name}`
+                        : `Previous capture: ${comparisonPartner.name}`
                       : 'This checkpoint has been compared with a previous one'}
                   </p>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={!comparisonBefore}
+                  disabled={!comparisonPartner}
                   onClick={() => setIsComparisonOpen(true)}
                 >
-                  View comparison
+                  {checkpoint.visualDiff ? 'View comparison' : 'Compare'}
                 </Button>
               </div>
             </>
@@ -420,11 +438,11 @@ export function CheckpointDetailDialog() {
       </AlertDialogContent>
     </AlertDialog>
 
-    {isComparisonOpen && comparisonBefore && (
+    {isComparisonOpen && comparisonPartner && (
       <CheckpointComparisonDialog
         open={isComparisonOpen}
         onOpenChange={setIsComparisonOpen}
-        checkpoint1={comparisonBefore}
+        checkpoint1={comparisonPartner}
         checkpoint2={checkpoint}
       />
     )}

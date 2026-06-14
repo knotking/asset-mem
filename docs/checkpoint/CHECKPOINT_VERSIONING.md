@@ -1,6 +1,6 @@
 # Checkpoint Versioning — Design Spec
 
-**Status:** P0 implemented (types, series on create, worker assignment, indexes, backfill script); P1+ pending  
+**Status:** P0 complete; P1 UI (grouped timeline, create hints, series compare entry) implemented  
 **Audience:** Product, mobile/web, backend (analysis + metrics workers), agent/retrieval  
 **Related:** [Property Health Insights V2](./PROPERTY_HEALTH_INSIGHTS_V2.md), [Property Reports Plan](../property/PROPERTY_REPORTS_PLAN.md), [Checkpoint Feature Plan](./CHECKPOINT_FEATURE_PLAN.md)
 
@@ -327,7 +327,7 @@ These defaults are **locked for v1** unless explicitly revisited before implemen
 | Phase | Scope | Deliverables |
 |-------|--------|--------------|
 | **P0** | Schema + backfill + series on create (server-side) | Types, Firestore rules/indexes, backfill script, no UI change |
-| **P1** | Create “add to series” + comparison scoped to series | Client create flow, worker compare logic, read-only grouped timeline |
+| **P1** | Create “add to series” + comparison scoped to series | ✅ Grouped timeline UI, create hints, detail compare with previous |
 | **P2** | Metrics v3, agent defaults, report snapshot fields, baseline capture | Worker + agent + report builder; `baselineCaptureId` on series |
 | **P3** | Comparison history subcollection | Append-only `comparisons/`; denormalized `visualDiff` unchanged |
 
@@ -369,3 +369,4 @@ These defaults are **locked for v1** unless explicitly revisited before implemen
 | 2026-06-14 | Initial design spec (docs only) |
 | 2026-06-14 | Locked product decisions to recommended defaults (§8) |
 | 2026-06-14 | P0: types, client create with series, worker assignment, deletion guard, indexes, backfill script |
+| 2026-06-14 | P1: grouped timeline (web accordion + mapp sections), revision badges, create hints, compare with previous in detail |
