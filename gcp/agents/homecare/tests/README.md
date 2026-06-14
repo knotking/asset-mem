@@ -1,5 +1,7 @@
 # Homecare agent unit tests
 
+**Strategy & roadmap:** [docs/AGENT_TESTING_STRATEGY.md](../docs/AGENT_TESTING_STRATEGY.md) — audit, test pyramid, phased plan to align with industry-standard agent eval.
+
 Tests live under `gcp/agents/homecare/tests/` and mirror `property_agent/` layout:
 
 | Area | Test modules |

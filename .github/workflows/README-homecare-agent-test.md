@@ -2,6 +2,8 @@
 
 Workflow: [test-homecare-agent.yaml](test-homecare-agent.yaml)
 
+**Strategy & roadmap:** [gcp/agents/homecare/docs/AGENT_TESTING_STRATEGY.md](../../gcp/agents/homecare/docs/AGENT_TESTING_STRATEGY.md) — audit, test pyramid, phased plan to add routing-eval and contract gates to CI.
+
 ## Triggers
 
 - **Pull requests** that touch `gcp/agents/homecare/**`

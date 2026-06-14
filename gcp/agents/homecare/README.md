@@ -377,13 +377,16 @@ Agent Response:
 
 ## Evaluating the Agent
 
+See **[docs/AGENT_TESTING_STRATEGY.md](docs/AGENT_TESTING_STRATEGY.md)** for the full audit, test pyramid, and phased plan.
+
 ADK web-recorded `*.evalset.json` files and `make test-eval*` were **removed**. Use:
 
 - **`make test`** — unit tests under `tests/` (CI on every PR)
+- **`make routing-eval`** — deterministic single-loop routing dataset (not yet CI-gated; see strategy doc)
 - **`uv run adk web`** — manual staging QA against `property_agent`
 - **`make conformance-test`** — replay recorded cases under `property_agent/conformance/`
 
-See **`property_agent/evals/README.md`** for details.
+See **`property_agent/evals/README.md`** for command details.
 
 ## Deploying the Agent
 

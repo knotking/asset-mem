@@ -1,5 +1,7 @@
 # Agent evaluation
 
+**Strategy & roadmap:** [docs/AGENT_TESTING_STRATEGY.md](../../docs/AGENT_TESTING_STRATEGY.md) — audit, test pyramid, phased plan (routing eval in CI, trajectory suite, contract scoring).
+
 ADK web-recorded `*.evalset.json` golden files and the `make test-eval*` pytest runner were **removed**.
 
 ## What to use
