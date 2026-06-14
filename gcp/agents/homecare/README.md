@@ -384,6 +384,7 @@ ADK web-recorded `*.evalset.json` files and `make test-eval*` were **removed**. 
 - **`make test`** — unit tests under `tests/` (CI on every PR)
 - **`make routing-eval`** — deterministic single-loop routing dataset
 - **`make routing-eval-ci`** — routing eval + baseline gate (runs in CI)
+- **`make contract-check`** — contentJson schema + deterministic rubric (runs in CI)
 - **`uv run adk web`** — manual staging QA against `property_agent`
 - **`make conformance-test`** — replay recorded cases under `property_agent/conformance/`
 

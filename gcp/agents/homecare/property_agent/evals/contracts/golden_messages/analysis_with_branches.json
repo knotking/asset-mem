@@ -1,0 +1,25 @@
+{
+  "role": "assistant",
+  "content": "Checkpoint analysis is ready.",
+  "contentSchemaVersion": 2,
+  "contentMarkdown": "# Garage paint damage\n\nSignificant chipping near the handle.",
+  "contentJson": {
+    "analysis": {
+      "title": "Garage paint damage",
+      "analysisStatus": {
+        "diy": "completed",
+        "cost": "completed"
+      },
+      "checkpointSummary": {
+        "checkpointsAnalyzed": 1,
+        "overallCondition": "damaged, needs maintenance"
+      }
+    }
+  },
+  "analysisRunId": "run-golden-001",
+  "agentSteps": [
+    {"name": "diy", "status": "completed"},
+    {"name": "cost", "status": "completed"}
+  ],
+  "revision": 1
+}

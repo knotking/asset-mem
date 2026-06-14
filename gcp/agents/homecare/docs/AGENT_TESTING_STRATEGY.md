@@ -86,8 +86,8 @@ Terms like **trajectory** and **LLM-as-judge** are common in agent eval; **confo
 |----------|-------------------|---------------------|-------------|------|-------|
 | **L0 — Unit** | `make test` (`tests/`, `agent_framework/tests/`) | No | No | Every PR | Guards, parsers, state merge, orchestration — no inference |
 | **L1 — Component** | `make test` (cost, DIY, media refiner, executor tools) | No | Yes | Every PR | Exercises `generate_content` / pipeline code paths with fakes |
-| **L2a — Routing eval** | `make routing-eval` (`evals/routing/single_loop/cases.yaml`) | No | No | PR (Phase 1) | Deterministic pre-routing only; no executor tool choice |
-| **L2b — Contract / rubric** | Schema + deterministic rubric scorer (Phase 1) | No | No | Every PR | Structural checks on `contentJson`; no prose judging |
+| **L2a — Routing eval** | `make routing-eval-ci` | No | No | Every PR | Deterministic pre-routing only; no executor tool choice |
+| **L2b — Contract / rubric** | `make contract-check` (schema + deterministic rubric) | No | No | Every PR | Structural checks on `contentJson`; no prose judging |
 | **L2 — Trajectory eval** | `property_agent/evals/trajectory/` (Phase 2, stubbed) | No | Yes (stub executor) | Every PR | Asserts `tools_called` / branches without calling Gemini |
 | **L3 — Conformance replay** | `make conformance-test` (ADK replay) | Usually no | No | Nightly / manual | Replays `generated-recordings.yaml`; live model only if recordings missing |
 | **L3 — Conformance record** | `make conformance-record` + `uv run adk web` | **Yes — full stack** | No | Manual / staging | Records real multi-turn traces for replay |
@@ -155,7 +155,7 @@ When conformance record, `adk web`, or incomplete replay runs against a live age
 **CI gate after Phase 1:**
 
 ```bash
-make test && make routing-eval  # + baseline diff check
+make test && make routing-eval-ci && make contract-check
 ```
 
 ### Phase 2 — Trajectory eval suite (2–4 weeks)
@@ -225,7 +225,7 @@ LangSmith is already a transitive dependency; adopt for L4 without changing CI s
 |-----|------|----------|---------------|
 | **unit** | Every PR | `make test` | Yes |
 | **routing-eval** | Every PR | `make routing-eval-ci` | Yes |
-| **contract** | Every PR | Schema + rubric scorer on fixtures | Yes (after Phase 1) |
+| **contract** | Every PR | `make contract-check` | Yes |
 | **conformance-replay** | Nightly | `make conformance-test` (staging creds) | Alert only initially |
 | **live-external** | Weekly | `RUN_EXTERNAL_DIY_SEARCH_TESTS=1` subset | No |
 | **weblog-ab** | On demand / release | `make weblog-summarize` vs last baseline | Release gate |
@@ -272,7 +272,7 @@ tests/
 | Priority | Item | Effort | Impact |
 |----------|------|--------|--------|
 | **P0** | Run `routing-eval` in CI with baseline gate | Low | High — **done** (`make routing-eval-ci`) |
-| **P0** | JSON Schema + deterministic rubric scorer | Medium | High |
+| **P0** | JSON Schema + deterministic rubric scorer | Medium | High — **done** (`make contract-check`) |
 | **P1** | Trajectory eval suite (stubbed executor) | Medium | Very high |
 | **P1** | Expand conformance + commit recordings | Medium | High |
 | **P2** | Nightly conformance replay job | Low | Medium |

@@ -50,3 +50,6 @@ jobs:
 
       - name: Run routing eval (baseline gate)
         run: make routing-eval-ci
+
+      - name: Run contract checks (schema + rubric)
+        run: make contract-check

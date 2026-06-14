@@ -1,0 +1,23 @@
+{
+  "prior": {
+    "role": "assistant",
+    "content": "Analysis complete.",
+    "contentSchemaVersion": 2,
+    "contentMarkdown": "# Garage paint damage\n\nSee accordions for branch details.",
+    "contentJson": {
+      "analysis": {
+        "title": "Garage paint damage",
+        "analysisStatus": {
+          "service": "completed"
+        }
+      }
+    },
+    "revision": 1
+  },
+  "follow_up": {
+    "role": "assistant",
+    "content": "The main issue is paint chipping on the garage door.",
+    "contentSchemaVersion": 2,
+    "contentMarkdown": "The main issue is paint chipping on the garage door near the handle."
+  }
+}
