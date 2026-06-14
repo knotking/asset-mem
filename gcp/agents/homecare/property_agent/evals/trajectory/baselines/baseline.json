@@ -1,0 +1,177 @@
+{
+  "generated_at": "2026-06-14T13:14:29+0530",
+  "cases_file": "property_agent/evals/trajectory/cases.yaml",
+  "filter": null,
+  "repeat": 1,
+  "summary": {
+    "total": 11,
+    "passed": 11,
+    "failed": 0,
+    "errors": 0,
+    "pass_rate": 1.0,
+    "latency_ms": {
+      "p50": 0,
+      "p95": 1,
+      "mean": 0
+    },
+    "field_mismatch_counts": {}
+  },
+  "results": [
+    {
+      "case_id": "greeting_no_tools",
+      "passed": true,
+      "elapsed_ms": 1,
+      "mismatches": {},
+      "error": null,
+      "prediction": {
+        "tools_called": [],
+        "branches": [],
+        "retrieval_only": true
+      }
+    },
+    {
+      "case_id": "accept_offer_cost_branch",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "prediction": {
+        "tools_called": [
+          "analyze_checkpoints"
+        ],
+        "branches": [
+          "cost"
+        ],
+        "retrieval_only": false
+      }
+    },
+    {
+      "case_id": "chip_run_cost",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "prediction": {
+        "tools_called": [
+          "analyze_checkpoints"
+        ],
+        "branches": [
+          "cost"
+        ],
+        "retrieval_only": false
+      }
+    },
+    {
+      "case_id": "chip_run_diy",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "prediction": {
+        "tools_called": [
+          "analyze_checkpoints"
+        ],
+        "branches": [
+          "diy"
+        ],
+        "retrieval_only": false
+      }
+    },
+    {
+      "case_id": "summarize_selected_context",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "prediction": {
+        "tools_called": [],
+        "branches": [],
+        "retrieval_only": true
+      }
+    },
+    {
+      "case_id": "coverage_question_context",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "prediction": {
+        "tools_called": [],
+        "branches": [],
+        "retrieval_only": true
+      }
+    },
+    {
+      "case_id": "inventory_list_checkpoints",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "prediction": {
+        "tools_called": [
+          "list_checkpoints"
+        ],
+        "branches": [],
+        "retrieval_only": true
+      }
+    },
+    {
+      "case_id": "run_diy_free_text",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "prediction": {
+        "tools_called": [
+          "analyze_checkpoints"
+        ],
+        "branches": [
+          "diy"
+        ],
+        "retrieval_only": false
+      }
+    },
+    {
+      "case_id": "docs_policy_question",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "prediction": {
+        "tools_called": [
+          "user_docs_retrieval"
+        ],
+        "branches": [],
+        "retrieval_only": true
+      }
+    },
+    {
+      "case_id": "report_summarize",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "prediction": {
+        "tools_called": [
+          "report_retrieval"
+        ],
+        "branches": [],
+        "retrieval_only": true
+      }
+    },
+    {
+      "case_id": "report_cost_from_snapshot",
+      "passed": true,
+      "elapsed_ms": 0,
+      "mismatches": {},
+      "error": null,
+      "prediction": {
+        "tools_called": [
+          "report_retrieval"
+        ],
+        "branches": [],
+        "retrieval_only": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,160 @@
+# Executor trajectory eval (deterministic planner; no Vertex LLM).
+#
+# Flow: single-loop routing → predict_trajectory (stub policy) → score expect.
+# See predict_trajectory.py and run_trajectory_eval.py.
+
+defaults:
+  state:
+    property_id: "EVALPROP0001"
+    property_address: "1982 Helena Way, Brentwood, CA 94513"
+    primary_agent: checkpoint
+
+anchors:
+  prior_diy_only: &prior_diy_only
+    checkpoint_last_response_kind: analysis
+    checkpoint_ids: ["CKPT0000000000000001"]
+    checkpoint_ids_analyzed: ["CKPT0000000000000001"]
+    checkpoint_analysis:
+      title: "Rear Quarter Panel and Bumper Paint Damage"
+      analysisStatus: {diy: completed}
+      diyResults:
+        diySteps:
+          summary: "Clean, remove paint transfer, sand, touch-up paint, clear coat."
+
+cases:
+  # ── Casual (no tools) ───────────────────────────────────────────────────────
+  - id: greeting_no_tools
+    tags: [casual, trajectory]
+    query: "hi"
+    expect:
+      tools_called: []
+      branches: []
+      retrieval_only: true
+      content_json_absent: true
+
+  # ── Accept offer → analyze branch ───────────────────────────────────────────
+  - id: accept_offer_cost_branch
+    tags: [accept_offer, trajectory]
+    query: "yes"
+    state:
+      <<: *prior_diy_only
+      pending_user_action:
+        kind: run_branch
+        expanded_user_query: "Run cost analysis for the vehicle paint damage"
+        run_optional_agents: [cost]
+    expect:
+      tools_called: [analyze_checkpoints]
+      branches: [cost]
+      retrieval_only: false
+      content_json_present: true
+
+  # ── Chip explicit branch ────────────────────────────────────────────────────
+  - id: chip_run_cost
+    tags: [chip, trajectory]
+    query: "Run cost analysis"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+      chip_action: {type: run_branch, branch: cost}
+    expect:
+      tools_called: [analyze_checkpoints]
+      branches: [cost]
+      retrieval_only: false
+      content_json_present: true
+
+  - id: chip_run_diy
+    tags: [chip, trajectory]
+    query: "Run DIY analysis"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+      chip_action: {type: run_branch, branch: diy}
+    expect:
+      tools_called: [analyze_checkpoints]
+      branches: [diy]
+      retrieval_only: false
+      content_json_present: true
+
+  # ── Checkpoint context follow-up (no tools) ─────────────────────────────────
+  - id: summarize_selected_context
+    tags: [checkpoint, retrieval_only, trajectory]
+    query: "Summarize the issues for the selected checkpoints"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+    expect:
+      tools_called: []
+      branches: []
+      retrieval_only: true
+      content_json_absent: true
+
+  - id: coverage_question_context
+    tags: [checkpoint, retrieval_only, trajectory]
+    query: "would this damage be covered by my insurance?"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+    expect:
+      tools_called: []
+      branches: []
+      retrieval_only: true
+      content_json_absent: true
+
+  # ── Inventory list ──────────────────────────────────────────────────────────
+  - id: inventory_list_checkpoints
+    tags: [checkpoint, inventory, trajectory]
+    query: "What checkpoints do I have for this property?"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+    expect:
+      tools_called: [list_checkpoints]
+      branches: []
+      retrieval_only: true
+      content_json_absent: true
+
+  # ── New analysis (free text branch) ─────────────────────────────────────────
+  - id: run_diy_free_text
+    tags: [checkpoint, branch_explicit, trajectory]
+    query: "Run DIY analysis for the selected checkpoint"
+    state:
+      checkpoint_ids: ["CKPT0000000000000001"]
+      checkpoint_optional_agents: [diy]
+    expect:
+      tools_called: [analyze_checkpoints]
+      branches: [diy]
+      retrieval_only: false
+      content_json_present: true
+
+  # ── User docs ───────────────────────────────────────────────────────────────
+  - id: docs_policy_question
+    tags: [user_docs, trajectory]
+    query: "what does my insurance policy say about water damage?"
+    state:
+      primary_agent: docs
+      context_doc_uris: ["gs://homegeek-user-data-staging/docs/policy.pdf"]
+    expect:
+      tools_called: [user_docs_retrieval]
+      branches: []
+      retrieval_only: true
+      content_json_absent: true
+
+  # ── Report mode ─────────────────────────────────────────────────────────────
+  - id: report_summarize
+    tags: [report, trajectory]
+    query: "summarize my report"
+    state:
+      primary_agent: report
+      report_ids: ["RPT0000000000000001"]
+    expect:
+      tools_called: [report_retrieval]
+      branches: []
+      retrieval_only: true
+      content_json_absent: true
+
+  - id: report_cost_from_snapshot
+    tags: [report, trajectory]
+    query: "what were the cost estimates in the report?"
+    state:
+      primary_agent: report
+      report_ids: ["RPT0000000000000001"]
+    expect:
+      tools_called: [report_retrieval]
+      branches: []
+      retrieval_only: true
+      content_json_absent: true

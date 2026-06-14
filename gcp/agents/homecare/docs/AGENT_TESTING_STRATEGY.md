@@ -10,9 +10,9 @@ Audit and phased plan to align homecare agent tests with industry-standard LLM/a
 
 HomeApp’s homecare agent has **strong L0/L1 coverage** (~70 pytest modules, CI-safe, heavily mocked). That matches industry practice for deterministic agent plumbing (guards, state merge, parsers, parallel orchestration).
 
-The main gap versus production-grade agent testing is **L2–L4**: no CI-gated **trajectory eval** (which tools were called, in what order), no automated **output-contract** scoring, and conformance/replay runs only manually. Eval tooling is fragmented across routing YAML, ADK conformance, weblog parsers, and manual `adk web`.
+The main gap versus production-grade agent testing is now **L3–L4**: conformance replay and qualitative eval are still manual. Phase 1 (routing + contract) and Phase 2 skeleton (trajectory stub planner) run in CI.
 
-**Highest-leverage next step:** add a **trajectory eval suite** (stubbed executor in CI) because the single-loop architecture delegates substantive free-text turns to the executor LLM — routing eval alone no longer represents full turn behavior.
+**Next:** expand trajectory catalog from weblogs, grow conformance specs, nightly replay (Phase 3).
 
 ---
 
@@ -88,7 +88,7 @@ Terms like **trajectory** and **LLM-as-judge** are common in agent eval; **confo
 | **L1 — Component** | `make test` (cost, DIY, media refiner, executor tools) | No | Yes | Every PR | Exercises `generate_content` / pipeline code paths with fakes |
 | **L2a — Routing eval** | `make routing-eval-ci` | No | No | Every PR | Deterministic pre-routing only; no executor tool choice |
 | **L2b — Contract / rubric** | `make contract-check` (schema + deterministic rubric) | No | No | Every PR | Structural checks on `contentJson`; no prose judging |
-| **L2 — Trajectory eval** | `property_agent/evals/trajectory/` (Phase 2, stubbed) | No | Yes (stub executor) | Every PR | Asserts `tools_called` / branches without calling Gemini |
+| **L2 — Trajectory eval** | `make trajectory-eval-ci` | No | Yes (stub planner) | Every PR | Asserts `tools_called` / branches without calling Gemini |
 | **L3 — Conformance replay** | `make conformance-test` (ADK replay) | Usually no | No | Nightly / manual | Replays `generated-recordings.yaml`; live model only if recordings missing |
 | **L3 — Conformance record** | `make conformance-record` + `uv run adk web` | **Yes — full stack** | No | Manual / staging | Records real multi-turn traces for replay |
 | **L3 — Manual QA** | `uv run adk web` | **Yes — full stack** | No | Manual / staging | End-to-end executor + pipeline + branch agents |
@@ -226,6 +226,7 @@ LangSmith is already a transitive dependency; adopt for L4 without changing CI s
 | **unit** | Every PR | `make test` | Yes |
 | **routing-eval** | Every PR | `make routing-eval-ci` | Yes |
 | **contract** | Every PR | `make contract-check` | Yes |
+| **trajectory-eval** | Every PR | `make trajectory-eval-ci` | Yes |
 | **conformance-replay** | Nightly | `make conformance-test` (staging creds) | Alert only initially |
 | **live-external** | Weekly | `RUN_EXTERNAL_DIY_SEARCH_TESTS=1` subset | No |
 | **weblog-ab** | On demand / release | `make weblog-summarize` vs last baseline | Release gate |
@@ -273,7 +274,7 @@ tests/
 |----------|------|--------|--------|
 | **P0** | Run `routing-eval` in CI with baseline gate | Low | High — **done** (`make routing-eval-ci`) |
 | **P0** | JSON Schema + deterministic rubric scorer | Medium | High — **done** (`make contract-check`) |
-| **P1** | Trajectory eval suite (stubbed executor) | Medium | Very high |
+| **P1** | Trajectory eval suite (stubbed executor) | Medium | Very high — **done** (`make trajectory-eval-ci`, 11 cases) |
 | **P1** | Expand conformance + commit recordings | Medium | High |
 | **P2** | Nightly conformance replay job | Low | Medium |
 | **P3** | LangSmith / LLM-judge for prose | High | Medium |

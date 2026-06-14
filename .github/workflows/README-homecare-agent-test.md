@@ -18,11 +18,12 @@ uv sync --frozen --extra dev
 make test              # pytest unit tests
 make routing-eval-ci   # deterministic routing eval + baseline gate
 make contract-check    # contentJson schema + deterministic rubric
+make trajectory-eval-ci   # executor tool trajectory + baseline gate
 ```
 
 Live integration tests (`integration_external`, `RUN_EXTERNAL_DIY_SEARCH_TESTS=1`) are **not** run.
 
-CI runs **`make test`**, **`make routing-eval-ci`**, and **`make contract-check`** (no live Vertex / LLM).
+CI runs **`make test`**, **`make routing-eval-ci`**, **`make contract-check`**, and **`make trajectory-eval-ci`** (no live Vertex / LLM).
 
 ## Local equivalent
 
