@@ -18,6 +18,7 @@ The Checkpoint feature allows users to capture and track property condition over
 
 ### Implementation Details
 
+- **[Checkpoint Versioning Design](./CHECKPOINT_VERSIONING.md)** - Series + captures model, data schema, migration, and phased rollout (proposed)
 - **[Property Health Insights V2 Spec](./PROPERTY_HEALTH_INSIGHTS_V2.md)** - Target semantics for `metrics/summary`, comparison UX (View comparison, auto-match), UI states, rollout phases
 - **[Checkpoint Implementation Summary](./CHECKPOINT_IMPLEMENTATION_SUMMARY.md)** - Summary of checkpoint feature implementation
 - **[Checkpoint Updates Summary](./CHECKPOINT_UPDATES_SUMMARY.md)** - Recent updates and changes
