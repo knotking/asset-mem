@@ -11,6 +11,7 @@ ADK web-recorded `*.evalset.json` golden files and the `make test-eval*` pytest 
 | Fast regression (CI) | `make test` from `gcp/agents/homecare` |
 | Routing eval (single-loop) | `make routing-eval` / `make routing-eval-ci` |
 | Contract scoring (schema + rubric) | `make contract-check` |
+| Trajectory eval (stub planner) | `make trajectory-eval` / `make trajectory-eval-ci` |
 | Full-turn A/B from web logs | `make weblog-summarize ARGS="--out property_agent/evals/routing/single_loop/baselines/weblog-ab-$(date +%F).json"` |
 | Manual QA | `uv run adk web` → select `property_agent`, exercise flows on staging |
 | Replay fixtures | `make conformance-record` / `make conformance-test` (see `property_agent/conformance/`) |
@@ -46,5 +47,21 @@ Dated snapshot: `single_loop/baselines/2026-06-11.json`.
 Weblog cases (19) regenerated from `web-log-session-1` … `web-log-session-7` via `make weblog-extract`.
 Full-turn A/B: `single_loop/baselines/weblog-ab-2026-06-11.json` (33 turns from `web-log*` vs `web-log-legacy*`).
 Deterministic harness scores chip / accept-offer / casual / minimal-substantive only; use `make weblog-summarize` for end-to-end latency and tool choice from saved `adk web` stdout.
+
+## Trajectory eval (`property_agent/evals/trajectory/`)
+
+Routing + **deterministic executor planner** (`predict_trajectory.py`) — scores
+`tools_called`, `branches`, and content-json flags without Vertex LLM.
+**CI-gated** via `make trajectory-eval-ci` (baseline `trajectory/baselines/baseline.json`).
+
+```bash
+make trajectory-eval
+make trajectory-eval-ci
+make trajectory-eval ARGS="--filter chip"
+make trajectory-eval ARGS="--out property_agent/evals/trajectory/baselines/baseline.json"
+```
+
+Canonical CI baseline: `trajectory/baselines/baseline.json` (11 cases).
+Seed more cases from `make weblog-extract` / `make weblog-summarize` tool-call columns.
 
 Conformance YAML under `property_agent/conformance/` is separate from evalsets and remains supported. Per-turn message-field expectations live in `expected_messages.yaml` beside each spec; rubrics for manual scoring in `evals/rubrics/checkpoint_response.json`.

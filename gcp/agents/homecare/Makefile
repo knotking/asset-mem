@@ -112,6 +112,14 @@ contract-check: ## contentJson schema + deterministic rubric (Phase 1)
 	$(call print_header,Running Contract Checks)
 	$(PYTEST) tests/test_rubric_scorer.py tests/test_conformance_specs.py -v
 
+trajectory-eval: ## Executor trajectory eval (stub planner; ARGS="--filter chip")
+	$(call print_header,Running Trajectory Eval)
+	uv run python -m property_agent.evals.trajectory.run_trajectory_eval $(ARGS)
+
+trajectory-eval-ci: ## CI trajectory eval with baseline gate (Phase 2)
+	$(call print_header,Running Trajectory Eval CI)
+	uv run python -m property_agent.evals.trajectory.run_trajectory_eval --baseline-check
+
 weblog-extract: ## Draft routing/conformance cases from adk web stdout logs (ARGS="web-log*")
 	$(call print_header,Extracting Weblog Cases)
 	uv run python -m property_agent.evals.routing.extract_weblog_cases $(ARGS)

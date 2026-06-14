@@ -53,3 +53,6 @@ jobs:
 
       - name: Run contract checks (schema + rubric)
         run: make contract-check
+
+      - name: Run trajectory eval (baseline gate)
+        run: make trajectory-eval-ci

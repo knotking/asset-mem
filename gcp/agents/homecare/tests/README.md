@@ -19,4 +19,5 @@ Run from `gcp/agents/homecare`:
 make test
 make routing-eval-ci   # deterministic routing eval + baseline gate (also in CI)
 make contract-check    # contentJson schema + deterministic rubric (also in CI)
+make trajectory-eval-ci   # executor tool trajectory + baseline gate (also in CI)
 ```
