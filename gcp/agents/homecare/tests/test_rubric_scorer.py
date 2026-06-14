@@ -102,10 +102,20 @@ def test_follow_up_markdown_only_rejects_content_json_on_follow_up() -> None:
     "fixture_name",
     [
         "routing/hello_plain_welcome",
+        "routing/capabilities_what_can_you_do",
+        "routing/inventory_list_checkpoints",
+        "routing/docs_policy_water_damage",
+        "routing/report_summarize",
+        "routing/chip_run_diy",
+        "multi_turn/accept_offer_cost_yes",
+        "multi_turn/inventory_then_summarize",
+        "multi_turn/summarize_then_which_areas",
+        "multi_turn/docs_then_lease_follow_up",
         "multi_turn/thanks_after_service_analysis",
         "multi_turn/got_it_after_analysis",
         "multi_turn/casual_after_service_analysis",
         "multi_turn/explain_prior_after_cost_diy",
+        "multi_turn/chip_cost_then_thanks",
     ],
 )
 def test_conformance_turn_expectations_score_cleanly(fixture_name: str) -> None:

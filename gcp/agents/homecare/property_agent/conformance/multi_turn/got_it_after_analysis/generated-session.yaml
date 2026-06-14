@@ -1,0 +1,373 @@
+id: 1e26e087-a2e6-4af3-acf6-148b5b58e66d
+app_name: property_agent
+user_id: adk_conformance_test_user
+state:
+  homeappLifecycle:
+    v: 1
+    phase: engine.before_model
+    ts: '2026-06-14T08:26:35.020442+00:00'
+    elapsed_ms: 19
+    invocation_id: e-44a71445-cb1a-4170-b8b8-163613452e7d
+    checkpoint_ids: []
+    checkpoint_optional_agents:
+      - diy
+    context_doc_count: 0
+    message: Planning next moves...
+    primary_agent: checkpoint
+  _executor_invocation_structured_analysis: false
+  checkpoint_optional_agents:
+    - diy
+  user_query: |-
+    got it, I'll try that
+  property_address: 1982 Helena Way, Brentwood, CA 94513
+  property_id: nY3XQ92eUa02Qs14QWEn
+  primary_agent: checkpoint
+  current_date_utc: '2026-06-14'
+  current_year: 2026
+  resolved_turn:
+    intent: substantive
+    route: checkpoint
+    expanded_user_query: |-
+      got it, I'll try that
+    retrieval_only: false
+    run_optional_agents:
+      - diy
+    user_goal: new_analysis
+    query_mode: branch_explicit
+    resolve_source: single_loop
+  conversational_turn: false
+  _resolve_turn_invocation_id: e-44a71445-cb1a-4170-b8b8-163613452e7d
+  user_id: adk_conformance_test_user
+  checkpoint_request_timing:
+    started_at: 134716.085942708
+    emitted: false
+    retrieval_ms: 2034
+  analysis_run_id: 892fcc01-640c-45a5-b953-59b5486d0369
+  contentMarkdown: No matching checkpoints found for your query. Try rephrasing or check that checkpoints exist for this property.
+  analysisRunId: 892fcc01-640c-45a5-b953-59b5486d0369
+events:
+  - content:
+      parts:
+        - text: |
+            {"user_query": "analyse my checkpoints and recommend DIY steps", "primary_agent": "checkpoint", "checkpoint_optional_agents": ["diy"], "property_id": "nY3XQ92eUa02Qs14QWEn", "property_address": "1982 Helena Way, Brentwood, CA 94513"}
+      role: user
+    invocation_id: e-e9fa800e-5a6c-4bc4-9a6b-c478c5b75b63
+    author: user
+    actions:
+      state_delta: {}
+    id: a766ee98-42c6-445a-b84a-57a3ddcb5649
+    timestamp: 1781425590.604803
+  - content:
+      parts:
+        - text: Working on it...
+      role: model
+    invocation_id: e-e9fa800e-5a6c-4bc4-9a6b-c478c5b75b63
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.runner_exec
+          ts: '2026-06-14T08:26:30.605985+00:00'
+          elapsed_ms: 0
+          correlation_id: null
+          session_id: 1e26e087-a2e6-4af3-acf6-148b5b58e66d
+          invocation_id: e-e9fa800e-5a6c-4bc4-9a6b-c478c5b75b63
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Working on it...
+    id: 2182350d-ab34-4ede-bda2-aa07e3215018
+    timestamp: 1781425590.606019
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - function_call:
+            id: adk-f4e6f737-7fe6-4069-a66b-b9bdef06445f
+            args:
+              property_id: nY3XQ92eUa02Qs14QWEn
+              branches:
+                - diy
+              property_address: 1982 Helena Way, Brentwood, CA 94513
+              user_query: analyse my checkpoints and recommend DIY steps
+            name: analyze_checkpoints
+          thought_signature: AY89a1_owgrNE1bxQRmqGxMenkAa_aS_6hWgVSWeGTiOMRm3V3SIICgsMoo9Ra5ThQ8=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 78
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 78
+      prompt_token_count: 1789
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 1789
+      total_token_count: 1867
+      traffic_type: ON_DEMAND
+    invocation_id: e-e9fa800e-5a6c-4bc4-9a6b-c478c5b75b63
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+        checkpoint_optional_agents:
+          - diy
+        user_query: analyse my checkpoints and recommend DIY steps
+        property_address: 1982 Helena Way, Brentwood, CA 94513
+        property_id: nY3XQ92eUa02Qs14QWEn
+        primary_agent: checkpoint
+        current_date_utc: '2026-06-14'
+        current_year: 2026
+        resolved_turn:
+          intent: substantive
+          route: checkpoint
+          expanded_user_query: analyse my checkpoints and recommend DIY steps
+          retrieval_only: false
+          run_optional_agents:
+            - diy
+          user_goal: new_analysis
+          query_mode: branch_explicit
+          menu_index: null
+          capability_key: null
+          discourse_act: null
+          focus_branch: null
+          resolve_source: single_loop
+        conversational_turn: false
+        checkpoint_parallel_results: null
+        _resolve_turn_invocation_id: e-e9fa800e-5a6c-4bc4-9a6b-c478c5b75b63
+    long_running_tool_ids: []
+    id: 3907e76d-09a3-4a92-b1b3-54ecfa062649
+    timestamp: 1781425590.608042
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-e9fa800e-5a6c-4bc4-9a6b-c478c5b75b63
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:26:30.608116+00:00'
+          elapsed_ms: 2
+          correlation_id: null
+          session_id: null
+          invocation_id: e-e9fa800e-5a6c-4bc4-9a6b-c478c5b75b63
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Planning next moves...
+    id: 7d62e532-1e03-4026-8cb8-8f0a14bac6ac
+    timestamp: 1781425590.608141
+  - content:
+      parts:
+        - function_response:
+            id: adk-f4e6f737-7fe6-4069-a66b-b9bdef06445f
+            name: analyze_checkpoints
+            response:
+              result: No matching checkpoints found for your query. Try rephrasing or check that checkpoints exist for this property.
+      role: user
+    invocation_id: e-e9fa800e-5a6c-4bc4-9a6b-c478c5b75b63
+    author: property_agent
+    actions:
+      state_delta:
+        user_id: adk_conformance_test_user
+        checkpoint_optional_agents:
+          - diy
+        user_query: analyse my checkpoints and recommend DIY steps
+        property_address: 1982 Helena Way, Brentwood, CA 94513
+        property_id: nY3XQ92eUa02Qs14QWEn
+        checkpoint_request_timing:
+          started_at: 134716.085942708
+          emitted: false
+          retrieval_ms: 2034
+          parallel_ms: null
+          diy_ms: null
+          synthesis_ms: null
+          synthesis_started_at: null
+          executor_started_at: null
+          executor_ms: null
+          return_chars: null
+        analysis_run_id: 892fcc01-640c-45a5-b953-59b5486d0369
+        contentMarkdown: No matching checkpoints found for your query. Try rephrasing or check that checkpoints exist for this property.
+        contentJson: null
+        analysisRunId: 892fcc01-640c-45a5-b953-59b5486d0369
+    id: 9441685c-7cb3-4cbe-b211-b0c47743e2fd
+    timestamp: 1781425593.777684
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - text: |-
+            No checkpoints were found for your property, so I am unable to perform an analysis or suggest DIY steps at this time.
+
+            If you believe there should be records available, please let me know, and I can help you look into it. Otherwise, if you have a specific home-care question or task you'd like guidance on, feel free to share it!
+          thought_signature: AY89a1_vTab1oHYWcDdlZ9BumSJ2aaCYR8Q7MlenFaeFja657Z23zUcl3oX_OuhfJ0Q=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 74
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 74
+      prompt_token_count: 1907
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 1907
+      total_token_count: 1981
+      traffic_type: ON_DEMAND
+    invocation_id: e-e9fa800e-5a6c-4bc4-9a6b-c478c5b75b63
+    author: property_agent
+    id: fce8dd04-615f-4a74-9e2b-e04d8c3bae05
+    timestamp: 1781425593.7900941
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-e9fa800e-5a6c-4bc4-9a6b-c478c5b75b63
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:26:33.790327+00:00'
+          elapsed_ms: 3184
+          correlation_id: null
+          session_id: null
+          invocation_id: e-e9fa800e-5a6c-4bc4-9a6b-c478c5b75b63
+          primary_agent: checkpoint
+          checkpoint_ids: []
+          checkpoint_optional_agents:
+            - diy
+          context_doc_count: 0
+          message: Planning next moves...
+    id: 75230517-faa4-44a2-8008-17bf2b71c671
+    timestamp: 1781425593.790375
+  - invocation_id: e-e9fa800e-5a6c-4bc4-9a6b-c478c5b75b63
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+    id: 82c02121-33a3-4c44-aafa-2dcdc9de93de
+    timestamp: 1781425594.946846
+  - content:
+      parts:
+        - text: |
+            {"user_query": "got it, I'll try that", "primary_agent": "checkpoint", "checkpoint_optional_agents": ["diy"], "property_id": "nY3XQ92eUa02Qs14QWEn", "property_address": "1982 Helena Way, Brentwood, CA 94513"}
+      role: user
+    invocation_id: e-44a71445-cb1a-4170-b8b8-163613452e7d
+    author: user
+    actions:
+      state_delta: {}
+    id: 3650f3ce-c132-4036-8ee4-769cf75b3305
+    timestamp: 1781425594.998402
+  - content:
+      parts:
+        - text: Working on it...
+      role: model
+    invocation_id: e-44a71445-cb1a-4170-b8b8-163613452e7d
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.runner_exec
+          ts: '2026-06-14T08:26:35.000516+00:00'
+          elapsed_ms: 0
+          correlation_id: null
+          session_id: 1e26e087-a2e6-4af3-acf6-148b5b58e66d
+          invocation_id: e-44a71445-cb1a-4170-b8b8-163613452e7d
+          primary_agent: checkpoint
+          checkpoint_ids: []
+          checkpoint_optional_agents:
+            - diy
+          context_doc_count: 0
+          message: Working on it...
+    id: aefa2e02-f6b7-4143-ad15-7a6889c1154c
+    timestamp: 1781425595.000598
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - text: |-
+            Sounds good. I'm here whenever you have a new task, a question about your home, or if you'd like me to list the current status of your property's checkpoints again. How can I help you next?
+          thought_signature: AY89a18pM1mZFBOvvcWHgr9eT0l5eQJUOi-gLVCETmPnW4Rc5Ji0Il-sLJgTKLJyDqM=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 47
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 47
+      prompt_token_count: 2076
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 2076
+      total_token_count: 2123
+      traffic_type: ON_DEMAND
+    invocation_id: e-44a71445-cb1a-4170-b8b8-163613452e7d
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+        checkpoint_optional_agents:
+          - diy
+        user_query: |-
+          got it, I'll try that
+        property_address: 1982 Helena Way, Brentwood, CA 94513
+        property_id: nY3XQ92eUa02Qs14QWEn
+        primary_agent: checkpoint
+        resolved_turn:
+          intent: substantive
+          route: checkpoint
+          expanded_user_query: |-
+            got it, I'll try that
+          retrieval_only: false
+          run_optional_agents:
+            - diy
+          user_goal: new_analysis
+          query_mode: branch_explicit
+          menu_index: null
+          capability_key: null
+          discourse_act: null
+          focus_branch: null
+          resolve_source: single_loop
+        conversational_turn: false
+        checkpoint_parallel_results: null
+        _resolve_turn_invocation_id: e-44a71445-cb1a-4170-b8b8-163613452e7d
+    id: 3031f32a-1707-48da-8e91-35b852977877
+    timestamp: 1781425595.0203662
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-44a71445-cb1a-4170-b8b8-163613452e7d
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:26:35.020442+00:00'
+          elapsed_ms: 19
+          correlation_id: null
+          session_id: null
+          invocation_id: e-44a71445-cb1a-4170-b8b8-163613452e7d
+          primary_agent: checkpoint
+          checkpoint_ids: []
+          checkpoint_optional_agents:
+            - diy
+          context_doc_count: 0
+          message: Planning next moves...
+    id: b26a1c00-eb2b-4456-a10a-53500fc4b89a
+    timestamp: 1781425595.0204742
+  - invocation_id: e-44a71445-cb1a-4170-b8b8-163613452e7d
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+    id: e60c45dd-82b1-4d06-b00d-766c50021844
+    timestamp: 1781425597.044169
+last_update_time: 1781425597.044169

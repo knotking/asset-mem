@@ -1,0 +1,228 @@
+id: fe3d4247-8bc7-42e4-9353-c2e3103525eb
+app_name: property_agent
+user_id: adk_conformance_test_user
+state:
+  homeappLifecycle:
+    v: 1
+    phase: engine.before_model
+    ts: '2026-06-14T08:27:25.179922+00:00'
+    elapsed_ms: 3563
+    invocation_id: e-72bbf973-fe24-4d62-b29f-104495246e2f
+    checkpoint_ids: []
+    checkpoint_optional_agents: []
+    context_doc_count: 0
+    message: Planning next moves...
+    primary_agent: report
+  _executor_invocation_structured_analysis: false
+  checkpoint_optional_agents: []
+  user_query: summarize my report
+  property_address: 1982 Helena Way, Brentwood, CA 94513
+  property_id: EVALPROP0001
+  primary_agent: report
+  report_ids:
+    - RPT0000000000000001
+  current_date_utc: '2026-06-14'
+  current_year: 2026
+  resolved_turn:
+    intent: substantive
+    route: report
+    expanded_user_query: summarize my report
+    retrieval_only: true
+    run_optional_agents: []
+    user_goal: answer_from_context
+    query_mode: interpret_session
+    resolve_source: single_loop
+  conversational_turn: false
+  _resolve_turn_invocation_id: e-72bbf973-fe24-4d62-b29f-104495246e2f
+  user_id: adk_conformance_test_user
+  _cached_report_retrieval_text: No saved reports could be loaded. The attached report(s) may be missing or inaccessible.
+  _cached_report_retrieval_fingerprint: |-
+    {"report_ids": ["RPT0000000000000001"], "report_revisions": {}}
+  _report_retrieval_last_result: No saved reports could be loaded. The attached report(s) may be missing or inaccessible.
+  _report_retrieval_served_invocation_id: e-72bbf973-fe24-4d62-b29f-104495246e2f
+events:
+  - content:
+      parts:
+        - text: |
+            {"user_query": "summarize my report", "primary_agent": "report", "property_id": "EVALPROP0001", "report_ids": ["RPT0000000000000001"], "property_address": "1982 Helena Way, Brentwood, CA 94513"}
+      role: user
+    invocation_id: e-72bbf973-fe24-4d62-b29f-104495246e2f
+    author: user
+    actions:
+      state_delta: {}
+    id: ef68299c-fc24-48dd-9b38-c4fb03ab3f34
+    timestamp: 1781425641.6154869
+  - content:
+      parts:
+        - text: Working on it...
+      role: model
+    invocation_id: e-72bbf973-fe24-4d62-b29f-104495246e2f
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.runner_exec
+          ts: '2026-06-14T08:27:21.616764+00:00'
+          elapsed_ms: 0
+          correlation_id: null
+          session_id: fe3d4247-8bc7-42e4-9353-c2e3103525eb
+          invocation_id: e-72bbf973-fe24-4d62-b29f-104495246e2f
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Working on it...
+    id: af2efdaa-2c25-4a24-b1cd-5113c29c4f53
+    timestamp: 1781425641.6168058
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - function_call:
+            id: adk-a05feb1d-0588-48df-b442-8c65117b30c0
+            args:
+              user_query: summarize my report
+            name: report_retrieval
+          thought_signature: AY89a19xDHrn_jr2qEvF6J7zC32NJ8ose4EmY8EoNUnvrup2nm_hkYcv1lIcvfGrMSM=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 23
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 23
+      prompt_token_count: 1773
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 1773
+      total_token_count: 1796
+      traffic_type: ON_DEMAND
+    invocation_id: e-72bbf973-fe24-4d62-b29f-104495246e2f
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+        checkpoint_optional_agents: []
+        user_query: summarize my report
+        property_address: 1982 Helena Way, Brentwood, CA 94513
+        property_id: EVALPROP0001
+        primary_agent: report
+        report_ids:
+          - RPT0000000000000001
+        current_date_utc: '2026-06-14'
+        current_year: 2026
+        resolved_turn:
+          intent: substantive
+          route: report
+          expanded_user_query: summarize my report
+          retrieval_only: true
+          run_optional_agents: []
+          user_goal: answer_from_context
+          query_mode: interpret_session
+          menu_index: null
+          capability_key: null
+          discourse_act: null
+          focus_branch: null
+          resolve_source: single_loop
+        conversational_turn: false
+        _resolve_turn_invocation_id: e-72bbf973-fe24-4d62-b29f-104495246e2f
+    long_running_tool_ids: []
+    id: 2ea743ab-205c-40aa-a3b7-7f971ea5e32e
+    timestamp: 1781425641.619297
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-72bbf973-fe24-4d62-b29f-104495246e2f
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:27:21.619516+00:00'
+          elapsed_ms: 2
+          correlation_id: null
+          session_id: null
+          invocation_id: e-72bbf973-fe24-4d62-b29f-104495246e2f
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Planning next moves...
+    id: 46bbb157-fd48-4a07-9078-065333cfb312
+    timestamp: 1781425641.619575
+  - content:
+      parts:
+        - function_response:
+            id: adk-a05feb1d-0588-48df-b442-8c65117b30c0
+            name: report_retrieval
+            response:
+              result: No saved reports could be loaded. The attached report(s) may be missing or inaccessible.
+      role: user
+    invocation_id: e-72bbf973-fe24-4d62-b29f-104495246e2f
+    author: property_agent
+    actions:
+      state_delta:
+        user_id: adk_conformance_test_user
+        _cached_report_retrieval_text: No saved reports could be loaded. The attached report(s) may be missing or inaccessible.
+        _cached_report_retrieval_fingerprint: |-
+          {"report_ids": ["RPT0000000000000001"], "report_revisions": {}}
+        _report_retrieval_last_result: No saved reports could be loaded. The attached report(s) may be missing or inaccessible.
+        _report_retrieval_served_invocation_id: e-72bbf973-fe24-4d62-b29f-104495246e2f
+    id: 9ea5a4ce-8126-461d-a212-7a0428ff7550
+    timestamp: 1781425645.1658921
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - text: |-
+            I'm sorry, I'm unable to retrieve the report for 1982 Helena Way at this time. Please ensure the report is properly attached, or let me know if there's anything else I can help you with.
+          thought_signature: AY89a1_yAiWqFJwoykGgMjswoKsynNy9ruiWuMxK0ws8bMMWBXdMjmtH_5Kuk7G_HMQ=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 49
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 49
+      prompt_token_count: 1846
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 1846
+      total_token_count: 1895
+      traffic_type: ON_DEMAND
+    invocation_id: e-72bbf973-fe24-4d62-b29f-104495246e2f
+    author: property_agent
+    id: 00b81caf-46cf-4cb3-9045-eeaec1b582d1
+    timestamp: 1781425645.179541
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-72bbf973-fe24-4d62-b29f-104495246e2f
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:27:25.179922+00:00'
+          elapsed_ms: 3563
+          correlation_id: null
+          session_id: null
+          invocation_id: e-72bbf973-fe24-4d62-b29f-104495246e2f
+          primary_agent: report
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Planning next moves...
+    id: cf925876-3da1-4e24-91cd-f98fb66c0566
+    timestamp: 1781425645.179996
+  - invocation_id: e-72bbf973-fe24-4d62-b29f-104495246e2f
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+    id: 37d744f3-59ea-4c6e-aed0-918624c29259
+    timestamp: 1781425646.220285
+last_update_time: 1781425646.220285

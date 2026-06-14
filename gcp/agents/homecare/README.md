@@ -386,8 +386,10 @@ ADK web-recorded `*.evalset.json` files and `make test-eval*` were **removed**. 
 - **`make routing-eval-ci`** — routing eval + baseline gate (runs in CI)
 - **`make contract-check`** — contentJson schema + deterministic rubric (runs in CI)
 - **`make trajectory-eval-ci`** — executor tool trajectory + baseline gate (runs in CI)
+- **`make conformance-guard-ci`** — tool-boundary guard eval + baseline gate (runs in CI)
 - **`uv run adk web`** — manual staging QA against `property_agent`
-- **`make conformance-test`** — replay recorded cases under `property_agent/conformance/`
+- **`make conformance-web-record`** / **`make conformance-web`** — adk web with record/replay plugins
+- **`make conformance-record`** / **`make conformance-test`** — ADK conformance fixtures (test uses HomeApp replay compare)
 
 See **`property_agent/evals/README.md`** for command details.
 

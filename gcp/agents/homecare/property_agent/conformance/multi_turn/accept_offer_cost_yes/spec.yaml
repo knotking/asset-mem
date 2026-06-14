@@ -1,0 +1,16 @@
+description: >
+  Accept pending cost-branch offer with a short affirmation.
+agent: property_agent
+initial_state:
+  checkpoint_ids: ["CKPT0000000000000001"]
+  checkpoint_analysis:
+    title: "Garage paint damage"
+    analysisStatus: {diy: completed}
+  pending_user_action:
+    kind: run_branch
+    expanded_user_query: "Run cost analysis for the garage paint damage"
+    run_optional_agents: [cost]
+    offered_summary: "Offered to run cost analysis."
+user_messages:
+  - text: |
+      {"user_query": "yes", "primary_agent": "checkpoint", "property_id": "EVALPROP0001", "property_address": "1982 Helena Way, Brentwood, CA 94513", "checkpoint_ids": ["CKPT0000000000000001"]}

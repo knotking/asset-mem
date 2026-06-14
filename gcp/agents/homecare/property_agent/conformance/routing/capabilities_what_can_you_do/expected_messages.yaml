@@ -1,0 +1,4 @@
+turns:
+  - content_schema_version: 2
+    content_json_absent: true
+    content_markdown_present: true

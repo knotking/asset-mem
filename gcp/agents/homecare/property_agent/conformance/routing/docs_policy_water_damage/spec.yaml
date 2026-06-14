@@ -1,0 +1,7 @@
+description: >
+  User docs tab — policy question should route to user_docs_retrieval.
+agent: property_agent
+initial_state: {}
+user_messages:
+  - text: |
+      {"user_query": "what does my insurance policy say about water damage?", "primary_agent": "docs", "property_id": "EVALPROP0001", "property_address": "1982 Helena Way, Brentwood, CA 94513", "context_doc_uris": ["gs://homegeek-user-data-staging/docs/policy.pdf"]}

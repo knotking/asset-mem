@@ -33,7 +33,7 @@ from property_agent.routing.conversational_intent import (
 )
 from property_agent.routing.post_structured_analysis import structured_analysis_ran
 from property_agent.routing.query_mode import snapshot_session_analysis_context
-from property_agent.routing.constants import USER_DOCS_PASSTHROUGH_STATE_KEY
+from property_agent.routing.single_loop_routing import arm_user_docs_passthrough
 from property_agent.observability.lifecycle_events import (
     PHASE_ENGINE_BEFORE_MODEL,
     emit_lifecycle_from_callback,
@@ -128,12 +128,12 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
         if tool_name == "user_docs_retrieval":
             resolved = tool_context.state.get("resolved_turn")
             route = resolved.get("route") if isinstance(resolved, dict) else None
-            if (
-                route == "user_docs"
-                or str(tool_context.state.get("primary_agent") or "").strip().lower()
-                == "docs"
-            ):
-                tool_context.state[USER_DOCS_PASSTHROUGH_STATE_KEY] = True
+            arm_user_docs_passthrough(
+                tool_context.state,
+                tool_response=tool_response,
+                route=route,
+                primary_agent=tool_context.state.get("primary_agent"),
+            )
         if tool_name == "report_retrieval":
             from property_agent.reports.retrieval import (
                 mark_report_retrieval_served,

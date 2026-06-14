@@ -1,0 +1,430 @@
+id: 9c015692-313d-418c-8c91-9d81091e56f3
+app_name: property_agent
+user_id: adk_conformance_test_user
+state:
+  homeappLifecycle:
+    v: 1
+    phase: engine.before_model
+    ts: '2026-06-14T08:27:07.052872+00:00'
+    elapsed_ms: 22
+    invocation_id: e-ead6bac5-8db5-49ad-b40f-7a29a229fa7b
+    checkpoint_ids: []
+    checkpoint_optional_agents:
+      - diy
+      - cost
+    context_doc_count: 0
+    message: Planning next moves...
+    primary_agent: checkpoint
+  _executor_invocation_structured_analysis: false
+  checkpoint_optional_agents:
+    - service
+  user_query: why is professional so expensive?
+  property_address: 1982 Helena Way, Brentwood, CA 94513
+  property_id: nY3XQ92eUa02Qs14QWEn
+  primary_agent: checkpoint
+  search_location:
+    source: device_gps
+    coordinates:
+      lat: 37.9
+      lng: -121.7
+    radius_miles: 5
+  current_date_utc: '2026-06-14'
+  current_year: 2026
+  resolved_turn:
+    intent: substantive
+    route: checkpoint
+    expanded_user_query: why is professional so expensive?
+    retrieval_only: false
+    run_optional_agents:
+      - service
+    user_goal: new_analysis
+    query_mode: branch_explicit
+    resolve_source: single_loop
+  conversational_turn: false
+  _resolve_turn_invocation_id: e-ead6bac5-8db5-49ad-b40f-7a29a229fa7b
+  user_id: adk_conformance_test_user
+  checkpoint_request_timing:
+    started_at: 134746.322007041
+    emitted: false
+    retrieval_ms: 2048
+  analysis_run_id: 0d492807-dc49-4b47-bd34-ec9053812f26
+  contentMarkdown: No matching checkpoints found for your query. Try rephrasing or check that checkpoints exist for this property.
+  analysisRunId: 0d492807-dc49-4b47-bd34-ec9053812f26
+  pending_user_action:
+    kind: confirm_action
+    expanded_user_query: |-
+      List the property's checkpoints
+    run_optional_agents: []
+    capability_key: checkpoints
+    offered_summary: |-
+      The assistant offered to list the property's checkpoints.
+events:
+  - content:
+      parts:
+        - text: |
+            {"user_query": "analyse checkpoints for diy and cost", "primary_agent": "checkpoint", "checkpoint_optional_agents": ["diy", "cost"], "property_id": "nY3XQ92eUa02Qs14QWEn", "property_address": "1982 Helena Way, Brentwood, CA 94513", "search_location": {"source": "device_gps", "coordinates": {"lat": 37.9, "lng": -121.7}, "radius_miles": 5}}
+      role: user
+    invocation_id: e-fe07a656-3e7c-4669-b9f3-1a488923ef8c
+    author: user
+    actions:
+      state_delta: {}
+    id: b56d7de2-77f0-4a39-960b-247e728fdc63
+    timestamp: 1781425620.9780731
+  - content:
+      parts:
+        - text: Working on it...
+      role: model
+    invocation_id: e-fe07a656-3e7c-4669-b9f3-1a488923ef8c
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.runner_exec
+          ts: '2026-06-14T08:27:00.979099+00:00'
+          elapsed_ms: 0
+          correlation_id: null
+          session_id: 9c015692-313d-418c-8c91-9d81091e56f3
+          invocation_id: e-fe07a656-3e7c-4669-b9f3-1a488923ef8c
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Working on it...
+    id: 50246ca6-c5ed-414c-8105-091bea6a553d
+    timestamp: 1781425620.9791338
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - function_call:
+            id: adk-a946e125-a37e-48b8-9597-85cf57975c41
+            args:
+              property_id: nY3XQ92eUa02Qs14QWEn
+              branches:
+                - diy
+                - cost
+              property_address: 1982 Helena Way, Brentwood, CA 94513
+              user_query: analyse checkpoints for diy and cost
+            name: analyze_checkpoints
+          thought_signature: AY89a193NK0ukQ7Le52iWtLmkgb2s-GP8pLpdPv78PG28kzvWoymL3ALrrzTkRK560c=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 81
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 81
+      prompt_token_count: 1891
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 1891
+      total_token_count: 1972
+      traffic_type: ON_DEMAND
+    invocation_id: e-fe07a656-3e7c-4669-b9f3-1a488923ef8c
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+        checkpoint_optional_agents:
+          - diy
+          - cost
+        user_query: analyse checkpoints for diy and cost
+        property_address: 1982 Helena Way, Brentwood, CA 94513
+        property_id: nY3XQ92eUa02Qs14QWEn
+        primary_agent: checkpoint
+        search_location:
+          source: device_gps
+          coordinates:
+            lat: 37.9
+            lng: -121.7
+          radius_miles: 5
+        current_date_utc: '2026-06-14'
+        current_year: 2026
+        resolved_turn:
+          intent: substantive
+          route: checkpoint
+          expanded_user_query: analyse checkpoints for diy and cost
+          retrieval_only: false
+          run_optional_agents:
+            - diy
+            - cost
+          user_goal: new_analysis
+          query_mode: branch_explicit
+          menu_index: null
+          capability_key: null
+          discourse_act: null
+          focus_branch: null
+          resolve_source: single_loop
+        conversational_turn: false
+        checkpoint_parallel_results: null
+        _resolve_turn_invocation_id: e-fe07a656-3e7c-4669-b9f3-1a488923ef8c
+    long_running_tool_ids: []
+    id: 8ed5179f-6280-41c9-aec8-261249a0871b
+    timestamp: 1781425620.981191
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-fe07a656-3e7c-4669-b9f3-1a488923ef8c
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:27:00.981250+00:00'
+          elapsed_ms: 2
+          correlation_id: null
+          session_id: null
+          invocation_id: e-fe07a656-3e7c-4669-b9f3-1a488923ef8c
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Planning next moves...
+    id: 18959075-49e8-41e7-951f-37d649f9dc54
+    timestamp: 1781425620.9812758
+  - content:
+      parts:
+        - function_response:
+            id: adk-a946e125-a37e-48b8-9597-85cf57975c41
+            name: analyze_checkpoints
+            response:
+              result: No matching checkpoints found for your query. Try rephrasing or check that checkpoints exist for this property.
+      role: user
+    invocation_id: e-fe07a656-3e7c-4669-b9f3-1a488923ef8c
+    author: property_agent
+    actions:
+      state_delta:
+        user_id: adk_conformance_test_user
+        checkpoint_optional_agents:
+          - diy
+          - cost
+        user_query: analyse checkpoints for diy and cost
+        property_address: 1982 Helena Way, Brentwood, CA 94513
+        property_id: nY3XQ92eUa02Qs14QWEn
+        search_location:
+          source: device_gps
+          radius_miles: 5
+          coordinates:
+            lat: 37.9
+            lng: -121.7
+          label: null
+        checkpoint_request_timing:
+          started_at: 134746.322007041
+          emitted: false
+          retrieval_ms: 2048
+          parallel_ms: null
+          diy_ms: null
+          synthesis_ms: null
+          synthesis_started_at: null
+          executor_started_at: null
+          executor_ms: null
+          return_chars: null
+        analysis_run_id: 0d492807-dc49-4b47-bd34-ec9053812f26
+        contentMarkdown: No matching checkpoints found for your query. Try rephrasing or check that checkpoints exist for this property.
+        contentJson: null
+        analysisRunId: 0d492807-dc49-4b47-bd34-ec9053812f26
+    id: 13fed464-6981-4842-9a0b-d5b1284716ed
+    timestamp: 1781425624.0272052
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - text: "I couldn't find any checkpoints for your property to analyze at the moment. \n\nIf you'd like to see what's currently recorded, I can list your property's checkpoints for you—would you like me to do that?"
+          thought_signature: AY89a19f4IiLZhIzAjqfQC5wFl5XS6YqKi1lpDpAbDYmAdod4kV5JvOTg0_nsBVod_0=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 50
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 50
+      prompt_token_count: 2016
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 2016
+      total_token_count: 2066
+      traffic_type: ON_DEMAND
+    invocation_id: e-fe07a656-3e7c-4669-b9f3-1a488923ef8c
+    author: property_agent
+    id: 88dd4d32-d8af-40d4-b145-6cb386ef2318
+    timestamp: 1781425624.0373251
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-fe07a656-3e7c-4669-b9f3-1a488923ef8c
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:27:04.037535+00:00'
+          elapsed_ms: 3058
+          correlation_id: null
+          session_id: null
+          invocation_id: e-fe07a656-3e7c-4669-b9f3-1a488923ef8c
+          primary_agent: checkpoint
+          checkpoint_ids: []
+          checkpoint_optional_agents:
+            - diy
+            - cost
+          context_doc_count: 0
+          message: Planning next moves...
+    id: 42f4c1f1-1cb4-4f1e-88db-62d4615d2726
+    timestamp: 1781425624.037598
+  - invocation_id: e-fe07a656-3e7c-4669-b9f3-1a488923ef8c
+    author: property_agent
+    actions:
+      state_delta:
+        pending_user_action:
+          kind: confirm_action
+          expanded_user_query: |-
+            List the property's checkpoints
+          run_optional_agents: []
+          capability_key: checkpoints
+          offered_summary: |-
+            The assistant offered to list the property's checkpoints.
+        _executor_invocation_structured_analysis: false
+    id: db327c92-ace1-463f-b74e-6a5544a0ce6b
+    timestamp: 1781425627.006343
+  - content:
+      parts:
+        - text: |
+            {"user_query": "why is professional so expensive?", "primary_agent": "checkpoint", "checkpoint_optional_agents": ["service"], "property_id": "nY3XQ92eUa02Qs14QWEn", "property_address": "1982 Helena Way, Brentwood, CA 94513", "search_location": {"source": "device_gps", "coordinates": {"lat": 37.9, "lng": -121.7}, "radius_miles": 5}}
+      role: user
+    invocation_id: e-ead6bac5-8db5-49ad-b40f-7a29a229fa7b
+    author: user
+    actions:
+      state_delta: {}
+    id: cf9797b4-c4d2-45c2-81ce-e9a24a573f22
+    timestamp: 1781425627.029608
+  - content:
+      parts:
+        - text: Working on it...
+      role: model
+    invocation_id: e-ead6bac5-8db5-49ad-b40f-7a29a229fa7b
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.runner_exec
+          ts: '2026-06-14T08:27:07.030664+00:00'
+          elapsed_ms: 0
+          correlation_id: null
+          session_id: 9c015692-313d-418c-8c91-9d81091e56f3
+          invocation_id: e-ead6bac5-8db5-49ad-b40f-7a29a229fa7b
+          primary_agent: checkpoint
+          checkpoint_ids: []
+          checkpoint_optional_agents:
+            - diy
+            - cost
+          context_doc_count: 0
+          message: Working on it...
+    id: 52d4f758-f111-4576-830f-f440126bea2d
+    timestamp: 1781425627.030692
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - text: |-
+            Professional service pricing can be complex, and while I can't speak to specific quotes you might have received, industry costs generally reflect several key factors:
+
+            *   **Licensing and Insurance:** Professional contractors carry business insurance, liability coverage, and worker's compensation, which protects you as a homeowner but adds significantly to their overhead.
+            *   **Expertise and Tooling:** Professionals invest in specialized training, certification, and high-quality equipment to ensure work is done correctly and safely, which often exceeds the cost of standard consumer-grade tools.
+            *   **Fixed Costs:** A large portion of a service fee often covers travel time, fuel, vehicle maintenance, and the administrative work required to manage permits and code compliance.
+            *   **Quality Guarantee:** When you hire a licensed professional, you are typically paying for their warranty on labor and the assurance that the work meets building codes, which can save money and prevent issues in the long run.
+
+            If you have a specific project in mind, I can look for relevant checkpoints or information in your documents that might help clarify the scope of the work. Would you like me to check if you have any existing maintenance records for that area?
+          thought_signature: AY89a19UpWDz3UsODSKKywktJx_b1dw24lGD37Y3kkh1JJYvJrYVLyaRxadI4xR9K8w=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 240
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 240
+      prompt_token_count: 2189
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 2189
+      total_token_count: 2429
+      traffic_type: ON_DEMAND
+    invocation_id: e-ead6bac5-8db5-49ad-b40f-7a29a229fa7b
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+        checkpoint_optional_agents:
+          - service
+        user_query: why is professional so expensive?
+        property_address: 1982 Helena Way, Brentwood, CA 94513
+        property_id: nY3XQ92eUa02Qs14QWEn
+        primary_agent: checkpoint
+        search_location:
+          source: device_gps
+          coordinates:
+            lat: 37.9
+            lng: -121.7
+          radius_miles: 5
+        resolved_turn:
+          intent: substantive
+          route: checkpoint
+          expanded_user_query: why is professional so expensive?
+          retrieval_only: false
+          run_optional_agents:
+            - service
+          user_goal: new_analysis
+          query_mode: branch_explicit
+          menu_index: null
+          capability_key: null
+          discourse_act: null
+          focus_branch: null
+          resolve_source: single_loop
+        conversational_turn: false
+        checkpoint_parallel_results: null
+        _resolve_turn_invocation_id: e-ead6bac5-8db5-49ad-b40f-7a29a229fa7b
+    id: 648fa7bb-1f73-4776-ad47-0bd0ff437f63
+    timestamp: 1781425627.052782
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-ead6bac5-8db5-49ad-b40f-7a29a229fa7b
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:27:07.052872+00:00'
+          elapsed_ms: 22
+          correlation_id: null
+          session_id: null
+          invocation_id: e-ead6bac5-8db5-49ad-b40f-7a29a229fa7b
+          primary_agent: checkpoint
+          checkpoint_ids: []
+          checkpoint_optional_agents:
+            - diy
+            - cost
+          context_doc_count: 0
+          message: Planning next moves...
+    id: 95bbd3cb-2d82-42e1-b46c-15ed3c029ae1
+    timestamp: 1781425627.052902
+  - invocation_id: e-ead6bac5-8db5-49ad-b40f-7a29a229fa7b
+    author: property_agent
+    actions:
+      state_delta:
+        pending_user_action:
+          kind: confirm_action
+          expanded_user_query: |-
+            List the property's checkpoints
+          run_optional_agents: []
+          capability_key: checkpoints
+          offered_summary: |-
+            The assistant offered to list the property's checkpoints.
+        _executor_invocation_structured_analysis: false
+    id: 98ca33d7-86be-4690-8acc-f5db45052c56
+    timestamp: 1781425630.239748
+last_update_time: 1781425630.239748

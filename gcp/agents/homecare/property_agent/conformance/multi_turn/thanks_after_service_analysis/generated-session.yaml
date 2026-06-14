@@ -1,0 +1,381 @@
+id: 451ece44-7dd1-4ee6-80ad-d6a9882ede27
+app_name: property_agent
+user_id: adk_conformance_test_user
+state:
+  homeappLifecycle:
+    v: 1
+    phase: engine.before_model
+    ts: '2026-06-14T08:26:29.521525+00:00'
+    elapsed_ms: 25
+    invocation_id: e-0ddd0a95-a1d3-45f3-bf6b-917a820abcc1
+    checkpoint_ids: []
+    checkpoint_optional_agents:
+      - service
+    context_doc_count: 0
+    message: Planning next moves...
+    primary_agent: checkpoint
+  _executor_invocation_structured_analysis: false
+  checkpoint_optional_agents:
+    - service
+  user_query: |-
+    thank you, that's helpful
+  property_address: 1982 Helena Way, Brentwood, CA 94513
+  property_id: nY3XQ92eUa02Qs14QWEn
+  primary_agent: checkpoint
+  current_date_utc: '2026-06-14'
+  current_year: 2026
+  resolved_turn:
+    intent: substantive
+    route: checkpoint
+    expanded_user_query: |-
+      thank you, that's helpful
+    retrieval_only: false
+    run_optional_agents:
+      - service
+    user_goal: new_analysis
+    query_mode: branch_explicit
+    resolve_source: single_loop
+  conversational_turn: false
+  _resolve_turn_invocation_id: e-0ddd0a95-a1d3-45f3-bf6b-917a820abcc1
+  user_id: adk_conformance_test_user
+  checkpoint_request_timing:
+    started_at: 134712.009486208
+    emitted: false
+    retrieval_ms: 391
+  analysis_run_id: 6462b2c4-fd1d-448a-823e-a786aaf0247e
+  checkpoint_location_meta:
+    requested: garage
+    known_locations: []
+    returned_count: 0
+    scope: location
+  contentMarkdown: No checkpoints were captured for garage on this property.
+  analysisRunId: 6462b2c4-fd1d-448a-823e-a786aaf0247e
+events:
+  - content:
+      parts:
+        - text: |
+            {"user_query": "recommend providers for garage door repair", "primary_agent": "checkpoint", "checkpoint_optional_agents": ["service"], "property_id": "nY3XQ92eUa02Qs14QWEn", "property_address": "1982 Helena Way, Brentwood, CA 94513"}
+      role: user
+    invocation_id: e-9f8baa6d-ddfb-4fc7-84cb-3e39690f3157
+    author: user
+    actions:
+      state_delta: {}
+    id: 016312b7-ac50-47be-bb29-b4d05b90c880
+    timestamp: 1781425586.245497
+  - content:
+      parts:
+        - text: Working on it...
+      role: model
+    invocation_id: e-9f8baa6d-ddfb-4fc7-84cb-3e39690f3157
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.runner_exec
+          ts: '2026-06-14T08:26:26.247264+00:00'
+          elapsed_ms: 0
+          correlation_id: null
+          session_id: 451ece44-7dd1-4ee6-80ad-d6a9882ede27
+          invocation_id: e-9f8baa6d-ddfb-4fc7-84cb-3e39690f3157
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Working on it...
+    id: 29b64dc4-d4a7-4a0c-9d2f-25e5fa02b62f
+    timestamp: 1781425586.247316
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - function_call:
+            id: adk-efc09f2f-1b05-4083-8ed0-9df40c7b2390
+            args:
+              property_id: nY3XQ92eUa02Qs14QWEn
+              user_query: recommend providers for garage door repair
+              property_address: 1982 Helena Way, Brentwood, CA 94513
+              branches:
+                - service
+            name: analyze_checkpoints
+          thought_signature: AY89a18AlICzcrsbn8ccGBpnwsKCE7FwOBip3FaIVR4bmyqHBr3dupzrDZEnQidX60o=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 77
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 77
+      prompt_token_count: 1788
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 1788
+      total_token_count: 1865
+      traffic_type: ON_DEMAND
+    invocation_id: e-9f8baa6d-ddfb-4fc7-84cb-3e39690f3157
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+        checkpoint_optional_agents:
+          - service
+        user_query: recommend providers for garage door repair
+        property_address: 1982 Helena Way, Brentwood, CA 94513
+        property_id: nY3XQ92eUa02Qs14QWEn
+        primary_agent: checkpoint
+        current_date_utc: '2026-06-14'
+        current_year: 2026
+        resolved_turn:
+          intent: substantive
+          route: checkpoint
+          expanded_user_query: recommend providers for garage door repair
+          retrieval_only: false
+          run_optional_agents:
+            - service
+          user_goal: new_analysis
+          query_mode: branch_explicit
+          menu_index: null
+          capability_key: null
+          discourse_act: null
+          focus_branch: null
+          resolve_source: single_loop
+        conversational_turn: false
+        checkpoint_parallel_results: null
+        _resolve_turn_invocation_id: e-9f8baa6d-ddfb-4fc7-84cb-3e39690f3157
+    long_running_tool_ids: []
+    id: 02b6d849-34d1-45eb-8c59-2392114973c2
+    timestamp: 1781425586.251145
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-9f8baa6d-ddfb-4fc7-84cb-3e39690f3157
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:26:26.251245+00:00'
+          elapsed_ms: 4
+          correlation_id: null
+          session_id: null
+          invocation_id: e-9f8baa6d-ddfb-4fc7-84cb-3e39690f3157
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Planning next moves...
+    id: 6963c3e5-bf5d-4474-9da0-b361196e7331
+    timestamp: 1781425586.2512782
+  - content:
+      parts:
+        - function_response:
+            id: adk-efc09f2f-1b05-4083-8ed0-9df40c7b2390
+            name: analyze_checkpoints
+            response:
+              result: No checkpoints were captured for garage on this property.
+      role: user
+    invocation_id: e-9f8baa6d-ddfb-4fc7-84cb-3e39690f3157
+    author: property_agent
+    actions:
+      state_delta:
+        user_id: adk_conformance_test_user
+        checkpoint_optional_agents:
+          - service
+        user_query: recommend providers for garage door repair
+        property_address: 1982 Helena Way, Brentwood, CA 94513
+        property_id: nY3XQ92eUa02Qs14QWEn
+        checkpoint_request_timing:
+          started_at: 134712.009486208
+          emitted: false
+          retrieval_ms: 391
+          parallel_ms: null
+          diy_ms: null
+          synthesis_ms: null
+          synthesis_started_at: null
+          executor_started_at: null
+          executor_ms: null
+          return_chars: null
+        analysis_run_id: 6462b2c4-fd1d-448a-823e-a786aaf0247e
+        checkpoint_location_meta:
+          requested: garage
+          matched_field: null
+          known_locations: []
+          returned_count: 0
+          scope: location
+        contentMarkdown: No checkpoints were captured for garage on this property.
+        contentJson: null
+        analysisRunId: 6462b2c4-fd1d-448a-823e-a786aaf0247e
+    id: 3cd75064-d391-4914-967c-c22d54d6ccf7
+    timestamp: 1781425588.057183
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - text: "I couldn't find any recent inspection data or service records for your garage. Since I don't have specific provider recommendations on file for your property, I recommend checking with local, licensed garage door specialists in the Brentwood area. \n\nIf you've had a technician out recently and have a receipt or a manual, feel free to upload that document, and I can help you organize the information or set a maintenance reminder for next time."
+          thought_signature: AY89a1_vT4UtMOwbkd47RGIH4ikDMNNua1-zfljaVYGZhd8xrnhMjYIMytih8AkCJsE=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 89
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 89
+      prompt_token_count: 1893
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 1893
+      total_token_count: 1982
+      traffic_type: ON_DEMAND
+    invocation_id: e-9f8baa6d-ddfb-4fc7-84cb-3e39690f3157
+    author: property_agent
+    id: e888fba5-84a1-4f1b-bbb5-4b3a4b5af60a
+    timestamp: 1781425588.065375
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-9f8baa6d-ddfb-4fc7-84cb-3e39690f3157
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:26:28.065563+00:00'
+          elapsed_ms: 1818
+          correlation_id: null
+          session_id: null
+          invocation_id: e-9f8baa6d-ddfb-4fc7-84cb-3e39690f3157
+          primary_agent: checkpoint
+          checkpoint_ids: []
+          checkpoint_optional_agents:
+            - service
+          context_doc_count: 0
+          message: Planning next moves...
+    id: e0177e2f-e6f0-4af8-9058-e4cd52452a47
+    timestamp: 1781425588.0656052
+  - invocation_id: e-9f8baa6d-ddfb-4fc7-84cb-3e39690f3157
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+    id: 50fc1891-d7a4-4fcc-a635-fa6914fd5211
+    timestamp: 1781425589.4547951
+  - content:
+      parts:
+        - text: |
+            {"user_query": "thank you, that's helpful", "primary_agent": "checkpoint", "checkpoint_optional_agents": ["service"], "property_id": "nY3XQ92eUa02Qs14QWEn", "property_address": "1982 Helena Way, Brentwood, CA 94513"}
+      role: user
+    invocation_id: e-0ddd0a95-a1d3-45f3-bf6b-917a820abcc1
+    author: user
+    actions:
+      state_delta: {}
+    id: f937b9e7-6a58-4a4b-97ff-6722645dd284
+    timestamp: 1781425589.494551
+  - content:
+      parts:
+        - text: Working on it...
+      role: model
+    invocation_id: e-0ddd0a95-a1d3-45f3-bf6b-917a820abcc1
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.runner_exec
+          ts: '2026-06-14T08:26:29.495942+00:00'
+          elapsed_ms: 0
+          correlation_id: null
+          session_id: 451ece44-7dd1-4ee6-80ad-d6a9882ede27
+          invocation_id: e-0ddd0a95-a1d3-45f3-bf6b-917a820abcc1
+          primary_agent: checkpoint
+          checkpoint_ids: []
+          checkpoint_optional_agents:
+            - service
+          context_doc_count: 0
+          message: Working on it...
+    id: 62cd884a-9fe8-4d21-97bd-921bb8c80922
+    timestamp: 1781425589.495988
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - text: |-
+            You're very welcome! I'm glad I could help. Don't hesitate to reach out if you have any other questions about your home.
+          thought_signature: AY89a199Hr65RCaD3lLeKcTmzH4LVqVPLAAOPr-JJtAadKQNQ7INTgAIia0uWJBXX-A=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 31
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 31
+      prompt_token_count: 2076
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 2076
+      total_token_count: 2107
+      traffic_type: ON_DEMAND
+    invocation_id: e-0ddd0a95-a1d3-45f3-bf6b-917a820abcc1
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+        checkpoint_optional_agents:
+          - service
+        user_query: |-
+          thank you, that's helpful
+        property_address: 1982 Helena Way, Brentwood, CA 94513
+        property_id: nY3XQ92eUa02Qs14QWEn
+        primary_agent: checkpoint
+        resolved_turn:
+          intent: substantive
+          route: checkpoint
+          expanded_user_query: |-
+            thank you, that's helpful
+          retrieval_only: false
+          run_optional_agents:
+            - service
+          user_goal: new_analysis
+          query_mode: branch_explicit
+          menu_index: null
+          capability_key: null
+          discourse_act: null
+          focus_branch: null
+          resolve_source: single_loop
+        conversational_turn: false
+        checkpoint_parallel_results: null
+        _resolve_turn_invocation_id: e-0ddd0a95-a1d3-45f3-bf6b-917a820abcc1
+    id: c86cb6bf-cae5-45d9-b03b-b205c323ffe6
+    timestamp: 1781425589.521444
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-0ddd0a95-a1d3-45f3-bf6b-917a820abcc1
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:26:29.521525+00:00'
+          elapsed_ms: 25
+          correlation_id: null
+          session_id: null
+          invocation_id: e-0ddd0a95-a1d3-45f3-bf6b-917a820abcc1
+          primary_agent: checkpoint
+          checkpoint_ids: []
+          checkpoint_optional_agents:
+            - service
+          context_doc_count: 0
+          message: Planning next moves...
+    id: 2e20841f-16e7-4c83-926c-55841c4fccb0
+    timestamp: 1781425589.5215502
+  - invocation_id: e-0ddd0a95-a1d3-45f3-bf6b-917a820abcc1
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+    id: 5f70c363-6440-45df-87dd-34bafd01e072
+    timestamp: 1781425590.550783
+last_update_time: 1781425590.550783

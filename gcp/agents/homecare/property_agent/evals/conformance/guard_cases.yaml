@@ -1,0 +1,125 @@
+# Deterministic tool-guard scenarios (Phase 3 negative cases). No ADK replay / Vertex.
+#
+# Handlers: conversational_before_tool | prepare_analyze_checkpoints
+
+defaults:
+  state: {}
+
+cases:
+  - id: conversational_blocks_analyze
+    tags: [guard, negative, casual]
+    handler: conversational_before_tool
+    state:
+      conversational_turn: true
+      user_query: "hello"
+    tool: analyze_checkpoints
+    args: {}
+    expect:
+      blocked: true
+      result_contains: conversational
+
+  - id: conversational_blocks_list_checkpoints
+    tags: [guard, negative, casual]
+    handler: conversational_before_tool
+    state:
+      conversational_turn: true
+      user_query: "good morning"
+    tool: list_checkpoints
+    args: {}
+    expect:
+      blocked: true
+      result_contains: conversational
+
+  - id: report_mode_blocks_analyze
+    tags: [guard, negative, report]
+    handler: conversational_before_tool
+    state:
+      user_query: "yes do cost analysis"
+      resolved_turn:
+        intent: substantive
+        route: report
+        expanded_user_query: "Yes, please run a cost analysis."
+        retrieval_only: true
+        run_optional_agents: []
+        user_goal: answer_from_context
+        discourse_act: accept_offer
+    tool: analyze_checkpoints
+    args: {}
+    expect:
+      blocked: true
+      result_contains: report mode
+
+  - id: report_mode_allows_report_retrieval
+    tags: [guard, report]
+    handler: conversational_before_tool
+    state:
+      user_query: "summarize the report"
+      report_ids: ["RPT0000000000000001"]
+      resolved_turn:
+        intent: substantive
+        route: report
+        expanded_user_query: "summarize the report"
+        retrieval_only: true
+        run_optional_agents: []
+        user_goal: answer_from_context
+    tool: report_retrieval
+    args: {}
+    expect:
+      blocked: false
+
+  - id: invented_checkpoint_ids_dropped
+    tags: [guard, negative, checkpoint]
+    handler: prepare_analyze_checkpoints
+    state:
+      user_query: "Summarize issues"
+      checkpoint_ids: ["CKPT0000000000000001"]
+      resolved_turn:
+        intent: substantive
+        route: checkpoint
+        expanded_user_query: "Summarize issues"
+        retrieval_only: false
+        run_optional_agents: []
+        user_goal: new_analysis
+    tool: analyze_checkpoints
+    args:
+      branches: []
+      checkpoint_ids: ["garage-door", "invented-slug"]
+    expect:
+      blocked: false
+      args_checkpoint_ids: ["CKPT0000000000000001"]
+
+  - id: chip_forces_cost_branches
+    tags: [guard, chip, checkpoint]
+    handler: prepare_analyze_checkpoints
+    state:
+      user_query: "Run cost analysis"
+      resolved_turn:
+        intent: substantive
+        route: checkpoint
+        expanded_user_query: "Run cost analysis"
+        retrieval_only: false
+        run_optional_agents: [cost]
+        user_goal: new_analysis
+        discourse_act: new_work
+        resolve_source: chip
+    tool: analyze_checkpoints
+    args:
+      branches: []
+    expect:
+      blocked: false
+      args_branches: [cost]
+
+  - id: completed_cost_branch_short_circuits
+    tags: [guard, negative, checkpoint]
+    handler: prepare_analyze_checkpoints
+    state:
+      user_query: "Summarize the issues for the selected checkpoint"
+      checkpoint_analysis:
+        analysisStatus: {cost: completed}
+        costEstimationResults: {costEstimates: {DIY: {cost_range: "$50"}}}
+    tool: analyze_checkpoints
+    args:
+      branches: [cost]
+    expect:
+      blocked: true
+      result_contains: already completed

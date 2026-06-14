@@ -1,0 +1,167 @@
+id: 30cb5a0a-6258-47a0-9b46-08b0b0d71573
+app_name: property_agent
+user_id: adk_conformance_test_user
+state:
+  homeappLifecycle:
+    v: 1
+    phase: engine.before_model
+    ts: '2026-06-14T08:27:20.244624+00:00'
+    elapsed_ms: 2
+    invocation_id: e-89d50c89-a163-4ce7-87aa-d7fb1fb672c4
+    checkpoint_ids: []
+    checkpoint_optional_agents: []
+    context_doc_count: 0
+    message: Planning next moves...
+  _executor_invocation_structured_analysis: false
+  checkpoint_optional_agents: []
+  user_query: what can you do?
+  property_address: 1982 Helena Way, Brentwood, CA 94513
+  primary_agent: checkpoint
+  current_date_utc: '2026-06-14'
+  current_year: 2026
+  resolved_turn:
+    intent: capabilities
+    route: none
+    expanded_user_query: what can you do?
+    retrieval_only: true
+    run_optional_agents: []
+    user_goal: answer_from_context
+    query_mode: interpret_session
+    resolve_source: single_loop
+  conversational_turn: true
+  _saved_checkpoint_optional_agents: []
+  _resolve_turn_invocation_id: e-89d50c89-a163-4ce7-87aa-d7fb1fb672c4
+  last_offered_options:
+    - checkpoints
+    - documents
+    - coverage
+    - diy
+    - service
+    - cost
+  pending_user_action:
+    kind: pick_capability
+    expanded_user_query: Explore property maintenance, documents, coverage, DIY, service, or cost analysis.
+    run_optional_agents: []
+    offered_summary: I can help with maintenance checkpoints, property documents, coverage, DIY, service, or cost analysis.
+events:
+  - content:
+      parts:
+        - text: |
+            {"user_query": "what can you do?", "primary_agent": "checkpoint", "property_address": "1982 Helena Way, Brentwood, CA 94513"}
+      role: user
+    invocation_id: e-89d50c89-a163-4ce7-87aa-d7fb1fb672c4
+    author: user
+    actions:
+      state_delta: {}
+    id: 0d176a2f-7873-46ca-8112-7da97fc6822d
+    timestamp: 1781425640.2415092
+  - content:
+      parts:
+        - text: Working on it...
+      role: model
+    invocation_id: e-89d50c89-a163-4ce7-87aa-d7fb1fb672c4
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.runner_exec
+          ts: '2026-06-14T08:27:20.242539+00:00'
+          elapsed_ms: 0
+          correlation_id: null
+          session_id: 30cb5a0a-6258-47a0-9b46-08b0b0d71573
+          invocation_id: e-89d50c89-a163-4ce7-87aa-d7fb1fb672c4
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Working on it...
+    id: 66e548f9-84de-4167-8650-aebe9a61077d
+    timestamp: 1781425640.2425668
+  - content:
+      parts:
+        - text: |-
+            I can help with your property at 1982 Helena Way, Brentwood, CA 94513. Here is what I can do:
+
+            - **Maintenance checkpoints:** Review areas of your home over time and inspection findings.
+            - **Property documents:** Answer questions from your uploaded lease, home policy, insurance, and similar files.
+            - **Coverage:** Explain warranty and insurance points using your documents.
+            - **DIY:** Suggest step-by-step fixes, videos, and products when you want to do it yourself.
+            - **Service:** Recommend local contractors and service providers near your property.
+            - **Cost:** Estimate repair costs and compare DIY vs professional options.
+
+            What would you like to explore first?
+      role: model
+    invocation_id: e-89d50c89-a163-4ce7-87aa-d7fb1fb672c4
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+        checkpoint_optional_agents: []
+        user_query: what can you do?
+        property_address: 1982 Helena Way, Brentwood, CA 94513
+        primary_agent: checkpoint
+        current_date_utc: '2026-06-14'
+        current_year: 2026
+        resolved_turn:
+          intent: capabilities
+          route: none
+          expanded_user_query: what can you do?
+          retrieval_only: true
+          run_optional_agents: []
+          user_goal: answer_from_context
+          query_mode: interpret_session
+          menu_index: null
+          capability_key: null
+          discourse_act: null
+          focus_branch: null
+          resolve_source: single_loop
+        conversational_turn: true
+        _saved_checkpoint_optional_agents: []
+        _resolve_turn_invocation_id: e-89d50c89-a163-4ce7-87aa-d7fb1fb672c4
+        last_offered_options:
+          - checkpoints
+          - documents
+          - coverage
+          - diy
+          - service
+          - cost
+    id: f482c083-7314-4c65-9dbf-423005b2907a
+    timestamp: 1781425640.2445629
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-89d50c89-a163-4ce7-87aa-d7fb1fb672c4
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:27:20.244624+00:00'
+          elapsed_ms: 2
+          correlation_id: null
+          session_id: null
+          invocation_id: e-89d50c89-a163-4ce7-87aa-d7fb1fb672c4
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Planning next moves...
+    id: c3eecbdf-0ad2-4975-8fc8-ee682c5170a4
+    timestamp: 1781425640.244645
+  - invocation_id: e-89d50c89-a163-4ce7-87aa-d7fb1fb672c4
+    author: property_agent
+    actions:
+      state_delta:
+        pending_user_action:
+          kind: pick_capability
+          expanded_user_query: Explore property maintenance, documents, coverage, DIY, service, or cost analysis.
+          run_optional_agents: []
+          capability_key: null
+          offered_summary: I can help with maintenance checkpoints, property documents, coverage, DIY, service, or cost analysis.
+        _executor_invocation_structured_analysis: false
+    id: f00f03eb-46c5-45e0-95bc-c5192fe6c66e
+    timestamp: 1781425641.572005
+last_update_time: 1781425641.572005

@@ -1,0 +1,239 @@
+id: 27b7830e-6e23-420d-b042-acdb39262689
+app_name: property_agent
+user_id: adk_conformance_test_user
+state:
+  homeappLifecycle:
+    v: 1
+    phase: engine.before_model
+    ts: '2026-06-14T08:27:27.599802+00:00'
+    elapsed_ms: 1324
+    invocation_id: e-6206c8c9-e31a-42eb-a894-38a6f69a80dd
+    checkpoint_ids:
+      - CKPT0000000000000001
+    checkpoint_optional_agents: []
+    context_doc_count: 0
+    message: Planning next moves...
+    primary_agent: checkpoint
+  _executor_invocation_structured_analysis: false
+  checkpoint_optional_agents: []
+  user_query: What checkpoints do I have for this property?
+  property_address: 1982 Helena Way, Brentwood, CA 94513
+  property_id: EVALPROP0001
+  primary_agent: checkpoint
+  checkpoint_ids:
+    - CKPT0000000000000001
+  current_date_utc: '2026-06-14'
+  current_year: 2026
+  resolved_turn:
+    intent: substantive
+    route: checkpoint
+    expanded_user_query: What checkpoints do I have for this property?
+    retrieval_only: true
+    run_optional_agents: []
+    user_goal: answer_from_context
+    query_mode: interpret_session
+    resolve_source: single_loop
+  conversational_turn: false
+  session_working_memory_snapshot:
+    property_id: EVALPROP0001
+  _resolve_turn_invocation_id: e-6206c8c9-e31a-42eb-a894-38a6f69a80dd
+  user_id: adk_conformance_test_user
+  checkpoint_inventory_meta:
+    total_count: 0
+    returned_count: 0
+    truncated: false
+    scope: recent
+events:
+  - content:
+      parts:
+        - text: |
+            {"user_query": "What checkpoints do I have for this property?", "primary_agent": "checkpoint", "property_id": "EVALPROP0001", "property_address": "1982 Helena Way, Brentwood, CA 94513", "checkpoint_ids": ["CKPT0000000000000001"]}
+      role: user
+    invocation_id: e-6206c8c9-e31a-42eb-a894-38a6f69a80dd
+    author: user
+    actions:
+      state_delta: {}
+    id: 8c61190e-8104-47dc-b4d3-0d7e574a6447
+    timestamp: 1781425646.274494
+  - content:
+      parts:
+        - text: Working on it...
+      role: model
+    invocation_id: e-6206c8c9-e31a-42eb-a894-38a6f69a80dd
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.runner_exec
+          ts: '2026-06-14T08:27:26.275593+00:00'
+          elapsed_ms: 0
+          correlation_id: null
+          session_id: 27b7830e-6e23-420d-b042-acdb39262689
+          invocation_id: e-6206c8c9-e31a-42eb-a894-38a6f69a80dd
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Working on it...
+    id: 2385e461-addb-41f1-91fe-89a68fe890f4
+    timestamp: 1781425646.2756338
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - function_call:
+            id: adk-d93695b5-d264-4afe-805f-75cbba217614
+            args:
+              property_id: EVALPROP0001
+            name: list_checkpoints
+          thought_signature: AY89a1_8cJMoHqwYs-iwl3Gjwr-7WPf3GTbjbCS-umpurEMNjHu-TmYDoY2xEsbP-Ww=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 25
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 25
+      prompt_token_count: 1777
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 1777
+      total_token_count: 1802
+      traffic_type: ON_DEMAND
+    invocation_id: e-6206c8c9-e31a-42eb-a894-38a6f69a80dd
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+        checkpoint_optional_agents: []
+        user_query: What checkpoints do I have for this property?
+        property_address: 1982 Helena Way, Brentwood, CA 94513
+        property_id: EVALPROP0001
+        primary_agent: checkpoint
+        checkpoint_ids:
+          - CKPT0000000000000001
+        current_date_utc: '2026-06-14'
+        current_year: 2026
+        resolved_turn:
+          intent: substantive
+          route: checkpoint
+          expanded_user_query: What checkpoints do I have for this property?
+          retrieval_only: true
+          run_optional_agents: []
+          user_goal: answer_from_context
+          query_mode: interpret_session
+          menu_index: null
+          capability_key: null
+          discourse_act: null
+          focus_branch: null
+          resolve_source: single_loop
+        conversational_turn: false
+        session_working_memory_snapshot:
+          property_id: EVALPROP0001
+        _resolve_turn_invocation_id: e-6206c8c9-e31a-42eb-a894-38a6f69a80dd
+    long_running_tool_ids: []
+    id: 7ccf5c33-4067-472f-ac22-94bd3472935d
+    timestamp: 1781425646.277893
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-6206c8c9-e31a-42eb-a894-38a6f69a80dd
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:27:26.277958+00:00'
+          elapsed_ms: 2
+          correlation_id: null
+          session_id: null
+          invocation_id: e-6206c8c9-e31a-42eb-a894-38a6f69a80dd
+          primary_agent: null
+          checkpoint_ids: []
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Planning next moves...
+    id: c02060cc-59d9-484e-9c0b-bc532dd82653
+    timestamp: 1781425646.277984
+  - content:
+      parts:
+        - function_response:
+            id: adk-d93695b5-d264-4afe-805f-75cbba217614
+            name: list_checkpoints
+            response:
+              result: No checkpoints found for this property yet.
+      role: user
+    invocation_id: e-6206c8c9-e31a-42eb-a894-38a6f69a80dd
+    author: property_agent
+    actions:
+      state_delta:
+        user_id: adk_conformance_test_user
+        checkpoint_ids:
+          - CKPT0000000000000001
+        property_id: EVALPROP0001
+        user_query: What checkpoints do I have for this property?
+        checkpoint_temporal_meta: null
+        checkpoint_location_meta: null
+        checkpoint_inventory_meta:
+          total_count: 0
+          returned_count: 0
+          truncated: false
+          scope: recent
+    id: 0c7408ee-1be6-474d-aca6-e24d01f82081
+    timestamp: 1781425647.588259
+  - model_version: gemini-3.1-flash-lite
+    content:
+      parts:
+        - text: It appears there are no checkpoints currently registered for your property at 1982 Helena Way. If you have recently added any or expected to see them, please let me know!
+          thought_signature: AY89a1_d1HeqI4iy7LLABvCd2KY7-7iKmQMhkInBjWvegpOqJqnm_YYOA9tKhJLjqyg=
+      role: model
+    finish_reason: STOP
+    usage_metadata:
+      candidates_token_count: 37
+      candidates_tokens_details:
+        - modality: TEXT
+          token_count: 37
+      prompt_token_count: 1840
+      prompt_tokens_details:
+        - modality: TEXT
+          token_count: 1840
+      total_token_count: 1877
+      traffic_type: ON_DEMAND
+    invocation_id: e-6206c8c9-e31a-42eb-a894-38a6f69a80dd
+    author: property_agent
+    id: 0754de2c-d8b9-48fc-bac3-d779bbae3aaf
+    timestamp: 1781425647.5996091
+  - content:
+      parts:
+        - text: Planning next moves...
+      role: model
+    invocation_id: e-6206c8c9-e31a-42eb-a894-38a6f69a80dd
+    author: homeapp_lifecycle
+    actions:
+      state_delta:
+        homeappLifecycle:
+          v: 1
+          phase: engine.before_model
+          ts: '2026-06-14T08:27:27.599802+00:00'
+          elapsed_ms: 1324
+          correlation_id: null
+          session_id: null
+          invocation_id: e-6206c8c9-e31a-42eb-a894-38a6f69a80dd
+          primary_agent: checkpoint
+          checkpoint_ids:
+            - CKPT0000000000000001
+          checkpoint_optional_agents: []
+          context_doc_count: 0
+          message: Planning next moves...
+    id: 4bb748aa-e134-4949-8126-7b7dbc68f8c3
+    timestamp: 1781425647.59986
+  - invocation_id: e-6206c8c9-e31a-42eb-a894-38a6f69a80dd
+    author: property_agent
+    actions:
+      state_delta:
+        _executor_invocation_structured_analysis: false
+    id: 5fa43195-01d8-46d6-bb59-c46fefdcdc69
+    timestamp: 1781425648.627051
+last_update_time: 1781425648.627051

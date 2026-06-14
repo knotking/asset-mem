@@ -1,0 +1,9 @@
+description: >
+  Turn 1 summarize selected checkpoints; turn 2 ask which areas are affected (context follow-up).
+agent: property_agent
+initial_state: {}
+user_messages:
+  - text: |
+      {"user_query": "Summarize the issues for the selected checkpoints", "primary_agent": "checkpoint", "property_id": "EVALPROP0001", "property_address": "1982 Helena Way, Brentwood, CA 94513", "checkpoint_ids": ["CKPT0000000000000001"]}
+  - text: |
+      {"user_query": "Which areas are affected?", "primary_agent": "checkpoint", "property_id": "EVALPROP0001", "property_address": "1982 Helena Way, Brentwood, CA 94513", "checkpoint_ids": ["CKPT0000000000000001"]}

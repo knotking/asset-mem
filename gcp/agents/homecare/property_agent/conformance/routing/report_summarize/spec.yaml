@@ -1,0 +1,7 @@
+description: >
+  Report mode — summarize saved report via report_retrieval only.
+agent: property_agent
+initial_state: {}
+user_messages:
+  - text: |
+      {"user_query": "summarize my report", "primary_agent": "report", "property_id": "EVALPROP0001", "report_ids": ["RPT0000000000000001"], "property_address": "1982 Helena Way, Brentwood, CA 94513"}
