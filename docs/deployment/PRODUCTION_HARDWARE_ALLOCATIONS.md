@@ -55,8 +55,9 @@ Tiered CPU, memory, scaling, and timeouts for App Hosting, Cloud Run proxy, Clou
 | document-analysis | 3 | 10 | 40 | 150 |
 | checkpoint-metrics | 3 | 5 | 20 | 50 |
 | user_docs | 1 | 3 | 10 | 30 |
+| report-generation | 2 | 5 | 15 | 50 |
 
-Timeouts: checkpoint-analysis & document-analysis **300s**; user_docs **540s**; metrics **60s**.
+Timeouts: checkpoint-analysis & document-analysis **300s**; user_docs & report-generation **540s**; metrics **60s**. Report-generation memory **2048Mi** (Playwright PDF) at all tiers.
 
 ## Runbook
 

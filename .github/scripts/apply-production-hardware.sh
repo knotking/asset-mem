@@ -47,7 +47,8 @@ for wf in \
   deploy-checkpoint-analysis.yaml \
   deploy-document-analysis.yaml \
   deploy-checkpoint-metrics.yaml \
-  deploy-pubsub-user-docs.yaml; do
+  deploy-pubsub-user-docs.yaml \
+  deploy-report-generation.yaml; do
   run_workflow "$wf"
 done
 

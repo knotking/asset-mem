@@ -77,6 +77,11 @@ staging:
           max_instances: 1
           concurrency: 1
           timeout_seconds: 540
+        pubsub-report-generation:
+          memory: 2048Mi
+          max_instances: 2
+          concurrency: 1
+          timeout_seconds: 540
     ph:
       apphosting:
         cpu: 1
@@ -116,6 +121,11 @@ staging:
         pubsub-to-user-docs:
           memory: 512Mi
           max_instances: 1
+          concurrency: 1
+          timeout_seconds: 540
+        pubsub-report-generation:
+          memory: 2048Mi
+          max_instances: 5
           concurrency: 1
           timeout_seconds: 540
 
@@ -163,6 +173,11 @@ prod:
           max_instances: 1
           concurrency: 1
           timeout_seconds: 540
+        pubsub-report-generation:
+          memory: 2048Mi
+          max_instances: 2
+          concurrency: 1
+          timeout_seconds: 540
     ph:
       apphosting:
         cpu: 1
@@ -202,6 +217,11 @@ prod:
         pubsub-to-user-docs:
           memory: 512Mi
           max_instances: 3
+          concurrency: 1
+          timeout_seconds: 540
+        pubsub-report-generation:
+          memory: 2048Mi
+          max_instances: 5
           concurrency: 1
           timeout_seconds: 540
     scale_10x:
@@ -245,6 +265,11 @@ prod:
           max_instances: 10
           concurrency: 1
           timeout_seconds: 540
+        pubsub-report-generation:
+          memory: 2048Mi
+          max_instances: 15
+          concurrency: 1
+          timeout_seconds: 540
     scale_100x:
       apphosting:
         cpu: 4
@@ -284,5 +309,10 @@ prod:
         pubsub-to-user-docs:
           memory: 512Mi
           max_instances: 30
+          concurrency: 1
+          timeout_seconds: 540
+        pubsub-report-generation:
+          memory: 2048Mi
+          max_instances: 50
           concurrency: 1
           timeout_seconds: 540
