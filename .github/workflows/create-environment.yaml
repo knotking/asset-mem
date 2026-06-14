@@ -1619,7 +1619,7 @@ jobs:
 
           # Agent and app-specific variables (set to defaults, can be updated manually)
           set_or_update_var "AGENT_STAGING_BUCKET" "gs://homegeek-agent-${{ inputs.environment_name }}"
-          set_or_update_var "EXPO_ACCOUNT" "homegeekai"
+          set_or_update_var "EXPO_ACCOUNT" "assetmemai"
           set_or_update_var "WEBAPP_GCP_PROJECT_ID" "${{ needs.resolve-inputs.outputs.gcp_project_id }}"
           set_or_update_var "FIREBASE_SERVICE_ACCOUNT_EMAIL" "${{ needs.create-infrastructure.outputs.firebase_service_account_email }}"
 
@@ -1672,7 +1672,7 @@ jobs:
 
           # Agent and App-specific Variables
           AGENT_STAGING_BUCKET=gs://homegeek-agent-${{ inputs.environment_name }}
-          EXPO_ACCOUNT=homegeekai
+          EXPO_ACCOUNT=assetmemai
           WEBAPP_GCP_PROJECT_ID=${{ needs.resolve-inputs.outputs.gcp_project_id }}
           FIREBASE_SERVICE_ACCOUNT_EMAIL=${{ needs.create-infrastructure.outputs.firebase_service_account_email }}
 
@@ -1769,7 +1769,7 @@ jobs:
           | \`REASONING_ENGINE_ID\` | \`new\` |
           | \`USER_UPLOAD_RAG_CORPUS\` | \`${{ needs.create-infrastructure.outputs.user_upload_rag_corpus }}\` |
           | \`AGENT_STAGING_BUCKET\` | \`gs://homegeek-agent-${{ inputs.environment_name }}\` |
-          | \`EXPO_ACCOUNT\` | \`homegeekai\` |
+          | \`EXPO_ACCOUNT\` | \`assetmemai\` |
           | \`WEBAPP_GCP_PROJECT_ID\` | \`${{ needs.resolve-inputs.outputs.gcp_project_id }}\` |
           | \`FIREBASE_SERVICE_ACCOUNT_EMAIL\` | \`${{ needs.create-infrastructure.outputs.firebase_service_account_email }}\` |
           | \`STRIPE_B2C_PRICE_TOKEN_CAPS_JSON\` | \`free\` tier 1M tokens / 2 docs / 5 checkpoints (created only if missing) |
