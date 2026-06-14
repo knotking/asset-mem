@@ -10,6 +10,7 @@ Usage:
     uv run python -m property_agent.evals.routing.run_routing_eval
     uv run python -m property_agent.evals.routing.run_routing_eval --filter weblog_session_1
     uv run python -m property_agent.evals.routing.run_routing_eval --out single_loop/baselines/$(date +%F).json
+    uv run python -m property_agent.evals.routing.run_routing_eval --baseline-check
 """
 
 from __future__ import annotations
@@ -30,6 +31,9 @@ from dotenv import load_dotenv
 
 _PACKAGE_ROOT = Path(__file__).resolve().parents[3]  # gcp/agents/homecare
 DEFAULT_CASES_PATH = Path(__file__).resolve().parent / "single_loop" / "cases.yaml"
+DEFAULT_BASELINE_PATH = (
+    Path(__file__).resolve().parent / "single_loop" / "baselines" / "baseline.json"
+)
 
 # Fields asserted directly on ResolvedTurn.
 SCALAR_EXPECT_FIELDS = (
@@ -235,6 +239,62 @@ def summarize(results: list[CaseResult]) -> dict[str, Any]:
     }
 
 
+def load_baseline(path: Path) -> dict[str, Any]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"{path}: baseline root must be a JSON object")
+    results = data.get("results")
+    if not isinstance(results, list) or not results:
+        raise ValueError(f"{path}: baseline.results must be a non-empty list")
+    return data
+
+
+def compare_results_to_baseline(
+    results: list[CaseResult],
+    baseline: dict[str, Any],
+    *,
+    repeat: int = 1,
+) -> list[str]:
+    """Return human-readable diffs; empty list means baseline matches."""
+    if repeat != 1:
+        return ["baseline check requires --repeat 1"]
+
+    baseline_rows = baseline.get("results") or []
+    baseline_by_id = {
+        str(row.get("case_id")): row for row in baseline_rows if row.get("case_id")
+    }
+    current_by_id: dict[str, CaseResult] = {}
+    for result in results:
+        if result.case_id in current_by_id:
+            return [f"{result.case_id}: duplicate result in current run"]
+        current_by_id[result.case_id] = result
+
+    errors: list[str] = []
+    for case_id, expected in baseline_by_id.items():
+        actual = current_by_id.get(case_id)
+        if actual is None:
+            errors.append(f"{case_id}: missing in current run")
+            continue
+        if expected.get("passed") != actual.passed:
+            errors.append(
+                f"{case_id}: passed={actual.passed} baseline={expected.get('passed')}"
+            )
+        if expected.get("error") != actual.error:
+            errors.append(
+                f"{case_id}: error={actual.error!r} baseline={expected.get('error')!r}"
+            )
+        if expected.get("mismatches") != actual.mismatches:
+            errors.append(
+                f"{case_id}: mismatches changed "
+                f"(actual={actual.mismatches}, baseline={expected.get('mismatches')})"
+            )
+
+    for case_id in sorted(set(current_by_id) - set(baseline_by_id)):
+        errors.append(f"{case_id}: new case not in baseline")
+
+    return errors
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES_PATH)
@@ -250,8 +310,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--out", type=Path, default=None, help="Write JSON results (baseline file)."
     )
+    parser.add_argument(
+        "--baseline",
+        type=Path,
+        default=DEFAULT_BASELINE_PATH,
+        help="Baseline JSON for --baseline-check (default: single_loop/baselines/baseline.json).",
+    )
+    parser.add_argument(
+        "--baseline-check",
+        action="store_true",
+        help="Fail if pass/fail per case differs from --baseline.",
+    )
     parser.add_argument("--verbose", action="store_true", help="Print resolved dicts.")
     args = parser.parse_args(argv)
+
+    if args.baseline_check and args.repeat != 1:
+        print("baseline-check requires --repeat 1", file=sys.stderr)
+        return 2
 
     load_dotenv(_PACKAGE_ROOT / ".env")
 
@@ -290,6 +365,31 @@ def main(argv: list[str] | None = None) -> int:
     print("\n=== Summary ===")
     print(json.dumps(summary, indent=2))
 
+    exit_code = 0 if summary["failed"] == 0 else 1
+
+    if args.baseline_check:
+        baseline_path = args.baseline
+        if not baseline_path.is_file():
+            print(f"Baseline file not found: {baseline_path}", file=sys.stderr)
+            return 2
+        baseline = load_baseline(baseline_path)
+        diffs = compare_results_to_baseline(
+            results, baseline, repeat=args.repeat
+        )
+        if diffs:
+            print("\n=== Baseline check FAILED ===", file=sys.stderr)
+            for line in diffs:
+                print(f"  {line}", file=sys.stderr)
+            print(
+                f"\nBaseline: {baseline_path}\n"
+                "Update with: make routing-eval "
+                f'ARGS="--out property_agent/evals/routing/single_loop/baselines/baseline.json"',
+                file=sys.stderr,
+            )
+            exit_code = 1
+        else:
+            print(f"\n=== Baseline check PASSED ({baseline_path}) ===")
+
     if args.out:
         # Relative to the homecare package so baselines are machine-portable.
         try:
@@ -318,7 +418,7 @@ def main(argv: list[str] | None = None) -> int:
         args.out.write_text(json.dumps(payload, indent=2, default=str))
         print(f"\nWrote baseline to {args.out}")
 
-    return 0 if summary["failed"] == 0 else 1
+    return exit_code
 
 
 if __name__ == "__main__":

@@ -15,12 +15,13 @@ From `gcp/agents/homecare`:
 
 ```bash
 uv sync --frozen --extra dev
-make test   # pytest tests/ only — no live ADK evals, no Vertex calls
+make test              # pytest unit tests
+make routing-eval-ci   # deterministic routing eval + baseline gate
 ```
 
 Live integration tests (`integration_external`, `RUN_EXTERNAL_DIY_SEARCH_TESTS=1`) are **not** run.
 
-ADK evalsets were removed; this workflow runs **`make test`** only (unit tests).
+CI runs **`make test`** and **`make routing-eval-ci`** (no live Vertex / LLM).
 
 ## Local equivalent
 
@@ -28,4 +29,5 @@ ADK evalsets were removed; this workflow runs **`make test`** only (unit tests).
 cd gcp/agents/homecare
 uv sync --extra dev
 make test
+make routing-eval-ci
 ```

@@ -7,11 +7,15 @@ from pathlib import Path
 import pytest
 
 from property_agent.evals.routing.run_routing_eval import (
+    DEFAULT_BASELINE_PATH,
     DEFAULT_CASES_PATH,
     KNOWN_EXPECT_FIELDS,
     build_events,
     build_state,
+    compare_results_to_baseline,
+    load_baseline,
     load_cases,
+    run_case,
     score_case,
 )
 from property_agent.routing.optional_branches import OPTIONAL_CHECKPOINT_BRANCHES
@@ -130,3 +134,32 @@ def test_score_case_matches_and_mismatches() -> None:
         )
         == {}
     )
+
+
+def test_baseline_file_exists() -> None:
+    assert DEFAULT_BASELINE_PATH.is_file(), f"missing CI baseline {DEFAULT_BASELINE_PATH}"
+
+
+def test_current_run_matches_committed_baseline() -> None:
+    """Full routing eval must match baseline.json (CI gate)."""
+    defaults, cases = load_cases(DEFAULT_CASES_PATH)
+    baseline = load_baseline(DEFAULT_BASELINE_PATH)
+    results = [run_case(defaults, case) for case in cases]
+    assert compare_results_to_baseline(results, baseline) == []
+
+
+def test_compare_results_to_baseline_detects_regression() -> None:
+    defaults, cases = load_cases(DEFAULT_CASES_PATH)
+    baseline = load_baseline(DEFAULT_BASELINE_PATH)
+    results = [run_case(defaults, case) for case in cases]
+    results[0] = type(results[0])(
+        case_id=results[0].case_id,
+        passed=False,
+        elapsed_ms=results[0].elapsed_ms,
+        mismatches={"route": {"expected": "checkpoint", "actual": "none"}},
+        resolved=results[0].resolved,
+        error=results[0].error,
+    )
+    diffs = compare_results_to_baseline(results, baseline)
+    assert diffs
+    assert results[0].case_id in diffs[0]

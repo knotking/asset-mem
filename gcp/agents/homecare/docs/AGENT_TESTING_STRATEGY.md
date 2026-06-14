@@ -24,7 +24,7 @@ The main gap versus production-grade agent testing is **L2–L4**: no CI-gated *
 |-------|------|-----|--------------|
 | **L0 — Unit** | `tests/` + `gcp/agent_framework/tests/` — routing, guards, assembler, leaf agents, streaming | Yes (`make test` on every PR) | Strong |
 | **L1 — Component (mocked LLM)** | Cost/DIY/media refiner with mocked `generate_content`; executor tools with mocked pipeline | Yes | Good |
-| **L2 — Offline dataset eval** | `evals/routing/single_loop/cases.yaml` (33 cases), `make routing-eval` | No — schema only via `test_routing_eval_cases.py` | Partial |
+| **L2 — Offline dataset eval** | `evals/routing/single_loop/cases.yaml` (33 cases), `make routing-eval-ci` | Yes — baseline gate | Good |
 | **L3 — Trajectory / E2E replay** | ADK conformance (5 specs), `make conformance-test` | No — manual + needs recordings | Skeleton |
 | **L4 — Qualitative / live** | Rubric JSON, weblog A/B, opt-in SerpAPI/YouTube | No — manual | Ad hoc |
 
@@ -77,6 +77,49 @@ Use a **4-tier agent test pyramid** (common across Google ADK, LangSmith, Braint
 │  L4c Live integration smoke (SerpAPI, YouTube)               │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+### LLM usage by strategy
+
+Terms like **trajectory** and **LLM-as-judge** are common in agent eval; **conformance** is ADK-specific (Google replay harness). Layer labels (L0–L4) are HomeApp framing, not a single official standard.
+
+| Strategy | Command / artifact | Real Vertex/Gemini? | Mocked LLM? | When | Notes |
+|----------|-------------------|---------------------|-------------|------|-------|
+| **L0 — Unit** | `make test` (`tests/`, `agent_framework/tests/`) | No | No | Every PR | Guards, parsers, state merge, orchestration — no inference |
+| **L1 — Component** | `make test` (cost, DIY, media refiner, executor tools) | No | Yes | Every PR | Exercises `generate_content` / pipeline code paths with fakes |
+| **L2a — Routing eval** | `make routing-eval` (`evals/routing/single_loop/cases.yaml`) | No | No | PR (Phase 1) | Deterministic pre-routing only; no executor tool choice |
+| **L2b — Contract / rubric** | Schema + deterministic rubric scorer (Phase 1) | No | No | Every PR | Structural checks on `contentJson`; no prose judging |
+| **L2 — Trajectory eval** | `property_agent/evals/trajectory/` (Phase 2, stubbed) | No | Yes (stub executor) | Every PR | Asserts `tools_called` / branches without calling Gemini |
+| **L3 — Conformance replay** | `make conformance-test` (ADK replay) | Usually no | No | Nightly / manual | Replays `generated-recordings.yaml`; live model only if recordings missing |
+| **L3 — Conformance record** | `make conformance-record` + `uv run adk web` | **Yes — full stack** | No | Manual / staging | Records real multi-turn traces for replay |
+| **L3 — Manual QA** | `uv run adk web` | **Yes — full stack** | No | Manual / staging | End-to-end executor + pipeline + branch agents |
+| **L4a — Weblog A/B** | `make weblog-summarize` | No | No | Release / on demand | Parses saved `adk web` logs; no new inference |
+| **L4b — LLM-judge** | Rubric `content_markdown_prose` (Phase 4) | **Yes — evaluator LLM** | No | Weekly / sample | Second model (or human) scores prose quality |
+| **L4c — Live external** | `RUN_EXTERNAL_DIY_SEARCH_TESTS=1` pytest | No Gemini | No | Weekly / opt-in | SerpAPI / YouTube only |
+
+**PR CI target (Phases 1–2):** zero real Vertex calls — stub or mock only.
+
+#### Production LLM touchpoints (live eval paths only)
+
+When conformance record, `adk web`, or incomplete replay runs against a live agent:
+
+| Call site | Trigger |
+|-----------|---------|
+| Root executor (`SINGLE_LOOP_GEMINI_MODEL`) | Substantive turns — tool choice |
+| `pending_offer_extract` | After optional-branch analysis completes |
+| `run_checkpoint_pipeline` → synthesis, media refiner | `analyze_checkpoints` with retrieval + branches |
+| Branch agents (`coverage`, `service` via `AgentTool`; DIY `steps_llm`; cost `ai_cost_estimator`) | Optional branch runs inside pipeline |
+| `user_docs_retrieval` | Docs route |
+| `conversation_summary` | Only when `HOMEAPP_CONVERSATION_SUMMARY=1` (off by default) |
+
+#### Rubric criteria vs LLM
+
+| Criterion (`checkpoint_response.json`) | Automated without LLM? |
+|----------------------------------------|------------------------|
+| `content_json_analysis_shape` | Yes |
+| `no_dual_format_fences` | Yes |
+| `schema_version` | Yes |
+| `follow_up_markdown_only` | Yes |
+| `content_markdown_prose` | No — needs LLM-judge or human (Phase 4) |
 
 ### Principles
 
@@ -181,7 +224,7 @@ LangSmith is already a transitive dependency; adopt for L4 without changing CI s
 | Job | When | Commands | Blocks merge? |
 |-----|------|----------|---------------|
 | **unit** | Every PR | `make test` | Yes |
-| **routing-eval** | Every PR | `make routing-eval` + baseline diff | Yes (after Phase 1) |
+| **routing-eval** | Every PR | `make routing-eval-ci` | Yes |
 | **contract** | Every PR | Schema + rubric scorer on fixtures | Yes (after Phase 1) |
 | **conformance-replay** | Nightly | `make conformance-test` (staging creds) | Alert only initially |
 | **live-external** | Weekly | `RUN_EXTERNAL_DIY_SEARCH_TESTS=1` subset | No |
@@ -228,7 +271,7 @@ tests/
 
 | Priority | Item | Effort | Impact |
 |----------|------|--------|--------|
-| **P0** | Run `routing-eval` in CI with baseline gate | Low | High |
+| **P0** | Run `routing-eval` in CI with baseline gate | Low | High — **done** (`make routing-eval-ci`) |
 | **P0** | JSON Schema + deterministic rubric scorer | Medium | High |
 | **P1** | Trajectory eval suite (stubbed executor) | Medium | Very high |
 | **P1** | Expand conformance + commit recordings | Medium | High |
