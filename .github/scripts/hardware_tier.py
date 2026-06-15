@@ -166,6 +166,64 @@ def _parse_duration_seconds(val: Any) -> int | None:
     return None
 
 
+def _cloud_run_revision_template(
+    data: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Return (template_wrapper, revision_spec) for Cloud Run v2 or Knative JSON."""
+    wrapper = data.get("template")
+    if not wrapper:
+        spec = data.get("spec")
+        if isinstance(spec, dict):
+            wrapper = spec.get("template")
+    if not isinstance(wrapper, dict):
+        return {}, {}
+    revision_spec = wrapper.get("spec")
+    if not isinstance(revision_spec, dict):
+        revision_spec = wrapper
+    return wrapper, revision_spec
+
+
+def _parse_proxy_from_describe(data: dict[str, Any]) -> dict[str, Any] | dict[str, str]:
+    template_root, revision_spec = _cloud_run_revision_template(data)
+    if not template_root and not revision_spec:
+        return {"error": "Could not parse Cloud Run template"}
+
+    containers = revision_spec.get("containers") or template_root.get("containers") or [{}]
+    container = containers[0] if containers else {}
+    resources = container.get("resources", {}).get("limits", {})
+    annotations = (
+        template_root.get("metadata", {}).get("annotations")
+        or data.get("metadata", {}).get("annotations")
+        or {}
+    )
+    scaling = template_root.get("scaling") or revision_spec.get("scaling") or {}
+
+    min_inst = scaling.get("minInstanceCount")
+    if min_inst is None:
+        min_inst = annotations.get("autoscaling.knative.dev/minScale", "0")
+
+    max_inst = scaling.get("maxInstanceCount")
+    if max_inst is None:
+        max_inst = annotations.get("autoscaling.knative.dev/maxScale")
+
+    concurrency = revision_spec.get("containerConcurrency")
+    if concurrency is None:
+        concurrency = template_root.get("maxInstanceRequestConcurrency")
+
+    timeout_raw = revision_spec.get("timeoutSeconds")
+    if timeout_raw is None:
+        timeout_raw = template_root.get("timeout")
+
+    return {
+        "memory": resources.get("memory"),
+        "cpu": resources.get("cpu"),
+        "min_instances": str(min_inst) if min_inst is not None else None,
+        "max_instances": max_inst,
+        "concurrency": concurrency,
+        "timeout_seconds": _parse_duration_seconds(timeout_raw),
+    }
+
+
 def fetch_live_proxy(region: str, project: str, environment: str) -> dict[str, Any]:
     name = proxy_service_name(environment)
     data = _gcloud_json(
@@ -184,43 +242,10 @@ def fetch_live_proxy(region: str, project: str, environment: str) -> dict[str, A
     )
     if not data:
         return {"error": f"Could not describe Cloud Run service {name}"}
-    template_root = data.get("template") or {}
-    # Cloud Run v2 API: template.containers; Knative v1: template.spec.containers
-    spec = template_root.get("spec") or template_root
-    containers = spec.get("containers") or template_root.get("containers") or [{}]
-    container = containers[0] if containers else {}
-    resources = container.get("resources", {}).get("limits", {})
-    annotations = (
-        template_root.get("metadata", {}).get("annotations")
-        or data.get("metadata", {}).get("annotations")
-        or {}
-    )
-    scaling = template_root.get("scaling") or spec.get("scaling") or {}
-
-    min_inst = scaling.get("minInstanceCount")
-    if min_inst is None:
-        min_inst = annotations.get("autoscaling.knative.dev/minScale", "0")
-
-    max_inst = scaling.get("maxInstanceCount")
-    if max_inst is None:
-        max_inst = annotations.get("autoscaling.knative.dev/maxScale")
-
-    concurrency = spec.get("containerConcurrency")
-    if concurrency is None:
-        concurrency = template_root.get("maxInstanceRequestConcurrency")
-
-    timeout_raw = spec.get("timeoutSeconds")
-    if timeout_raw is None:
-        timeout_raw = template_root.get("timeout")
-
-    return {
-        "memory": resources.get("memory"),
-        "cpu": resources.get("cpu"),
-        "min_instances": str(min_inst) if min_inst is not None else None,
-        "max_instances": max_inst,
-        "concurrency": concurrency,
-        "timeout_seconds": _parse_duration_seconds(timeout_raw),
-    }
+    parsed = _parse_proxy_from_describe(data)
+    if "error" in parsed:
+        return {"error": f"Could not parse Cloud Run service {name}"}
+    return parsed
 
 
 def fetch_live_function(
@@ -264,11 +289,25 @@ def _normalize_memory(val: str | None) -> str | None:
     return v
 
 
+def _normalize_cpu(val: str | None) -> str | None:
+    if val is None:
+        return None
+    v = str(val).strip()
+    if v.endswith("m") and v[:-1].isdigit():
+        millicores = int(v[:-1])
+        if millicores % 1000 == 0:
+            return str(millicores // 1000)
+    return v
+
+
 def _compare_field(label: str, expected: Any, actual: Any, mismatches: list[str]) -> None:
     if expected is None:
         return
     exp = str(expected)
     act = str(actual) if actual is not None else "MISSING"
+    if ".cpu" in label:
+        if _normalize_cpu(exp) == _normalize_cpu(act):
+            return
     if _normalize_memory(exp) == _normalize_memory(act) or exp == act:
         return
     mismatches.append(f"{label}: expected {exp}, got {act}")
