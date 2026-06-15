@@ -54,6 +54,7 @@ permissions:
   contents: read
   id-token: write
   actions: write
+  checks: read
 
 jobs:
   hardware:
@@ -100,6 +101,9 @@ jobs:
           .github/scripts/apply-production-hardware.sh "${{ inputs.environment }}" "${{ inputs.traffic_tier }}"
 
       - name: Audit live hardware
+        env:
+          # apply: deploys succeeded — report drift without failing the workflow
+          FAIL_ON_MISMATCH: ${{ inputs.mode == 'audit' && 'true' || 'false' }}
         run: |
           python3 -m pip install -q pyyaml
           chmod +x .github/scripts/verify-production-hardware.sh

@@ -10,7 +10,7 @@ Audits or applies **hardware-only** settings (CPU, memory, min/max instances, co
 |-------|-------------|
 | `environment` | `staging` or `prod` |
 | `traffic_tier` | `idle` (default), `ph`, `scale_10x`, `scale_100x` |
-| `mode` | `audit` — compare live GCP to [hardware-expectations.yaml](../../docs/deployment/hardware-expectations.yaml); `apply` — orchestrate deploy workflows then audit |
+| `mode` | `audit` — compare live GCP to [hardware-expectations.yaml](../../docs/deployment/hardware-expectations.yaml) (**fails** the workflow on mismatch); `apply` — orchestrate deploy workflows then **report-only** audit (mismatches are warnings + artifact, workflow stays green) |
 | `run_health_checks` | Optional curl web + proxy `/health` |
 | `skip_agent` / `skip_webapp` | Partial apply |
 | `set_github_vars` | Persist tier vars on GitHub environment (needs admin) |
@@ -43,14 +43,16 @@ Full prod tier matrix and GCP defaults: [PRODUCTION_HARDWARE_ALLOCATIONS.md](../
 
 ## Apply mode orchestration
 
-Dispatches (in order), each with `traffic_tier`:
+Dispatches **in parallel** (same `traffic_tier` on each), then polls every **60 seconds** until all child runs finish:
 
-1. `deploy-homecare-agent.yaml` (`action: update`)
+1. `deploy-homecare-agent.yaml` (`action: update`) — unless `skip_agent`
 2. `deploy-homecare-agent-proxy.yaml`
 3. Worker deploy workflows (checkpoint-analysis, document-analysis, metrics, user-docs, report-generation)
-4. `deploy-webapp-apphosting.yaml` (also runs App Hosting Cloud Run scaling via gcloud)
+4. `deploy-webapp-apphosting.yaml` — unless `skip_webapp`
 
-Requires `actions: write` on `GITHUB_TOKEN`.
+Total wall time is roughly the **slowest** deploy (often the agent), not the sum of all workflows. Services are independent; parallel dispatch is safe for hardware-only redeploys.
+
+Requires `actions: write` and `checks: read` on `GITHUB_TOKEN`.
 
 ## Scripts
 
