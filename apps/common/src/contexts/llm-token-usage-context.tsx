@@ -322,16 +322,31 @@ function useLlmTokenUsageSubscription(
     (!prefsLoaded || (monthlyLimit == null && proxyDefaultLimit === "pending"));
 
   const documentsLimitLive = useMemo(
-    () => mergePlanLimitUsage(documentsLimit, usage.periodDocumentCreations),
-    [documentsLimit, usage.periodDocumentCreations],
+    () =>
+      mergePlanLimitUsage(
+        documentsLimit,
+        usage.periodDocumentCreations,
+        usage.quotaPeriodKey,
+      ),
+    [documentsLimit, usage.periodDocumentCreations, usage.quotaPeriodKey],
   );
   const checkpointsLimitLive = useMemo(
-    () => mergePlanLimitUsage(checkpointsLimit, usage.periodCheckpointCreations),
-    [checkpointsLimit, usage.periodCheckpointCreations],
+    () =>
+      mergePlanLimitUsage(
+        checkpointsLimit,
+        usage.periodCheckpointCreations,
+        usage.quotaPeriodKey,
+      ),
+    [checkpointsLimit, usage.periodCheckpointCreations, usage.quotaPeriodKey],
   );
   const reportsLimitLive = useMemo(
-    () => mergePlanLimitUsage(reportsLimit, usage.periodReportGenerations),
-    [reportsLimit, usage.periodReportGenerations],
+    () =>
+      mergePlanLimitUsage(
+        reportsLimit,
+        usage.periodReportGenerations,
+        usage.quotaPeriodKey,
+      ),
+    [reportsLimit, usage.periodReportGenerations, usage.quotaPeriodKey],
   );
 
   return {

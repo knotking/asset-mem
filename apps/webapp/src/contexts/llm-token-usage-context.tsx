@@ -110,12 +110,33 @@ function toDisplayPlanLimit(
   return { used: raw.used, limit, unlimited: false };
 }
 
+function currentUtcQuotaPeriodKey(now = new Date()): string {
+  const year = now.getUTCFullYear();
+  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+function effectivePeriodCreationCount(
+  storedPeriodKey: string | null | undefined,
+  periodCount: number,
+  now = new Date(),
+): number {
+  if (!storedPeriodKey || storedPeriodKey !== currentUtcQuotaPeriodKey(now)) {
+    return 0;
+  }
+  return periodCount;
+}
+
 function mergePlanLimitUsage(
   slice: PlanLimitSlice | null,
   periodCount: number,
+  storedPeriodKey?: string | null,
 ): PlanLimitSlice | null {
   if (!slice) return null;
-  return { ...slice, used: periodCount };
+  return {
+    ...slice,
+    used: effectivePeriodCreationCount(storedPeriodKey, periodCount),
+  };
 }
 
 function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsageSnapshot {
@@ -312,16 +333,31 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
     (!prefsLoaded || (monthlyLimit == null && proxyDefaultLimit === 'pending'));
 
   const documentsLimitLive = useMemo(
-    () => mergePlanLimitUsage(documentsLimit, usage.periodDocumentCreations),
-    [documentsLimit, usage.periodDocumentCreations],
+    () =>
+      mergePlanLimitUsage(
+        documentsLimit,
+        usage.periodDocumentCreations,
+        usage.quotaPeriodKey,
+      ),
+    [documentsLimit, usage.periodDocumentCreations, usage.quotaPeriodKey],
   );
   const checkpointsLimitLive = useMemo(
-    () => mergePlanLimitUsage(checkpointsLimit, usage.periodCheckpointCreations),
-    [checkpointsLimit, usage.periodCheckpointCreations],
+    () =>
+      mergePlanLimitUsage(
+        checkpointsLimit,
+        usage.periodCheckpointCreations,
+        usage.quotaPeriodKey,
+      ),
+    [checkpointsLimit, usage.periodCheckpointCreations, usage.quotaPeriodKey],
   );
   const reportsLimitLive = useMemo(
-    () => mergePlanLimitUsage(reportsLimit, usage.periodReportGenerations),
-    [reportsLimit, usage.periodReportGenerations],
+    () =>
+      mergePlanLimitUsage(
+        reportsLimit,
+        usage.periodReportGenerations,
+        usage.quotaPeriodKey,
+      ),
+    [reportsLimit, usage.periodReportGenerations, usage.quotaPeriodKey],
   );
 
   return {

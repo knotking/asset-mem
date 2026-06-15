@@ -31,13 +31,36 @@ export function toDisplayPlanLimit(
   return { used: raw.used, limit, unlimited: false };
 }
 
+/** Current UTC billing period key (`YYYY-MM`), aligned with backend `current_quota_period_key`. */
+export function currentUtcQuotaPeriodKey(now = new Date()): string {
+  const year = now.getUTCFullYear();
+  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+/** Period creation count when Firestore `quotaPeriodKey` matches the current UTC month. */
+export function effectivePeriodCreationCount(
+  storedPeriodKey: string | null | undefined,
+  periodCount: number,
+  now = new Date(),
+): number {
+  if (!storedPeriodKey || storedPeriodKey !== currentUtcQuotaPeriodKey(now)) {
+    return 0;
+  }
+  return periodCount;
+}
+
 /** Apply live Firestore period counter to a proxy-resolved cap slice. */
 export function mergePlanLimitUsage(
   slice: PlanLimitSlice | null,
   periodCount: number,
+  storedPeriodKey?: string | null,
 ): PlanLimitSlice | null {
   if (!slice) return null;
-  return { ...slice, used: periodCount };
+  return {
+    ...slice,
+    used: effectivePeriodCreationCount(storedPeriodKey, periodCount),
+  };
 }
 
 /** True when adding `countToAdd` creations would exceed the monthly cap. */

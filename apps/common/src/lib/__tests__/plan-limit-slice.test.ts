@@ -1,4 +1,5 @@
 import {
+  currentUtcQuotaPeriodKey,
   isAtPlanLimit,
   mergePlanLimitUsage,
   planLimitBlockMessage,
@@ -28,11 +29,21 @@ describe('plan-limit-slice', () => {
 
   it('mergePlanLimitUsage overlays live Firestore period count', () => {
     const slice = { used: 0, limit: 5, unlimited: false };
-    expect(mergePlanLimitUsage(slice, 3)).toEqual({
+    const period = currentUtcQuotaPeriodKey();
+    expect(mergePlanLimitUsage(slice, 3, period)).toEqual({
       used: 3,
       limit: 5,
       unlimited: false,
     });
-    expect(mergePlanLimitUsage(null, 3)).toBeNull();
+    expect(mergePlanLimitUsage(null, 3, period)).toBeNull();
+  });
+
+  it('mergePlanLimitUsage ignores stale Firestore period key', () => {
+    const slice = { used: 2, limit: 2, unlimited: false };
+    expect(mergePlanLimitUsage(slice, 2, '2020-01')).toEqual({
+      used: 0,
+      limit: 2,
+      unlimited: false,
+    });
   });
 });

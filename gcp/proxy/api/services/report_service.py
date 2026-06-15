@@ -21,6 +21,7 @@ from common.plan_limits import (
     PlanLimitExceeded,
     check_and_record_monthly_document_creations,
     check_and_record_monthly_report_generations,
+    release_monthly_report_generations,
 )
 from common.storage.client import StorageClient
 from common.storage.config import StorageConfig
@@ -1206,12 +1207,13 @@ def prepare_report_generation(
     else:
         raise ValueError(f"Unsupported report mode: {request.mode}")
 
-    check_and_record_monthly_report_generations(db, request.userId, 1)
-
     report_id, revision, rollback, rag_context = create_or_reset_report_doc(
         db, request, checkpoint_ids
     )
+    recorded_quota = False
     try:
+        check_and_record_monthly_report_generations(db, request.userId, 1)
+        recorded_quota = True
         message_id = publish_report_generation(
             request=request,
             report_id=report_id,
@@ -1220,8 +1222,13 @@ def prepare_report_generation(
             comparison_resolution=comparison_resolution,
             rag_context=rag_context,
         )
+    except PlanLimitExceeded:
+        _rollback_report_doc(db, request, report_id, rollback)
+        raise
     except Exception:
         _rollback_report_doc(db, request, report_id, rollback)
+        if recorded_quota:
+            release_monthly_report_generations(db, request.userId, 1)
         raise
     result: dict[str, Any] = {
         "status": "accepted",
