@@ -435,6 +435,13 @@ def main() -> int:
     p_audit.add_argument("--region", default=os.environ.get("GCP_REGION", "us-central1"))
     p_audit.add_argument("--project", default=os.environ.get("GCP_PROJECT_ID", ""))
     p_audit.add_argument("--report", help="Write markdown report to file")
+    p_audit.add_argument(
+        "--fail-on-mismatch",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Exit 1 when live GCP differs from tier (default: true). "
+        "Use --no-fail-on-mismatch for report-only runs.",
+    )
 
     args = parser.parse_args()
 
@@ -456,7 +463,16 @@ def main() -> int:
             Path(args.report).write_text(report, encoding="utf-8")
         else:
             print(report)
-        return 1 if mismatches else 0
+        for mismatch in mismatches:
+            print(f"::warning title=Hardware mismatch::{mismatch}")
+        if mismatches and args.fail_on_mismatch:
+            print(
+                f"::error::{len(mismatches)} hardware mismatch(es); "
+                "see report artifact or use --no-fail-on-mismatch for report-only",
+                file=sys.stderr,
+            )
+            return 1
+        return 0
 
     return 1
 

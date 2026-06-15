@@ -10,7 +10,7 @@ Audits or applies **hardware-only** settings (CPU, memory, min/max instances, co
 |-------|-------------|
 | `environment` | `staging` or `prod` |
 | `traffic_tier` | `idle` (default), `ph`, `scale_10x`, `scale_100x` |
-| `mode` | `audit` — compare live GCP to [hardware-expectations.yaml](../../docs/deployment/hardware-expectations.yaml); `apply` — orchestrate deploy workflows then audit |
+| `mode` | `audit` — compare live GCP to [hardware-expectations.yaml](../../docs/deployment/hardware-expectations.yaml) (**fails** the workflow on mismatch); `apply` — orchestrate deploy workflows then **report-only** audit (mismatches are warnings + artifact, workflow stays green) |
 | `run_health_checks` | Optional curl web + proxy `/health` |
 | `skip_agent` / `skip_webapp` | Partial apply |
 | `set_github_vars` | Persist tier vars on GitHub environment (needs admin) |
