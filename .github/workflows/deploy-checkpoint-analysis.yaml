@@ -8,6 +8,7 @@ on:
       - "gcp/proxy/workers/function/checkpoint_analysis/**"
       - "gcp/common/observability/**"
       - "gcp/common/token/**"
+      - "gcp/common/checkpoint/**"
       - "gcp/common/billing_plans.py"
       - "gcp/common/plan_limits.py"
       - ".github/workflows/deploy-checkpoint-analysis.yaml"
@@ -107,7 +108,7 @@ jobs:
           set -euo pipefail
 
           # Cloud Functions deploys only the function source directory.
-          # Sync shared packages so `common.observability`, `common.token`, and `common.billing_plans` imports work at runtime.
+          # Sync shared packages so `common.observability`, `common.token`, `common.checkpoint`, and `common.billing_plans` imports work at runtime.
           DST_COMMON_DIR="${{ env.SOURCE_DIRECTORY }}/common"
           mkdir -p "${DST_COMMON_DIR}"
 
@@ -128,6 +129,12 @@ jobs:
           mkdir -p "${DST_TOKEN_DIR}"
           rsync -a --delete "${SRC_TOKEN_DIR}/" "${DST_TOKEN_DIR}/"
           echo "✓ Synced ${SRC_TOKEN_DIR} -> ${DST_TOKEN_DIR}"
+
+          SRC_CHECKPOINT_DIR="gcp/common/checkpoint"
+          DST_CHECKPOINT_DIR="${DST_COMMON_DIR}/checkpoint"
+          mkdir -p "${DST_CHECKPOINT_DIR}"
+          rsync -a --delete "${SRC_CHECKPOINT_DIR}/" "${DST_CHECKPOINT_DIR}/"
+          echo "✓ Synced ${SRC_CHECKPOINT_DIR} -> ${DST_CHECKPOINT_DIR}"
 
           cp gcp/common/billing_plans.py "${DST_COMMON_DIR}/billing_plans.py"
           echo "✓ Copied billing_plans.py -> ${DST_COMMON_DIR}/"

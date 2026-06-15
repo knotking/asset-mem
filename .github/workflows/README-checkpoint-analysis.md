@@ -65,7 +65,7 @@ Set these variables in your GitHub repository settings (Settings → Secrets and
 
 ## Shared code (`gcp/common`)
 
-The deploy job **rsyncs** `gcp/common/observability` and `gcp/common/token` into `checkpoint_analysis/common/` before upload. The function imports both packages; omitting `token` causes `ModuleNotFoundError: No module named 'common.token'` at cold start.
+The deploy job **rsyncs** `gcp/common/observability`, `gcp/common/token`, and `gcp/common/checkpoint` into `checkpoint_analysis/common/` before upload. Omitting `token` causes `ModuleNotFoundError: No module named 'common.token'`; omitting `checkpoint` causes `No module named 'common.checkpoint'` at cold start (series assignment and comparison history).
 
 ## How It Works
 

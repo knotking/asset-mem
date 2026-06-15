@@ -7,6 +7,7 @@ on:
     paths:
       - "gcp/proxy/workers/function/checkpoint_metrics/**"
       - "gcp/common/observability/**"
+      - "gcp/common/checkpoint/**"
       - ".github/workflows/deploy-checkpoint-metrics.yaml"
   workflow_dispatch:
     inputs:
@@ -108,6 +109,12 @@ jobs:
           mkdir -p "${DST_OBS_DIR}"
           rsync -a --delete "${SRC_OBS_DIR}/" "${DST_OBS_DIR}/"
           echo "✓ Synced ${SRC_OBS_DIR} -> ${DST_OBS_DIR}"
+
+          SRC_CHECKPOINT_DIR="gcp/common/checkpoint"
+          DST_CHECKPOINT_DIR="${DST_COMMON_DIR}/checkpoint"
+          mkdir -p "${DST_CHECKPOINT_DIR}"
+          rsync -a --delete "${SRC_CHECKPOINT_DIR}/" "${DST_CHECKPOINT_DIR}/"
+          echo "✓ Synced ${SRC_CHECKPOINT_DIR} -> ${DST_CHECKPOINT_DIR}"
 
       - name: Resolve hardware tier
         run: |
