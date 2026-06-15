@@ -43,7 +43,7 @@ Full prod tier matrix and GCP defaults: [PRODUCTION_HARDWARE_ALLOCATIONS.md](../
 
 ## Apply mode orchestration
 
-Dispatches **in parallel** (same `traffic_tier` on each), then polls every **3 minutes** until all child runs finish:
+Dispatches **in parallel** (same `traffic_tier` on each), then polls every **60 seconds** until all child runs finish:
 
 1. `deploy-homecare-agent.yaml` (`action: update`) — unless `skip_agent`
 2. `deploy-homecare-agent-proxy.yaml`

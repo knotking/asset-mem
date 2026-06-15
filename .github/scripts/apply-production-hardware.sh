@@ -8,7 +8,7 @@ SKIP_AGENT="${SKIP_AGENT:-false}"
 SKIP_WEBAPP="${SKIP_WEBAPP:-false}"
 REPO="${GITHUB_REPOSITORY:?GITHUB_REPOSITORY required}"
 # Seconds between status polls while waiting for child workflow runs.
-WATCH_INTERVAL="${WATCH_INTERVAL:-180}"
+WATCH_INTERVAL="${WATCH_INTERVAL:-60}"
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
