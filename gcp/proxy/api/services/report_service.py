@@ -1206,6 +1206,8 @@ def prepare_report_generation(
     else:
         raise ValueError(f"Unsupported report mode: {request.mode}")
 
+    check_and_record_monthly_report_generations(db, request.userId, 1)
+
     report_id, revision, rollback, rag_context = create_or_reset_report_doc(
         db, request, checkpoint_ids
     )
@@ -1220,15 +1222,6 @@ def prepare_report_generation(
         )
     except Exception:
         _rollback_report_doc(db, request, report_id, rollback)
-        raise
-    try:
-        check_and_record_monthly_report_generations(db, request.userId, 1)
-    except PlanLimitExceeded:
-        logger.warning(
-            "Report enqueued but quota record failed reportId=%s userId=%s",
-            report_id,
-            request.userId,
-        )
         raise
     result: dict[str, Any] = {
         "status": "accepted",
