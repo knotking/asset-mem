@@ -167,7 +167,7 @@ jobs:
           max_instance_count: ${{ env.MAX_INSTANCES }}
           max_instance_request_concurrency: ${{ env.CONCURRENCY }}
           memory: ${{ env.MEMORY }}
-          timeout: ${{ env.FUNCTION_TIMEOUT }}
+          service_timeout: ${{ env.FUNCTION_TIMEOUT }}
           event_trigger_type: google.cloud.pubsub.topic.v1.messagePublished
           event_trigger_pubsub_topic: ${{ env.TRIGGER_TOPIC }}
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}

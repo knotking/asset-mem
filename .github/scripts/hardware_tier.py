@@ -149,6 +149,23 @@ def _gcloud_json(args: list[str]) -> dict[str, Any] | None:
         return None
 
 
+def _parse_duration_seconds(val: Any) -> int | None:
+    if val is None:
+        return None
+    if isinstance(val, int):
+        return val
+    s = str(val).strip()
+    if not s:
+        return None
+    if s.endswith("s"):
+        num = s[:-1]
+        if num.isdigit():
+            return int(num)
+    if s.isdigit():
+        return int(s)
+    return None
+
+
 def fetch_live_proxy(region: str, project: str, environment: str) -> dict[str, Any]:
     name = proxy_service_name(environment)
     data = _gcloud_json(
@@ -167,18 +184,42 @@ def fetch_live_proxy(region: str, project: str, environment: str) -> dict[str, A
     )
     if not data:
         return {"error": f"Could not describe Cloud Run service {name}"}
-    template = data.get("template", {}).get("spec", {})
-    containers = template.get("containers") or [{}]
-    container = containers[0]
+    template_root = data.get("template") or {}
+    # Cloud Run v2 API: template.containers; Knative v1: template.spec.containers
+    spec = template_root.get("spec") or template_root
+    containers = spec.get("containers") or template_root.get("containers") or [{}]
+    container = containers[0] if containers else {}
     resources = container.get("resources", {}).get("limits", {})
-    annotations = data.get("template", {}).get("metadata", {}).get("annotations", {})
+    annotations = (
+        template_root.get("metadata", {}).get("annotations")
+        or data.get("metadata", {}).get("annotations")
+        or {}
+    )
+    scaling = template_root.get("scaling") or spec.get("scaling") or {}
+
+    min_inst = scaling.get("minInstanceCount")
+    if min_inst is None:
+        min_inst = annotations.get("autoscaling.knative.dev/minScale", "0")
+
+    max_inst = scaling.get("maxInstanceCount")
+    if max_inst is None:
+        max_inst = annotations.get("autoscaling.knative.dev/maxScale")
+
+    concurrency = spec.get("containerConcurrency")
+    if concurrency is None:
+        concurrency = template_root.get("maxInstanceRequestConcurrency")
+
+    timeout_raw = spec.get("timeoutSeconds")
+    if timeout_raw is None:
+        timeout_raw = template_root.get("timeout")
+
     return {
         "memory": resources.get("memory"),
         "cpu": resources.get("cpu"),
-        "min_instances": annotations.get("autoscaling.knative.dev/minScale", "0"),
-        "max_instances": annotations.get("autoscaling.knative.dev/maxScale"),
-        "concurrency": template.get("containerConcurrency"),
-        "timeout_seconds": template.get("timeoutSeconds"),
+        "min_instances": str(min_inst) if min_inst is not None else None,
+        "max_instances": max_inst,
+        "concurrency": concurrency,
+        "timeout_seconds": _parse_duration_seconds(timeout_raw),
     }
 
 
