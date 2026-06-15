@@ -6,8 +6,15 @@ import logging
 import time
 
 from common.plan_limits import PlanLimitExceeded, check_and_record_monthly_checkpoint_creations
+from common.token import (
+    TokenQuotaExceeded,
+    check_token_quota_or_raise,
+    new_llm_usage_sink,
+    persist_firestore_token_totals,
+)
 from core.auth_deps import RATE_BUCKET_CHECKPOINT, authenticated_user
 from utils.plan_limit_http import plan_limit_exceeded_response
+from utils.token_quota_http import token_quota_exceeded_response
 from core.firebase_auth import apply_uid_to_camel_user_id
 from schemas.checkpoint import (
     AnalyzeCheckpointRequest,
@@ -89,12 +96,19 @@ async def analyze_checkpoint_endpoint(
 @router.post("/compare-checkpoints")
 async def compare_checkpoints_endpoint(
     request_data: CompareCheckpointsRequest,
-    _uid: Annotated[str, Depends(authenticated_user(RATE_BUCKET_CHECKPOINT))],
+    uid: Annotated[str, Depends(authenticated_user(RATE_BUCKET_CHECKPOINT))],
 ):
     """
     Compare two checkpoint images (previous vs current) using Gemini AI.
     Returns structured comparison data including similarity score, semantic changes, and specific regions of interest.
     """
+    db = firestore.Client()
+    try:
+        check_token_quota_or_raise(db, uid)
+    except TokenQuotaExceeded as e:
+        return token_quota_exceeded_response(e)
+
+    usage_sink = new_llm_usage_sink()
     try:
         t0 = time.monotonic()
         result = compare_checkpoints(
@@ -102,7 +116,8 @@ async def compare_checkpoints_endpoint(
             image2_url=request_data.image2Url,
             content_type1=request_data.contentType1,
             content_type2=request_data.contentType2,
-            location=request_data.location
+            location=request_data.location,
+            usage_sink=usage_sink,
         )
         logger.info(
             "compare-checkpoints done duration_ms=%d similarity=%.4f regions=%d semantic_changes=%d",
@@ -121,3 +136,9 @@ async def compare_checkpoints_endpoint(
     except Exception as e:
         logger.exception("Error comparing checkpoints: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        persist_firestore_token_totals(
+            uid,
+            usage_sink,
+            worker_llm_call_increment=usage_sink.get("gemini_calls", 0),
+        )

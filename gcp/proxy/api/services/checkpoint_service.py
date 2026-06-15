@@ -21,6 +21,7 @@ from common.observability.logging_context import (
     pubsub_payload_with_correlation,
 )
 from schemas.checkpoint import AnalyzeCheckpointRequest, CheckpointComparisonResponse
+from common.token import accumulate_google_genai_generate_response
 
 logger = logging.getLogger(__name__)
 
@@ -179,7 +180,8 @@ def compare_checkpoints(
     image2_url: str,
     content_type1: str,
     content_type2: str,
-    location: Optional[str] = None
+    location: Optional[str] = None,
+    usage_sink: Optional[Dict[str, int]] = None,
 ) -> CheckpointComparisonResponse:
     """
     Compare two checkpoint images using Gemini AI to identify differences.
@@ -269,6 +271,9 @@ def compare_checkpoints(
             },
         )
         
+        if usage_sink is not None:
+            accumulate_google_genai_generate_response(usage_sink, response)
+
         json_response = json.loads(response.text)
         
         # Validate and parse into Pydantic model
