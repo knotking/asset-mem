@@ -5,7 +5,7 @@ Limit resolution:
   1. B2C Stripe: users/{userId}/billing/summary when subscriptionStatus is active/trialing
      and monthlyTokenLimit is a positive int (set by proxy webhooks from Stripe Price id map)
   2. users/{userId}/preferences/user.monthlyTokenLimit (positive int) if set
-  3. else STRIPE_B2C_PRICE_TOKEN_CAPS_JSON → ``free`` plan monthlyTokenLimit
+  3. else STRIPE_B2C_PRICE_TOKEN_CAPS_JSON → ``free`` plan (or builtin defaults if missing)
   4. else unlimited (0)
 """
 
@@ -42,10 +42,7 @@ def current_quota_period_key(now: Optional[datetime] = None) -> str:
 
 
 def _free_tier_token_limit() -> int:
-    plan = free_tier_plan()
-    if plan is None:
-        return 0
-    cap = plan.monthly_token_limit
+    cap = free_tier_plan().monthly_token_limit
     return cap if cap > 0 else 0
 
 

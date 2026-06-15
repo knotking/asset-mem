@@ -8,7 +8,7 @@ Counters live on ``llm_token_usage/{userId}``:
 Limit resolution (per dimension, 0 = unlimited):
   1. Active Stripe ``users/{userId}/billing/summary`` fields
   2. ``users/{userId}/preferences/user`` overrides
-  3. ``STRIPE_B2C_PRICE_TOKEN_CAPS_JSON`` → ``free`` plan
+  3. ``STRIPE_B2C_PRICE_TOKEN_CAPS_JSON`` → ``free`` plan (or builtin defaults if missing)
 
 Report caps use ``monthlyReportGenerationsLimit`` (legacy ``monthlyReportGenerations`` accepted).
 """
@@ -80,14 +80,12 @@ class MonthlyCreationLimits:
     report_limit: int
 
 
-def _free_tier_plan() -> Optional[B2CPricePlan]:
+def _free_tier_plan() -> B2CPricePlan:
     return free_tier_plan()
 
 
 def _free_tier_defaults() -> MonthlyCreationLimits:
     plan = _free_tier_plan()
-    if plan is None:
-        return MonthlyCreationLimits(document_limit=0, checkpoint_limit=0, report_limit=0)
     return MonthlyCreationLimits(
         document_limit=plan.monthly_document_limit,
         checkpoint_limit=plan.monthly_checkpoint_limit,

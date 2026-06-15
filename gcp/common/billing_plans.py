@@ -27,6 +27,10 @@ Shape (recommended — checkout by tier):
 Legacy: top-level key is a Stripe Price id (``price_…``) or integer token cap only.
 
 0 for a limit field means unlimited for that dimension.
+
+When the env var is unset or JSON has no ``free`` key, ``free_tier_plan()`` returns
+``BUILTIN_FREE_TIER_PLAN`` (1M tokens, 2 docs, 5 checkpoints, 2 reports) so missing
+config does not imply unlimited usage.
 """
 
 from __future__ import annotations
@@ -57,6 +61,16 @@ class B2CPricePlan:
     monthly_checkpoint_limit: int
     monthly_report_generations: int = 0
     stripe_price_id: Optional[str] = None
+
+
+# Align with apps/common plan-defaults.ts and create-environment.yaml when env omits "free".
+BUILTIN_FREE_TIER_PLAN = B2CPricePlan(
+    monthly_token_limit=1_000_000,
+    monthly_document_limit=2,
+    monthly_checkpoint_limit=5,
+    monthly_report_generations=2,
+    stripe_price_id=None,
+)
 
 
 def plans_json_from_env() -> str:
@@ -214,12 +228,24 @@ def parse_stripe_b2c_price_plans_json(raw: str) -> dict[str, B2CPricePlan]:
     return out
 
 
-def free_tier_plan(raw: str | None = None) -> Optional[B2CPricePlan]:
-    """Limits for users without an active Stripe subscription."""
+def free_tier_plan(raw: str | None = None) -> B2CPricePlan:
+    """Limits for users without an active Stripe subscription.
+
+    When env is unset or JSON lacks a ``free`` key, returns ``BUILTIN_FREE_TIER_PLAN``
+    so misconfiguration cannot imply unlimited usage (0 = unlimited only when ``free``
+    is present in JSON with explicit zero caps).
+    """
     source = plans_json_from_env() if raw is None else (raw or "").strip()
     if not source:
-        return None
-    return parse_stripe_b2c_price_plans_json(source).get(FREE_PLAN_KEY)
+        return BUILTIN_FREE_TIER_PLAN
+    plan = parse_stripe_b2c_price_plans_json(source).get(FREE_PLAN_KEY)
+    if plan is not None:
+        return plan
+    logger.warning(
+        "STRIPE_B2C_PRICE_TOKEN_CAPS_JSON has no %r key; using builtin free-tier limits",
+        FREE_PLAN_KEY,
+    )
+    return BUILTIN_FREE_TIER_PLAN
 
 
 def plan_for_tier(raw: str | None, tier: str | None) -> Optional[B2CPricePlan]:
