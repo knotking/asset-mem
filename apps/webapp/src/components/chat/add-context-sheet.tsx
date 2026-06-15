@@ -104,6 +104,11 @@ type Props = {
   selectedReportIds?: Set<string>;
   selectedReportCount?: number;
   onToggleReport?: (report: PropertyReport) => ToggleSelectionResult;
+  /** Monthly plan quota (live from usage context). */
+  monthlyCheckpointPlanHint?: string | null;
+  monthlyDocumentPlanHint?: string | null;
+  checkpointCaptureBlocked?: boolean;
+  documentUploadBlocked?: boolean;
 };
 
 function ContextListRow({
@@ -250,6 +255,10 @@ export function AddContextSheet({
   selectedReportIds = new Set<string>(),
   selectedReportCount = 0,
   onToggleReport,
+  monthlyCheckpointPlanHint = null,
+  monthlyDocumentPlanHint = null,
+  checkpointCaptureBlocked = false,
+  documentUploadBlocked = false,
 }: Props) {
   const isReportMode = primaryAgent === "report";
   const isDocsMode = primaryAgent === "docs";
@@ -593,10 +602,20 @@ export function AddContextSheet({
               )}
             </div>
             <p className="text-xs leading-4 text-muted-foreground">{modeHint}</p>
+            {monthlyDocumentPlanHint ? (
+              <p
+                className={cn(
+                  "text-xs",
+                  documentUploadBlocked ? "text-destructive" : "text-muted-foreground",
+                )}
+              >
+                {monthlyDocumentPlanHint}
+              </p>
+            ) : null}
             <Button
               type="button"
               variant="outline"
-              disabled={captureBusy}
+              disabled={captureBusy || documentUploadBlocked}
               className={cn(
                 "h-auto w-full gap-2 py-3",
                 launchingAction === "upload" && "border-primary bg-primary/10"
@@ -762,6 +781,16 @@ export function AddContextSheet({
           </div>
 
           <p className="text-xs leading-4 text-muted-foreground">{modeHint}</p>
+          {monthlyCheckpointPlanHint ? (
+            <p
+              className={cn(
+                "text-xs",
+                checkpointCaptureBlocked ? "text-destructive" : "text-muted-foreground",
+              )}
+            >
+              {monthlyCheckpointPlanHint}
+            </p>
+          ) : null}
         </div>
 
         <div
@@ -786,7 +815,7 @@ export function AddContextSheet({
                         key={kind}
                         type="button"
                         variant="outline"
-                        disabled={captureBusy}
+                        disabled={captureBusy || checkpointCaptureBlocked}
                         className={cn(
                           "h-auto flex-col gap-1 py-3",
                           isActive && "border-primary bg-primary/10"
@@ -809,7 +838,7 @@ export function AddContextSheet({
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={captureBusy}
+                  disabled={captureBusy || documentUploadBlocked}
                   className={cn(
                     "h-auto w-full gap-2 py-3",
                     launchingAction === "upload" && "border-primary bg-primary/10"

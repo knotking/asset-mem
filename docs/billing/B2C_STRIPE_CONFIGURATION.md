@@ -24,7 +24,7 @@ User (webapp) ──Firebase ID token──► Proxy API
 
 Enforcement (proxy + workers):
   • monthlyTokenLimit              → Reasoning Engine / Gemini (llm_token_usage)
-  • monthlyDocumentLimit           → extract-doc-info, rag-file-upload (per file)
+  • monthlyDocumentLimit           → extract-doc-info (records); rag-file-upload (check only, per file)
   • monthlyCheckpointLimit         → analyze-checkpoint
   • monthlyReportGenerationsLimit  → POST /reports/generate (per report)
 ```

@@ -106,7 +106,7 @@ Clients (mapp / webapp) listen to Firestore and render via `@homeapp/common` `re
 
 **Token** enforcement: proxy before `stream_query` / session creation (`gcp/common/token/quota.py`); workers for checkpoint/document Gemini. **`TOKEN_QUOTA_EXCEEDED`** on over-limit streams.
 
-**Monthly creations** (documents, checkpoint AI, reports): `gcp/common/plan_limits.py`. Counts on `llm_token_usage/{userId}` (`periodDocumentCreations`, `periodCheckpointCreations`, `periodReportGenerations`). Enforced when queuing **`POST /extract-doc-info`**, **`POST /rag-file-upload`** (per file), **`POST /analyze-checkpoint`**, and **`POST /reports/generate`**. HTTP **`429`** with `DOCUMENT_QUOTA_EXCEEDED`, `CHECKPOINT_QUOTA_EXCEEDED`, or `REPORT_QUOTA_EXCEEDED`.
+**Monthly creations** (documents, checkpoint AI, reports): `gcp/common/plan_limits.py`. Counts on `llm_token_usage/{userId}` (`periodDocumentCreations`, `periodCheckpointCreations`, `periodReportGenerations`). Enforced when queuing **`POST /extract-doc-info`** (records document creations), **`POST /rag-file-upload`** (checks only — clients also call extract-doc-info per file), **`POST /analyze-checkpoint`**, and **`POST /reports/generate`**. HTTP **`429`** with `DOCUMENT_QUOTA_EXCEEDED`, `CHECKPOINT_QUOTA_EXCEEDED`, or `REPORT_QUOTA_EXCEEDED`.
 
 **Webapp UI:** `POST /token-quota-status` returns `{ period, used, max_tokens, unlimited, documents, checkpoints, reports }`. Same resolution as enforcement.
 

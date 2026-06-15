@@ -33,6 +33,7 @@ type BillingSummary = {
   monthlyTokenLimit?: number | null;
   monthlyDocumentLimit?: number | null;
   monthlyCheckpointLimit?: number | null;
+  monthlyReportGenerationsLimit?: number | null;
   stripeCustomerId?: string | null;
 };
 
@@ -207,6 +208,10 @@ export function PlanBillingSettings() {
                 : ''}
               {summary.monthlyCheckpointLimit != null && summary.monthlyCheckpointLimit > 0
                 ? ` · ${summary.monthlyCheckpointLimit.toLocaleString('en-US')} checkpoint AI runs`
+                : ''}
+              {summary.monthlyReportGenerationsLimit != null &&
+              summary.monthlyReportGenerationsLimit > 0
+                ? ` · ${summary.monthlyReportGenerationsLimit.toLocaleString('en-US')} reports`
                 : ''}{' '}
               per month
             </Text>
