@@ -43,14 +43,16 @@ Full prod tier matrix and GCP defaults: [PRODUCTION_HARDWARE_ALLOCATIONS.md](../
 
 ## Apply mode orchestration
 
-Dispatches (in order), each with `traffic_tier`:
+Dispatches **in parallel** (same `traffic_tier` on each), then polls every **3 minutes** until all child runs finish:
 
-1. `deploy-homecare-agent.yaml` (`action: update`)
+1. `deploy-homecare-agent.yaml` (`action: update`) — unless `skip_agent`
 2. `deploy-homecare-agent-proxy.yaml`
 3. Worker deploy workflows (checkpoint-analysis, document-analysis, metrics, user-docs, report-generation)
-4. `deploy-webapp-apphosting.yaml` (also runs App Hosting Cloud Run scaling via gcloud)
+4. `deploy-webapp-apphosting.yaml` — unless `skip_webapp`
 
-Requires `actions: write` and `checks: read` on `GITHUB_TOKEN` (for `gh run watch` while child deploys run).
+Total wall time is roughly the **slowest** deploy (often the agent), not the sum of all workflows. Services are independent; parallel dispatch is safe for hardware-only redeploys.
+
+Requires `actions: write` and `checks: read` on `GITHUB_TOKEN`.
 
 ## Scripts
 
