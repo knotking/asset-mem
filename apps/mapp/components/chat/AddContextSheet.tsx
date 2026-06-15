@@ -74,6 +74,7 @@ import {
   toRevisionSelectionReport,
 } from '@homeapp/common/lib/report-revisions';
 import { buildCurrentRevisionReportPickerRows } from '@homeapp/common/lib/report-picker-rows';
+import { cn } from '@/lib/utils';
 
 type ContextTab = 'timeline' | 'documents';
 
