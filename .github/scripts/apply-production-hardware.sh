@@ -24,7 +24,7 @@ run_workflow() {
   local run_id
   run_id="$(gh run list --workflow="$workflow_file" --repo "$REPO" --limit 1 --json databaseId -q '.[0].databaseId')"
   echo "    Run id: ${run_id}"
-  gh run watch "$run_id" --repo "$REPO" --exit-status
+  gh run watch "$run_id" --repo "$REPO" --compact --exit-status
 }
 
 # Optional: persist tier on GitHub environment for drift audits

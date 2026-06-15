@@ -50,7 +50,7 @@ Dispatches (in order), each with `traffic_tier`:
 3. Worker deploy workflows (checkpoint-analysis, document-analysis, metrics, user-docs, report-generation)
 4. `deploy-webapp-apphosting.yaml` (also runs App Hosting Cloud Run scaling via gcloud)
 
-Requires `actions: write` on `GITHUB_TOKEN`.
+Requires `actions: write` and `checks: read` on `GITHUB_TOKEN` (for `gh run watch` while child deploys run).
 
 ## Scripts
 
