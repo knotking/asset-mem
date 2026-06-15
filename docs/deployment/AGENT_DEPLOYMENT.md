@@ -261,7 +261,8 @@ uv run python deployment/deploy.py update prod
 - Uploads to staging bucket
 - Creates or updates Reasoning Engine
 - Outputs Reasoning Engine ID
-- Agent Engine scaling uses Vertex defaults (deploy script does not set `min_instances` / `max_instances`)
+- **CI deploy:** `AGENT_MIN_INSTANCES`, `AGENT_MAX_INSTANCES`, `AGENT_RESOURCE_CPU`, `AGENT_RESOURCE_MEMORY`, and `AGENT_CONTAINER_CONCURRENCY` are set from [hardware-expectations.yaml](../../docs/deployment/hardware-expectations.yaml) via `resolve-hardware-env.sh` (default tier **idle**). See [PRODUCTION_HARDWARE_ALLOCATIONS.md](../../docs/deployment/PRODUCTION_HARDWARE_ALLOCATIONS.md#how-deploy-workflows-pick-a-tier).
+- **Local deploy:** scaling kwargs apply only when those `AGENT_*` vars are set in the shell or `gcp/agents/homecare/.env`; otherwise Vertex platform defaults apply.
 
 #### Grant Permissions (First-Time Setup)
 ```bash

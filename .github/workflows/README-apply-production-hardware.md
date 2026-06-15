@@ -30,6 +30,17 @@ Audits or applies **hardware-only** settings (CPU, memory, min/max instances, co
 
 `mode: audit`, `traffic_tier: idle` weekly on staging
 
+## Individual deploy workflows
+
+Each `deploy-*` workflow that touches Cloud Run, Cloud Functions, Agent Engine, or App Hosting runs **Resolve hardware tier** before deploy. You do **not** need **Apply production hardware** for a single service — defaults are:
+
+- `traffic_tier`: **idle** (input default, or `HARDWARE_TIER`, or fallback)
+- `environment`: **staging** on manual dispatch unless you select **prod**
+
+Redeploying one service updates only that service’s hardware; caps come from [hardware-expectations.yaml](../../docs/deployment/hardware-expectations.yaml) for the chosen environment + tier.
+
+Full prod tier matrix and GCP defaults: [PRODUCTION_HARDWARE_ALLOCATIONS.md](../../docs/deployment/PRODUCTION_HARDWARE_ALLOCATIONS.md#prod-scaling-reference).
+
 ## Apply mode orchestration
 
 Dispatches (in order), each with `traffic_tier`:

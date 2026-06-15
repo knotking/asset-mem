@@ -6,6 +6,31 @@ Tiered CPU, memory, scaling, and timeouts for App Hosting, Cloud Run proxy, Clou
 
 **Apply / audit:** GitHub Actions → [Apply production hardware](../../.github/workflows/apply-production-hardware.yaml) (see [README](../../.github/workflows/README-apply-production-hardware.md))
 
+## How deploy workflows pick a tier
+
+Every hardware-aware deploy workflow runs [resolve-hardware-env.sh](../../.github/scripts/resolve-hardware-env.sh) before deploy. It loads [hardware-expectations.yaml](./hardware-expectations.yaml) for the target **environment** and **traffic tier**.
+
+**Tier resolution order** (same for proxy, agent, workers, and App Hosting):
+
+1. `traffic_tier` workflow input (manual dispatch; UI default **idle**)
+2. GitHub environment variable `HARDWARE_TIER` (optional)
+3. Fallback **`idle`**
+
+**Environment resolution:**
+
+| Trigger | `environment` | `traffic_tier` |
+|---------|---------------|----------------|
+| Manual dispatch (defaults) | **staging** | **idle** |
+| Manual dispatch → pick `prod` | prod | idle (unless you change tier) |
+| Push to `main` (path trigger) | **staging** | **idle** (no input; uses var or fallback) |
+| Apply production hardware | your input | your input |
+
+**Workflows that apply tiers:** `deploy-homecare-agent-proxy`, `deploy-homecare-agent`, `deploy-webapp-apphosting`, and all five worker deploy workflows (checkpoint-analysis, document-analysis, checkpoint-metrics, user-docs, report-generation).
+
+**Local agent deploy** (`make update` / `deployment/deploy.py`) does **not** run tier resolve. Set `AGENT_MIN_INSTANCES`, `AGENT_MAX_INSTANCES`, etc. in `gcp/agents/homecare/.env` or export them after `hardware_tier.py export-env` if you want caps to match CI.
+
+**Before hardware-sizing is merged:** proxy deploy on `main` does not pass `--max-instances` (Cloud Run default **100**); worker workflows use hardcoded fallbacks (often **10**). After merge, path deploys apply [staging idle](#staging-idle-reference); prod uses [Prod scaling reference](#prod-scaling-reference) when you dispatch with `environment: prod`.
+
 ## Traffic tiers
 
 | Tier | When to use |
@@ -33,7 +58,20 @@ Tiered CPU, memory, scaling, and timeouts for App Hosting, Cloud Run proxy, Clou
 | Memory / CPU | Step at tier boundaries; not linear |
 | Proxy `concurrency` | Lower at higher tiers (SSE): 80 → 40 → 30 → 20 |
 
-## Prod hardware summary
+## Prod scaling reference
+
+Values below are **prod** tiers from [hardware-expectations.yaml](./hardware-expectations.yaml). For **staging idle** (default on push-to-`main` deploys), see [Staging idle reference](#staging-idle-reference).
+
+**GCP defaults when deploy omits a knob** (why AssetMem idle caps matter):
+
+| Surface | Typical GCP default (unset) |
+|---------|----------------------------|
+| Proxy (Cloud Run) | min **0**, max **100**; 1 CPU, 512Mi, concurrency **80** |
+| Workers (Cloud Functions Gen2) | max **100** per function |
+| App Hosting | min **0**; CPU/memory follow platform unless `runConfig` is set |
+| Agent (Vertex AI) | min/max and CPU/memory unset in `deploy.py` → Vertex platform defaults |
+
+AssetMem **idle** tiers keep `max_instances` low as a **cost circuit breaker**, not primary abuse protection (auth, token quota, and optional Cloud Armor handle abuse).
 
 ### App Hosting, proxy, agent
 
@@ -45,25 +83,57 @@ Tiered CPU, memory, scaling, and timeouts for App Hosting, Cloud Run proxy, Clou
 | Proxy min / max | 0 / 2 | 1 / 10 | 2 / 30 | 5 / 100 |
 | Proxy concurrency | 80 | 40 | 30 | 20 |
 | Agent min / max | 0 / 2 | 1 / 5 | 2 / 15 | 5 / 50 |
-| Agent CPU / memory | default | 4 / 8Gi | 4 / 8Gi | 8 / 16Gi |
+| Agent CPU / memory / concurrency | default | 4 / 8Gi / 10 | 4 / 8Gi / 10 | 8 / 16Gi / 8 |
 
-### Workers (max instances)
+`default` = not set in yaml (`null`); platform or Vertex decides. Agent CPU/memory/concurrency are only set from **ph** upward.
 
-| Worker | idle | ph | scale_10x | scale_100x |
-|--------|------|-----|-----------|------------|
-| checkpoint-analysis | 3 | 15 | 50 | 200 |
-| document-analysis | 3 | 10 | 40 | 150 |
-| checkpoint-metrics | 3 | 5 | 20 | 50 |
-| user_docs | 1 | 3 | 10 | 30 |
-| report-generation | 2 | 5 | 15 | 50 |
+### Workers
 
-Timeouts: checkpoint-analysis & document-analysis **300s**; user_docs & report-generation **540s**; metrics **60s**. Report-generation memory **2048Mi** (Playwright PDF) at all tiers.
+| Worker | max (idle) | max (ph) | max (scale_10x) | max (scale_100x) | memory | timeout |
+|--------|----------:|---------:|----------------:|-----------------:|--------|---------|
+| checkpoint-analysis | 3 | 15 | 50 | 200 | 512Mi (1Gi ph+) | 300s |
+| document-analysis | 3 | 10 | 40 | 150 | 512Mi | 300s |
+| checkpoint-metrics | 3 | 5 | 20 | 50 | 256Mi | 60s |
+| user_docs | 1 | 3 | 10 | 30 | 512Mi | 540s |
+| report-generation | 2 | 5 | 15 | 50 | 2048Mi | 540s |
+
+All workers use concurrency **1**. Report-generation memory is **2048Mi** at every tier (Playwright PDF).
+
+## Staging idle reference
+
+Push-to-`main` deploys and manual workflow dispatch (default **environment: staging**, **traffic_tier: idle**) apply these caps. Full staging tiers (`ph`, etc.) are in [hardware-expectations.yaml](./hardware-expectations.yaml) (`staging:` block).
+
+### App Hosting, proxy, agent
+
+| Surface | staging idle |
+|---------|--------------|
+| App Hosting cpu / MiB | default / 512 |
+| App Hosting min / max | 0 / 2 |
+| Proxy cpu / memory | 1 / **512Mi** |
+| Proxy min / max | 0 / 2 |
+| Proxy concurrency | 80 |
+| Agent min / max | default (unset in yaml) |
+| Agent CPU / memory / concurrency | default (unset in yaml) |
+
+Staging idle does **not** set Agent Engine min/max or resource limits — only prod idle (and higher prod tiers) pass `AGENT_*` from tier resolve. Proxy memory is **512Mi** on staging vs **1Gi** on prod idle.
+
+### Workers
+
+| Worker | max | memory | timeout |
+|--------|----:|--------|---------|
+| checkpoint-analysis | 3 | 512Mi | 300s |
+| document-analysis | 3 | 512Mi | 300s |
+| checkpoint-metrics | 3 | 256Mi | 60s |
+| user_docs | 1 | 512Mi | 540s |
+| report-generation | 2 | 2048Mi | 540s |
+
+Worker idle caps match prod idle; only proxy memory and agent scaling differ on staging.
 
 ## Runbook
 
 ### Default (idle)
 
-Prod stays on **idle** until a spike is planned. Push-to-`main` deploys use `traffic_tier: idle` when not specified.
+Prod stays on **idle** until a spike is planned. Individual deploy workflows (e.g. **Deploy Homecare Agent Proxy**) default to `traffic_tier: idle` and `environment: staging` on manual dispatch; push-to-`main` path deploys use **staging** + **idle** when inputs are absent. To apply idle caps on **prod**, dispatch with `environment: prod` or run **Apply production hardware** with `traffic_tier: idle`.
 
 ### Product Hunt (T-3)
 
