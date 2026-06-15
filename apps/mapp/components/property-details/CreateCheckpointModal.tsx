@@ -11,6 +11,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { createLogger } from '@/lib/logger';
+import { cn } from '@/lib/utils';
+import { CHECKPOINT_QUOTA_USER_MESSAGE } from '@homeapp/common/lib/document-analysis-errors';
+import {
+  isAtPlanLimit,
+  planLimitBlockMessage,
+  planLimitUsageHint,
+} from '@homeapp/common/lib/plan-limit-slice';
+import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
+import { showThemedAlert } from '@/contexts/themed-alert-context';
 
 const checkpointLog = createLogger('checkpoint');
 const cameraLog = createLogger('camera');
@@ -108,6 +117,11 @@ const LOCATION_OPTIONS = {
 
 export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateCheckpointModalProps) {
   const insets = useSafeAreaInsets();
+  const { checkpointsLimit, limitsLoading } = useLlmTokenUsage();
+  const checkpointLimitMessage = planLimitBlockMessage('checkpoint', checkpointsLimit);
+  const checkpointLimitHint = planLimitUsageHint('checkpoint', checkpointsLimit);
+  const createBlockedByLimit =
+    !limitsLoading && isAtPlanLimit(checkpointsLimit, 1);
   const [name, setName] = React.useState('');
   const [assetType, setAssetType] = React.useState<'real_estate' | 'vehicle' | 'appliance' | 'other'>('real_estate');
   const [location, setLocation] = React.useState<string>('');
@@ -235,6 +249,11 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
 
   const handleSubmit = async () => {
     if (!mediaAsset) {
+      return;
+    }
+
+    if (!limitsLoading && isAtPlanLimit(checkpointsLimit, 1)) {
+      showThemedAlert('Monthly checkpoint limit reached', CHECKPOINT_QUOTA_USER_MESSAGE);
       return;
     }
 
@@ -438,7 +457,19 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
         <View
           className="border-t border-border px-4 pt-4"
           style={{ paddingBottom: Math.max(insets.bottom, 4) }}>
-          <Button onPress={handleSubmit} disabled={!mediaAsset || loading} className="w-full">
+          {(checkpointLimitHint || checkpointLimitMessage) ? (
+            <Text
+              className={cn(
+                'mb-2 text-sm',
+                checkpointLimitMessage ? 'text-destructive' : 'text-muted-foreground',
+              )}>
+              {checkpointLimitMessage ?? checkpointLimitHint}
+            </Text>
+          ) : null}
+          <Button
+            onPress={handleSubmit}
+            disabled={!mediaAsset || loading || createBlockedByLimit}
+            className="w-full">
             {loading ? (
               <View className="flex-row items-center gap-2">
                 <Icon as={Loader2} size={16} className="animate-spin text-primary-foreground" />

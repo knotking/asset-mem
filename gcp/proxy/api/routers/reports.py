@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from google.cloud import firestore
 import logging
 
-from common.plan_limits import PlanLimitExceeded, check_monthly_report_generations_allowed
+from common.plan_limits import PlanLimitExceeded
 from common.storage.client import StorageError
 from core.auth_deps import RATE_BUCKET_DOCUMENTS, authenticated_user
 from core.firebase_auth import apply_uid_to_camel_user_id
@@ -94,11 +94,6 @@ async def reports_generate(
         raise HTTPException(status_code=400, detail="propertyId and title are required")
 
     db = firestore.Client()
-    try:
-        check_monthly_report_generations_allowed(db, request_data.userId, 1)
-    except PlanLimitExceeded as e:
-        return plan_limit_exceeded_response(e)
-
     try:
         return prepare_report_generation(db, request_data)
     except PlanLimitExceeded as e:

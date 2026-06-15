@@ -110,6 +110,35 @@ function toDisplayPlanLimit(
   return { used: raw.used, limit, unlimited: false };
 }
 
+function currentUtcQuotaPeriodKey(now = new Date()): string {
+  const year = now.getUTCFullYear();
+  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+function effectivePeriodCreationCount(
+  storedPeriodKey: string | null | undefined,
+  periodCount: number,
+  now = new Date(),
+): number {
+  if (!storedPeriodKey || storedPeriodKey !== currentUtcQuotaPeriodKey(now)) {
+    return 0;
+  }
+  return periodCount;
+}
+
+function mergePlanLimitUsage(
+  slice: PlanLimitSlice | null,
+  periodCount: number,
+  storedPeriodKey?: string | null,
+): PlanLimitSlice | null {
+  if (!slice) return null;
+  return {
+    ...slice,
+    used: effectivePeriodCreationCount(storedPeriodKey, periodCount),
+  };
+}
+
 function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsageSnapshot {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -303,6 +332,34 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
     Boolean(userId) &&
     (!prefsLoaded || (monthlyLimit == null && proxyDefaultLimit === 'pending'));
 
+  const documentsLimitLive = useMemo(
+    () =>
+      mergePlanLimitUsage(
+        documentsLimit,
+        usage.periodDocumentCreations,
+        usage.quotaPeriodKey,
+      ),
+    [documentsLimit, usage.periodDocumentCreations, usage.quotaPeriodKey],
+  );
+  const checkpointsLimitLive = useMemo(
+    () =>
+      mergePlanLimitUsage(
+        checkpointsLimit,
+        usage.periodCheckpointCreations,
+        usage.quotaPeriodKey,
+      ),
+    [checkpointsLimit, usage.periodCheckpointCreations, usage.quotaPeriodKey],
+  );
+  const reportsLimitLive = useMemo(
+    () =>
+      mergePlanLimitUsage(
+        reportsLimit,
+        usage.periodReportGenerations,
+        usage.quotaPeriodKey,
+      ),
+    [reportsLimit, usage.periodReportGenerations, usage.quotaPeriodKey],
+  );
+
   return {
     loading,
     error,
@@ -311,9 +368,9 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
     effectiveMonthlyLimit,
     proxyDefaultLimit,
     limitsLoading,
-    documentsLimit,
-    checkpointsLimit,
-    reportsLimit,
+    documentsLimit: documentsLimitLive,
+    checkpointsLimit: checkpointsLimitLive,
+    reportsLimit: reportsLimitLive,
   };
 }
 

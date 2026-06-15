@@ -89,6 +89,7 @@ def test_rollback_report_doc_deletes_new_report(mock_reports_collection):
     report_ref.set.assert_not_called()
 
 
+@patch("services.report_service.release_monthly_report_generations")
 @patch("services.report_service.check_and_record_monthly_report_generations")
 @patch("services.report_service.publish_report_generation")
 @patch("services.report_service.create_or_reset_report_doc")
@@ -100,6 +101,7 @@ def test_prepare_report_generation_rolls_back_on_publish_failure(
     mock_create_doc,
     mock_publish,
     _mock_record,
+    mock_release,
 ):
     db = MagicMock()
     request = GenerateReportRequest(
@@ -129,7 +131,57 @@ def test_prepare_report_generation_rolls_back_on_publish_failure(
         "report-1",
         _ReportDocRollback(is_new=True),
     )
-    _mock_record.assert_not_called()
+    _mock_record.assert_called_once_with(db, "user-1", 1)
+    mock_release.assert_called_once_with(db, "user-1", 1)
+
+
+@patch("services.report_service._rollback_report_doc")
+@patch("services.report_service.check_and_record_monthly_report_generations")
+@patch("services.report_service.create_or_reset_report_doc")
+@patch("services.report_service.validate_checkpoints_for_report")
+@patch("services.report_service.resolve_snapshot_checkpoints")
+def test_prepare_report_generation_rolls_back_doc_when_quota_exceeded(
+    mock_resolve,
+    _mock_validate,
+    mock_create_doc,
+    mock_record,
+    mock_rollback,
+):
+    from common.plan_limits import PlanLimitExceeded
+
+    db = MagicMock()
+    request = GenerateReportRequest(
+        userId="user-1",
+        propertyId="prop-1",
+        title="Test",
+        mode="snapshot",
+        purpose="custom",
+        snapshotRange=ReportDateRangeInput(start="2026-06-01", end="2026-06-02"),
+    )
+    mock_resolve.return_value = [{"id": "cp-1", "analysisStatus": "completed"}]
+    mock_create_doc.return_value = (
+        "report-1",
+        1,
+        _ReportDocRollback(is_new=True),
+        _ReportRagContext(),
+    )
+    mock_record.side_effect = PlanLimitExceeded(
+        kind="report",
+        used=2,
+        limit=2,
+        period_key="2026-06",
+    )
+
+    with pytest.raises(PlanLimitExceeded):
+        prepare_report_generation(db, request)
+
+    mock_create_doc.assert_called_once()
+    mock_rollback.assert_called_once_with(
+        db,
+        request,
+        "report-1",
+        _ReportDocRollback(is_new=True),
+    )
 
 
 def test_pick_latest_per_location_prefers_newer_checkpoint():

@@ -66,9 +66,8 @@ def pubsub_to_user_docs(request, context):
                 except ValueError:
                     firebase_admin.initialize_app()
                 db = admin_firestore.client()
-                # /rag-file-upload already checks and records document creations before publishing
-                # this worker event. Re-checking with the same count here can double-charge a batch
-                # and incorrectly block first-time free users.
+                # /extract-doc-info records monthly document creations at enqueue time.
+                # /rag-file-upload checks the cap only (no record) when clients call both per file.
                 if source not in ("rag-file-upload", "report-rag-index"):
                     check_monthly_document_creations_allowed(db, user_id, len(gcs_urls))
             rag_service = RagService()

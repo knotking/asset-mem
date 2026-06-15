@@ -8,7 +8,7 @@ Counters live on ``llm_token_usage/{userId}``:
 Limit resolution (per dimension, 0 = unlimited):
   1. Active Stripe ``users/{userId}/billing/summary`` fields
   2. ``users/{userId}/preferences/user`` overrides
-  3. ``STRIPE_B2C_PRICE_TOKEN_CAPS_JSON`` → ``free`` plan
+  3. ``STRIPE_B2C_PRICE_TOKEN_CAPS_JSON`` → ``free`` plan (or builtin defaults if missing)
 
 Report caps use ``monthlyReportGenerationsLimit`` (legacy ``monthlyReportGenerations`` accepted).
 """
@@ -80,14 +80,12 @@ class MonthlyCreationLimits:
     report_limit: int
 
 
-def _free_tier_plan() -> Optional[B2CPricePlan]:
+def _free_tier_plan() -> B2CPricePlan:
     return free_tier_plan()
 
 
 def _free_tier_defaults() -> MonthlyCreationLimits:
     plan = _free_tier_plan()
-    if plan is None:
-        return MonthlyCreationLimits(document_limit=0, checkpoint_limit=0, report_limit=0)
     return MonthlyCreationLimits(
         document_limit=plan.monthly_document_limit,
         checkpoint_limit=plan.monthly_checkpoint_limit,
@@ -333,6 +331,43 @@ def check_and_record_monthly_report_generations(
     if not user_id or count <= 0:
         return
     _check_and_record_creations(db, user_id, kind="report", count=count)
+
+
+def release_monthly_report_generations(
+    db: firestore.Client,
+    user_id: str,
+    count: int = 1,
+) -> None:
+    """Reverse a prior report quota record when generation fails after recording."""
+    if not user_id or count <= 0:
+        return
+    period_key = current_quota_period_key()
+    ref = db.collection(TOKEN_USAGE_COLLECTION).document(user_id)
+
+    @firestore.transactional
+    def _tx(transaction, doc_ref, p_period_key: str, p_count: int):
+        snap = doc_ref.get(transaction=transaction)
+        if not snap.exists:
+            return
+        data = snap.to_dict() or {}
+        if data.get("quotaPeriodKey") != p_period_key:
+            return
+        period_used = _coerce_int_field(data.get(_PERIOD_REPORT_FIELD))
+        if period_used <= 0:
+            return
+        dec = min(p_count, period_used)
+        lifetime_used = _coerce_int_field(data.get(_LIFETIME_REPORT_FIELD))
+        lifetime_dec = min(dec, lifetime_used) if lifetime_used > 0 else dec
+        transaction.update(
+            doc_ref,
+            {
+                "updatedAt": firestore.SERVER_TIMESTAMP,
+                _PERIOD_REPORT_FIELD: firestore.Increment(-dec),
+                _LIFETIME_REPORT_FIELD: firestore.Increment(-lifetime_dec),
+            },
+        )
+
+    _tx(db.transaction(), ref, period_key, count)
 
 
 def _assert_creations_allowed(

@@ -34,10 +34,15 @@ import { postFileToAgent, streamAgentResponse } from "@/lib/api-agent";
 import { queueExtractDocInfo } from "@/ai/flows/extract-doc-info";
 import { waitForUserDocAnalysis } from "@/lib/wait-user-doc-analysis";
 import {
+  CHECKPOINT_QUOTA_USER_MESSAGE,
   DOCUMENT_QUOTA_USER_MESSAGE,
   getDocumentAnalysisFailureMessage,
+  isAtPlanLimit,
   isDocumentQuotaMessage,
+  planLimitBlockMessage,
+  planLimitUsageHint,
 } from "@/lib/plan-limit-errors";
+import { useLlmTokenUsage } from "@/contexts/llm-token-usage-context";
 import { db, storage } from "@/lib/firebase";
 import {
   collection,
@@ -85,6 +90,17 @@ function PropertyChatComposerInner(
 ) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { documentsLimit, checkpointsLimit, limitsLoading } = useLlmTokenUsage();
+  const checkpointPlanHint =
+    planLimitBlockMessage("checkpoint", checkpointsLimit) ??
+    planLimitUsageHint("checkpoint", checkpointsLimit);
+  const documentPlanHint =
+    planLimitBlockMessage("document", documentsLimit) ??
+    planLimitUsageHint("document", documentsLimit);
+  const checkpointCaptureBlocked =
+    !limitsLoading && isAtPlanLimit(checkpointsLimit, 1);
+  const documentUploadBlocked =
+    !limitsLoading && isAtPlanLimit(documentsLimit, 1);
   const {
     checkpoints,
     createCheckpoint,
@@ -335,6 +351,14 @@ function PropertyChatComposerInner(
   const startCheckpointFromFile = React.useCallback(
     async (file: File, previewUrl: string) => {
       if (!property || !user) return;
+      if (!limitsLoading && isAtPlanLimit(checkpointsLimit, 1)) {
+        toast({
+          variant: "destructive",
+          title: "Monthly checkpoint limit reached",
+          description: CHECKPOINT_QUOTA_USER_MESSAGE,
+        });
+        return;
+      }
       const pendingId = `pending-cp-${Date.now()}`;
       const mediaType = file.type.startsWith("video/") ? "video" : "image";
 
@@ -382,7 +406,7 @@ function PropertyChatComposerInner(
         });
       }
     },
-    [property, user, createCheckpoint, updateCheckpoint, addPendingContext, removePendingContext, toast]
+    [property, user, createCheckpoint, updateCheckpoint, addPendingContext, removePendingContext, toast, limitsLoading, checkpointsLimit]
   );
 
   const resolveCameraFlow = React.useCallback((success: boolean) => {
@@ -391,12 +415,20 @@ function PropertyChatComposerInner(
   }, []);
 
   const handleOpenCamera = React.useCallback((mode: "photo" | "video"): Promise<boolean> => {
+    if (!limitsLoading && isAtPlanLimit(checkpointsLimit, 1)) {
+      toast({
+        variant: "destructive",
+        title: "Monthly checkpoint limit reached",
+        description: CHECKPOINT_QUOTA_USER_MESSAGE,
+      });
+      return Promise.resolve(false);
+    }
     setCameraInitialMode(mode);
     setCameraOpen(true);
     return new Promise((resolve) => {
       cameraFlowResolveRef.current = resolve;
     });
-  }, []);
+  }, [limitsLoading, checkpointsLimit, toast]);
 
   const handleCameraCapture = React.useCallback(
     (file: File) => {
@@ -431,14 +463,30 @@ function PropertyChatComposerInner(
   );
 
   const handleGalleryPick = React.useCallback(async (): Promise<boolean> => {
+    if (!limitsLoading && isAtPlanLimit(checkpointsLimit, 1)) {
+      toast({
+        variant: "destructive",
+        title: "Monthly checkpoint limit reached",
+        description: CHECKPOINT_QUOTA_USER_MESSAGE,
+      });
+      return false;
+    }
     const file = await pickFileFromInput("image/*,video/*");
     if (!file) return false;
     const previewUrl = URL.createObjectURL(file);
     void startCheckpointFromFile(file, previewUrl);
     return false;
-  }, [pickFileFromInput, startCheckpointFromFile]);
+  }, [pickFileFromInput, startCheckpointFromFile, limitsLoading, checkpointsLimit, toast]);
 
   const handleUploadDocument = React.useCallback((): Promise<boolean> => {
+    if (!limitsLoading && isAtPlanLimit(documentsLimit, 1)) {
+      toast({
+        variant: "destructive",
+        title: "Monthly document limit reached",
+        description: DOCUMENT_QUOTA_USER_MESSAGE,
+      });
+      return Promise.resolve(false);
+    }
     return new Promise((resolve) => {
       const input = docInputRef.current;
       if (!input) {
@@ -459,13 +507,21 @@ function PropertyChatComposerInner(
       window.addEventListener("focus", onWindowFocus);
       input.click();
     });
-  }, []);
+  }, [limitsLoading, documentsLimit, toast]);
 
   const handleDocumentSelected = React.useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       e.target.value = "";
       if (!file || !property || !user) return;
+      if (!limitsLoading && isAtPlanLimit(documentsLimit, 1)) {
+        toast({
+          variant: "destructive",
+          title: "Monthly document limit reached",
+          description: DOCUMENT_QUOTA_USER_MESSAGE,
+        });
+        return;
+      }
 
       const pendingId = `pending-doc-${Date.now()}`;
       const previewUrl = file.type.startsWith("image/")
@@ -562,7 +618,7 @@ function PropertyChatComposerInner(
         });
       }
     },
-    [property, user, addPendingContext, removePendingContext, toast]
+    [property, user, addPendingContext, removePendingContext, toast, limitsLoading, documentsLimit]
   );
 
   return (
@@ -634,6 +690,10 @@ function PropertyChatComposerInner(
         selectedReportIds={selectedReportIds}
         selectedReportCount={readySelectedReports.length}
         onToggleReport={toggleReport}
+        monthlyCheckpointPlanHint={checkpointPlanHint}
+        monthlyDocumentPlanHint={documentPlanHint}
+        checkpointCaptureBlocked={checkpointCaptureBlocked}
+        documentUploadBlocked={documentUploadBlocked}
       />
 
       <CameraCaptureDialog

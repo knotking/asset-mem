@@ -1,11 +1,15 @@
 /**
- * Monthly document/checkpoint creation limits from /token-quota-status.
+ * Monthly document/checkpoint/report creation limits from /token-quota-status.
+ * Use mergePlanLimitUsage with live Firestore period*Creations for UI display.
  */
 
 import {
   CHECKPOINT_QUOTA_USER_MESSAGE,
   DOCUMENT_QUOTA_USER_MESSAGE,
+  REPORT_QUOTA_USER_MESSAGE,
 } from './document-analysis-errors';
+
+export type PlanLimitKind = 'document' | 'checkpoint' | 'report';
 
 export type PlanLimitSlice = {
   used: number;
@@ -27,6 +31,38 @@ export function toDisplayPlanLimit(
   return { used: raw.used, limit, unlimited: false };
 }
 
+/** Current UTC billing period key (`YYYY-MM`), aligned with backend `current_quota_period_key`. */
+export function currentUtcQuotaPeriodKey(now = new Date()): string {
+  const year = now.getUTCFullYear();
+  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+/** Period creation count when Firestore `quotaPeriodKey` matches the current UTC month. */
+export function effectivePeriodCreationCount(
+  storedPeriodKey: string | null | undefined,
+  periodCount: number,
+  now = new Date(),
+): number {
+  if (!storedPeriodKey || storedPeriodKey !== currentUtcQuotaPeriodKey(now)) {
+    return 0;
+  }
+  return periodCount;
+}
+
+/** Apply live Firestore period counter to a proxy-resolved cap slice. */
+export function mergePlanLimitUsage(
+  slice: PlanLimitSlice | null,
+  periodCount: number,
+  storedPeriodKey?: string | null,
+): PlanLimitSlice | null {
+  if (!slice) return null;
+  return {
+    ...slice,
+    used: effectivePeriodCreationCount(storedPeriodKey, periodCount),
+  };
+}
+
 /** True when adding `countToAdd` creations would exceed the monthly cap. */
 export function isAtPlanLimit(
   slice: PlanLimitSlice | null,
@@ -37,20 +73,25 @@ export function isAtPlanLimit(
 }
 
 export function planLimitBlockMessage(
-  kind: 'document' | 'checkpoint',
+  kind: PlanLimitKind,
   slice: PlanLimitSlice | null,
 ): string | null {
   if (!slice || slice.unlimited || !isAtPlanLimit(slice, 1)) return null;
-  return kind === 'document'
-    ? DOCUMENT_QUOTA_USER_MESSAGE
-    : CHECKPOINT_QUOTA_USER_MESSAGE;
+  if (kind === 'document') return DOCUMENT_QUOTA_USER_MESSAGE;
+  if (kind === 'checkpoint') return CHECKPOINT_QUOTA_USER_MESSAGE;
+  return REPORT_QUOTA_USER_MESSAGE;
 }
 
 export function planLimitUsageHint(
-  kind: 'document' | 'checkpoint',
+  kind: PlanLimitKind,
   slice: PlanLimitSlice | null,
 ): string | null {
   if (!slice || slice.unlimited) return null;
-  const label = kind === 'document' ? 'documents' : 'checkpoints';
+  const label =
+    kind === 'document'
+      ? 'documents'
+      : kind === 'checkpoint'
+        ? 'checkpoints'
+        : 'reports';
   return `${slice.used} of ${slice.limit} ${label} used this month`;
 }

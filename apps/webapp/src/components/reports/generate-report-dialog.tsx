@@ -79,6 +79,13 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { WizardStepPresence } from '@/components/reports/report-wizard-motion';
+import { useLlmTokenUsage } from '@/contexts/llm-token-usage-context';
+import {
+  isAtPlanLimit,
+  planLimitBlockMessage,
+  planLimitUsageHint,
+  REPORT_QUOTA_USER_MESSAGE,
+} from '@/lib/plan-limit-errors';
 
 type ReportMode = 'snapshot' | 'comparison';
 
@@ -101,6 +108,11 @@ export function GenerateReportDialog({
     hasMoreCheckpoints: hasMoreLocalCheckpoints,
   } = useCheckpoint();
   const { toast } = useToast();
+  const { reportsLimit, limitsLoading } = useLlmTokenUsage();
+  const reportLimitMessage = planLimitBlockMessage('report', reportsLimit);
+  const reportLimitHint = planLimitUsageHint('report', reportsLimit);
+  const generateBlockedByLimit =
+    !limitsLoading && isAtPlanLimit(reportsLimit, 1);
   const [mode, setMode] = useState<ReportMode>('snapshot');
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState(() => defaultReportMonthRange().start);
@@ -476,6 +488,14 @@ export function GenerateReportDialog({
 
   const handleSubmit = async () => {
     if (!user || !property) return;
+    if (!limitsLoading && isAtPlanLimit(reportsLimit, 1)) {
+      toast({
+        variant: 'destructive',
+        title: 'Monthly report limit reached',
+        description: REPORT_QUOTA_USER_MESSAGE,
+      });
+      return;
+    }
     const finalTitle = title.trim() || suggestReportTitle(purpose, mode, startDate, endDate);
     const checkpointIds = isRegenerate ? undefined : Array.from(selectedCheckpointIds);
     if (!isRegenerate && (!checkpointIds || checkpointIds.length === 0)) {
@@ -973,6 +993,16 @@ export function GenerateReportDialog({
         ) : null}
 
         <DialogFooter className="flex-col gap-2 sm:flex-col">
+          {(reportLimitHint || reportLimitMessage) && (
+            <p
+              className={cn(
+                'w-full text-sm',
+                reportLimitMessage ? 'text-destructive' : 'text-muted-foreground',
+              )}
+            >
+              {reportLimitMessage ?? reportLimitHint}
+            </p>
+          )}
           {isRegenerate && !regenerateAdvanced ? (
             <>
               <Button
@@ -988,7 +1018,11 @@ export function GenerateReportDialog({
               >
                 Change report sections
               </Button>
-              <Button className="w-full" onClick={handleSubmit} disabled={submitting}>
+              <Button
+                className="w-full"
+                onClick={handleSubmit}
+                disabled={submitting || generateBlockedByLimit}
+              >
                 {submitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1012,7 +1046,11 @@ export function GenerateReportDialog({
               >
                 Back
               </Button>
-              <Button className="flex-1" onClick={handleSubmit} disabled={submitting}>
+              <Button
+                className="flex-1"
+                onClick={handleSubmit}
+                disabled={submitting || generateBlockedByLimit}
+              >
                 {submitting ? 'Submitting…' : 'Create Report'}
               </Button>
             </div>
@@ -1094,7 +1132,11 @@ export function GenerateReportDialog({
                 >
                   Back
                 </Button>
-                <Button className="flex-1" onClick={handleSubmit} disabled={submitting}>
+                <Button
+                  className="flex-1"
+                  onClick={handleSubmit}
+                  disabled={submitting || generateBlockedByLimit}
+                >
                   {submitting ? 'Submitting…' : 'Create Report'}
                 </Button>
               </div>

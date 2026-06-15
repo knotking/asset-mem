@@ -82,6 +82,8 @@ Each completed `stream_query` against the Reasoning Engine increments counters o
 
 The checkpoint analysis worker (Gemini `generate_content` / `embed_content`) uses the same collection via `gcp/common/token/`, incrementing `workerLlmCallCount` and token fields when `usage_metadata` is present.
 
+**Sync compare:** `POST /compare-checkpoints` checks token quota before Gemini and persists `usage_metadata` from the response (same counters as workers).
+
 `POST …/extract-doc-info` only enqueues Pub/Sub; the **document analysis worker** records tokens from `generate_content`’s `usage_metadata` and increments `workerLlmCallCount` per completed job. Quota is checked in the worker before the Gemini call.
 
 **Full schema** (root document, `periods/{YYYY-MM}` history, field tables): **[`gcp/common/token/README.md`](../../../common/token/README.md#firestore-schema)**.
@@ -104,9 +106,9 @@ Clients (mapp / webapp) listen to Firestore and render via `@homeapp/common` `re
 - **B2C Stripe (optional):** `users/{userId}/billing/summary` — when `subscriptionStatus` is `active` or `trialing`, limits are copied from the Price id entry on webhook.
 - **Per-user override:** `users/{userId}/preferences/user` → **`monthlyTokenLimit`**, **`monthlyDocumentLimit`**, **`monthlyCheckpointLimit`**, **`monthlyReportGenerationsLimit`** (positive numbers). Used when no active Stripe cap applies for that dimension. Legacy **`monthlyReportGenerations`** is still read as a fallback.
 
-**Token** enforcement: proxy before `stream_query` / session creation (`gcp/common/token/quota.py`); workers for checkpoint/document Gemini. **`TOKEN_QUOTA_EXCEEDED`** on over-limit streams.
+**Token** enforcement: proxy before `stream_query` / session creation and **`POST /compare-checkpoints`** (`gcp/common/token/quota.py`); workers for checkpoint/document Gemini. Compare records `usage_metadata` after each sync Gemini call. **`TOKEN_QUOTA_EXCEEDED`** on over-limit streams and compare (HTTP **429**).
 
-**Monthly creations** (documents, checkpoint AI, reports): `gcp/common/plan_limits.py`. Counts on `llm_token_usage/{userId}` (`periodDocumentCreations`, `periodCheckpointCreations`, `periodReportGenerations`). Enforced when queuing **`POST /extract-doc-info`**, **`POST /rag-file-upload`** (per file), **`POST /analyze-checkpoint`**, and **`POST /reports/generate`**. HTTP **`429`** with `DOCUMENT_QUOTA_EXCEEDED`, `CHECKPOINT_QUOTA_EXCEEDED`, or `REPORT_QUOTA_EXCEEDED`.
+**Monthly creations** (documents, checkpoint AI, reports): `gcp/common/plan_limits.py`. Counts on `llm_token_usage/{userId}` (`periodDocumentCreations`, `periodCheckpointCreations`, `periodReportGenerations`). Enforced when queuing **`POST /extract-doc-info`** (records document creations), **`POST /rag-file-upload`** (checks only — clients also call extract-doc-info per file), **`POST /analyze-checkpoint`**, and **`POST /reports/generate`**. HTTP **`429`** with `DOCUMENT_QUOTA_EXCEEDED`, `CHECKPOINT_QUOTA_EXCEEDED`, or `REPORT_QUOTA_EXCEEDED`.
 
 **Webapp UI:** `POST /token-quota-status` returns `{ period, used, max_tokens, unlimited, documents, checkpoints, reports }`. Same resolution as enforcement.
 

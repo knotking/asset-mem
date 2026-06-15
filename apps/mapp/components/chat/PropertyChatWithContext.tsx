@@ -36,7 +36,13 @@ import {
 } from '@homeapp/common/lib/chat-send-context';
 import { analyzeCheckpoint, queueExtractDocInfo, postFileToAgent, streamAgentResponse } from '@/lib/api';
 import { usePropertyReports } from '@/hooks/usePropertyReports';
-import { getDocumentAnalysisFailureMessage } from '@homeapp/common/lib/document-analysis-errors';
+import { getDocumentAnalysisFailureMessage, CHECKPOINT_QUOTA_USER_MESSAGE, DOCUMENT_QUOTA_USER_MESSAGE } from '@homeapp/common/lib/document-analysis-errors';
+import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
+import {
+  isAtPlanLimit,
+  planLimitBlockMessage,
+  planLimitUsageHint,
+} from '@homeapp/common/lib/plan-limit-slice';
 import { waitForUserDocAnalysis } from '@/lib/wait-user-doc-analysis';
 import { createLogger } from '@/lib/logger';
 
@@ -112,6 +118,18 @@ function PropertyChatInner(props: Props) {
     removePendingContext,
     setQueuedSend,
   } = useChatContext();
+
+  const { documentsLimit, checkpointsLimit, limitsLoading } = useLlmTokenUsage();
+  const checkpointPlanHint =
+    planLimitBlockMessage('checkpoint', checkpointsLimit) ??
+    planLimitUsageHint('checkpoint', checkpointsLimit);
+  const documentPlanHint =
+    planLimitBlockMessage('document', documentsLimit) ??
+    planLimitUsageHint('document', documentsLimit);
+  const checkpointCaptureBlocked =
+    !limitsLoading && isAtPlanLimit(checkpointsLimit, 1);
+  const documentUploadBlocked =
+    !limitsLoading && isAtPlanLimit(documentsLimit, 1);
 
   const [addContextVisible, setAddContextVisible] = React.useState(false);
   const runSendRef = React.useRef<(text: string) => Promise<void>>(async () => {});
@@ -328,6 +346,10 @@ function PropertyChatInner(props: Props) {
   const startCheckpointFromAsset = React.useCallback(
     async (asset: ImagePicker.ImagePickerAsset, mediaType: 'image' | 'video') => {
       if (!property) return;
+      if (!limitsLoading && isAtPlanLimit(checkpointsLimit, 1)) {
+        onError(CHECKPOINT_QUOTA_USER_MESSAGE);
+        return;
+      }
       const pendingId = `pending-cp-${Date.now()}`;
       addPendingContext({
         kind: 'checkpoint',
@@ -367,7 +389,7 @@ function PropertyChatInner(props: Props) {
         onError(error instanceof Error ? error.message : 'Failed to create checkpoint');
       }
     },
-    [property, createCheckpoint, updateCheckpoint, addPendingContext, removePendingContext, userId, onError]
+    [property, createCheckpoint, updateCheckpoint, addPendingContext, removePendingContext, userId, onError, limitsLoading, checkpointsLimit]
   );
 
   const handleCapturePhoto = React.useCallback(async (): Promise<boolean> => {
@@ -429,6 +451,10 @@ function PropertyChatInner(props: Props) {
 
   const handleUploadDocument = React.useCallback(async (): Promise<boolean> => {
     if (!property || !userId) return false;
+    if (!limitsLoading && isAtPlanLimit(documentsLimit, 1)) {
+      onError(DOCUMENT_QUOTA_USER_MESSAGE);
+      return false;
+    }
     const result = await DocumentPicker.getDocumentAsync({
       type: ['application/pdf', 'image/*'],
       copyToCacheDirectory: true,
@@ -516,6 +542,8 @@ function PropertyChatInner(props: Props) {
     addPendingContext,
     removePendingContext,
     onError,
+    limitsLoading,
+    documentsLimit,
   ]);
 
   return (
@@ -587,6 +615,10 @@ function PropertyChatInner(props: Props) {
         selectedReportIds={selectedReportIds}
         selectedReportCount={readySelectedReports.length}
         onToggleReport={toggleReport}
+        monthlyCheckpointPlanHint={checkpointPlanHint}
+        monthlyDocumentPlanHint={documentPlanHint}
+        checkpointCaptureBlocked={checkpointCaptureBlocked}
+        documentUploadBlocked={documentUploadBlocked}
       />
     </>
   );

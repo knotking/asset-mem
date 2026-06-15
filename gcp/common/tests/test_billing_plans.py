@@ -2,6 +2,7 @@ import base64
 import os
 
 from common.billing_plans import (
+    BUILTIN_FREE_TIER_PLAN,
     FREE_PLAN_KEY,
     free_tier_plan,
     is_checkout_tier,
@@ -116,6 +117,26 @@ def test_report_generations_limit_prefers_new_key():
     free = free_tier_plan(raw)
     assert free is not None
     assert free.monthly_report_generations == 4
+
+
+def test_free_tier_plan_builtin_when_env_empty():
+    free = free_tier_plan("")
+    assert free == BUILTIN_FREE_TIER_PLAN
+
+
+def test_free_tier_plan_builtin_when_free_key_missing():
+    raw = """{
+      "plus": {
+        "stripePriceId": "price_plus_stripe",
+        "monthlyTokenLimit": 10000000,
+        "monthlyDocumentLimit": 10,
+        "monthlyCheckpointLimit": 30
+      }
+    }"""
+    free = free_tier_plan(raw)
+    assert free.monthly_document_limit == BUILTIN_FREE_TIER_PLAN.monthly_document_limit
+    assert free.monthly_checkpoint_limit == BUILTIN_FREE_TIER_PLAN.monthly_checkpoint_limit
+    assert free.monthly_report_generations == BUILTIN_FREE_TIER_PLAN.monthly_report_generations
 
 
 def test_report_generations_limit_from_mapping():

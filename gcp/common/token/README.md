@@ -11,7 +11,7 @@ Shared **Firestore accounting** for LLM tokens (proxy Reasoning Engine + worker 
 | `persist.py` | Transactional updates + period rollover + period archive |
 | `quota.py` | Token limits from Stripe B2C billing doc / preferences / env, pre-call checks |
 | `../plan_limits.py` | Monthly document & checkpoint **creation** limits (same billing resolution) |
-| `../billing_plans.py` | Parse `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` (tokens + doc/checkpoint caps) |
+| `../billing_plans.py` | Parse `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON`; `BUILTIN_FREE_TIER_PLAN` if `free` key missing |
 
 ---
 

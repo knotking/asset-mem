@@ -79,6 +79,13 @@ import {
   type ReportWizardStep,
 } from '@homeapp/common/lib/report-wizard';
 import { buildReportLayoutPreviewHtml } from '@homeapp/common/lib/report-preview-html';
+import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
+import { REPORT_QUOTA_USER_MESSAGE } from '@homeapp/common/lib/document-analysis-errors';
+import {
+  isAtPlanLimit,
+  planLimitBlockMessage,
+  planLimitUsageHint,
+} from '@homeapp/common/lib/plan-limit-slice';
 import { Switch } from '@/components/ui/switch';
 import { WebView } from 'react-native-webview';
 
@@ -161,6 +168,11 @@ export function GenerateReportModal({
     hasMoreCheckpoints: hasMoreLocalCheckpoints,
   } = useCheckpoint();
   const isRegenerate = Boolean(regenerateFrom?.id);
+  const { reportsLimit, limitsLoading } = useLlmTokenUsage();
+  const reportLimitMessage = planLimitBlockMessage('report', reportsLimit);
+  const reportLimitHint = planLimitUsageHint('report', reportsLimit);
+  const generateBlockedByLimit =
+    !limitsLoading && isAtPlanLimit(reportsLimit, 1);
 
   const [step, setStep] = React.useState<ReportWizardStep>(1);
   const [intentId, setIntentId] = React.useState<ReportIntentId | null>(DEFAULT_REPORT_INTENT_ID);
@@ -523,6 +535,10 @@ export function GenerateReportModal({
 
   const handleSubmit = async () => {
     if (!user || !property || submitting) return;
+    if (!limitsLoading && isAtPlanLimit(reportsLimit, 1)) {
+      setError(REPORT_QUOTA_USER_MESSAGE);
+      return;
+    }
     const finalTitle = title.trim() || suggestReportTitle(purpose, mode, startDate, endDate);
     if (!isRegenerate) {
       const checkpointIds = Array.from(selectedCheckpointIds);
@@ -948,6 +964,15 @@ export function GenerateReportModal({
           </View>
 
           <View className="border-t border-border px-4 py-3">
+          {(reportLimitHint || reportLimitMessage) ? (
+            <Text
+              className={cn(
+                'mb-2 text-sm',
+                reportLimitMessage ? 'text-destructive' : 'text-muted-foreground',
+              )}>
+              {reportLimitMessage ?? reportLimitHint}
+            </Text>
+          ) : null}
           {isRegenerate && !regenerateAdvanced ? (
             <View className="gap-2">
               <Button
@@ -960,7 +985,7 @@ export function GenerateReportModal({
                 disabled={submitting}>
                 <Text>Change report sections</Text>
               </Button>
-              <Button onPress={handleSubmit} disabled={submitting}>
+              <Button onPress={handleSubmit} disabled={submitting || generateBlockedByLimit}>
                 {submitting ? (
                   <View className="flex-row items-center gap-2">
                     <Icon as={Loader2} size={18} className="animate-spin text-primary-foreground" />
@@ -983,7 +1008,7 @@ export function GenerateReportModal({
                 disabled={submitting}>
                 <Text>Back</Text>
               </Button>
-              <Button className="flex-1" onPress={handleSubmit} disabled={submitting}>
+              <Button className="flex-1" onPress={handleSubmit} disabled={submitting || generateBlockedByLimit}>
                 {submitting ? (
                   <View className="flex-row items-center gap-2">
                     <Icon as={Loader2} size={18} className="animate-spin text-primary-foreground" />
@@ -1056,7 +1081,7 @@ export function GenerateReportModal({
                   disabled={submitting}>
                   <Text>Back</Text>
                 </Button>
-                <Button className="flex-1" onPress={handleSubmit} disabled={submitting}>
+                <Button className="flex-1" onPress={handleSubmit} disabled={submitting || generateBlockedByLimit}>
                   {submitting ? (
                     <View className="flex-row items-center gap-2">
                       <Icon as={Loader2} size={18} className="animate-spin text-primary-foreground" />

@@ -74,6 +74,7 @@ import {
   toRevisionSelectionReport,
 } from '@homeapp/common/lib/report-revisions';
 import { buildCurrentRevisionReportPickerRows } from '@homeapp/common/lib/report-picker-rows';
+import { cn } from '@/lib/utils';
 
 type ContextTab = 'timeline' | 'documents';
 
@@ -102,6 +103,10 @@ type Props = {
   selectedReportIds?: Set<string>;
   selectedReportCount?: number;
   onToggleReport?: (report: PropertyReport) => ToggleSelectionResult;
+  monthlyCheckpointPlanHint?: string | null;
+  monthlyDocumentPlanHint?: string | null;
+  checkpointCaptureBlocked?: boolean;
+  documentUploadBlocked?: boolean;
 };
 
 type RowItem =
@@ -220,6 +225,10 @@ export function AddContextSheet({
   selectedReportIds = new Set<string>(),
   selectedReportCount = 0,
   onToggleReport,
+  monthlyCheckpointPlanHint = null,
+  monthlyDocumentPlanHint = null,
+  checkpointCaptureBlocked = false,
+  documentUploadBlocked = false,
 }: Props) {
   const isReportMode = primaryAgent === 'report';
   const isDocsMode = primaryAgent === 'docs';
@@ -577,13 +586,14 @@ export function AddContextSheet({
     handler: () => Promise<boolean> | boolean
   ) => {
     const isActive = launchingAction === actionKind;
+    const disabled = captureBusy || checkpointCaptureBlocked;
     return (
       <Pressable
         key={actionKind}
         onPress={() => closeAfterAction(actionKind, handler)}
-        disabled={captureBusy}
+        disabled={disabled}
         className={`min-w-[30%] flex-1 items-center rounded-xl border border-border p-3 ${
-          captureBusy ? 'opacity-60' : 'bg-secondary/40'
+          disabled ? 'opacity-60' : 'bg-secondary/40'
         } ${isActive ? 'border-primary bg-primary/10' : ''}`}>
         <View className="mb-1 h-[22px] w-[22px] items-center justify-center">
           {isActive ? (
@@ -600,6 +610,15 @@ export function AddContextSheet({
   const captureActions =
     activeTab === 'timeline' ? (
       <View className="mb-2">
+        {monthlyCheckpointPlanHint ? (
+          <Text
+            className={cn(
+              'mb-2 text-xs',
+              checkpointCaptureBlocked ? 'text-destructive' : 'text-muted-foreground',
+            )}>
+            {monthlyCheckpointPlanHint}
+          </Text>
+        ) : null}
         <View className="mb-2 flex-row flex-wrap gap-2">
           {renderCaptureButton('camera', 'Capture', Camera, onCapturePhoto)}
           {renderCaptureButton('gallery', 'Gallery', Images, onPickGallery)}
@@ -608,11 +627,20 @@ export function AddContextSheet({
       </View>
     ) : (
       <View className="mb-2">
+        {monthlyDocumentPlanHint ? (
+          <Text
+            className={cn(
+              'mb-2 text-xs',
+              documentUploadBlocked ? 'text-destructive' : 'text-muted-foreground',
+            )}>
+            {monthlyDocumentPlanHint}
+          </Text>
+        ) : null}
         <Pressable
           onPress={() => closeAfterAction('upload', onUploadDocument)}
-          disabled={captureBusy}
+          disabled={captureBusy || documentUploadBlocked}
           className={`mb-2 flex-row items-center justify-center gap-2 rounded-xl border border-border p-3 ${
-            captureBusy ? 'opacity-60' : 'bg-secondary/40'
+            captureBusy || documentUploadBlocked ? 'opacity-60' : 'bg-secondary/40'
           } ${launchingAction === 'upload' ? 'border-primary bg-primary/10' : ''}`}>
           <View className="h-[22px] w-[22px] items-center justify-center">
             {launchingAction === 'upload' ? (
@@ -747,11 +775,20 @@ export function AddContextSheet({
             <Text className="mb-3 text-xs leading-4 text-muted-foreground">
               {ADD_CONTEXT_MODE_HINT_DOCS}
             </Text>
+            {monthlyDocumentPlanHint ? (
+              <Text
+                className={cn(
+                  'mb-2 text-xs',
+                  documentUploadBlocked ? 'text-destructive' : 'text-muted-foreground',
+                )}>
+                {monthlyDocumentPlanHint}
+              </Text>
+            ) : null}
             <Pressable
               onPress={() => closeAfterAction('upload', onUploadDocument)}
-              disabled={captureBusy}
+              disabled={captureBusy || documentUploadBlocked}
               className={`mb-3 flex-row items-center justify-center gap-2 rounded-xl border border-border p-3 ${
-                captureBusy ? 'opacity-60' : 'bg-secondary/40'
+                captureBusy || documentUploadBlocked ? 'opacity-60' : 'bg-secondary/40'
               } ${launchingAction === 'upload' ? 'border-primary bg-primary/10' : ''}`}>
               <View className="h-[22px] w-[22px] items-center justify-center">
                 {launchingAction === 'upload' ? (
