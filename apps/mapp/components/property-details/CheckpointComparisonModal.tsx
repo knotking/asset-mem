@@ -127,6 +127,7 @@ export function CheckpointComparisonModal({
                             result: normalized ?? {},
                             comparedWithCheckpointId: before.id,
                             matchReason: 'manual',
+                            comparedWithRevisionNumber: before.revisionNumber,
                             completedAt: Timestamp.now(),
                         });
 

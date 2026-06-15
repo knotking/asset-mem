@@ -22,6 +22,17 @@ function checkpointRef(db: Firestore, userId: string, propertyId: string, checkp
   return doc(db, `users/${userId}/properties/${propertyId}/checkpoints/${checkpointId}`);
 }
 
+/** Remove undefined values — Firestore rejects undefined field values. */
+function stripUndefinedForFirestore<T extends Record<string, unknown>>(value: T): T {
+  const cleaned: Record<string, unknown> = {};
+  for (const [key, fieldValue] of Object.entries(value)) {
+    if (fieldValue !== undefined) {
+      cleaned[key] = fieldValue;
+    }
+  }
+  return cleaned as T;
+}
+
 /** Append to comparisons/ and denormalize latest onto visualDiff. */
 export async function persistCheckpointComparison(
   db: Firestore,
@@ -36,8 +47,8 @@ export async function persistCheckpointComparison(
   const cpRef = checkpointRef(db, params.userId, params.propertyId, params.checkpointId);
   const compRef = doc(collection(cpRef, 'comparisons'), comparisonId);
   const batch = writeBatch(db);
-  batch.set(compRef, record);
-  batch.update(cpRef, { visualDiff: params.visualDiff });
+  batch.set(compRef, stripUndefinedForFirestore(record));
+  batch.update(cpRef, { visualDiff: stripUndefinedForFirestore(params.visualDiff) });
   await batch.commit();
   return comparisonId;
 }
@@ -113,8 +124,10 @@ export function buildVisualDiffFromCompareResult(params: {
       changePercentage: 0,
     })),
     similarityScore: result.similarityScore ?? 0,
-    matchReason,
-    comparedWithRevisionNumber,
+    ...(matchReason != null ? { matchReason } : {}),
+    ...(comparedWithRevisionNumber != null
+      ? { comparedWithRevisionNumber }
+      : {}),
     completedAt,
   };
 }

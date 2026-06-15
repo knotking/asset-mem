@@ -115,6 +115,7 @@ export function CheckpointComparisonDialog({
         result,
         comparedWithCheckpointId: beforeCheckpoint.id,
         matchReason: 'manual',
+        comparedWithRevisionNumber: beforeCheckpoint.revisionNumber,
         completedAt: Timestamp.now(),
       });
 

@@ -474,6 +474,8 @@ export type Checkpoint = {
   embeddingGeneratedAt?: Timestamp; // When the embedding was generated
   /** Checkpoint series (monitoring point) — see CHECKPOINT_VERSIONING.md */
   seriesId?: string;
+  /** True when the user picked location at create; false when AI will infer it. */
+  userProvidedLocation?: boolean;
   /** 1-based revision within the series. */
   revisionNumber?: number;
   /** Denormalized: newest capture in the series. */

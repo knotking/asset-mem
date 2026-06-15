@@ -116,6 +116,8 @@ export type Checkpoint = {
   supersedesCaptureId?: string | null;
   /** How this capture was created. */
   captureKind?: "scheduled" | "ad_hoc" | "baseline" | "reanalysis";
+  /** True when the user picked `location` at create; false when AI will infer it. */
+  userProvidedLocation?: boolean;
 };
 ```
 
@@ -204,10 +206,14 @@ Analysis trigger remains via proxy (`gcp/proxy/api/routers/checkpoint.py`) → P
 
 **Changes:**
 
-1. After analysis, resolve or create `seriesId` if missing (forward path only until backfill completes).
+1. After analysis, assign or **reassign** `seriesId` when location was AI-inferred (`userProvidedLocation: false`). User-provided locations keep the series chosen at create.
 2. **Previous capture for auto-compare:** same `seriesId`, `revisionNumber - 1` (fallback: location + `createdAt` during migration).
 3. Write `visualDiff.matchReason: "series_previous"` (or `"series_baseline"` when comparing to baseline).
 4. Publish metrics with series-aware payload when metrics v3 is enabled.
+
+**Create without location:** Client writes `userProvidedLocation: false` and defers series assignment until analysis sets `location`, then the worker calls `resolve_series_after_analysis` → `reassign_capture_to_series`.
+
+**Manual reassignment:** Checkpoint detail → **Merge…** when another capture shares the same location, otherwise **Change**. Opens a merge dialog that explains you only need to move **one** capture, auto-selects the same-location group as **Suggested**, and labels options with capture count + latest photo name. Revisions are renumbered by capture date (oldest = v1) after merge.
 
 ### 5.4 Manual comparison
 

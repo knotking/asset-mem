@@ -53,6 +53,7 @@ from common.plan_limits import (
 )
 from common.checkpoint.series import (
     assign_capture_to_series,
+    resolve_series_after_analysis,
 )
 from prompt_builder import get_asset_category
 
@@ -313,24 +314,24 @@ def pubsub_checkpoint_analysis(request, context):
                 checkpoint_ref.update(update_data)
                 logger.info(f"Successfully updated checkpoint {checkpoint_id} with analysis results")
 
-                if not existing_checkpoint.get("seriesId"):
-                    series_assignment = assign_capture_to_series(
-                        db,
-                        user_id,
-                        property_id,
+                series_assignment = resolve_series_after_analysis(
+                    db,
+                    user_id,
+                    property_id,
+                    checkpoint_id,
+                    existing_checkpoint,
+                    final_location=final_location,
+                    final_name=update_data.get("name") or existing_name,
+                    asset_type=existing_checkpoint.get("assetType"),
+                )
+                if series_assignment:
+                    existing_checkpoint.update(series_assignment)
+                    logger.info(
+                        "Resolved series for checkpoint %s -> series %s rev %s",
                         checkpoint_id,
-                        location=final_location,
-                        name=update_data.get("name") or existing_name,
-                        asset_type=existing_checkpoint.get("assetType"),
+                        series_assignment.get("seriesId"),
+                        series_assignment.get("revisionNumber"),
                     )
-                    if series_assignment:
-                        existing_checkpoint.update(series_assignment)
-                        logger.info(
-                            "Assigned checkpoint %s to series %s rev %s",
-                            checkpoint_id,
-                            series_assignment.get("seriesId"),
-                            series_assignment.get("revisionNumber"),
-                        )
             
                 # Generate and store embedding for semantic search (Firestore Vector Search)
                 try:

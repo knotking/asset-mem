@@ -145,3 +145,100 @@ export function formatCaptureRevisionLabel(checkpoint: Checkpoint): string | nul
   }
   return `v${rev}`;
 }
+
+export type SeriesReassignTarget = {
+  seriesId: string;
+  label: string;
+  location: string;
+  captureCount: number;
+  latestCaptureLabel: string;
+  latestCaptureAt?: Date;
+  /** Same normalized location as this capture — likely duplicate monitoring point. */
+  isSuggestedMatch: boolean;
+};
+
+/** Existing series a capture can be moved into (excludes its current series). */
+export function listSeriesReassignTargets(
+  checkpoints: Checkpoint[],
+  current: Checkpoint
+): SeriesReassignTarget[] {
+  const currentLocationKey = normalizeSeriesLocation(
+    current.location || current.name
+  );
+
+  return groupCheckpointsBySeries(checkpoints)
+    .filter((group) => group.seriesId !== current.seriesId)
+    .map((group) => {
+      const groupLocationKey = normalizeSeriesLocation(
+        group.location || group.latestCapture.location || group.label
+      );
+      return {
+        seriesId: group.seriesId,
+        label: group.label,
+        location: group.location || group.label,
+        captureCount: group.captureCount,
+        latestCaptureLabel: group.latestCapture.name,
+        latestCaptureAt: checkpointEffectiveDate(group.latestCapture) ?? undefined,
+        isSuggestedMatch:
+          currentLocationKey !== "unspecified" &&
+          groupLocationKey === currentLocationKey,
+      };
+    })
+    .sort((a, b) => {
+      if (a.isSuggestedMatch !== b.isSuggestedMatch) {
+        return a.isSuggestedMatch ? -1 : 1;
+      }
+      const dateA = a.latestCaptureAt?.getTime() ?? 0;
+      const dateB = b.latestCaptureAt?.getTime() ?? 0;
+      return dateB - dateA;
+    });
+}
+
+export function hasSuggestedMergeTargets(
+  checkpoints: Checkpoint[],
+  current: Checkpoint
+): boolean {
+  return listSeriesReassignTargets(checkpoints, current).some(
+    (target) => target.isSuggestedMatch
+  );
+}
+
+export function getDefaultSeriesReassignTargetId(
+  targets: SeriesReassignTarget[]
+): string | null {
+  return (
+    targets.find((target) => target.isSuggestedMatch)?.seriesId ??
+    targets[0]?.seriesId ??
+    null
+  );
+}
+
+/** User-facing guidance for the merge/reassign flow. */
+export function getMergeSeriesGuidance(
+  targets: SeriesReassignTarget[]
+): string {
+  const suggested = targets.filter((target) => target.isSuggestedMatch);
+  if (suggested.length === 1) {
+    return `This capture looks like the same area as "${suggested[0].label}". Move this one into that group — you only need to merge once, not both captures.`;
+  }
+  if (suggested.length > 1) {
+    return `This capture matches ${suggested.length} groups at the same location. Move it into the group you want to keep — only one capture needs to move.`;
+  }
+  if (targets.length > 0) {
+    return "Move this capture into another monitoring point. You only need to do this once.";
+  }
+  return "Create a monitoring point name for this capture, or add more checkpoints first.";
+}
+
+export function formatSeriesReassignTargetDescription(
+  target: SeriesReassignTarget
+): string {
+  const countLabel = `${target.captureCount} capture${
+    target.captureCount === 1 ? "" : "s"
+  }`;
+  const latestLabel = target.latestCaptureLabel
+    ? ` · latest: ${target.latestCaptureLabel}`
+    : "";
+  const suggestedLabel = target.isSuggestedMatch ? " · same location" : "";
+  return `${countLabel}${latestLabel}${suggestedLabel}`;
+}

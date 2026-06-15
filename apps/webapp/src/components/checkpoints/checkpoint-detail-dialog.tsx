@@ -24,7 +24,7 @@ import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { useCheckpoint } from '@/contexts/checkpoint-context';
 import { AnalysisResults } from './analysis-results';
-import { Calendar, MapPin, Tag, Trash2, ArrowRightLeft, Loader2, AlertCircle, Pencil, Check, X } from 'lucide-react';
+import { Calendar, MapPin, Tag, Trash2, ArrowRightLeft, Loader2, AlertCircle, Pencil, Check, X, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
@@ -35,9 +35,11 @@ import { createLogger } from '@/lib/logger';
 import { CheckpointComparisonDialog } from './checkpoint-comparison-dialog';
 import { ComparisonHistoryList } from './comparison-history-list';
 import { ComparisonHistoryExplorer } from './comparison-history-explorer';
+import { ReassignSeriesDialog } from './reassign-series-dialog';
 import {
   findPreviousCaptureInList,
   formatCaptureRevisionLabel,
+  hasSuggestedMergeTargets,
 } from '@/lib/checkpoint-series-grouping';
 import type { CheckpointComparisonRecord } from '@/lib/types';
 import { comparisonRecordToVisualDiff } from '@/lib/checkpoint-comparisons';
@@ -63,6 +65,7 @@ export function CheckpointDetailDialog() {
   );
   const [isExplorerOpen, setIsExplorerOpen] = useState(false);
   const [explorerInitialEntryId, setExplorerInitialEntryId] = useState<string | null>(null);
+  const [isReassignOpen, setIsReassignOpen] = useState(false);
 
   // Reset edit mode when dialog closes
   useEffect(() => {
@@ -96,6 +99,7 @@ export function CheckpointDetailDialog() {
   const previousInSeries = findPreviousCaptureInList(checkpoints, checkpoint);
   const comparisonPartner = comparisonBefore ?? previousInSeries;
   const revisionLabel = formatCaptureRevisionLabel(checkpoint);
+  const showMergeAction = hasSuggestedMergeTargets(checkpoints, checkpoint);
 
   const handleStartEdit = () => {
     setEditedName(checkpoint.name);
@@ -301,6 +305,25 @@ export function CheckpointDetailDialog() {
               </div>
             )}
 
+            {isAnalyzed && (
+              <div className="flex items-center gap-2 text-sm sm:col-span-2">
+                <Layers className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Monitoring point:</span>
+                <span className="font-medium">
+                  {checkpoint.location || checkpoint.name}
+                  {revisionLabel ? ` · ${revisionLabel}` : ''}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto h-7"
+                  onClick={() => setIsReassignOpen(true)}
+                >
+                  {showMergeAction ? 'Merge…' : 'Change'}
+                </Button>
+              </div>
+            )}
+
             {checkpoint.tags && checkpoint.tags.length > 0 && (
               <div className="flex items-start gap-2 text-sm sm:col-span-2">
                 <Tag className="h-4 w-4 text-muted-foreground mt-0.5" />
@@ -500,6 +523,12 @@ export function CheckpointDetailDialog() {
       checkpoint={checkpoint}
       checkpoints={checkpoints}
       initialEntryId={explorerInitialEntryId}
+    />
+
+    <ReassignSeriesDialog
+      checkpoint={checkpoint}
+      open={isReassignOpen}
+      onOpenChange={setIsReassignOpen}
     />
     </>
   );

@@ -55,6 +55,16 @@ describe('checkpoint-comparisons', () => {
     });
     expect(diff.matchReason).toBe('manual');
     expect(diff.comparedWithCheckpointId).toBe('before');
+    expect('comparedWithRevisionNumber' in diff).toBe(false);
+  });
+
+  it('buildVisualDiffFromCompareResult omits undefined revision number', () => {
+    const diff = buildVisualDiffFromCompareResult({
+      result: { summary: 'Ok' },
+      comparedWithCheckpointId: 'before',
+      completedAt: {} as VisualDiffAnalysis['completedAt'],
+    });
+    expect(diff).not.toHaveProperty('comparedWithRevisionNumber');
   });
 
   it('formatComparisonHistoryLabel includes partner and revision', () => {

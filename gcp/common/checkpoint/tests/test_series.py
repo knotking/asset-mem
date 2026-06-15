@@ -8,6 +8,9 @@ from common.checkpoint.series import (
     resolve_series_location_key,
     series_display_name,
     series_key_for_checkpoint,
+    should_reassign_series_after_analysis,
+    target_series_id_for_location,
+    user_provided_series_location,
 )
 
 
@@ -31,6 +34,33 @@ def test_series_display_name():
 def test_resolve_series_location_key_prefers_location():
     assert resolve_series_location_key(location="Garage", name="Other") == "garage"
     assert resolve_series_location_key(location="", name="Roof") == "roof"
+    assert resolve_series_location_key(location="", name="Roof", allow_name_fallback=False) == "unspecified"
+
+
+def test_should_reassign_series_after_analysis_when_location_inferred():
+    cp = {
+        "seriesId": "series_checkpoint-jun-15",
+        "userProvidedLocation": False,
+    }
+    assert should_reassign_series_after_analysis(cp, "Vehicle - Exterior") is True
+    assert (
+        target_series_id_for_location("Vehicle - Exterior")
+        == make_series_id("vehicle - exterior")
+    )
+
+
+def test_should_not_reassign_when_user_provided_location():
+    cp = {
+        "seriesId": "series_kitchen",
+        "userProvidedLocation": True,
+        "location": "Kitchen",
+    }
+    assert should_reassign_series_after_analysis(cp, "Kitchen") is False
+
+
+def test_user_provided_series_location_legacy_infers_from_location_field():
+    assert user_provided_series_location({"location": "Garage"}) is True
+    assert user_provided_series_location({"userProvidedLocation": False}) is False
 
 
 def test_assert_capture_deletable_allows_legacy():

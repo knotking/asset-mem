@@ -3,7 +3,10 @@ import type { Checkpoint } from "../../types";
 import {
   findPreviousCaptureInList,
   formatCaptureRevisionLabel,
+  getDefaultSeriesReassignTargetId,
+  getMergeSeriesGuidance,
   groupCheckpointsBySeries,
+  listSeriesReassignTargets,
   predictSeriesCaptureAssignment,
 } from "../checkpoint-series-grouping";
 
@@ -79,5 +82,43 @@ describe("formatCaptureRevisionLabel", () => {
         cp({ id: "c1", seriesId: "s", revisionNumber: 2, isLatestInSeries: false })
       )
     ).toBe("v2");
+  });
+});
+
+describe("listSeriesReassignTargets", () => {
+  it("suggests same-location groups and picks them as default", () => {
+    const current = cp({
+      id: "c1",
+      seriesId: "series_a",
+      revisionNumber: 1,
+      location: "Vehicle - Exterior",
+      name: "Checkpoint A",
+    });
+    const targets = listSeriesReassignTargets(
+      [
+        current,
+        cp({
+          id: "c2",
+          seriesId: "series_b",
+          revisionNumber: 1,
+          location: "Vehicle - Exterior",
+          name: "Checkpoint B",
+        }),
+        cp({
+          id: "c3",
+          seriesId: "series_kitchen",
+          revisionNumber: 1,
+          location: "Kitchen",
+          name: "Kitchen",
+        }),
+      ],
+      current
+    );
+
+    expect(targets).toHaveLength(2);
+    expect(targets[0].isSuggestedMatch).toBe(true);
+    expect(targets[0].seriesId).toBe("series_b");
+    expect(getDefaultSeriesReassignTargetId(targets)).toBe("series_b");
+    expect(getMergeSeriesGuidance(targets)).toContain("only need to merge once");
   });
 });

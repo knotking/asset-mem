@@ -16,6 +16,7 @@ import {
   Info,
   Tag,
   Award,
+  Layers,
 } from 'lucide-react-native';
 import { Checkpoint, CheckpointMedia } from '@homeapp/common/types';
 import { createLogger } from '@/lib/logger';
@@ -42,12 +43,15 @@ import { AnalysisResults } from './AnalysisResults';
 import { Separator } from '@/components/ui/separator';
 import { ComparisonHistoryList } from './ComparisonHistoryList';
 import { ComparisonHistoryExplorer } from './ComparisonHistoryExplorer';
+import { ReassignSeriesModal } from './ReassignSeriesModal';
 import { CheckpointComparisonModal } from './CheckpointComparisonModal';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useProperty } from '@homeapp/common/contexts/property-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
 import {
   findPreviousCaptureInList,
+  formatCaptureRevisionLabel,
+  hasSuggestedMergeTargets,
 } from '@homeapp/common/lib/checkpoint-series-grouping';
 import {
   comparisonRecordToVisualDiff,
@@ -126,6 +130,7 @@ export function CheckpointDetailModal({
     null
   );
   const [isExplorerOpen, setIsExplorerOpen] = React.useState(false);
+  const [isReassignOpen, setIsReassignOpen] = React.useState(false);
 
   // Reset active index when checkpoint changes
   React.useEffect(() => {
@@ -155,6 +160,9 @@ export function CheckpointDetailModal({
   
   const hasIssues = (checkpoint.aiAnalysis?.issues?.length || 0) > 0;
   const mediaList = checkpoint.media || [];
+  const revisionLabel = formatCaptureRevisionLabel(checkpoint);
+  const isAnalyzed = checkpoint.analysisStatus === 'completed' && !!checkpoint.aiAnalysis;
+  const showMergeAction = hasSuggestedMergeTargets(checkpoints, checkpoint);
 
   const handleConfirmDelete = () => {
     const checkpointId = checkpoint.id;
@@ -261,6 +269,24 @@ export function CheckpointDetailModal({
                   </View>
                 </View>
               )}
+
+              {isAnalyzed ? (
+                <View className="flex-row items-center gap-2">
+                  <View className="h-8 w-8 items-center justify-center rounded-full bg-secondary">
+                    <Icon as={Layers} size={16} className="text-foreground" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-xs text-muted-foreground">Monitoring point</Text>
+                    <Text className="font-medium text-foreground">
+                      {checkpoint.location || checkpoint.name}
+                      {revisionLabel ? ` · ${revisionLabel}` : ''}
+                    </Text>
+                  </View>
+                  <Button variant="outline" size="sm" onPress={() => setIsReassignOpen(true)}>
+                    <Text className="text-xs">{showMergeAction ? 'Merge…' : 'Change'}</Text>
+                  </Button>
+                </View>
+              ) : null}
             </View>
 
             {/* Tags */}
@@ -509,6 +535,12 @@ export function CheckpointDetailModal({
           onClose={() => setIsExplorerOpen(false)}
         />
       ) : null}
+
+      <ReassignSeriesModal
+        visible={isReassignOpen}
+        checkpoint={checkpoint}
+        onClose={() => setIsReassignOpen(false)}
+      />
     </Modal>
   );
 }

@@ -7,9 +7,14 @@ from common.checkpoint.series import (
     make_series_id,
     normalize_series_location,
     pick_latest_captures_per_series,
+    reassign_capture_to_series,
     recompute_series_after_capture_delete,
+    resolve_series_after_analysis,
     series_display_name,
     series_key_for_checkpoint,
+    should_reassign_series_after_analysis,
+    target_series_id_for_location,
+    user_provided_series_location,
 )
 from common.checkpoint.comparisons import (
     append_checkpoint_comparison,
@@ -27,7 +32,12 @@ __all__ = [
     "make_series_id",
     "normalize_series_location",
     "pick_latest_captures_per_series",
+    "reassign_capture_to_series",
     "recompute_series_after_capture_delete",
+    "resolve_series_after_analysis",
     "series_display_name",
     "series_key_for_checkpoint",
+    "should_reassign_series_after_analysis",
+    "target_series_id_for_location",
+    "user_provided_series_location",
 ]

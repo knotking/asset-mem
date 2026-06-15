@@ -418,6 +418,8 @@ export type Checkpoint = {
   embeddingModel?: string; // e.g., "text-embedding-004"
   embeddingGeneratedAt?: Timestamp; // When the embedding was generated
   seriesId?: string;
+  /** True when the user picked location at create; false when AI will infer it. */
+  userProvidedLocation?: boolean;
   revisionNumber?: number;
   isLatestInSeries?: boolean;
   supersedesCaptureId?: string | null;

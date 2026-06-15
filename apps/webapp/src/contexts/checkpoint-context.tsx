@@ -34,7 +34,11 @@ import { useFirebase } from "@/contexts/firebase-context";
 import { createLogger, truncateId } from "@/lib/logger";
 import { useDeletionConfig } from "@/contexts/deletion-config-context";
 import { useOptimisticDeletionOverlay } from "@/hooks/use-optimistic-deletion-overlay";
-import { createCheckpointWithSeries } from "@/lib/checkpoint-series";
+import {
+  createCheckpointWithSeries,
+  reassignCaptureToSeries,
+  type CaptureSeriesAssignment,
+} from "@/lib/checkpoint-series";
 
 const checkpointLog = createLogger("checkpoint");
 
@@ -82,6 +86,10 @@ interface CheckpointContextType {
     mediaFiles: { uri: string; type: "image" | "video" }[]
   ) => Promise<{ id: string; media: CheckpointMedia[] }>;
   updateCheckpoint: (id: string, data: Partial<Checkpoint>) => Promise<void>;
+  reassignCheckpointSeries: (
+    checkpointId: string,
+    location: string
+  ) => Promise<CaptureSeriesAssignment>;
   deleteCheckpoint: (id: string) => Promise<void>;
   compareCheckpoints: (id1: string, id2: string) => Promise<void>;
   markCheckpointsDeleting: (ids: string[]) => void;
@@ -378,6 +386,38 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
+  const reassignCheckpointSeries = useCallback(
+    async (checkpointId: string, location: string) => {
+      if (!property || !user) {
+        throw new Error("Not signed in");
+      }
+      const checkpoint =
+        checkpoints.find((c) => c.id === checkpointId) ?? selectedCheckpoint;
+      const assignment = await reassignCaptureToSeries(db, {
+        userId: user.uid,
+        propertyId: property.id,
+        checkpointId,
+        location,
+        name: checkpoint?.name,
+        assetType: checkpoint?.assetType,
+        captureKind: checkpoint?.captureKind,
+      });
+      if (selectedCheckpoint?.id === checkpointId) {
+        setSelectedCheckpoint({
+          ...selectedCheckpoint,
+          seriesId: assignment.seriesId,
+          revisionNumber: assignment.revisionNumber,
+          isLatestInSeries: assignment.isLatestInSeries,
+          supersedesCaptureId: assignment.supersedesCaptureId,
+          location,
+          userProvidedLocation: true,
+        });
+      }
+      return assignment;
+    },
+    [checkpoints, db, property, selectedCheckpoint, user]
+  );
+
   return (
     <CheckpointContext.Provider
       value={{
@@ -390,6 +430,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
         loadMoreCheckpoints,
         createCheckpoint,
         updateCheckpoint,
+        reassignCheckpointSeries,
         deleteCheckpoint,
         compareCheckpoints,
         markCheckpointsDeleting,
