@@ -37,7 +37,7 @@ jobs:
       FUNCTION_NAME_BASE: pubsub-checkpoint-metrics
       RUNTIME: python313
       ENTRY_POINT: pubsub_checkpoint_metrics_aggregate
-      MAX_INSTANCES: 5
+      MAX_INSTANCES: 3
       CONCURRENCY: 1
       MEMORY: 256Mi
       SOURCE_DIRECTORY: gcp/proxy/workers/function/checkpoint_metrics

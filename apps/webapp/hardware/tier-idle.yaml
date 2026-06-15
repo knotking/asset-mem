@@ -2,5 +2,5 @@
 # Merged by deploy-webapp via apply-apphosting-hardware.sh / gcloud run update.
 runConfig:
   minInstances: 0
-  maxInstances: 1
+  maxInstances: 2
   concurrency: 80
