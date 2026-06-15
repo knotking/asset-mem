@@ -6,7 +6,10 @@
 import {
   CHECKPOINT_QUOTA_USER_MESSAGE,
   DOCUMENT_QUOTA_USER_MESSAGE,
+  REPORT_QUOTA_USER_MESSAGE,
 } from './document-analysis-errors';
+
+export type PlanLimitKind = 'document' | 'checkpoint' | 'report';
 
 export type PlanLimitSlice = {
   used: number;
@@ -47,20 +50,25 @@ export function isAtPlanLimit(
 }
 
 export function planLimitBlockMessage(
-  kind: 'document' | 'checkpoint',
+  kind: PlanLimitKind,
   slice: PlanLimitSlice | null,
 ): string | null {
   if (!slice || slice.unlimited || !isAtPlanLimit(slice, 1)) return null;
-  return kind === 'document'
-    ? DOCUMENT_QUOTA_USER_MESSAGE
-    : CHECKPOINT_QUOTA_USER_MESSAGE;
+  if (kind === 'document') return DOCUMENT_QUOTA_USER_MESSAGE;
+  if (kind === 'checkpoint') return CHECKPOINT_QUOTA_USER_MESSAGE;
+  return REPORT_QUOTA_USER_MESSAGE;
 }
 
 export function planLimitUsageHint(
-  kind: 'document' | 'checkpoint',
+  kind: PlanLimitKind,
   slice: PlanLimitSlice | null,
 ): string | null {
   if (!slice || slice.unlimited) return null;
-  const label = kind === 'document' ? 'documents' : 'checkpoints';
+  const label =
+    kind === 'document'
+      ? 'documents'
+      : kind === 'checkpoint'
+        ? 'checkpoints'
+        : 'reports';
   return `${slice.used} of ${slice.limit} ${label} used this month`;
 }

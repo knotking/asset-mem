@@ -11,6 +11,9 @@ export const DOCUMENT_QUOTA_USER_MESSAGE =
 export const CHECKPOINT_QUOTA_USER_MESSAGE =
   "Monthly checkpoint limit reached. Upgrade your plan or wait until next month.";
 
+export const REPORT_QUOTA_USER_MESSAGE =
+  "Monthly report limit reached. Upgrade your plan or wait until next month.";
+
 export const TOKEN_QUOTA_USER_MESSAGE =
   "Monthly AI token limit reached. Upgrade your plan or wait until next month.";
 
@@ -30,24 +33,29 @@ export function isAtPlanLimit(
 }
 
 export function planLimitBlockMessage(
-  kind: "document" | "checkpoint",
+  kind: "document" | "checkpoint" | "report",
   slice: PlanLimitSlice | null,
 ): string | null {
   if (!slice || slice.unlimited) return null;
   if (isAtPlanLimit(slice, 1)) {
-    return kind === "document"
-      ? DOCUMENT_QUOTA_USER_MESSAGE
-      : CHECKPOINT_QUOTA_USER_MESSAGE;
+    if (kind === "document") return DOCUMENT_QUOTA_USER_MESSAGE;
+    if (kind === "checkpoint") return CHECKPOINT_QUOTA_USER_MESSAGE;
+    return REPORT_QUOTA_USER_MESSAGE;
   }
   return null;
 }
 
 export function planLimitUsageHint(
-  kind: "document" | "checkpoint",
+  kind: "document" | "checkpoint" | "report",
   slice: PlanLimitSlice | null,
 ): string | null {
   if (!slice || slice.unlimited) return null;
-  const label = kind === "document" ? "documents" : "checkpoints";
+  const label =
+    kind === "document"
+      ? "documents"
+      : kind === "checkpoint"
+        ? "checkpoints"
+        : "reports";
   return `${slice.used} of ${slice.limit} ${label} used this month`;
 }
 
@@ -86,6 +94,7 @@ export function parsePlanLimitErrorCode(body: string): string | undefined {
   if (body.includes("TOKEN_QUOTA_EXCEEDED")) return "TOKEN_QUOTA_EXCEEDED";
   if (body.includes("DOCUMENT_QUOTA_EXCEEDED")) return "DOCUMENT_QUOTA_EXCEEDED";
   if (body.includes("CHECKPOINT_QUOTA_EXCEEDED")) return "CHECKPOINT_QUOTA_EXCEEDED";
+  if (body.includes("REPORT_QUOTA_EXCEEDED")) return "REPORT_QUOTA_EXCEEDED";
   try {
     const parsed = JSON.parse(body) as {
       code?: string;
@@ -102,6 +111,7 @@ export function planLimitMessageForErrorCode(
 ): string | undefined {
   if (code === "DOCUMENT_QUOTA_EXCEEDED") return DOCUMENT_QUOTA_USER_MESSAGE;
   if (code === "CHECKPOINT_QUOTA_EXCEEDED") return CHECKPOINT_QUOTA_USER_MESSAGE;
+  if (code === "REPORT_QUOTA_EXCEEDED") return REPORT_QUOTA_USER_MESSAGE;
   if (code === "TOKEN_QUOTA_EXCEEDED") return TOKEN_QUOTA_USER_MESSAGE;
   return undefined;
 }
@@ -115,6 +125,7 @@ function normalizePlanLimitErrorMessage(msg: string): string | undefined {
 
   if (/monthly document limit/i.test(trimmed)) return DOCUMENT_QUOTA_USER_MESSAGE;
   if (/monthly checkpoint limit/i.test(trimmed)) return CHECKPOINT_QUOTA_USER_MESSAGE;
+  if (/monthly report limit/i.test(trimmed)) return REPORT_QUOTA_USER_MESSAGE;
   if (/monthly ai token limit/i.test(trimmed)) return TOKEN_QUOTA_USER_MESSAGE;
   if (/monthly ai usage limit/i.test(trimmed)) return TOKEN_QUOTA_USER_MESSAGE;
 

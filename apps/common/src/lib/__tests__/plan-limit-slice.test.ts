@@ -23,6 +23,7 @@ describe('plan-limit-slice', () => {
   it('planLimitBlockMessage at cap', () => {
     const slice = { used: 2, limit: 2, unlimited: false };
     expect(planLimitBlockMessage('document', slice)).toMatch(/Monthly document limit/);
+    expect(planLimitBlockMessage('report', slice)).toMatch(/Monthly report limit/);
   });
 
   it('mergePlanLimitUsage overlays live Firestore period count', () => {
