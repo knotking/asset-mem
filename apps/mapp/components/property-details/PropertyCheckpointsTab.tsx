@@ -60,6 +60,7 @@ import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import {
   isAtPlanLimit,
   planLimitBlockMessage,
+  planLimitUsageHint,
 } from '@homeapp/common/lib/plan-limit-slice';
 import { getCheckpointListConditionBadge } from '@homeapp/common/lib/checkpoint-list-badge';
 import { checkpointListBadgeStyles } from '@/lib/checkpoint-list-badge-styles';
@@ -728,6 +729,7 @@ export function PropertyCheckpointsTab({
   const { db } = useFirebase();
   const { checkpointsLimit, limitsLoading } = useLlmTokenUsage();
   const checkpointLimitMessage = planLimitBlockMessage('checkpoint', checkpointsLimit);
+  const checkpointLimitHint = planLimitUsageHint('checkpoint', checkpointsLimit);
   const { property } = useProperty();
   const { updatePreferences } = usePreferences();
   const { metrics: propertyMetrics } = usePropertyCheckpointMetrics();
@@ -1076,9 +1078,12 @@ export function PropertyCheckpointsTab({
           <Text className="mb-3 text-center text-sm text-muted-foreground">
             Create your first checkpoint to start tracking changes over time.
           </Text>
-          {checkpointLimitMessage ? (
-            <Text className="mb-2 text-center text-sm text-destructive">
-              {checkpointLimitMessage}
+          {(checkpointLimitHint || checkpointLimitMessage) ? (
+            <Text
+              className={`mb-2 text-center text-sm ${
+                checkpointLimitMessage ? 'text-destructive' : 'text-muted-foreground'
+              }`}>
+              {checkpointLimitMessage ?? checkpointLimitHint}
             </Text>
           ) : null}
           <Button
@@ -1218,6 +1223,15 @@ export function PropertyCheckpointsTab({
               </View>
             </View>
           )}
+
+          {(checkpointLimitHint || checkpointLimitMessage) && !isSelectionMode ? (
+            <Text
+              className={`mb-3 text-sm ${
+                checkpointLimitMessage ? 'text-destructive' : 'text-muted-foreground'
+              }`}>
+              {checkpointLimitMessage ?? checkpointLimitHint}
+            </Text>
+          ) : null}
 
           <FlatList
             data={checkpoints}

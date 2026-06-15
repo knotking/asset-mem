@@ -57,6 +57,7 @@ import {
 import {
   isAtPlanLimit,
   planLimitBlockMessage,
+  planLimitUsageHint,
 } from '@homeapp/common/lib/plan-limit-slice';
 import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
 import { isPlaceholderPropertyAddress } from '@/lib/property-address-placeholder';
@@ -92,6 +93,9 @@ export function PropertyDetailsTab({ property, onOpenMyPros }: PropertyDetailsTa
   const { savedProviders } = useSavedServiceProviders();
   const { documentsLimit, limitsLoading } = useLlmTokenUsage();
   const documentLimitMessage = planLimitBlockMessage('document', documentsLimit);
+  const documentLimitHint = planLimitUsageHint('document', documentsLimit);
+  const uploadBlockedByLimit =
+    !limitsLoading && isAtPlanLimit(documentsLimit, 1);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [documentToDelete, setDocumentToDelete] = React.useState<Document | null>(null);
   const [deleteDialogDocumentName, setDeleteDialogDocumentName] = React.useState('');
@@ -605,14 +609,20 @@ export function PropertyDetailsTab({ property, onOpenMyPros }: PropertyDetailsTa
             <Button
               onPress={handlePickDocuments}
               variant="default"
+              disabled={uploadBlockedByLimit}
               className="flex-row items-center gap-2">
               <Icon as={Upload} size={16} className="text-primary-foreground" />
               <Text className="font-semibold text-primary-foreground">Upload</Text>
             </Button>
           </View>
         </CardHeader>
-        {documentLimitMessage ? (
-          <Text className="px-6 pb-2 text-sm text-destructive">{documentLimitMessage}</Text>
+        {(documentLimitHint || documentLimitMessage) ? (
+          <Text
+            className={`px-6 pb-2 text-sm ${
+              documentLimitMessage ? 'text-destructive' : 'text-muted-foreground'
+            }`}>
+            {documentLimitMessage ?? documentLimitHint}
+          </Text>
         ) : null}
         {documentsLoading && uploadingDocs.length === 0 ? (
           <CardContent>
