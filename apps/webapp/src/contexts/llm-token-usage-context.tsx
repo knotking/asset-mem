@@ -110,6 +110,14 @@ function toDisplayPlanLimit(
   return { used: raw.used, limit, unlimited: false };
 }
 
+function mergePlanLimitUsage(
+  slice: PlanLimitSlice | null,
+  periodCount: number,
+): PlanLimitSlice | null {
+  if (!slice) return null;
+  return { ...slice, used: periodCount };
+}
+
 function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsageSnapshot {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -303,6 +311,19 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
     Boolean(userId) &&
     (!prefsLoaded || (monthlyLimit == null && proxyDefaultLimit === 'pending'));
 
+  const documentsLimitLive = useMemo(
+    () => mergePlanLimitUsage(documentsLimit, usage.periodDocumentCreations),
+    [documentsLimit, usage.periodDocumentCreations],
+  );
+  const checkpointsLimitLive = useMemo(
+    () => mergePlanLimitUsage(checkpointsLimit, usage.periodCheckpointCreations),
+    [checkpointsLimit, usage.periodCheckpointCreations],
+  );
+  const reportsLimitLive = useMemo(
+    () => mergePlanLimitUsage(reportsLimit, usage.periodReportGenerations),
+    [reportsLimit, usage.periodReportGenerations],
+  );
+
   return {
     loading,
     error,
@@ -311,9 +332,9 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
     effectiveMonthlyLimit,
     proxyDefaultLimit,
     limitsLoading,
-    documentsLimit,
-    checkpointsLimit,
-    reportsLimit,
+    documentsLimit: documentsLimitLive,
+    checkpointsLimit: checkpointsLimitLive,
+    reportsLimit: reportsLimitLive,
   };
 }
 

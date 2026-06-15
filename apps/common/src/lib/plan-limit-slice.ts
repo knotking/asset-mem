@@ -1,5 +1,6 @@
 /**
- * Monthly document/checkpoint creation limits from /token-quota-status.
+ * Monthly document/checkpoint/report creation limits from /token-quota-status.
+ * Use mergePlanLimitUsage with live Firestore period*Creations for UI display.
  */
 
 import {
@@ -25,6 +26,15 @@ export function toDisplayPlanLimit(
   const limit =
     unlimited || typeof raw.limit !== 'number' ? freeDefault : raw.limit;
   return { used: raw.used, limit, unlimited: false };
+}
+
+/** Apply live Firestore period counter to a proxy-resolved cap slice. */
+export function mergePlanLimitUsage(
+  slice: PlanLimitSlice | null,
+  periodCount: number,
+): PlanLimitSlice | null {
+  if (!slice) return null;
+  return { ...slice, used: periodCount };
 }
 
 /** True when adding `countToAdd` creations would exceed the monthly cap. */

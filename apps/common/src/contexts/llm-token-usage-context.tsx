@@ -15,6 +15,7 @@ import {
 } from "../lib/plan-defaults";
 import {
   type PlanLimitSlice,
+  mergePlanLimitUsage,
   toDisplayPlanLimit,
 } from "../lib/plan-limit-slice";
 import { proxyFetchWithAuth, type GetFirebaseIdToken } from "../lib/correlation-id";
@@ -320,6 +321,19 @@ function useLlmTokenUsageSubscription(
     Boolean(userId) &&
     (!prefsLoaded || (monthlyLimit == null && proxyDefaultLimit === "pending"));
 
+  const documentsLimitLive = useMemo(
+    () => mergePlanLimitUsage(documentsLimit, usage.periodDocumentCreations),
+    [documentsLimit, usage.periodDocumentCreations],
+  );
+  const checkpointsLimitLive = useMemo(
+    () => mergePlanLimitUsage(checkpointsLimit, usage.periodCheckpointCreations),
+    [checkpointsLimit, usage.periodCheckpointCreations],
+  );
+  const reportsLimitLive = useMemo(
+    () => mergePlanLimitUsage(reportsLimit, usage.periodReportGenerations),
+    [reportsLimit, usage.periodReportGenerations],
+  );
+
   return {
     loading,
     error,
@@ -328,9 +342,9 @@ function useLlmTokenUsageSubscription(
     effectiveMonthlyLimit,
     proxyDefaultLimit,
     limitsLoading,
-    documentsLimit,
-    checkpointsLimit,
-    reportsLimit,
+    documentsLimit: documentsLimitLive,
+    checkpointsLimit: checkpointsLimitLive,
+    reportsLimit: reportsLimitLive,
   };
 }
 
