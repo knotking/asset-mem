@@ -40,7 +40,7 @@ Tiered CPU, memory, scaling, and timeouts for App Hosting, Cloud Run proxy, Clou
 | Surface | idle | ph | scale_10x | scale_100x |
 |---------|------|-----|-----------|------------|
 | App Hosting cpu / MiB | default / 512 | 1 / 1024 | 2 / 2048 | 4 / 4096 |
-| App Hosting min / max | 0 / 1 | 1 / 10 | 2 / 20 | 5 / 100 |
+| App Hosting min / max | 0 / 2 | 1 / 10 | 2 / 20 | 5 / 100 |
 | Proxy cpu / memory | 1 / 1Gi | 2 / 2Gi | 4 / 4Gi | 8 / 8Gi |
 | Proxy min / max | 0 / 2 | 1 / 10 | 2 / 30 | 5 / 100 |
 | Proxy concurrency | 80 | 40 | 30 | 20 |

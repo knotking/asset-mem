@@ -41,7 +41,7 @@ jobs:
       FUNCTION_NAME_BASE: pubsub-document-analysis
       RUNTIME: python313
       ENTRY_POINT: pubsub_document_analysis
-      MAX_INSTANCES: 10
+      MAX_INSTANCES: 3
       CONCURRENCY: 1
       MEMORY: 512Mi
       SOURCE_DIRECTORY: gcp/proxy/workers/function/document_analysis

@@ -38,7 +38,7 @@ jobs:
       FUNCTION_NAME_BASE: pubsub-report-generation
       RUNTIME: python313
       ENTRY_POINT: pubsub_to_report_generation
-      MAX_INSTANCES: 10
+      MAX_INSTANCES: 2
       CONCURRENCY: 1
       MEMORY: 2048Mi
       SOURCE_DIRECTORY: gcp/proxy/workers/function/report_generation
