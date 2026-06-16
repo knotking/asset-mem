@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import heroImage from '../../../hero-image.webp';
 
 // Dark theme - landing page only
 const LANDING_COLORS = {
@@ -27,7 +28,7 @@ export default function AIGraphic() {
   }, []);
 
   return (
-    <div className="relative lg:h-[700px] h-[500px]">
+    <div className="relative lg:h-[700px] h-[420px] sm:h-[500px]">
       {/* Decorative Elements - matching source */}
       <div 
         className="absolute -top-4 -right-4 w-72 h-72 rounded-full blur-3xl animate-pulse"
@@ -52,15 +53,20 @@ export default function AIGraphic() {
         }}
       >
         <Image
-          src="https://media.gettyimages.com/id/2200128716/photo/ai-powers-big-data-analysis-and-automation-workflows-showcasing-neural-networks-and-data.jpg?b=1&s=2048x2048&w=0&k=20&c=jHsLIgpAOxKQ6mBlb4rEoGxZsBaFQqL7HyBg0lAk8J8="
+          src={heroImage}
           alt="AI neural network technology"
           fill
-          className="object-cover scale-105 hover:scale-100 transition-transform duration-700"
+          className="object-cover object-center lg:object-[65%_50%] scale-100 lg:scale-105 hover:scale-100 transition-transform duration-700 brightness-[0.97] saturate-[0.98]"
+          sizes="(max-width: 640px) 92vw, (max-width: 1024px) 86vw, 48vw"
+          quality={82}
           priority
         />
         <div 
           className="absolute inset-0"
-          style={{ background: 'linear-gradient(to top, rgba(10,10,15,0.85), rgba(10,10,15,0.3), transparent)' }}
+          style={{
+            background:
+              'linear-gradient(to top, rgba(10,10,15,0.8), rgba(10,10,15,0.28), rgba(10,10,15,0.04)), linear-gradient(120deg, rgba(6,26,44,0.14), rgba(6,26,44,0.03))',
+          }}
         />
         
         {/* Floating Card - dark glass, cyan border */}
@@ -84,7 +90,7 @@ export default function AIGraphic() {
             </div>
             <div>
               <div className="font-bold text-lg" style={{ color: LANDING_COLORS.foreground }}>AI Analysis Complete</div>
-              <div className="text-sm font-medium" style={{ color: LANDING_COLORS.mutedForeground }}>3 issues detected, 2 recommendations ready</div>
+              <div className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.78)' }}>3 issues detected, 2 recommendations ready</div>
             </div>
           </div>
         </div>
