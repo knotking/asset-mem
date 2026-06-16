@@ -1,9 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import heroImage from '../../../hero-image.webp';
-
 // Dark theme - landing page only
 const LANDING_COLORS = {
   primary: '#22d3ee',
@@ -21,12 +17,6 @@ const LANDING_COLORS = {
 };
 
 export default function AIGraphic() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   return (
     <div className="relative lg:h-[700px] h-[420px] sm:h-[500px]">
       {/* Decorative Elements - matching source */}
@@ -39,7 +29,7 @@ export default function AIGraphic() {
         style={{ backgroundColor: LANDING_COLORS.accent10, animationDelay: '1s' }}
       />
       
-      {/* Main Image Container - dark border, cyan glow on hover */}
+      {/* Main Visual Container - lightweight gradient + abstract network */}
       <div 
         className="relative h-full rounded-3xl overflow-hidden shadow-2xl border transition-all duration-500"
         style={{ borderColor: 'rgba(255,255,255,0.08)' }}
@@ -52,15 +42,47 @@ export default function AIGraphic() {
           e.currentTarget.style.boxShadow = '';
         }}
       >
-        <Image
-          src={heroImage}
-          alt="AI neural network technology"
-          fill
-          className="object-cover object-center lg:object-[65%_50%] scale-100 lg:scale-105 hover:scale-100 transition-transform duration-700 brightness-[0.97] saturate-[0.98]"
-          sizes="(max-width: 640px) 92vw, (max-width: 1024px) 86vw, 48vw"
-          quality={82}
-          priority
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(circle at 70% 55%, rgba(34,211,238,0.28), rgba(34,211,238,0.06) 32%, rgba(10,10,15,0) 58%), linear-gradient(145deg, rgba(7,17,40,1) 0%, rgba(5,10,28,1) 38%, rgba(4,8,24,1) 100%)',
+          }}
         />
+        <div
+          className="absolute inset-0 opacity-35"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(34,211,238,0.09) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.09) 1px, transparent 1px)',
+            backgroundSize: '42px 42px',
+            maskImage: 'radial-gradient(circle at 70% 55%, black 24%, transparent 72%)',
+          }}
+        />
+        <div className="absolute left-[54%] top-[48%] h-52 w-52 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-300/25 blur-3xl animate-pulse" />
+        <div className="ai-node-float absolute left-[56%] top-[46%] h-3 w-3 rounded-full bg-cyan-300 shadow-[0_0_26px_rgba(34,211,238,0.9)]" />
+        <svg
+          className="absolute inset-0 h-full w-full opacity-85"
+          viewBox="0 0 1000 700"
+          preserveAspectRatio="none"
+          aria-hidden
+        >
+          <defs>
+            <linearGradient id="flowLine" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="rgba(34,211,238,0)" />
+              <stop offset="38%" stopColor="rgba(34,211,238,0.5)" />
+              <stop offset="58%" stopColor="rgba(125,211,252,0.85)" />
+              <stop offset="100%" stopColor="rgba(34,211,238,0.05)" />
+            </linearGradient>
+          </defs>
+          <path d="M0 520 C170 500, 290 455, 420 470 C545 485, 640 540, 1000 455" stroke="url(#flowLine)" strokeWidth="2" fill="none" />
+          <path d="M0 560 C180 545, 320 515, 455 520 C610 525, 710 568, 1000 500" stroke="url(#flowLine)" strokeWidth="1.6" fill="none" opacity="0.75" />
+          <path d="M0 610 C190 585, 330 565, 470 565 C635 565, 740 600, 1000 545" stroke="url(#flowLine)" strokeWidth="1.3" fill="none" opacity="0.55" />
+          <path d="M470 365 L560 322 L640 360 L600 440 L500 445 Z" stroke="rgba(125,211,252,0.45)" strokeWidth="1.4" fill="rgba(56,189,248,0.08)" />
+          <circle className="ai-node ai-node-a" cx="560" cy="322" r="4" fill="rgba(103,232,249,0.95)" />
+          <circle className="ai-node ai-node-b" cx="640" cy="360" r="3" fill="rgba(125,211,252,0.9)" />
+          <circle className="ai-node ai-node-c" cx="600" cy="440" r="3" fill="rgba(103,232,249,0.9)" />
+          <circle className="ai-node ai-node-d" cx="500" cy="445" r="3" fill="rgba(125,211,252,0.9)" />
+        </svg>
         <div 
           className="absolute inset-0"
           style={{
