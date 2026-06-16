@@ -45,3 +45,51 @@
 .animate-stagger-in {
   animation: staggerIn 0.5s ease-out forwards;
 }
+
+@keyframes aiNodePulse {
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(0px, -2px) scale(1.16);
+  }
+}
+
+@keyframes aiNodeFloat {
+  0%,
+  100% {
+    transform: translate(0px, 0px);
+  }
+  50% {
+    transform: translate(3px, -4px);
+  }
+}
+
+.ai-node {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: aiNodePulse 3.2s ease-in-out infinite;
+}
+
+.ai-node-a {
+  animation-delay: 0s;
+}
+
+.ai-node-b {
+  animation-delay: 0.4s;
+}
+
+.ai-node-c {
+  animation-delay: 0.8s;
+}
+
+.ai-node-d {
+  animation-delay: 1.2s;
+}
+
+.ai-node-float {
+  animation: aiNodeFloat 4s ease-in-out infinite;
+}
