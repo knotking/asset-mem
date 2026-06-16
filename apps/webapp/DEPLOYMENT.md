@@ -110,6 +110,15 @@ The Next.js configuration is optimized for Firebase App Hosting:
 
 Minimal configuration for Firestore rules. App Hosting doesn't require hosting configuration in firebase.json.
 
+### Remote Config (Landing Demo URLs)
+
+Landing demo video URLs are managed in Firebase Remote Config:
+
+- `landing_demo_mobile_url`
+- `landing_demo_desktop_url`
+
+Publish these values in the target Firebase project (`homegeek-staging` or `homegeek-prod`) to update landing-page video links without redeploying webapp.
+
 ## Backend Information
 
 - **Project ID:** homegeek-staging
