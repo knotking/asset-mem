@@ -14,6 +14,11 @@ import {
   SITE_HERO_HEADLINE_ACCENT,
   SITE_HERO_HEADLINE_PRIMARY,
 } from "@/lib/site";
+import {
+  DEFAULT_LANDING_DEMO_VIDEO_URLS,
+  fetchLandingDemoVideoUrlsFromRemoteConfig,
+  type LandingDemoVideoUrls,
+} from "@/lib/landing-demo-video";
 import "./landing-animations.css";
 
 // Dark theme - landing page only
@@ -85,6 +90,24 @@ export default function LandingPageClient() {
   const { user, loading } = useAuth();
   const [activeSection, setActiveSection] = useState<string>("");
   const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [demoVideoUrls, setDemoVideoUrls] = useState<LandingDemoVideoUrls>(
+    DEFAULT_LANDING_DEMO_VIDEO_URLS,
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadDemoVideoUrls = async () => {
+      const urls = await fetchLandingDemoVideoUrlsFromRemoteConfig();
+      if (!cancelled) {
+        setDemoVideoUrls(urls);
+      }
+    };
+
+    void loadDemoVideoUrls();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     // Only run on client side to avoid hydration issues
@@ -403,8 +426,8 @@ export default function LandingPageClient() {
                 <YouTubeModal
                   url={
                     isMobile
-                      ? "https://youtu.be/vh0J8DWupkI"
-                      : "https://youtu.be/OP4I2tkM8FE"
+                      ? demoVideoUrls.mobile
+                      : demoVideoUrls.desktop
                   }
                   trigger={
                     <button

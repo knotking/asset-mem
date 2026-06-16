@@ -20,14 +20,14 @@ The web application is a Next.js 14+ application with:
 
 ### Staging
 
-- **URL**: https://staging--homegeek-staging.us-central1.hosted.app
+- **URL**: [https://staging--homegeek-staging.us-central1.hosted.app](https://staging--homegeek-staging.us-central1.hosted.app)
 - **Backend ID**: `staging`
 - **Config**: `apphosting.staging.yaml`
 - **Auto-Deploy**: Yes (on push to `main`)
 
 ### Production
 
-- **URL**: https://prod--homegeek-prod.us-central1.hosted.app
+- **URL**: [https://prod--homegeek-prod.us-central1.hosted.app](https://prod--homegeek-prod.us-central1.hosted.app)
 - **Backend ID**: `prod`
 - **Config**: `apphosting.prod.yaml`
 - **Auto-Deploy**: Manual trigger only
@@ -124,13 +124,15 @@ runConfig:
 
 ### Marketing & analytics environment variables
 
-Used for Open Graph URLs, contact/legal pages, and GA4 (Product Hunt / launch). Defined in `apphosting.*.yaml` and [`apps/webapp/.env.example`](../../apps/webapp/.env.example). Tracked in [LAUNCH_PLAN_PROGRESS.md](./LAUNCH_PLAN_PROGRESS.md).
+Used for Open Graph URLs, contact/legal pages, and GA4 (Product Hunt / launch). Defined in `apphosting.*.yaml` and `[apps/webapp/.env.example](../../apps/webapp/.env.example)`. Tracked in [LAUNCH_PLAN_PROGRESS.md](./LAUNCH_PLAN_PROGRESS.md).
 
-| Variable                        | Staging (example)       | Production (example)  | Notes                                                |
-| ------------------------------- | ----------------------- | --------------------- | ---------------------------------------------------- |
+
+| Variable                        | Staging (example)       | Production (example)    | Notes                                                |
+| ------------------------------- | ----------------------- | ----------------------- | ---------------------------------------------------- |
 | `NEXT_PUBLIC_SITE_URL`          | Staging App Hosting URL | `https://asset-mem.com` | Canonical origin for OG metadata (no trailing slash) |
-| `NEXT_PUBLIC_SUPPORT_EMAIL`     | `support@asset-mem.com` | `support@asset-mem.com` | Landing contact + legal pages                    |
-| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Optional                | **Add before PH**     | GA4 `G-XXXXXXXX`; omit = analytics disabled          |
+| `NEXT_PUBLIC_SUPPORT_EMAIL`     | `support@asset-mem.com` | `support@asset-mem.com` | Landing contact + legal pages                        |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Optional                | **Add before PH**       | GA4 `G-XXXXXXXX`; omit = analytics disabled          |
+
 
 **Before Product Hunt:** Complete the checklist in [PRODUCT_HUNT_LAUNCH.md §2.1](./PRODUCT_HUNT_LAUNCH.md#21-environment-variables-production-web).
 
@@ -270,6 +272,21 @@ const nextConfig = {
 - `NEXT_PUBLIC_SITE_URL` - Canonical site URL for metadata / Open Graph
 - `NEXT_PUBLIC_SUPPORT_EMAIL` - Support email on landing and legal pages
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID` - Optional GA4 measurement ID
+
+### Remote Config Checklist (Landing Demo URLs)
+
+The landing page demo URLs are read from Firebase Remote Config (runtime), not from App Hosting deploy variables.
+
+- Parameters:
+  - `landing_demo_mobile_url`
+  - `landing_demo_desktop_url`
+- Publish in both Firebase projects:
+  - `homegeek-staging`
+  - `homegeek-prod`
+- Verify after publish on:
+  - `https://staging--homegeek-staging.us-central1.hosted.app`
+  - `https://prod--homegeek-prod.us-central1.hosted.app`
+- Keep code defaults in `apps/webapp/src/lib/landing-demo-video.ts` for fallback safety.
 
 ## Monitoring Deployments
 
@@ -554,29 +571,25 @@ npm start
 ## Best Practices
 
 1. **Always test in staging first**
-   - Deploy to staging automatically
-   - Perform manual testing
-   - Validate all features work
-
+  - Deploy to staging automatically
+  - Perform manual testing
+  - Validate all features work
 2. **Use semantic versioning**
-   - Tag releases in Git
-   - Document changes in CHANGELOG
-   - Reference tags in rollouts
-
+  - Tag releases in Git
+  - Document changes in CHANGELOG
+  - Reference tags in rollouts
 3. **Monitor deployments**
-   - Check logs after deployment
-   - Verify all pages load correctly
-   - Test critical user flows
-
+  - Check logs after deployment
+  - Verify all pages load correctly
+  - Test critical user flows
 4. **Maintain rollback capability**
-   - Keep previous rollouts available
-   - Document known good versions
-   - Test rollback procedures
-
+  - Keep previous rollouts available
+  - Document known good versions
+  - Test rollback procedures
 5. **Security**
-   - Keep dependencies updated
-   - Review Firestore rules regularly
-   - Audit IAM permissions
+  - Keep dependencies updated
+  - Review Firestore rules regularly
+  - Audit IAM permissions
 
 ## Related Documentation
 
@@ -584,3 +597,4 @@ npm start
 - [Firebase App Hosting Docs](https://firebase.google.com/docs/app-hosting)
 - [Next.js Deployment](https://nextjs.org/docs/deployment)
 - [CI/CD Pipeline Documentation](./CICD.md)
+

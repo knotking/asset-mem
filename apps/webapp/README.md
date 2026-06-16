@@ -51,3 +51,13 @@ Copy `.env.example` to `.env` and set values. For **Settings → AI usage**, lim
 - `src/contexts/`: React Context providers.
 - `src/lib/`: Utility functions and types.
 - `src/scripts/`: Migration and utility scripts.
+
+## Landing Demo Video URLs (No Redeploy)
+
+Landing page demo links are loaded from Firebase Remote Config at runtime (with safe defaults).
+
+- Parameters:
+  - `landing_demo_mobile_url` (string)
+  - `landing_demo_desktop_url` (string)
+
+Publish new Remote Config values and the webapp will pick them up on the next fetch interval (short in non-prod, longer in prod).
