@@ -8,7 +8,12 @@ import { LandingHeader } from "./landing-header";
 import { LandingPricingSection } from "./landing-pricing-section";
 import { YouTubeModal } from "@/components/landing/youtube-modal";
 import { trackLandingCta } from "@/lib/analytics";
-import { getSupportEmail } from "@/lib/site";
+import {
+  getSupportEmail,
+  SITE_HERO_DESCRIPTION,
+  SITE_HERO_HEADLINE_ACCENT,
+  SITE_HERO_HEADLINE_PRIMARY,
+} from "@/lib/site";
 import "./landing-animations.css";
 
 // Dark theme - landing page only
@@ -310,9 +315,9 @@ export default function LandingPageClient() {
                   className="text-3xl lg:text-4xl font-light leading-tight"
                   style={{ color: LANDING_COLORS.foreground90 }}
                 >
-                  Your Complete
+                  {SITE_HERO_HEADLINE_PRIMARY}
                   <br />
-                  <span className="font-medium">Property Care Platform</span>
+                  <span className="font-medium">{SITE_HERO_HEADLINE_ACCENT}</span>
                 </h2>
               </div>
 
@@ -320,10 +325,7 @@ export default function LandingPageClient() {
                 className="text-xl leading-relaxed max-w-xl font-light"
                 style={{ color: LANDING_COLORS.foreground60 }}
               >
-                AI agents analyze your property photos and documents, rate
-                condition over time, flag issues, generate formal PDF reports,
-                and guide you on repairs and costs while connecting you with
-                local pros.
+                {SITE_HERO_DESCRIPTION}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">

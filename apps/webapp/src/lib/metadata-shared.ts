@@ -1,11 +1,17 @@
 import type { Metadata } from 'next';
-import { getSiteUrl, SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME, SITE_TAGLINE } from '@/lib/site';
+import {
+  getSiteUrl,
+  SITE_DESCRIPTION,
+  SITE_HERO_DESCRIPTION,
+  SITE_KEYWORDS,
+  SITE_NAME,
+  SITE_TAGLINE,
+} from '@/lib/site';
 
 /** Homepage and `/landing` copy — set `path` per route. */
 export const LANDING_PAGE_METADATA = {
   title: `${SITE_NAME} — ${SITE_TAGLINE}`,
-  description:
-    'Get instant property diagnostics, maintenance guidance, and expert recommendations powered by advanced AI technology.',
+  description: SITE_HERO_DESCRIPTION,
 } as const;
 
 type BuildPageMetadataOptions = {

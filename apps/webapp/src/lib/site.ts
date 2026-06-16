@@ -2,10 +2,16 @@
 
 export const SITE_NAME = 'AssetMem AI';
 
-export const SITE_TAGLINE = 'Intelligent home care and property diagnostics';
+/** Hero headline lines — keep in sync with landing page and Open Graph metadata. */
+export const SITE_HERO_HEADLINE_PRIMARY = 'Your Complete';
+export const SITE_HERO_HEADLINE_ACCENT = 'Property Care Platform';
+export const SITE_TAGLINE = `${SITE_HERO_HEADLINE_PRIMARY} ${SITE_HERO_HEADLINE_ACCENT}`;
 
-export const SITE_DESCRIPTION =
-  'Get instant property diagnostics, maintenance guidance, and expert recommendations powered by AI. Track checkpoints, documents, and chat with specialized home-care agents.';
+export const SITE_HERO_DESCRIPTION =
+  'AI agents analyze your property photos and documents, rate condition over time, flag issues, generate formal PDF reports, and guide you on repairs and costs while connecting you with local pros.';
+
+/** Default meta description for marketing pages and OG fallbacks. */
+export const SITE_DESCRIPTION = SITE_HERO_DESCRIPTION;
 
 export const SITE_KEYWORDS = [
   'home care',
