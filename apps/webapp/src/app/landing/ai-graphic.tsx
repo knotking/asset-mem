@@ -11,17 +11,17 @@ const LANDING_COLORS = {
 
 export default function AIGraphic() {
   return (
-    <div className="relative h-[600px] sm:h-[620px] lg:h-[650px]">
-      <div 
+    <div className="relative h-[600px] sm:h-[640px] lg:h-[650px]">
+      <div
         className="absolute -top-4 -right-4 w-72 h-72 rounded-full blur-3xl animate-pulse"
         style={{ backgroundColor: LANDING_COLORS.primarySoft }}
       />
-      <div 
+      <div
         className="absolute -bottom-4 -left-4 w-72 h-72 rounded-full blur-3xl animate-pulse"
         style={{ backgroundColor: 'rgba(59, 130, 246, 0.16)', animationDelay: '1s' }}
       />
-      
-      <div 
+
+      <div
         className="relative h-full rounded-3xl overflow-hidden shadow-2xl border transition-all duration-500"
         style={{ borderColor: 'rgba(255,255,255,0.08)' }}
         onMouseEnter={(e) => {
@@ -42,7 +42,7 @@ export default function AIGraphic() {
         />
         <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.06)_1px,transparent_1px)] bg-[size:36px_36px] opacity-35" />
 
-        <div className="relative z-10 flex h-full flex-col gap-3 p-4 sm:gap-4 sm:p-6">
+        <div className="relative z-10 flex h-full flex-col gap-3 p-4 sm:p-6">
           <div className="flex items-center justify-between rounded-xl border px-4 py-2 text-xs backdrop-blur-sm"
             style={{ backgroundColor: LANDING_COLORS.surface, borderColor: LANDING_COLORS.surfaceBorder, color: LANDING_COLORS.textMuted }}>
             <span style={{ color: 'rgba(226,232,240,0.92)' }}>Property Timeline</span>
@@ -51,39 +51,63 @@ export default function AIGraphic() {
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div className="relative grid grid-cols-2 gap-2 sm:gap-3">
+            {/* Before */}
             <div className="rounded-xl border p-2.5 sm:p-3 backdrop-blur-sm" style={{ backgroundColor: LANDING_COLORS.surface, borderColor: LANDING_COLORS.surfaceBorder }}>
-              <div className="mb-2 text-[11px]" style={{ color: LANDING_COLORS.textMuted }}>Kitchen • Feb 2026</div>
-              <div className="h-14 sm:h-16 rounded-md bg-gradient-to-br from-slate-600/75 to-slate-900/78" />
+              <div className="mb-2 flex items-center justify-between text-[11px]">
+                <span style={{ color: LANDING_COLORS.textMuted }}>Kitchen • Feb 2026</span>
+                <span className="rounded px-1.5 py-0.5 text-[9px] font-semibold" style={{ backgroundColor: 'rgba(148,163,184,0.12)', color: 'rgba(148,163,184,0.8)' }}>BEFORE</span>
+              </div>
+              <div className="relative h-16 sm:h-20 rounded-md overflow-hidden" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #1e293b 100%)' }}>
+                <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(148,163,184,0.08) 8px, rgba(148,163,184,0.08) 9px), repeating-linear-gradient(90deg, transparent, transparent 12px, rgba(148,163,184,0.06) 12px, rgba(148,163,184,0.06) 13px)' }} />
+                <div className="absolute bottom-2 left-2 right-2 h-1.5 rounded-full opacity-20" style={{ backgroundColor: 'rgba(148,163,184,0.5)' }} />
+              </div>
               <div className="mt-2 text-[11px] font-medium" style={{ color: LANDING_COLORS.textMain }}>Minor wear detected</div>
             </div>
-            <div className="rounded-xl border p-2.5 sm:p-3 backdrop-blur-sm" style={{ backgroundColor: LANDING_COLORS.surface, borderColor: 'rgba(34,211,238,0.35)' }}>
-              <div className="mb-2 text-[11px]" style={{ color: LANDING_COLORS.textMuted }}>Kitchen • Jun 2026</div>
-              <div className="h-14 sm:h-16 rounded-md bg-gradient-to-br from-cyan-900/70 to-slate-900/80" />
+
+            {/* After */}
+            <div className="rounded-xl border p-2.5 sm:p-3 backdrop-blur-sm" style={{ backgroundColor: LANDING_COLORS.surface, borderColor: 'rgba(34,211,238,0.4)' }}>
+              <div className="mb-2 flex items-center justify-between text-[11px]">
+                <span style={{ color: LANDING_COLORS.textMuted }}>Kitchen • Jun 2026</span>
+                <span className="rounded px-1.5 py-0.5 text-[9px] font-semibold" style={{ backgroundColor: 'rgba(34,211,238,0.15)', color: '#67e8f9' }}>AFTER</span>
+              </div>
+              <div className="relative h-16 sm:h-20 rounded-md overflow-hidden" style={{ background: 'linear-gradient(135deg, #0c2233 0%, #0a1628 50%, #0d1f35 100%)' }}>
+                <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(34,211,238,0.06) 8px, rgba(34,211,238,0.06) 9px), repeating-linear-gradient(90deg, transparent, transparent 12px, rgba(34,211,238,0.04) 12px, rgba(34,211,238,0.04) 13px)' }} />
+                <div className="absolute top-2 right-2 h-2 w-2 rounded-full animate-pulse" style={{ backgroundColor: 'rgba(239,68,68,0.7)' }} />
+                <div className="absolute bottom-2 left-2 right-8 h-1.5 rounded-full opacity-30" style={{ backgroundColor: 'rgba(34,211,238,0.6)' }} />
+              </div>
               <div className="mt-2 text-[11px] font-medium" style={{ color: '#a5f3fc' }}>Moisture risk increased</div>
+            </div>
+
+            {/* Change badge */}
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-10 rounded-full border px-2.5 py-0.5 text-[9px] font-bold whitespace-nowrap" style={{ borderColor: 'rgba(239,68,68,0.4)', backgroundColor: 'rgba(239,68,68,0.12)', color: '#fca5a5' }}>
+              ▲ Change detected
             </div>
           </div>
 
-          <div className="rounded-xl border p-3 backdrop-blur-sm"
-            style={{ backgroundColor: LANDING_COLORS.surface, borderColor: LANDING_COLORS.surfaceBorder }}>
-            <div className="mb-2 flex items-center justify-between text-[11px]" style={{ color: 'rgba(226,232,240,0.84)' }}>
+          <div className="mt-3 rounded-xl border p-3 backdrop-blur-sm" style={{ backgroundColor: LANDING_COLORS.surface, borderColor: LANDING_COLORS.surfaceBorder }}>
+            <div className="mb-3 flex items-center justify-between text-[11px]" style={{ color: 'rgba(226,232,240,0.84)' }}>
               <span>Condition trend score</span>
-              <span style={{ color: '#a5f3fc' }}>+18% risk</span>
+              <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: 'rgba(239,68,68,0.12)', color: '#fca5a5' }}>↑ +18% risk</span>
             </div>
-            <div className="flex h-14 sm:h-16 items-end justify-center gap-1.5">
-              <div className="w-3 rounded-sm bg-cyan-400/35" style={{ height: '24%' }} />
-              <div className="w-3 rounded-sm bg-cyan-400/40" style={{ height: '30%' }} />
-              <div className="w-3 rounded-sm bg-cyan-400/45" style={{ height: '36%' }} />
-              <div className="w-3 rounded-sm bg-cyan-400/50" style={{ height: '41%' }} />
-              <div className="w-3 rounded-sm bg-cyan-400/55" style={{ height: '47%' }} />
-              <div className="w-3 rounded-sm bg-cyan-400/60" style={{ height: '54%' }} />
-              <div className="w-3 rounded-sm bg-cyan-400/70" style={{ height: '61%' }} />
-              <div className="w-3 rounded-sm bg-cyan-400/80" style={{ height: '72%' }} />
-              <div className="w-3 rounded-sm bg-cyan-300/90 ai-node-float" style={{ height: '82%' }} />
-            </div>
-            <div className="mt-1 flex justify-between text-[10px]" style={{ color: 'rgba(148,163,184,0.85)' }}>
-              <span>Feb</span>
-              <span>Jun</span>
+            <div className="relative">
+              <div className="flex h-16 items-end gap-1.5 px-1">
+                {[24, 30, 36, 41, 47, 54, 61, 72, 84].map((h, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 rounded-sm"
+                    style={{
+                      height: `${h}%`,
+                      backgroundColor: i === 8 ? 'rgba(34,211,238,0.9)' : `rgba(34,211,238,${0.25 + i * 0.07})`,
+                      boxShadow: i === 8 ? '0 0 8px rgba(34,211,238,0.5)' : 'none',
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="mt-1.5 flex justify-between text-[10px] px-1" style={{ color: 'rgba(148,163,184,0.7)' }}>
+                <span>Feb</span>
+                <span>Jun</span>
+              </div>
             </div>
           </div>
 
@@ -107,24 +131,27 @@ export default function AIGraphic() {
               Seal grout in 30 days
             </span>
             <span className="rounded-full border px-2.5 py-1" style={{ borderColor: LANDING_COLORS.surfaceBorder, color: LANDING_COLORS.textMuted, backgroundColor: 'rgba(15,23,42,0.55)' }}>
-              Estimated cost: $220-$380
+              Estimated cost: $220–$380
             </span>
-            <span className="rounded-full border px-2.5 py-1" style={{ borderColor: LANDING_COLORS.surfaceBorder, color: LANDING_COLORS.textMuted, backgroundColor: 'rgba(15,23,42,0.55)' }}>
+            <span className="hidden sm:inline-flex rounded-full border px-2.5 py-1" style={{ borderColor: LANDING_COLORS.surfaceBorder, color: LANDING_COLORS.textMuted, backgroundColor: 'rgba(15,23,42,0.55)' }}>
               2 local pros matched
             </span>
           </div>
 
-          <div className="mt-auto rounded-2xl p-3 sm:p-4 shadow-2xl transition-all duration-300 hover:-translate-y-1"
-            style={{ backgroundColor: 'rgba(12,18,32,0.9)', backdropFilter: 'blur(12px)', border: '1px solid rgba(34,211,238,0.25)', boxShadow: '0 25px 50px -12px rgba(34,211,238,0.15)' }}>
+          <div className="mt-auto rounded-xl p-3 sm:p-4 transition-all duration-300 hover:-translate-y-0.5"
+            style={{ backgroundColor: 'rgba(12,18,32,0.95)', border: '1px solid rgba(34,211,238,0.3)', boxShadow: '0 0 0 1px rgba(34,211,238,0.06), 0 8px 32px -8px rgba(34,211,238,0.25)' }}>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(34,211,238,0.15)' }}>
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.primary }}>
+              <div className="h-9 w-9 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(34,211,238,0.25), rgba(34,211,238,0.1))' }}>
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: '#22d3ee', width: '1.1rem', height: '1.1rem' }}>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-4m3 4V7m3 10v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <div>
-                <div className="font-semibold text-base" style={{ color: LANDING_COLORS.textMain }}>Monthly report ready</div>
-                <div className="text-sm" style={{ color: LANDING_COLORS.textMuted }}>3 changes flagged, 1 preventive action recommended</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-sm" style={{ color: LANDING_COLORS.textMain }}>Monthly report ready</span>
+                  <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: 'rgba(34,211,238,0.15)', color: '#67e8f9' }}>NEW</span>
+                </div>
+                <div className="text-xs mt-0.5" style={{ color: LANDING_COLORS.textMuted }}>3 changes flagged · 1 preventive action recommended</div>
               </div>
             </div>
           </div>
