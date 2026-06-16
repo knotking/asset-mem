@@ -21,7 +21,8 @@
     "maestro:audit:from-settings": "maestro test --config .maestro/config.yaml --platform ios .maestro/checkpoints/from-settings.yaml",
     "maestro:audit:from-settings-subscreens": "maestro test --config .maestro/config.yaml --platform ios .maestro/checkpoints/from-settings-subscreens.yaml",
     "generate:splash": "python3 scripts/generate-splash.py",
-    "generate:adaptive-icon": "python3 scripts/generate-adaptive-icon.py"
+    "generate:adaptive-icon": "python3 scripts/generate-adaptive-icon.py",
+    "record:mapp": "tsx scripts/recording/record-mapp.ts"
   },
   "dependencies": {
     "@homeapp/common": "*",
@@ -126,7 +127,8 @@
     "prettier-plugin-tailwindcss": "^0.6.14",
     "react-test-renderer": "^19.1.0",
     "typescript": "~5.9.2",
-    "typescript-eslint": "^8"
+    "typescript-eslint": "^8",
+    "tsx": "^4.7.0"
   },
   "private": true
 }

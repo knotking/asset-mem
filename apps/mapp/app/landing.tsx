@@ -52,6 +52,7 @@ import {
   LandingSectionBackground,
   withHexAlpha,
 } from '@/components/landing/landing-backgrounds';
+import { RecordingTestIds } from '@/lib/recording-test-ids';
 
 // Keep in sync with apps/webapp/src/lib/site.ts
 const SITE_HERO_HEADLINE_PRIMARY = 'Timeline Intelligence';
@@ -419,6 +420,7 @@ export default function LandingPage() {
         onScroll={handleLandingScroll}
         scrollEventThrottle={16}
         removeClippedSubviews={false}
+        testID={RecordingTestIds.landing.screen}
         style={{ flex: 1, backgroundColor: LANDING_COLORS.background }}
         contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}>
@@ -462,6 +464,10 @@ export default function LandingPage() {
 
             <View style={{ gap: 12, width: '100%' }}>
               <TouchableOpacity
+                testID={RecordingTestIds.landing.getStarted}
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel={user ? 'Dashboard' : 'Get Started'}
                 onPress={handleGetStarted}
                 style={{
                   flexDirection: 'row',
@@ -479,6 +485,10 @@ export default function LandingPage() {
                 <Icon as={ArrowRight} size={20} style={{ color: LANDING_COLORS.background }} />
               </TouchableOpacity>
               <TouchableOpacity
+                testID={RecordingTestIds.landing.watchDemo}
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel="Watch Demo"
                 onPress={handleWatchDemo}
                 style={{
                   flexDirection: 'row',
@@ -1034,6 +1044,10 @@ export default function LandingPage() {
 
           {/* Pricing — omitted on iOS (App Store 3.1.1: no external purchase links). */}
           {Platform.OS !== 'ios' ? (
+          <View
+            testID={RecordingTestIds.landing.pricingSection}
+            accessible
+            accessibilityLabel="Pricing section">
           <LandingSectionBackground
             backgroundColor={LANDING_COLORS.background}
             variant="pricing"
@@ -1088,6 +1102,7 @@ export default function LandingPage() {
               </TouchableOpacity>
             </View>
           </LandingSectionBackground>
+          </View>
           ) : null}
 
           {/* Footer */}

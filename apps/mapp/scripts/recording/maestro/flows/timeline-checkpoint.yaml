@@ -1,24 +1,25 @@
 appId: ${APP_ID}
 ---
-- runFlow: prep/nav-details-tab.yaml
+- runFlow: prep/nav-timeline-tab.yaml
 
 - extendedWaitUntil:
     visible:
-      text: "My pros"
+      text: "Checkpoints"
     timeout: 10000
 
 - scroll
 - waitForAnimationToEnd
 
 - tapOn:
-    text: "Upload"
+    text: "Create Checkpoint"
     optional: true
-
 - tapOn:
-    text: "My pros"
+    text: "Create property checkpoint"
     optional: true
 
-- waitForAnimationToEnd
 - tapOn:
     text: "Close"
+    optional: true
+- tapOn:
+    text: "Cancel"
     optional: true

@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import { config } from './config';
+import { config, appIdForPlatform } from './config';
 import { ensureOutputDir } from './helpers';
 import {
   checkMaestroInstalled,
@@ -9,212 +9,214 @@ import {
   startIOSScreenRecording,
   startAndroidScreenRecording,
   runMaestroFlow,
-  launchExpoGo,
+  reloadDevClient,
   type MaestroConfig,
   type MaestroFlowResult,
 } from './maestro-helpers';
 import * as readline from 'readline';
 
-// Narration text for each scene (max 500 characters)
 const narrationTexts: Record<string, string> = {
+  'Landing Page Static':
+    'Welcome to AssetMem AI — your AI-powered home care platform. Track property condition with timeline checkpoints, chat with your documents, get repair guidance, and generate professional reports.',
+  'Landing Page':
+    'Welcome to AssetMem AI. Explore use cases, timeline checkpoints, document chat, and My pros. Generate shareable PDF reports and meet specialized AI agents — all in one home care platform.',
   Login:
-    'Sign in to your HomeGeek AI account and access all your properties and AI-powered insights. The mobile app provides a seamless authentication experience with support for email and Google sign-in.',
+    'Access your personalized AssetMem AI dashboard with secure authentication. Once logged in, unlock intelligent home maintenance tools from checkpoint analysis to document chat.',
+  'Property Onboarding':
+    'Add a new property in seconds — upload inspection reports, insurance papers, or photos. AI extracts key details and creates your property profile automatically.',
   Dashboard:
-    'View all your properties in one place. The mobile dashboard gives you quick access to property details, recent activity, and easy navigation to manage your home maintenance needs.',
-  'Property Details':
-    'Explore comprehensive property information including documents, checkpoints, and chat history. Navigate between different tabs to access all property-related features.',
-  Chat: "Engage with our AI assistant directly from your mobile device. Ask questions about your checkpoints and property history, then get guidance grounded in the latest condition changes and timeline context.",
-  Timeline:
-    "Track your property's condition over time with visual checkpoints. View historical maintenance records, compare different time periods, and monitor changes in your property's condition.",
-  Reports:
-    "Generate branded PDF reports from your checkpoint timeline — snapshots for showings, before-and-after comparisons for move-in/out, or insurance documentation. Preview purposes and layouts before sharing.",
+    'Your command center: view all properties, open a home, and jump into chat, timeline, or details.',
+  'Timeline Checkpoint':
+    'Document property condition with visual checkpoints — photos, AI scores, and a searchable timeline for every area of your home.',
+  'Timeline Compare':
+    'Compare two checkpoints side by side to see visual and semantic changes between visits.',
+  'Timeline Insights':
+    'Explore metrics and trends — condition scores, issue severity, and health index for your property.',
+  'Timeline Reports':
+    'Generate branded PDF reports from checkpoint photos — showings, move-in/out, or insurance documentation.',
+  'Checkpoint Chat':
+    'Ask the AI about your checkpoints with optional coverage and service agents enabled, then review the full structured report.',
+  'Save Provider & My Pros':
+    'Ask for local service pros, save your favorites from the chat report sheet, then find them again under My pros on the Details tab.',
+  Details:
+    'Manage property documents, open My pros, and access everything you need in the property Details hub.',
 };
 
-/**
- * Prompts the user to select which scenes to record
- */
+type SceneDef = { name: string; flowFile: string };
+
+const ALL_SCENES: SceneDef[] = [
+  { name: 'Landing Page Static', flowFile: 'landing-page-static.yaml' },
+  { name: 'Landing Page', flowFile: 'landing-page.yaml' },
+  { name: 'Login', flowFile: 'login.yaml' },
+  { name: 'Property Onboarding', flowFile: 'property-onboarding.yaml' },
+  { name: 'Dashboard', flowFile: 'dashboard.yaml' },
+  { name: 'Timeline Checkpoint', flowFile: 'timeline-checkpoint.yaml' },
+  { name: 'Timeline Compare', flowFile: 'timeline-compare.yaml' },
+  { name: 'Timeline Insights', flowFile: 'timeline-insights.yaml' },
+  { name: 'Timeline Reports', flowFile: 'timeline-reports.yaml' },
+  { name: 'Checkpoint Chat', flowFile: 'checkpoint-chat.yaml' },
+  { name: 'Save Provider & My Pros', flowFile: 'save-provider-my-pros.yaml' },
+  { name: 'Details', flowFile: 'property-details.yaml' },
+];
+
+const SCENES_NEEDING_DASHBOARD = [
+  'Property Onboarding',
+  'Timeline Checkpoint',
+  'Timeline Compare',
+  'Timeline Insights',
+  'Timeline Reports',
+  'Checkpoint Chat',
+  'Save Provider & My Pros',
+  'Details',
+];
+
+const PROPERTY_SCENES = new Set([
+  'Timeline Checkpoint',
+  'Timeline Compare',
+  'Timeline Insights',
+  'Timeline Reports',
+  'Checkpoint Chat',
+  'Save Provider & My Pros',
+  'Details',
+]);
+
+/** Scenes that must start on the public landing page (signed out). */
+const SCENES_STARTING_AT_LANDING = new Set([
+  'Landing Page Static',
+  'Landing Page',
+  'Login',
+]);
+
+function getScenePrepFlows(sceneName: string): string[] {
+  if (sceneName === 'Landing Page Static' || sceneName === 'Landing Page') {
+    return [];
+  }
+
+  if (sceneName === 'Login') {
+    return ['prep/goto-login.yaml'];
+  }
+
+  if (sceneName === 'Dashboard' || sceneName === 'Property Onboarding') {
+    return ['prep/authenticate.yaml'];
+  }
+
+  if (PROPERTY_SCENES.has(sceneName)) {
+    return ['prep/authenticate.yaml', 'prep/goto-property.yaml'];
+  }
+
+  return [];
+}
+
+async function runScenePrep(
+  sceneName: string,
+  flowsDir: string,
+  maestroConfig: MaestroConfig,
+): Promise<boolean> {
+  const prepFlows = getScenePrepFlows(sceneName);
+
+  for (const prepFile of prepFlows) {
+    const prepPath = path.join(flowsDir, prepFile);
+    if (!fs.existsSync(prepPath)) {
+      console.warn(`  ⚠️  Missing prep flow: ${prepPath}`);
+      continue;
+    }
+
+    console.log(`  🧭 Prep: ${path.basename(prepFile)}`);
+    const prepResult = await runMaestroFlow(prepPath, maestroConfig);
+    if (!prepResult.success) {
+      console.warn(`  ⚠️  Prep "${prepFile}" failed: ${prepResult.error ?? 'unknown error'}`);
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function promptSceneSelection(): Promise<Set<string>> {
   return new Promise((resolve) => {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
-    console.log('\n📋 Select scenes to record:');
-    console.log('  1. Login');
-    console.log('  2. Dashboard');
-    console.log('  3. Property Details');
-    console.log('  4. Chat');
-    console.log('  5. Timeline');
-    console.log('  6. Reports');
-    console.log('  7. All of the above');
-    console.log('\nEnter scene numbers (comma-separated, e.g., 1,2,3 or 7 for all):');
+    console.log('\n📋 Select scenes to record (matches webapp record:webapp):');
+    ALL_SCENES.forEach((scene, index) => {
+      console.log(`  ${index + 1}. ${scene.name}`);
+    });
+    console.log(`  ${ALL_SCENES.length + 1}. All of the above`);
+    console.log('\nEnter scene numbers (comma-separated, e.g. 1,2,3 or 13 for all):');
 
     rl.question('> ', (answer) => {
       rl.close();
-
       const selected = new Set<string>();
       const input = answer.trim().toLowerCase();
 
-      if (input === '7' || input === 'all') {
-        selected.add('Login');
-        selected.add('Dashboard');
-        selected.add('Property Details');
-        selected.add('Chat');
-        selected.add('Timeline');
-        selected.add('Reports');
+      if (input === String(ALL_SCENES.length + 1) || input === 'all') {
+        ALL_SCENES.forEach((s) => selected.add(s.name));
       } else {
-        const numbers = input.split(',').map((n) => n.trim());
-        for (const num of numbers) {
-          switch (num) {
-            case '1':
-              selected.add('Login');
-              break;
-            case '2':
-              selected.add('Dashboard');
-              break;
-            case '3':
-              selected.add('Property Details');
-              break;
-            case '4':
-              selected.add('Chat');
-              break;
-            case '5':
-              selected.add('Timeline');
-              break;
-            case '6':
-              selected.add('Reports');
-              break;
-            case '7':
-              selected.add('Login');
-              selected.add('Dashboard');
-              selected.add('Property Details');
-              selected.add('Chat');
-              selected.add('Timeline');
-              selected.add('Reports');
-              break;
+        for (const num of input.split(',').map((n) => n.trim())) {
+          const idx = Number(num);
+          if (idx >= 1 && idx <= ALL_SCENES.length) {
+            selected.add(ALL_SCENES[idx - 1].name);
           }
         }
       }
-
       resolve(selected);
     });
   });
 }
 
-/**
- * Prompts the user to select platform
- */
 function promptPlatform(): Promise<'ios' | 'android'> {
   return new Promise((resolve) => {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    console.log('\n📱 Select platform:');
-    console.log('  1. iOS');
-    console.log('  2. Android');
-    console.log('\nEnter choice (1 or 2):');
-
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    console.log('\n📱 Select platform:\n  1. iOS Simulator\n  2. Android Emulator\n');
     rl.question('> ', (answer) => {
       rl.close();
-
-      const input = answer.trim();
-      const platform = input === '1' ? 'ios' : 'android';
-
-      console.log(`  ✅ Selected: ${platform === 'ios' ? 'iOS' : 'Android'}`);
-      resolve(platform);
+      resolve(answer.trim() === '2' ? 'android' : 'ios');
     });
   });
 }
 
 async function main() {
-  console.log('📱 Starting Mobile App Recording with Maestro');
+  console.log('📱 Starting Mobile App Recording (Maestro + dev client)');
   console.log('═══════════════════════════════════════\n');
 
-  // Debug: Check if config loaded correctly
-  console.log(`🔍 Config check:`);
-  console.log(`   Email: ${config.email ? config.email.substring(0, 3) + '***' : 'NOT SET'}`);
-  console.log(`   Password: ${config.password ? '***' : 'NOT SET'}`);
-  console.log(`   Output Dir: ${config.outputDir}\n`);
-
-  // Check if Maestro is installed
-  const maestroInstalled = await checkMaestroInstalled();
-  if (!maestroInstalled) {
-    console.error('❌ Maestro is not installed!');
-    console.error('\nPlease install Maestro:');
-    console.error('  curl -Ls "https://get.maestro.mobile.dev" | bash');
-    console.error('\nOr visit: https://maestro.mobile.dev');
+  if (!(await checkMaestroInstalled())) {
+    console.error('❌ Maestro is not installed. Run: curl -Ls "https://get.maestro.mobile.dev" | bash');
     process.exit(1);
   }
 
-  console.log('✅ Maestro is installed\n');
-
-  // Prompt for platform
   const platform = await promptPlatform();
-
-  // Prompt for scenes
   const selectedScenes = await promptSceneSelection();
-
   if (selectedScenes.size === 0) {
-    console.log('\n⚠️  No scenes selected. Exiting...');
+    console.log('\n⚠️  No scenes selected.');
     return;
   }
 
+  const appId = appIdForPlatform(platform);
   console.log(`\n✅ Selected scenes: ${Array.from(selectedScenes).join(', ')}`);
+  console.log(`📱 Dev client appId: ${appId}`);
+  console.log(`🔗 Deep link scheme: ${config.appScheme}://`);
+  console.log('💡 Ensure the dev client is installed on the simulator and Metro is running (npm run dev)\n');
 
-  // For Expo Go, use the Expo Go bundle ID
-  const appId = 'host.exp.Exponent';
-  console.log(`\n📱 Using Expo Go (appId: ${appId})`);
-
-  // Check if Expo dev server URL is provided
-  const expoUrl = process.env.EXPO_URL;
-  if (expoUrl) {
-    console.log(`  📱 Expo URL: ${expoUrl}`);
-  } else {
-    console.log(`  💡 Using default Expo URL: exp://localhost:8081`);
-    console.log(`  💡 Set EXPO_URL env var to use a different URL`);
-  }
-
-  // Get device ID
   let deviceId: string | undefined;
   if (platform === 'ios') {
-    console.log('  🔍 Looking for iOS simulator...');
     deviceId = (await getIOSSimulatorId()) || undefined;
-    if (deviceId) {
-      console.log(`  ✅ Using iOS Simulator: ${deviceId}`);
-    } else {
-      console.error('  ❌ No iOS simulator found!');
-      console.error('  💡 Please:');
-      console.error('     1. Open Xcode');
-      console.error('     2. Go to Window > Devices and Simulators');
-      console.error('     3. Start an iOS Simulator');
-      console.error('     Or run: xcrun simctl boot <device-id>');
+    if (!deviceId) {
+      console.error('❌ No iOS simulator found. Boot a simulator in Xcode first.');
       process.exit(1);
     }
   } else {
     deviceId = (await getAndroidEmulatorId()) || undefined;
-    if (deviceId) {
-      console.log(`  📱 Android Emulator ID: ${deviceId}`);
-    } else {
-      console.log('  ⚠️  No Android emulator found, using default');
-    }
   }
 
   ensureOutputDir();
-
-  // Generate timestamp for file names
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
   const videoFileName = `mapp-recording-${platform}-${timestamp}.mp4`;
   const narrationFileName = `mapp-narration-data-${timestamp}.json`;
   const videoPath = path.join(config.outputDir, videoFileName);
-  // Get flows directory - when running with tsx, __dirname is available
   const flowsDir = path.join(__dirname, 'maestro', 'flows');
 
-  // Maestro configuration
   const maestroConfig: MaestroConfig = {
     appId,
+    appScheme: config.appScheme,
     platform,
     deviceId,
     email: config.email,
@@ -222,183 +224,145 @@ async function main() {
     flowsDir,
   };
 
-  let screenRecording: { process: any; stop: () => Promise<void> } | null = null;
+  let screenRecording: { process: unknown; stop: () => Promise<void> } | null = null;
   const sceneResults: Array<{ name: string; result: MaestroFlowResult; narration?: string }> = [];
 
   try {
-    // Launch Expo Go app first
-    console.log('\n🚀 Launching Expo Go app...');
-    console.log('  💡 Make sure Expo dev server is running (npm run dev)');
-    console.log('  💡 Or provide EXPO_URL environment variable');
-
-    // Get Expo URL from environment or use default
-    // Default to the production project URL
-    // You can override with EXPO_URL env var (e.g., from expo start output)
-    const expoUrl = process.env.EXPO_URL || 'exp://u.expo.dev';
-    console.log(`  📱 Using Expo URL: ${expoUrl}`);
-    console.log(`  📱 Target: homegeekai account, @homegeekai/homegeekai-prod project`);
-
-    await launchExpoGo(maestroConfig, expoUrl);
-
-    // Run setup flow to ensure correct account and project are selected
-    console.log('\n🔧 Setting up Expo Go (selecting account and project)...');
-    const setupFlowPath = path.join(flowsDir, 'expo-setup.yaml');
-    if (fs.existsSync(setupFlowPath)) {
-      const setupResult = await runMaestroFlow(setupFlowPath, maestroConfig);
-      if (setupResult.success) {
-        console.log('  ✅ Expo Go setup completed');
-      } else {
-        console.warn('  ⚠️  Expo Go setup had issues, continuing anyway...');
-      }
-    } else {
-      console.log('  ℹ️  Setup flow not found, skipping account/project selection');
-    }
-
-    // Check if user is already logged in
-    console.log('\n🔍 Checking login status...');
-    const checkLoginFlowPath = path.join(flowsDir, 'check-login.yaml');
-    let isLoggedIn = false;
-    if (fs.existsSync(checkLoginFlowPath)) {
-      const checkLoginResult = await runMaestroFlow(checkLoginFlowPath, maestroConfig);
-      // If check-login succeeds (finds "Property AI Agent"), user is already logged in
-      isLoggedIn = checkLoginResult.success;
-      if (isLoggedIn) {
-        console.log('  ✅ User is already logged in, skipping login flow');
-      } else {
-        console.log('  ℹ️  User is not logged in, login flow will run');
-      }
-    }
-
-    // Start screen recording
     console.log(`\n📹 Starting screen recording: ${videoFileName}`);
-    if (platform === 'ios') {
-      screenRecording = await startIOSScreenRecording(videoPath, deviceId);
-    } else {
-      screenRecording = await startAndroidScreenRecording(videoPath, deviceId);
-    }
-    console.log('  ✅ Screen recording started');
+    screenRecording =
+      platform === 'ios'
+        ? await startIOSScreenRecording(videoPath, deviceId)
+        : await startAndroidScreenRecording(videoPath, deviceId);
 
-    // Build scenes array
-    const scenes: Array<{ name: string; flowFile: string }> = [];
+    const gotoLandingPath = path.join(flowsDir, 'prep/goto-landing.yaml');
 
-    // Only add Login scene if user is not already logged in
-    if (selectedScenes.has('Login') && !isLoggedIn) {
-      scenes.push({ name: 'Login', flowFile: 'login.yaml' });
-    } else if (selectedScenes.has('Login') && isLoggedIn) {
-      console.log('  ⏭️  Skipping Login scene (already logged in)');
+    const scenes: SceneDef[] = [];
+
+    if (selectedScenes.has('Landing Page Static')) {
+      scenes.push(ALL_SCENES.find((s) => s.name === 'Landing Page Static')!);
     }
-    if (selectedScenes.has('Dashboard')) {
-      scenes.push({ name: 'Dashboard', flowFile: 'dashboard.yaml' });
-    }
-    if (selectedScenes.has('Property Details')) {
-      scenes.push({ name: 'Property Details', flowFile: 'property-details.yaml' });
-    }
-    if (selectedScenes.has('Chat')) {
-      scenes.push({ name: 'Chat', flowFile: 'chat.yaml' });
-    }
-    if (selectedScenes.has('Timeline')) {
-      scenes.push({ name: 'Timeline', flowFile: 'timeline.yaml' });
-    }
-    if (selectedScenes.has('Reports')) {
-      scenes.push({ name: 'Reports', flowFile: 'reports.yaml' });
+    if (selectedScenes.has('Landing Page')) {
+      scenes.push(ALL_SCENES.find((s) => s.name === 'Landing Page')!);
     }
 
-    // Run scenes
-    console.log('\n🎬 Starting scene recording...');
-    console.log('═══════════════════════════════════════\n');
+    if (selectedScenes.has('Login')) {
+      scenes.push(ALL_SCENES.find((s) => s.name === 'Login')!);
+    }
+
+    if (selectedScenes.has('Property Onboarding')) {
+      scenes.push(ALL_SCENES.find((s) => s.name === 'Property Onboarding')!);
+    }
+
+    const needsDashboard = SCENES_NEEDING_DASHBOARD.some((name) => selectedScenes.has(name));
+    if (needsDashboard) {
+      scenes.push(ALL_SCENES.find((s) => s.name === 'Dashboard')!);
+    }
+
+    for (const scene of ALL_SCENES) {
+      if (
+        selectedScenes.has(scene.name) &&
+        scene.name !== 'Landing Page Static' &&
+        scene.name !== 'Landing Page' &&
+        scene.name !== 'Login' &&
+        scene.name !== 'Property Onboarding' &&
+        scene.name !== 'Dashboard'
+      ) {
+        scenes.push(scene);
+      }
+    }
 
     for (const scene of scenes) {
       const flowPath = path.join(flowsDir, scene.flowFile);
-
       if (!fs.existsSync(flowPath)) {
-        console.error(`  ❌ Flow file not found: ${flowPath}`);
+        console.error(`  ❌ Missing flow: ${flowPath}`);
         continue;
       }
 
-      console.log(`\n${'─'.repeat(50)}`);
-      console.log(`🎬 Scene: ${scene.name}`);
+      console.log(`\n${'─'.repeat(50)}\n🎬 Scene: ${scene.name}`);
 
-      const result = await runMaestroFlow(flowPath, maestroConfig);
-      const narration = narrationTexts[scene.name] || '';
+      console.log('  🔄 Reloading app...');
+      await reloadDevClient(maestroConfig);
 
-      sceneResults.push({
-        name: scene.name,
-        result,
-        narration,
-      });
-
-      if (!result.success) {
-        console.warn(`  ⚠️  Scene "${scene.name}" had issues: ${result.error}`);
-      } else {
-        console.log(`  ✅ Scene completed in ${(result.duration / 1000).toFixed(1)}s`);
+      if (SCENES_STARTING_AT_LANDING.has(scene.name) && fs.existsSync(gotoLandingPath)) {
+        console.log('  🧭 Prep: goto-landing.yaml');
+        const landingPrep = await runMaestroFlow(gotoLandingPath, maestroConfig);
+        if (!landingPrep.success) {
+          console.warn(`  ⚠️  Landing prep failed: ${landingPrep.error ?? 'unknown error'}`);
+        }
       }
 
-      // Small delay between scenes
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const prepOk = await runScenePrep(scene.name, flowsDir, maestroConfig);
+      if (!prepOk) {
+        console.warn(`  ⏭️  Skipping scene "${scene.name}" — prep failed`);
+        sceneResults.push({
+          name: scene.name,
+          result: { success: false, duration: 0, error: 'Prep failed' },
+          narration: narrationTexts[scene.name] || '',
+        });
+        continue;
+      }
+
+      const result = await runMaestroFlow(flowPath, maestroConfig);
+      sceneResults.push({ name: scene.name, result, narration: narrationTexts[scene.name] || '' });
+
+      if (!result.success) {
+        console.warn(`  ⚠️  Scene "${scene.name}": ${result.error ?? 'issues'}`);
+      } else {
+        console.log(`  ✅ Completed in ${(result.duration / 1000).toFixed(1)}s`);
+      }
+      await new Promise((r) => setTimeout(r, 2000));
     }
 
-    // Stop screen recording
-    console.log('\n⏹️  Stopping screen recording...');
     if (screenRecording) {
+      console.log('\n⏹️  Stopping screen recording...');
       await screenRecording.stop();
-      console.log('  ✅ Screen recording stopped');
     }
-
-    // Wait for video to be finalized
-    console.log('\n⏳ Finalizing video...');
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    // Generate narration data
-    const narrationData = {
-      platform,
-      appId,
-      timestamp: new Date().toISOString(),
-      scenes: sceneResults.map(({ name, result, narration }) => ({
-        name,
-        duration: result.duration,
-        narration: narration || '',
-      })),
-    };
+    await new Promise((r) => setTimeout(r, 3000));
 
     const narrationPath = path.join(config.outputDir, narrationFileName);
-    fs.writeFileSync(narrationPath, JSON.stringify(narrationData, null, 2));
-    console.log(`  ✅ Narration data saved: ${narrationFileName}`);
+    fs.writeFileSync(
+      narrationPath,
+      JSON.stringify(
+        {
+          platform,
+          appId,
+          timestamp: new Date().toISOString(),
+          scenes: sceneResults.map(({ name, result, narration }) => ({
+            name,
+            duration: result.duration,
+            narration,
+          })),
+        },
+        null,
+        2,
+      ),
+    );
 
-    // Print summary
     console.log('\n═══════════════════════════════════════');
     console.log('📊 Mobile Recording Summary');
     console.log('═══════════════════════════════════════');
-
-    let totalDuration = 0;
+    let total = 0;
     for (const { name, result } of sceneResults) {
-      const status = result.success ? '✅' : '❌';
-      const duration = (result.duration / 1000).toFixed(1);
-      console.log(`${status} ${name}: ${duration}s`);
-      totalDuration += result.duration;
+      console.log(`${result.success ? '✅' : '❌'} ${name}: ${(result.duration / 1000).toFixed(1)}s`);
+      total += result.duration;
     }
-
-    console.log(`\n⏱️  Total Duration: ${(totalDuration / 1000).toFixed(1)}s`);
-    console.log(`📹 Video saved to: ${videoPath}`);
-    console.log(`📱 Platform: ${platform}`);
-    console.log(`📱 App ID: ${appId}`);
-    console.log('\n✅ Mobile recording completed successfully!');
+    console.log(`\n⏱️  Total: ${(total / 1000).toFixed(1)}s`);
+    console.log(`📹 Video: ${videoPath}`);
+    console.log(`📝 Narration: ${narrationPath}`);
+    console.log('\n✅ Mobile recording completed!');
   } catch (error) {
-    console.error('\n❌ Mobile recording failed:', error);
-
-    // Stop screen recording if still running
+    console.error('\n❌ Recording failed:', error);
     if (screenRecording) {
       try {
         await screenRecording.stop();
-      } catch (stopError) {
-        console.error('Error stopping screen recording:', stopError);
+      } catch {
+        /* ignore */
       }
     }
-
     process.exit(1);
   }
 }
 
-// Run the script
 main().catch((error) => {
   console.error('Fatal error:', error);
   process.exit(1);

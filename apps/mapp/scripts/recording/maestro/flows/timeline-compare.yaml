@@ -1,0 +1,25 @@
+appId: ${APP_ID}
+---
+- runFlow: prep/nav-timeline-tab.yaml
+
+- extendedWaitUntil:
+    visible:
+      text: "Checkpoints"
+    timeout: 10000
+
+- tapOn:
+    text: "Compare"
+    optional: true
+
+- longPressOn:
+    point: "50%, 55%"
+    optional: true
+- longPressOn:
+    point: "50%, 68%"
+    optional: true
+
+- tapOn:
+    text: "Compare"
+    optional: true
+
+- waitForAnimationToEnd

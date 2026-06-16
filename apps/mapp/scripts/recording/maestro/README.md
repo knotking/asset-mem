@@ -1,118 +1,84 @@
-# Maestro Mobile App Recording
+# Maestro Mobile App Recording (dev client)
 
-This directory contains Maestro flows for recording the mobile app (mapp) user interactions using **Expo Go**.
+Record native **mapp** demo videos on the iOS Simulator or Android Emulator using **Maestro** and a **development client** build (not Expo Go).
+
+Scene list matches `apps/webapp/scripts/recording/record-webapp.ts`.
 
 ## Prerequisites
 
-1. **Install Maestro**:
+1. **Maestro**
    ```bash
    curl -Ls "https://get.maestro.mobile.dev" | bash
    ```
 
-2. **Install Expo Go**:
-   - **iOS**: Install Expo Go from App Store on the iOS Simulator
-   - **Android**: Install Expo Go from Play Store on the Android Emulator
-
-3. **iOS Setup** (for iOS recording):
-   - Xcode installed
-   - iOS Simulator available
-   - Expo Go installed on simulator
-
-4. **Android Setup** (for Android recording):
-   - Android Studio installed
-   - Android Emulator available
-   - Expo Go installed on emulator
-
-5. **Expo Dev Server**:
-   - Start the Expo dev server before recording:
+2. **Dev client** installed on the simulator/emulator
    ```bash
    cd apps/mapp
-   npm run dev
+   npx expo run:ios
    ```
 
-## App ID Configuration
+3. **Metro** running
+   ```bash
+   cd apps/mapp && npm run dev
+   ```
 
-The script uses **Expo Go** bundle ID: `host.exp.Exponent`
+4. **`.env.recording`** in `apps/mapp/`:
+   ```bash
+   RECORDING_EMAIL=your@email.com
+   RECORDING_PASSWORD=yourpassword
+   RECORDING_IOS_APP_ID=com.assetmem.staging
+   RECORDING_ANDROID_APP_ID=com.assetmem.staging
+   RECORDING_APP_SCHEME=assetmem
+   ```
 
-All Maestro flows are configured to work with Expo Go. The script will automatically:
-- Launch Expo Go on the simulator/emulator
-- Open your app using the Expo URL (default: `exp://localhost:8081`)
-
-## Expo URL Configuration
-
-Set the Expo URL if your dev server is running on a different address:
+## Run
 
 ```bash
-export EXPO_URL=exp://192.168.1.100:8081
-npm run record
+cd apps/mapp
+npm run record:mapp
 ```
 
-Or use the URL from the QR code shown when you run `npm run dev`.
+The script reloads the app before each scene, navigates to the right screen, records video, and runs Maestro flows.
 
-## Running Recordings
+## Selector strategy
 
-1. **Start Expo dev server** (in a separate terminal):
-   ```bash
-   cd apps/mapp
-   npm run dev
-   ```
-   Note the Expo URL (e.g., `exp://localhost:8081` or from QR code)
+**Maestro flows use visible text and accessibility labels**, not `testID`s (iOS often does not expose `testID` to Maestro).
 
-2. **Run the recording script**:
-   ```bash
-   cd apps/mapp
-   npm run record
-   ```
+| Screen / action | Label or text |
+|-----------------|---------------|
+| Landing | `Watch Demo`, `Get Started` / `Dashboard` |
+| Login | `Welcome Back`, `Enter your email`, `Enter your password`, `Sign In` |
+| Dashboard | `Property AI Agent`, `Add New Property`, property row below add card |
+| Property tabs (icons) | Tap points: chat `17%,93%`, timeline `50%,93%`, details `83%,93%` |
+| Chat settings | `Open chat settings`, `Chat Settings`, `Close settings` |
+| Agents | `Checkpoint`, `Service`, `Coverage`, … |
+| Chat input | `Type a message...` / `Chat input`, `Send message` |
+| Report sheet | `Open full report`, `Close full report`, `Save provider` |
+| Timeline subtabs | `Checkpoints`, `Insights`, `Reports` |
+| Details | `My pros`, `Upload` / `Upload documents` |
 
-3. **Optional**: Set EXPO_URL if different from default:
-   ```bash
-   export EXPO_URL=exp://192.168.1.100:8081
-   npm run record
-   ```
+`lib/recording-test-ids.ts` documents IDs used in the app for debugging; flows should prefer labels above.
 
-The script will:
-1. Check if Maestro is installed
-2. Prompt for platform (iOS/Android)
-3. Prompt for scenes to record
-4. Launch Expo Go on simulator/emulator
-5. Open your app in Expo Go using the Expo URL
-6. Start screen recording
-7. Run Maestro flows sequentially
-8. Stop screen recording
-9. Save video and narration data
+## Scenes
 
-## Available Flows
-
-- **login.yaml**: Login flow with email/password
-- **dashboard.yaml**: View properties dashboard
-- **property-details.yaml**: Navigate to property details
-- **chat.yaml**: Interact with AI chat
-- **timeline.yaml**: View timeline/checkpoints
-
-## Flow Structure
-
-Maestro flows use YAML format with environment variables:
-- `${APP_ID}`: App bundle ID
-- `${EMAIL}`: Login email (from config)
-- `${PASSWORD}`: Login password (from config)
-
-## Customizing Flows
-
-Edit the YAML files in `flows/` directory to customize interactions:
-- Change selectors/text matchers
-- Add/remove steps
-- Adjust wait times
-- Add assertions
-
-## Output
-
-Recordings are saved to:
-- Video: `apps/mapp/recordings/mapp-recording-{platform}-{timestamp}.mp4`
-- Narration: `apps/mapp/recordings/mapp-narration-data-{timestamp}.json`
+| # | Scene |
+|---|--------|
+| 1 | Landing Page Static |
+| 2 | Landing Page |
+| 3 | Login |
+| 4 | Property Onboarding |
+| 5 | Dashboard |
+| 6 | Timeline Checkpoint |
+| 7 | Timeline Compare |
+| 8 | Timeline Insights |
+| 9 | Timeline Reports |
+| 10 | Checkpoint Chat |
+| 11 | Save Provider & My Pros |
+| 12 | Details |
 
 ## Troubleshooting
 
-1. **Maestro not found**: Install Maestro using the command above
-2. **App not launching**: Ensure app is installed on simulator/emulator
-3. **Flows failing**: Check that selectors match current app UI
-4. **Screen recording issues**: Ensure simulator/emulator is running
+- **Wrong screen after reload** — dashboard/timeline scenes skip `goto-landing` and use `prep/authenticate.yaml`, which waits for `Add New Property` on the home screen before attempting login.
+- **"Welcome Back" assertion failed** — session was still active; authenticate now opens `assetmem://home` instead of the login deep link when a valid session exists.
+- **Property tabs** — icon tabs use coordinate taps in `prep/nav-*-tab.yaml`; adjust if layout changes.
+- **AI chat timeouts** — test account needs checkpoints and address for service-agent results.

@@ -1,0 +1,64 @@
+appId: ${APP_ID}
+---
+# Signed-in on marketing landing
+- runFlow:
+    when:
+      visible:
+        text: "Dashboard"
+    commands:
+      - tapOn:
+          text: "Dashboard"
+      - extendedWaitUntil:
+          visible:
+            text: "Add New Property"
+          timeout: 45000
+
+# Already on login screen
+- runFlow:
+    when:
+      visible:
+        text: "Welcome Back"
+    commands:
+      - runFlow:
+          file: ../login-steps.yaml
+      - extendedWaitUntil:
+          visible:
+            text: "Add New Property"
+          timeout: 45000
+
+# Logged out on landing
+- runFlow:
+    when:
+      visible:
+        text: "Get Started"
+    commands:
+      - tapOn:
+          text: "Get Started"
+      - extendedWaitUntil:
+          visible:
+            text: "Welcome Back"
+          timeout: 20000
+      - runFlow:
+          file: ../login-steps.yaml
+      - extendedWaitUntil:
+          visible:
+            text: "Add New Property"
+          timeout: 45000
+
+# Last resort: login deep link (only when not already on dashboard)
+- runFlow:
+    when:
+      notVisible:
+        text: "Add New Property"
+    commands:
+      - openLink: ${APP_SCHEME}://auth/login
+      - extendedWaitUntil:
+          visible:
+            text: "Welcome Back"
+          timeout: 20000
+      - runFlow:
+          file: ../login-steps.yaml
+      - extendedWaitUntil:
+          visible:
+            text: "Add New Property"
+          timeout: 45000

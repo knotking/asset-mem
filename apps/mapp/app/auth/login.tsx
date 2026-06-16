@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
 import { createLogger } from '@/lib/logger';
+import { RecordingTestIds } from '@/lib/recording-test-ids';
 
 const authLog = createLogger('auth');
 
@@ -132,7 +133,7 @@ export default function LoginScreen() {
       <AuthFieldLabel>Email</AuthFieldLabel>
       <Input
         placeholder="Enter your email"
-        testID="auth-email-input"
+        testID={RecordingTestIds.login.email}
         value={state.email}
         onChangeText={(text) => dispatch({ type: 'SET_EMAIL', payload: text })}
         keyboardType="email-address"
@@ -147,7 +148,7 @@ export default function LoginScreen() {
       <View className="relative mb-2 w-full">
         <Input
           placeholder="Enter your password"
-          testID="auth-password-input"
+          testID={RecordingTestIds.login.password}
           value={state.password}
           onChangeText={(text) => dispatch({ type: 'SET_PASSWORD', payload: text })}
           secureTextEntry={!passwordVisible}

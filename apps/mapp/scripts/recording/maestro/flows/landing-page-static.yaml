@@ -1,0 +1,11 @@
+appId: ${APP_ID}
+---
+# Hold on landing hero (~10s, no interaction)
+- extendedWaitUntil:
+    visible:
+      text: "Watch Demo"
+    timeout: 15000
+- repeat:
+    times: 10
+    commands:
+      - waitForAnimationToEnd

@@ -34,6 +34,7 @@ import {
   MapPin,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { RecordingTestIds } from '@/lib/recording-test-ids';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
 import {
@@ -185,6 +186,10 @@ export default function PropertyCard({
       )}
 
       <Pressable
+        testID={RecordingTestIds.dashboard.propertyCard}
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={`Open property ${name}`}
         onPress={handlePress}
         disabled={isRemoving}
         className="relative mb-4"

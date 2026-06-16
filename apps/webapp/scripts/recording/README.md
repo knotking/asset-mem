@@ -125,6 +125,11 @@ The scripts record the following scenes (matching the demo guide):
 1b. **Landing Page Static** (10s) — option `9` in `record:webapp`
    - Loads the marketing landing page and holds on the hero with no scroll or clicks
 
+1c. **Save Provider & My Pros** — option `10` in `record:webapp`
+   - Ask "Find local service pros" with Service agent enabled
+   - Open full report sheet, save at least 3 local pros
+   - Navigate to Details tab and open My pros (full recording kept, no wait-cut)
+
 2. **Login** (15s)
    - Navigate to login
    - Fill credentials
@@ -298,6 +303,7 @@ scripts/recording/
 │   ├── property-details.ts
 │   ├── ai-chat.ts         # Analysis chat (record-mobile.ts)
 │   ├── checkpoint-chat.ts # Checkpoint agent chat (record-webapp.ts)
+│   ├── save-provider-my-pros.ts # Save pro from chat sheet → Details My pros
 │   ├── timeline-checkpoint.ts
 │   ├── timeline-compare.ts
 │   ├── timeline-insights.ts

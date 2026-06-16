@@ -7,6 +7,7 @@ const execAsync = promisify(exec);
 
 export interface MaestroConfig {
   appId: string;
+  appScheme: string;
   platform: "ios" | "android";
   deviceId?: string;
   email: string;
@@ -18,6 +19,11 @@ export interface MaestroFlowResult {
   success: boolean;
   duration: number;
   error?: string;
+}
+
+export interface MaestroFlowOptions {
+  /** When true, failures are logged at info level (e.g. login probe). */
+  quiet?: boolean;
 }
 
 /**
@@ -146,9 +152,11 @@ export async function startAndroidScreenRecording(
 export async function runMaestroFlow(
   flowPath: string,
   config: MaestroConfig,
-  envVars: Record<string, string> = {}
+  envVars: Record<string, string> = {},
+  options: MaestroFlowOptions = {},
 ): Promise<MaestroFlowResult> {
   const startTime = Date.now();
+  const quiet = options.quiet ?? false;
   
   try {
     // Set environment variables for Maestro
@@ -157,16 +165,20 @@ export async function runMaestroFlow(
     const env = {
       ...process.env,
       APP_ID: config.appId,
+      APP_SCHEME: config.appScheme,
       EMAIL: config.email,
       PASSWORD: config.password,
       ...envVars,
     };
     
     // Debug: Log environment variables (mask sensitive data)
-    console.log(`  🔍 Environment variables for Maestro:`);
-    console.log(`     APP_ID: ${env.APP_ID}`);
-    console.log(`     EMAIL: ${env.EMAIL ? env.EMAIL.substring(0, 3) + '***' : 'UNDEFINED'}`);
-    console.log(`     PASSWORD: ${env.PASSWORD ? '***' : 'UNDEFINED'}`);
+    if (!quiet) {
+      console.log(`  🔍 Environment variables for Maestro:`);
+      console.log(`     APP_ID: ${env.APP_ID}`);
+      console.log(`     APP_SCHEME: ${env.APP_SCHEME}`);
+      console.log(`     EMAIL: ${env.EMAIL ? env.EMAIL.substring(0, 3) + '***' : 'UNDEFINED'}`);
+      console.log(`     PASSWORD: ${env.PASSWORD ? '***' : 'UNDEFINED'}`);
+    }
     
     // Build maestro command with environment variables passed via -e flags
     // Maestro requires env vars to be passed via -e EMAIL=value -e PASSWORD=value
@@ -174,6 +186,7 @@ export async function runMaestroFlow(
       `-e EMAIL="${config.email}"`,
       `-e PASSWORD="${config.password}"`,
       `-e APP_ID="${config.appId}"`,
+      `-e APP_SCHEME="${config.appScheme}"`,
       ...Object.entries(envVars).map(([key, value]) => `-e ${key}="${value}"`),
     ].join(' ');
     
@@ -243,13 +256,7 @@ export async function runMaestroFlow(
             console.warn(`  ⚠️  Warnings: ${warningPreview}...`);
           }
         }
-      } else if (!hasRealFailure) {
-        // No clear failure indicators, but also no clear success - might be warnings
-        // Since user says flow succeeded, treat as success if no real failures
-        commandSucceeded = true;
-        console.log(`  ⚠️  Flow completed (exit code: ${exitCode}, treating as success)`);
       } else {
-        // Real failure - rethrow to be caught by outer catch
         throw error;
       }
     }
@@ -291,8 +298,7 @@ export async function runMaestroFlow(
       errorOutput.includes('could not find') ||
       errorOutput.includes('failed to find');
     
-    if (!isRealFailure) {
-      // Likely just warnings or non-critical errors, treat as success
+    if (!isRealFailure && (error.stdout || '').toLowerCase().includes('test passed')) {
       console.log(`  ⚠️  Flow completed with warnings (treating as success)`);
       if (error.stderr) {
         const warningPreview = error.stderr.substring(0, 200).trim();
@@ -306,7 +312,16 @@ export async function runMaestroFlow(
       };
     }
     
-    console.error(`  ❌ Flow failed: ${errorMessage}`);
+    if (quiet) {
+      console.log(`  ℹ️  Probe: not on dashboard (${(duration / 1000).toFixed(1)}s)`);
+    } else {
+      console.error(`  ❌ Flow failed: ${errorMessage}`);
+      const combined = `${error.stdout || ''}\n${error.stderr || ''}`.trim();
+      if (combined) {
+        const tail = combined.length > 800 ? combined.slice(-800) : combined;
+        console.error(`  📋 Maestro output (tail):\n${tail}`);
+      }
+    }
     
     return {
       success: false,
@@ -341,55 +356,66 @@ export async function installApp(
 }
 
 /**
- * Launch Expo Go app on simulator/emulator
+ * Terminate and relaunch the dev client (fresh start each scene).
  */
-export async function launchExpoGo(
-  config: MaestroConfig,
-  expoUrl: string
-): Promise<void> {
+export async function reloadDevClient(config: MaestroConfig): Promise<void> {
+  const device = config.deviceId || 'booted';
+
   try {
-    if (config.platform === "ios") {
-      // For iOS, open Expo Go app on the simulator
-      const device = config.deviceId || "booted";
-      
-      console.log(`  📱 Opening Expo Go app...`);
-      // First, just launch Expo Go (not with URL, so we can navigate to account/project)
-      await execAsync(`xcrun simctl launch ${device} host.exp.Exponent`);
-      console.log(`  ✅ Launched Expo Go on iOS simulator`);
-      
-      // Wait for Expo Go to load
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      
-      // Now open the specific project URL
-      console.log(`  📱 Opening project: ${expoUrl}`);
-      await execAsync(`xcrun simctl openurl ${device} "${expoUrl}"`);
-      console.log(`  ✅ Opened project URL in Expo Go`);
+    if (config.platform === 'ios') {
+      await execAsync(`xcrun simctl terminate ${device} ${config.appId}`).catch(() => undefined);
+      await execAsync(`xcrun simctl launch ${device} ${config.appId}`);
     } else {
-      // For Android, use adb to launch Expo Go
-      const device = config.deviceId ? `-s ${config.deviceId}` : "";
-      
-      console.log(`  📱 Opening Expo Go with URL: ${expoUrl}`);
+      const adbDevice = config.deviceId ? `-s ${config.deviceId}` : '';
+      await execAsync(`adb ${adbDevice} shell am force-stop ${config.appId}`).catch(() => undefined);
       await execAsync(
-        `adb ${device} shell am start -a android.intent.action.VIEW -d "${expoUrl}"`
+        `adb ${adbDevice} shell monkey -p ${config.appId} -c android.intent.category.LAUNCHER 1`,
       );
-      console.log(`  ✅ Opened Expo Go on Android emulator`);
     }
-    
-    // Wait for app to load
-    console.log(`  ⏳ Waiting for app to load...`);
+
     await new Promise((resolve) => setTimeout(resolve, 5000));
   } catch (error) {
-    console.error(`  ❌ Failed to launch Expo Go: ${error}`);
+    console.error(`  ❌ Failed to reload dev client: ${error}`);
     throw error;
   }
 }
 
 /**
- * Launch app using Maestro (deprecated - use launchExpoGo instead)
+ * Launch the dev client (custom Expo development build) on simulator/emulator.
+ */
+export async function launchDevClient(config: MaestroConfig): Promise<void> {
+  try {
+    const device = config.deviceId || "booted";
+
+    if (config.platform === "ios") {
+      console.log(`  📱 Launching iOS dev client (${config.appId})...`);
+      await execAsync(`xcrun simctl launch ${device} ${config.appId}`);
+      console.log(`  ✅ Dev client launched on iOS simulator`);
+    } else {
+      const adbDevice = config.deviceId ? `-s ${config.deviceId}` : "";
+      console.log(`  📱 Launching Android dev client (${config.appId})...`);
+      await execAsync(
+        `adb ${adbDevice} shell monkey -p ${config.appId} -c android.intent.category.LAUNCHER 1`,
+      );
+      console.log(`  ✅ Dev client launched on Android emulator`);
+    }
+
+    console.log(`  ⏳ Waiting for app to load...`);
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  } catch (error) {
+    console.error(`  ❌ Failed to launch dev client: ${error}`);
+    throw error;
+  }
+}
+
+/** @deprecated Use launchDevClient — kept as alias for older scripts. */
+export async function launchExpoGo(config: MaestroConfig, _expoUrl?: string): Promise<void> {
+  return launchDevClient(config);
+}
+
+/**
+ * Launch app using Maestro (deprecated - use launchDevClient instead)
  */
 export async function launchApp(config: MaestroConfig): Promise<void> {
-  // For Expo Go, we don't use Maestro's launch-app command
-  // Instead, we launch Expo Go and let Maestro interact with it
-  console.log(`  ℹ️  Skipping Maestro launch-app (using Expo Go instead)`);
-  return launchExpoGo(config);
+  return launchDevClient(config);
 }

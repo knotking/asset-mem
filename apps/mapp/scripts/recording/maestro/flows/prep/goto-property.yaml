@@ -1,0 +1,23 @@
+appId: ${APP_ID}
+---
+- extendedWaitUntil:
+    visible:
+      text: "Property AI Agent"
+    timeout: 20000
+
+- tapOn:
+    below: "Add New Property"
+
+- extendedWaitUntil:
+    visible:
+      text: "Open chat settings"
+    timeout: 20000
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Type a message..."
+    timeout: 20000
+    optional: true
+
+- waitForAnimationToEnd

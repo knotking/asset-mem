@@ -6,6 +6,7 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { X } from 'lucide-react-native';
 import { getAppThemeColors } from '@/lib/css-theme-tokens';
+import { RecordingTestIds } from '@/lib/recording-test-ids';
 
 type Props = {
   visible: boolean;
@@ -36,6 +37,7 @@ export function StructuredReportSheet({
       onRequestClose={onClose}
       onDismiss={onDismissed}>
       <SafeAreaView
+        testID={RecordingTestIds.chat.fullReportSheet}
         style={{ flex: 1, backgroundColor }}
         edges={Platform.OS === 'ios' ? ['bottom', 'left', 'right'] : undefined}>
         <View style={{ backgroundColor }}>
@@ -44,6 +46,7 @@ export function StructuredReportSheet({
               {title}
             </Text>
             <Pressable
+              testID={RecordingTestIds.chat.closeFullReport}
               onPress={onClose}
               hitSlop={8}
               accessibilityRole="button"

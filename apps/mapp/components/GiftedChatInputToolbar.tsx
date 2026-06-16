@@ -13,6 +13,7 @@ import {
   CustomGiftedComposer,
 } from '@/components/chat/CustomGiftedComposer';
 import { composerToolbarBottomPadding } from '@/lib/tab-bar-metrics';
+import { RecordingTestIds } from '@/lib/recording-test-ids';
 
 const MAX_MESSAGE_LENGTH = 2000;
 /** Must match maxComposerHeight on PropertyChatTab GiftedChat. */
@@ -158,6 +159,8 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
               ...composerProps.textInputProps,
               maxLength: MAX_MESSAGE_LENGTH,
               allowFontScaling: false,
+              testID: RecordingTestIds.chat.messageInput,
+              accessibilityLabel: 'Chat input',
             }}
             textInputAutoFocus={false}
             placeholder="Type a message…"
@@ -166,6 +169,7 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
             overlayInset={COMPOSER_SEND_INSET}
             overlay={
               <Pressable
+                testID={isSending ? RecordingTestIds.chat.stopProcessing : RecordingTestIds.chat.sendMessage}
                 onPress={isSending ? onStop : handleSend}
                 disabled={isSending ? false : !canSend}
                 accessibilityRole="button"
@@ -240,6 +244,7 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
 
       <View style={styles.composerRow}>
         <Pressable
+          testID={RecordingTestIds.chat.openSettings}
           onPress={handleOpenSettings}
           hitSlop={4}
           accessibilityRole="button"

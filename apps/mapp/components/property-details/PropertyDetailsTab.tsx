@@ -15,6 +15,7 @@ import {
   NativeSelectScrollView,
 } from '@/components/ui/select';
 import { FileText, MapPin, Pencil, Upload, Trash2, AlertCircle, Loader2, Heart, ChevronRight } from 'lucide-react-native';
+import { RecordingTestIds } from '@/lib/recording-test-ids';
 import { useSavedServiceProviders } from '@homeapp/common/contexts/saved-service-providers-context';
 import { useProperty } from '@homeapp/common/contexts/property-context';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
@@ -578,7 +579,12 @@ export function PropertyDetailsTab({ property, onOpenMyPros }: PropertyDetailsTa
       </Card>
 
       {onOpenMyPros ? (
-        <Pressable onPress={onOpenMyPros} className="mb-4">
+        <Pressable
+          testID={RecordingTestIds.details.myProsCard}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="My pros"
+          onPress={onOpenMyPros} className="mb-4">
           <Card>
             <CardContent className="flex-row items-center gap-3 py-4">
               <View className="rounded-full bg-muted p-2">
@@ -607,6 +613,8 @@ export function PropertyDetailsTab({ property, onOpenMyPros }: PropertyDetailsTa
               <CardTitle>Property Documents</CardTitle>
             </View>
             <Button
+              testID={RecordingTestIds.details.uploadDocuments}
+              accessibilityLabel="Upload documents"
               onPress={handlePickDocuments}
               variant="default"
               disabled={uploadBlockedByLimit}

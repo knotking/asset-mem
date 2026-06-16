@@ -1,19 +1,5 @@
-appId: host.exp.Exponent
+# Alias — timeline checkpoint + insights overview
+appId: ${APP_ID}
 ---
-# Timeline Flow
-- assertVisible: "Properties"
-- waitForAnimationToEnd
-# Navigate to property details
-- tapOn:
-    point: "50%,30%"
-- waitForAnimationToEnd
-# Timeline tab is center icon (Clock) — property tabs are icon-only, no text label
-- tapOn:
-    point: "50%,22%"
-- waitForAnimationToEnd
-- assertVisible:
-    text: "Checkpoints|Insights|Reports|Property Timeline|No Checkpoints"
-    timeout: 8000
-# Scroll through checkpoints
-- scroll
-- waitForAnimationToEnd
+- runFlow: timeline-checkpoint.yaml
+- runFlow: timeline-insights.yaml

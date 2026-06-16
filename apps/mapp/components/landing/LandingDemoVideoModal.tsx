@@ -12,6 +12,7 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { LazyYouTubePlayer } from '@/lib/lazy-youtube-player';
 import { AccordionMountContext } from '@/lib/accordion-mount-context';
+import { RecordingTestIds } from '@/lib/recording-test-ids';
 
 const MODAL_COLORS = {
   overlay: 'rgba(0, 0, 0, 0.85)',
@@ -71,21 +72,27 @@ export function LandingDemoVideoModal({
       statusBarTranslucent
       onRequestClose={onClose}
       accessibilityViewIsModal>
-      <View style={styles.overlay} pointerEvents="box-none">
+      <View
+        testID={RecordingTestIds.landingDemo.modal}
+        style={styles.overlay}
+        pointerEvents="box-none">
+        {/* Backdrop — no accessibility label (Maestro was dismissing via "Close demo video") */}
         <Pressable
           style={StyleSheet.absoluteFillObject}
           onPress={onClose}
-          accessibilityRole="button"
-          accessibilityLabel="Close demo video"
+          accessible={false}
+          importantForAccessibility="no"
         />
         <View style={[styles.card, { width: playerWidth }]}>
           <View style={styles.header}>
             <Text style={styles.title}>Watch Demo</Text>
             <Pressable
-              onPress={onClose}
-              hitSlop={8}
+              testID={RecordingTestIds.landingDemo.closeVideo}
+              accessible
               accessibilityRole="button"
-              accessibilityLabel="Close demo video">
+              accessibilityLabel="Close demo video"
+              onPress={onClose}
+              hitSlop={8}>
               <Icon as={X} size={20} className="text-foreground" />
             </Pressable>
           </View>

@@ -20,6 +20,7 @@ import { isAtPlanLimit } from '@homeapp/common/lib/plan-limit-slice';
 import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
 import { PENDING_PROPERTY_ADDRESS } from '@/lib/property-address-placeholder';
 import { createLogger } from '@/lib/logger';
+import { RecordingTestIds } from '@/lib/recording-test-ids';
 
 const propertyLog = createLogger('property');
 
@@ -230,6 +231,7 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
       presentationStyle="pageSheet"
       onRequestClose={handleClose}>
       <SafeAreaView
+        testID={RecordingTestIds.addProperty.modal}
         className="flex-1 bg-background"
         edges={Platform.OS === 'ios' ? ['bottom', 'left', 'right'] : undefined}>
         {/* Header */}
@@ -339,6 +341,7 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
 
               {/* Choose Files Button */}
               <Button
+                testID={RecordingTestIds.addProperty.chooseFiles}
                 onPress={handleChooseFiles}
                 disabled={isCreating}
                 variant="default"
@@ -413,6 +416,7 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
               <Text className="w-full text-center font-semibold text-foreground">Cancel</Text>
             </Button>
             <Button
+              testID={RecordingTestIds.addProperty.uploadSubmit}
               onPress={handleUploadDocuments}
               disabled={selectedFiles.length === 0 || isCreating}
               className="flex-1 items-center justify-center"

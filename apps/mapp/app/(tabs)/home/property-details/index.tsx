@@ -36,6 +36,7 @@ import type {
 import { ANALYSIS_OPTIONAL_AGENTS, CHECKPOINT_OPTIONAL_AGENTS } from '@homeapp/common/types';
 import { defaultSearchLocationInput } from '@homeapp/common/lib/search-location';
 import { PropertyDetailsTab } from '@/components/property-details/PropertyDetailsTab';
+import { RecordingTestIds } from '@/lib/recording-test-ids';
 import { MyProsDrawerContent } from '@/components/property-details/MyProsDrawerContent';
 import { PropertyMoreMenu } from '@/components/property-details/PropertyMoreMenu';
 import {
@@ -565,6 +566,8 @@ function PropertyDetailsScreenContent({
                         )}
                         {activeTab === 'timeline' && timelineSubTab === 'checkpoints' && (
                           <Button
+                            testID={RecordingTestIds.timeline.createCheckpoint}
+                            accessibilityLabel="Create property checkpoint"
                             onPress={() => setIsCreateCheckpointModalVisible(true)}
                             variant="ghost"
                             size="icon"
@@ -574,6 +577,7 @@ function PropertyDetailsScreenContent({
                         )}
                         {activeTab === 'timeline' && timelineSubTab === 'reports' && (
                           <Button
+                            testID={RecordingTestIds.timeline.generateReport}
                             onPress={() => setIsGenerateReportModalVisible(true)}
                             variant="ghost"
                             size="icon"
@@ -616,6 +620,7 @@ function PropertyDetailsScreenContent({
                   {/* Tabs */}
                   <View className="flex-row border-b border-border px-4">
                     <Pressable
+                      testID={RecordingTestIds.propertyTabs.chat}
                       onPress={() => setActiveTab('chat')}
                       testID="property-tab-chat"
                       accessibilityRole="tab"
@@ -628,6 +633,7 @@ function PropertyDetailsScreenContent({
                       />
                     </Pressable>
                     <Pressable
+                      testID={RecordingTestIds.propertyTabs.timeline}
                       onPress={() => setActiveTab('timeline')}
                       testID="property-tab-timeline"
                       accessibilityRole="tab"
@@ -642,6 +648,7 @@ function PropertyDetailsScreenContent({
                       />
                     </Pressable>
                     <Pressable
+                      testID={RecordingTestIds.propertyTabs.details}
                       onPress={() => setActiveTab('details')}
                       testID="property-tab-details"
                       accessibilityRole="tab"

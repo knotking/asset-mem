@@ -1,8 +1,17 @@
-appId: host.exp.Exponent
+appId: ${APP_ID}
 ---
-# Dashboard Flow - View Properties
-- assertVisible: "Properties"
-- waitForAnimationToEnd
-# Scroll through properties if available
+- extendedWaitUntil:
+    visible:
+      text: "Property AI Agent"
+    timeout: 20000
+
 - scroll
 - waitForAnimationToEnd
+
+- tapOn:
+    below: "Add New Property"
+
+- repeat:
+    times: 4
+    commands:
+      - waitForAnimationToEnd

@@ -37,6 +37,7 @@ import {
   getSettingsAttachmentCountLabel,
   getSettingsAttachmentHint,
 } from '@homeapp/common/lib/chat-context-labels';
+import { RecordingTestIds } from '@/lib/recording-test-ids';
 
 const chatLog = createLogger('chat');
 // Note: Using button-based radius selector instead of slider for better cross-platform compatibility
@@ -203,7 +204,7 @@ export function ChatSettingsModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View className="flex-1 justify-end bg-black/50">
+      <View testID={RecordingTestIds.chat.settingsModal} className="flex-1 justify-end bg-black/50">
         <View
           style={{ backgroundColor: colors.background, height: '85%' }}
           className="rounded-t-3xl border-t border-border flex flex-col">
@@ -257,7 +258,11 @@ export function ChatSettingsModal({
                 <View>
                   <Text className="mb-3 text-sm font-semibold text-foreground">Primary Agent</Text>
                   <View className="flex-row gap-2">
-                    <Pressable
+            <Pressable
+                      testID={RecordingTestIds.chat.primaryAgent('checkpoint')}
+                      accessible
+                      accessibilityRole="button"
+                      accessibilityLabel="Checkpoint agent"
                       onPress={() => onPrimaryAgentChange('checkpoint')}
                       className={`min-w-0 flex-1 basis-0 flex-row items-center justify-center gap-2 rounded-xl border px-3 py-3 ${
                         primaryAgent === 'checkpoint'
@@ -400,6 +405,14 @@ export function ChatSettingsModal({
                           return (
                             <Pressable
                               key={option.id}
+                              testID={
+                                primaryAgent === 'checkpoint'
+                                  ? RecordingTestIds.chat.optionalAgent(option.id)
+                                  : RecordingTestIds.chat.optionalAgent(option.id)
+                              }
+                              accessible
+                              accessibilityRole="button"
+                              accessibilityLabel={`${option.label} agent`}
                               onPress={() =>
                                 primaryAgent === 'checkpoint'
                                   ? onToggleCheckpointOptionalAgent(option.id)

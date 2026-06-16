@@ -1,0 +1,20 @@
+appId: ${APP_ID}
+---
+- runFlow: prep/nav-timeline-tab.yaml
+
+- tapOn:
+    text: "Reports"
+- waitForAnimationToEnd
+- scroll
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Create property report"
+    optional: true
+
+- tapOn:
+    text: "Close"
+    optional: true
+- tapOn:
+    text: "Cancel"
+    optional: true

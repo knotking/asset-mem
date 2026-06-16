@@ -80,6 +80,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { analyzeCheckpoint } from '../../lib/api';
 import { createLogger } from '@/lib/logger';
+import { RecordingTestIds } from '@/lib/recording-test-ids';
 import { useThemedAlert } from '@/contexts/themed-alert-context';
 
 const checkpointLog = createLogger('checkpoint');
@@ -578,7 +579,7 @@ function CheckpointCard({
     : null;
 
   return (
-    <Card className={`relative p-2 ${isSelected ? 'border-primary bg-primary/5' : ''} ${isDeleting ? 'opacity-90' : ''}`}>
+    <Card testID={RecordingTestIds.timeline.checkpointCard} className={`relative p-2 ${isSelected ? 'border-primary bg-primary/5' : ''} ${isDeleting ? 'opacity-90' : ''}`}>
       <Pressable
         onPress={isDeleting ? undefined : () => onPress(checkpoint)}
         onLongPress={isDeleting ? undefined : () => onLongPress?.(checkpoint)}
@@ -1034,6 +1035,7 @@ export function PropertyCheckpointsTab({
       <View className="flex-1">
         <View className="flex-row border-b border-border px-4">
           <Pressable
+            testID={RecordingTestIds.timeline.subtabCheckpoints}
             onPress={() => setActiveSubTab('checkpoints')}
             className={`flex-1 py-3 ${activeSubTab === 'checkpoints' ? 'border-b-2 border-primary' : ''}`}>
             <Text
@@ -1044,6 +1046,7 @@ export function PropertyCheckpointsTab({
             </Text>
           </Pressable>
           <Pressable
+            testID={RecordingTestIds.timeline.subtabInsights}
             onPress={() => setActiveSubTab('insights')}
             className={`flex-1 py-3 ${activeSubTab === 'insights' ? 'border-b-2 border-primary' : ''}`}>
             <Text
@@ -1054,6 +1057,7 @@ export function PropertyCheckpointsTab({
             </Text>
           </Pressable>
           <Pressable
+            testID={RecordingTestIds.timeline.subtabReports}
             onPress={() => setActiveSubTab('reports')}
             className={`flex-1 py-3 ${activeSubTab === 'reports' ? 'border-b-2 border-primary' : ''}`}>
             <Text
@@ -1125,6 +1129,7 @@ export function PropertyCheckpointsTab({
             </Text>
           ) : null}
           <Button
+            testID={RecordingTestIds.timeline.createCheckpoint}
             onPress={() => {
               if (!limitsLoading && isAtPlanLimit(checkpointsLimit, 1)) {
                 showAlert(
@@ -1155,6 +1160,7 @@ export function PropertyCheckpointsTab({
         {/* Sub-tabs */}
         <View className="flex-row border-b border-border px-4">
         <Pressable
+          testID={RecordingTestIds.timeline.subtabCheckpoints}
           onPress={() => {
             setActiveSubTab('checkpoints');
             setSelectedForActions([]);
@@ -1169,6 +1175,7 @@ export function PropertyCheckpointsTab({
           </Text>
         </Pressable>
         <Pressable
+          testID={RecordingTestIds.timeline.subtabInsights}
           onPress={() => setActiveSubTab('insights')}
           className={`flex-1 py-3 ${activeSubTab === 'insights' ? 'border-b-2 border-primary' : ''}`}>
           <Text
@@ -1179,6 +1186,7 @@ export function PropertyCheckpointsTab({
           </Text>
         </Pressable>
         <Pressable
+          testID={RecordingTestIds.timeline.subtabReports}
           onPress={() => setActiveSubTab('reports')}
           className={`flex-1 py-3 ${activeSubTab === 'reports' ? 'border-b-2 border-primary' : ''}`}>
           <Text
@@ -1256,6 +1264,7 @@ export function PropertyCheckpointsTab({
               </Text>
               <View className="mt-2 flex-row gap-2">
                 <Button
+                  testID={RecordingTestIds.timeline.compareSubmit}
                   size="sm"
                   onPress={handleCompare}
                   disabled={selectedForActions.length !== 2}
@@ -1288,6 +1297,7 @@ export function PropertyCheckpointsTab({
                       Compare checkpoints
                     </Text>
                     <Button
+                      testID={RecordingTestIds.timeline.compareEnter}
                       size="sm"
                       variant="outline"
                       onPress={() => setIsSelectionMode(true)}
@@ -1314,6 +1324,7 @@ export function PropertyCheckpointsTab({
 
           <FlatList
             data={filteredCheckpoints}
+            testID={RecordingTestIds.timeline.checkpointList}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <CheckpointCard

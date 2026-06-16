@@ -1,0 +1,11 @@
+appId: ${APP_ID}
+---
+- tapOn:
+    text: "Enter your email"
+- inputText: ${EMAIL}
+- tapOn:
+    text: "Enter your password"
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn:
+    text: "Sign In"

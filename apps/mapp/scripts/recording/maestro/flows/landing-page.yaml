@@ -1,0 +1,14 @@
+appId: ${APP_ID}
+---
+- extendedWaitUntil:
+    visible:
+      text: "Watch Demo"
+    timeout: 15000
+
+- runFlow: prep/scroll-to-end.yaml
+
+# Hold on footer
+- repeat:
+    times: 5
+    commands:
+      - waitForAnimationToEnd

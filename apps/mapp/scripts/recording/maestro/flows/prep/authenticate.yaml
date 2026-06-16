@@ -1,0 +1,69 @@
+appId: ${APP_ID}
+---
+# Session restores after reload; wait through loading skeleton on properties home
+- extendedWaitUntil:
+    visible:
+      text: "Add New Property"
+    timeout: 45000
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Property AI Agent"
+    timeout: 10000
+    optional: true
+
+# Already on properties home — no login needed
+- runFlow:
+    when:
+      visible:
+        text: "Add New Property"
+    commands:
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible:
+        text: "Property AI Agent"
+    commands:
+      - waitForAnimationToEnd
+
+# Valid session but wrong route — open home tab (do NOT open login)
+- runFlow:
+    when:
+      notVisible:
+        text: "Add New Property"
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              text: "Property AI Agent"
+          commands:
+            - openLink: ${APP_SCHEME}://home
+            - extendedWaitUntil:
+                visible:
+                  text: "Add New Property"
+                timeout: 30000
+                optional: true
+            - extendedWaitUntil:
+                visible:
+                  text: "Property AI Agent"
+                timeout: 30000
+                optional: true
+
+# Still not on dashboard — sign in from landing or login screen
+- runFlow:
+    when:
+      notVisible:
+        text: "Property AI Agent"
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              text: "Add New Property"
+          file: sign-in-if-needed.yaml
+
+- extendedWaitUntil:
+    visible:
+      text: "Property AI Agent"
+    timeout: 15000

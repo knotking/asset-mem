@@ -1,0 +1,7 @@
+appId: ${APP_ID}
+---
+- openLink: ${APP_SCHEME}://auth/login
+- extendedWaitUntil:
+    visible:
+      text: "Welcome Back"
+    timeout: 20000

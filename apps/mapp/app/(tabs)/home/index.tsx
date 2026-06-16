@@ -15,6 +15,7 @@ import { Icon } from '@/components/ui/icon';
 import { Search, X } from 'lucide-react-native';
 import { useDocumentUpload } from '@homeapp/common/contexts/document-upload-context';
 import { setPendingPropertyUpload } from '@/lib/pending-property-upload';
+import { RecordingTestIds } from '@/lib/recording-test-ids';
 
 function normalizeRouteParam(value: string | string[] | undefined): string | undefined {
   if (value === undefined) return undefined;
@@ -101,7 +102,7 @@ export default function Screen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: true }} />
-      <ScrollView className="flex-1 bg-light-background-alt">
+      <ScrollView testID={RecordingTestIds.dashboard.screen} className="flex-1 bg-light-background-alt">
         <View className="mt-4 px-4">
           <Text className="text-lg font-semibold text-foreground">Property AI Agent</Text>
           <Text className="mb-4 text-muted-foreground">

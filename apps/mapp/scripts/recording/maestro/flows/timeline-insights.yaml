@@ -1,0 +1,9 @@
+appId: ${APP_ID}
+---
+- runFlow: prep/nav-timeline-tab.yaml
+
+- tapOn:
+    text: "Insights"
+- waitForAnimationToEnd
+- scroll
+- waitForAnimationToEnd

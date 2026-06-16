@@ -1,0 +1,68 @@
+appId: ${APP_ID}
+---
+- runFlow: prep/open-chat-settings.yaml
+
+- tapOn:
+    text: "Checkpoint"
+    optional: true
+- tapOn:
+    text: "Service"
+- tapOn:
+    text: "Close settings"
+    optional: true
+
+- tapOn:
+    text: "Type a message..."
+    optional: true
+- tapOn:
+    text: "Chat input"
+    optional: true
+- inputText: "Find local service pros"
+- hideKeyboard
+- tapOn:
+    text: "Send message"
+
+- extendedWaitUntil:
+    visible:
+      text: "Open full report"
+    timeout: 300000
+- tapOn:
+    text: "Open full report"
+- extendedWaitUntil:
+    visible:
+      text: "Close full report"
+    timeout: 10000
+- scroll
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Save provider"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "Save provider"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "Save provider"
+    optional: true
+
+- tapOn:
+    text: "Close full report"
+    optional: true
+
+- runFlow: prep/nav-details-tab.yaml
+- extendedWaitUntil:
+    visible:
+      text: "My pros"
+    timeout: 10000
+- tapOn:
+    text: "My pros"
+- extendedWaitUntil:
+    visible:
+      text: "My pros"
+    timeout: 8000
+- repeat:
+    times: 8
+    commands:
+      - waitForAnimationToEnd

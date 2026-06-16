@@ -1,0 +1,13 @@
+appId: ${APP_ID}
+---
+- runFlow: nav-chat-tab.yaml
+- tapOn:
+    text: "Open chat settings"
+    optional: true
+- tapOn:
+    text: "Chat settings:"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      text: "Chat Settings"
+    timeout: 10000

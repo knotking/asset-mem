@@ -96,6 +96,7 @@ import { MediaDetailModal } from './MediaDetailModal';
 import { CheckpointAccordionBranchBadge } from './CheckpointAccordionBranchBadge';
 import { createChatMessageNativeStyles } from '@/lib/chat-message-native-styles';
 import { StructuredReportSheet } from '@/components/chat/StructuredReportSheet';
+import { RecordingTestIds } from '@/lib/recording-test-ids';
 import { StructuredCheckpointSummaryCard } from '@/components/chat/StructuredCheckpointSummaryCard';
 import {
   CheckpointSummaryField,
@@ -552,6 +553,7 @@ const ServiceProviderCard = React.memo(
         </Text>
         <View className="ml-2 flex-row items-center gap-1">
           <Pressable
+            testID={RecordingTestIds.chat.saveServiceProvider}
             onPress={handleToggleSave}
             disabled={savePending}
             accessibilityLabel={saved ? 'Remove from saved providers' : 'Save provider'}
@@ -1436,6 +1438,7 @@ const StructuredResponse = React.memo(
             </View>
             {!isSheetLayout ? (
               <Pressable
+                testID={RecordingTestIds.chat.openFullReport}
                 onPress={() => setReportSheetVisible(true)}
                 hitSlop={8}
                 accessibilityRole="button"

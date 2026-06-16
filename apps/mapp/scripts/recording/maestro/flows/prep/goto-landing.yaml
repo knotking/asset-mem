@@ -1,0 +1,34 @@
+appId: ${APP_ID}
+---
+# Allow auth session to restore after cold start before checking signed-in state
+- extendedWaitUntil:
+    visible:
+      text: "Property AI Agent"
+    timeout: 20000
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Dashboard"
+    timeout: 5000
+    optional: true
+
+# Signed-in on properties tab
+- runFlow:
+    when:
+      visible:
+        text: "Property AI Agent"
+    file: sign-out.yaml
+
+# Signed-in on landing (Get Started shows "Dashboard")
+- runFlow:
+    when:
+      visible:
+        text: "Dashboard"
+    file: sign-out.yaml
+
+- openLink: ${APP_SCHEME}:///
+- extendedWaitUntil:
+    visible:
+      text: "Watch Demo"
+    timeout: 30000

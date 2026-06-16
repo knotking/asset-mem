@@ -10,6 +10,7 @@ import { recordTimelineCompare } from "./scenes/timeline-compare";
 import { recordTimelineInsights } from "./scenes/timeline-insights";
 import { recordTimelineReports } from "./scenes/timeline-reports";
 import { recordCheckpointChat } from "./scenes/checkpoint-chat";
+import { recordSaveProviderMyPros } from "./scenes/save-provider-my-pros";
 import { recordPropertyDetails } from "./scenes/property-details";
 import { recordPropertyOnboarding } from "./scenes/property-onboarding";
 import { ZoomTracker } from "./zoom-tracker";
@@ -45,6 +46,8 @@ const narrationTexts: Record<string, string> = {
     "Turn checkpoint photos into branded PDF reports. Pick a purpose — showing snapshot, move-in/move-out comparison, or insurance documentation — preview sections and layout, then download or share a frozen-in-time report your contractors and adjusters can trust.",
   "Checkpoint Chat":
     "Engage with our AI assistant to get instant answers about your checkpoints. Simply ask questions like 'What checkpoints do I have?' or 'What's their current status?' and watch as the AI provides detailed, contextual responses. The assistant understands your property's history, analyzes checkpoint data, and delivers intelligent insights tailored to your specific situation.",
+  "Save Provider & My Pros":
+    "Ask the AI to find local service pros, then bookmark your top picks from the chat report sheet. Save several contractors with one tap, open the Details tab, and they're waiting for you under My pros — ready the next time you need a repair.",
   Details:
     "Navigate to the property details section, your comprehensive information hub. Manage files, review history, and access everything you need to maintain complete control over your property's documentation and records. Ready to transform how you manage your home? Get started at asset-mem.com. Thank you for watching!",
 };
@@ -70,9 +73,10 @@ function promptSceneSelection(): Promise<Set<string>> {
     console.log("  7. Timeline Reports (PDF report wizard)");
     console.log("  8. Details (Property Details)");
     console.log("  9. Landing Page Static (10s hold, no interaction)");
-    console.log("  10. All of the above");
+    console.log("  10. Save Provider & My Pros (chat sheet → Details)");
+    console.log("  11. All of the above");
     console.log(
-      "\nEnter scene numbers (comma-separated, e.g., 1,2,3 or 10 for all):",
+      "\nEnter scene numbers (comma-separated, e.g., 1,2,3 or 11 for all):",
     );
 
     rl.question("> ", (answer) => {
@@ -81,7 +85,7 @@ function promptSceneSelection(): Promise<Set<string>> {
       const selected = new Set<string>();
       const input = answer.trim().toLowerCase();
 
-      if (input === "10" || input === "all") {
+      if (input === "11" || input === "all") {
         selected.add("Landing Page Static");
         selected.add("Landing Page");
         selected.add("Property Onboarding");
@@ -90,6 +94,7 @@ function promptSceneSelection(): Promise<Set<string>> {
         selected.add("Timeline Insights");
         selected.add("Checkpoint Chat");
         selected.add("Timeline Reports");
+        selected.add("Save Provider & My Pros");
         selected.add("Details");
       } else {
         // Parse comma-separated numbers
@@ -124,6 +129,9 @@ function promptSceneSelection(): Promise<Set<string>> {
               selected.add("Landing Page Static");
               break;
             case "10":
+              selected.add("Save Provider & My Pros");
+              break;
+            case "11":
               selected.add("Landing Page Static");
               selected.add("Landing Page");
               selected.add("Property Onboarding");
@@ -132,6 +140,7 @@ function promptSceneSelection(): Promise<Set<string>> {
               selected.add("Timeline Insights");
               selected.add("Checkpoint Chat");
               selected.add("Timeline Reports");
+              selected.add("Save Provider & My Pros");
               selected.add("Details");
               break;
           }
@@ -410,6 +419,7 @@ async function main() {
       "Timeline Insights",
       "Checkpoint Chat",
       "Timeline Reports",
+      "Save Provider & My Pros",
       "Details",
     ];
     const hasScenesNeedingLogin = scenesNeedingLogin.some((sceneName) =>
@@ -438,6 +448,7 @@ async function main() {
       "Timeline Insights",
       "Checkpoint Chat",
       "Timeline Reports",
+      "Save Provider & My Pros",
       "Details",
     ];
     const hasScenesNeedingDashboard = scenesNeedingDashboard.some((sceneName) =>
@@ -483,6 +494,12 @@ async function main() {
       scenes.push({
         name: "Checkpoint Chat",
         fn: () => recordCheckpointChat(page!),
+      });
+    }
+    if (selectedScenes.has("Save Provider & My Pros")) {
+      scenes.push({
+        name: "Save Provider & My Pros",
+        fn: () => recordSaveProviderMyPros(page!),
       });
     }
     if (selectedScenes.has("Details")) {

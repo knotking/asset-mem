@@ -430,6 +430,7 @@ function PropertyDetailsContent() {
 
             <Card
               className="min-w-0 transition-shadow hover:shadow-lg cursor-pointer"
+              data-testid="my-pros-card"
               onClick={openMyPros}
               role="button"
               tabIndex={0}

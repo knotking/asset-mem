@@ -1,0 +1,13 @@
+appId: ${APP_ID}
+---
+- openLink: ${APP_SCHEME}://settings/account
+- extendedWaitUntil:
+    visible:
+      text: "Sign Out"
+    timeout: 15000
+- tapOn:
+    text: "Sign Out"
+- extendedWaitUntil:
+    visible:
+      text: "Watch Demo"
+    timeout: 20000

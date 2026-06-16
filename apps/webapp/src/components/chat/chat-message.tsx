@@ -394,6 +394,7 @@ const ServiceProviderCard = ({
                     disabled={savePending}
                     onClick={handleToggleSave}
                     aria-label={saved ? "Remove from saved providers" : "Save provider"}
+                    data-testid="save-service-provider"
                 >
                     <Heart
                         className={cn(
@@ -1075,6 +1076,7 @@ const StructuredResponse = ({
                             size="icon"
                             className="h-8 w-8 shrink-0 text-muted-foreground"
                             aria-label="Open full report"
+                            data-testid="open-full-report"
                             onClick={() => setReportSheetOpen(true)}
                           >
                             <Maximize2 className="h-4 w-4" />

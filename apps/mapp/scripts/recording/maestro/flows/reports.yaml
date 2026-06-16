@@ -1,20 +1,4 @@
-appId: host.exp.Exponent
+# Alias for timeline-reports
+appId: ${APP_ID}
 ---
-# Timeline Reports sub-tab flow
-- assertVisible: "Properties"
-- waitForAnimationToEnd
-- tapOn:
-    point: "50%,30%"
-- waitForAnimationToEnd
-# Timeline tab (center icon)
-- tapOn:
-    point: "50%,22%"
-- waitForAnimationToEnd
-# Reports sub-tab (text label on mapp)
-- tapOn: "Reports"
-- waitForAnimationToEnd
-- assertVisible:
-    text: "Reports|No reports yet|Create Report"
-    timeout: 8000
-- scroll
-- waitForAnimationToEnd
+- runFlow: timeline-reports.yaml

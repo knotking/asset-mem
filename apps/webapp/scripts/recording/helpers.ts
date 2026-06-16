@@ -2067,6 +2067,240 @@ export async function openFullChatReportSheetAndScroll(page: Page): Promise<void
   await delay(5000);
 }
 
+/** Open the structured report sheet for the latest assistant message. */
+export async function openFullChatReportSheet(page: Page): Promise<boolean> {
+  console.log("  📄 Opening full report sheet...");
+  const openButton = page
+    .locator('[data-testid="open-full-report"]')
+    .last()
+    .or(page.getByRole("button", { name: "Open full report" }).last());
+
+  if (!(await openButton.isVisible({ timeout: 3000 }).catch(() => false))) {
+    await openButton.scrollIntoViewIfNeeded().catch(() => {});
+    await delay(400);
+  }
+
+  if (!(await openButton.isVisible({ timeout: 3000 }).catch(() => false))) {
+    console.log("  ⚠️  Open full report button not found");
+    return false;
+  }
+
+  await openButton.click();
+  await delay(700);
+
+  const sheetScroll = page.locator('[role="dialog"] div.overflow-y-auto').last();
+  const visible = await sheetScroll
+    .waitFor({ state: "visible", timeout: 5000 })
+    .then(() => true)
+    .catch(() => false);
+
+  if (!visible) {
+    console.log("  ⚠️  Report sheet scroll area not found");
+    return false;
+  }
+
+  return true;
+}
+
+/** Close the structured chat report sheet so property tabs are clickable again. */
+export async function closeFullChatReportSheet(page: Page): Promise<void> {
+  const openDialog = page.locator('[role="dialog"][data-state="open"]').last();
+  const hasOpenDialog = await openDialog
+    .isVisible({ timeout: 800 })
+    .catch(() => false);
+
+  if (!hasOpenDialog) {
+    const anyDialog = await page
+      .locator('[role="dialog"]')
+      .last()
+      .isVisible({ timeout: 300 })
+      .catch(() => false);
+    if (!anyDialog) return;
+  }
+
+  console.log("  ✖️  Closing chat report sheet...");
+
+  const dialog = page.locator('[role="dialog"]').last();
+  const closeButton = dialog.getByRole("button", { name: "Close" });
+
+  if (await closeButton.isVisible({ timeout: 1500 }).catch(() => false)) {
+    await closeButton.click();
+  } else {
+    await page.keyboard.press("Escape");
+  }
+
+  await dialog.waitFor({ state: "hidden", timeout: 5000 }).catch(async () => {
+    await page.keyboard.press("Escape");
+    await delay(300);
+    await page.keyboard.press("Escape");
+    await dialog.waitFor({ state: "hidden", timeout: 3000 }).catch(() => {});
+  });
+
+  await page
+    .locator('[data-state="open"][aria-hidden="true"]')
+    .first()
+    .waitFor({ state: "hidden", timeout: 2000 })
+    .catch(() => {});
+
+  await delay(500);
+  console.log("  ✅ Chat report sheet closed");
+}
+
+/** Scroll the open report sheet until Service Recommendations / save controls are in view. */
+export async function scrollReportSheetToServiceProviders(page: Page): Promise<void> {
+  const sheetScroll = page.locator('[role="dialog"] div.overflow-y-auto').last();
+  if (!(await sheetScroll.isVisible({ timeout: 3000 }).catch(() => false))) {
+    return;
+  }
+
+  const serviceHeading = page.getByText("Service Recommendations", { exact: true }).last();
+  if (await serviceHeading.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await serviceHeading.scrollIntoViewIfNeeded();
+    await delay(400);
+    return;
+  }
+
+  console.log("  📜 Scrolling report sheet toward service providers...");
+  const steps = 12;
+  for (let step = 1; step <= steps; step++) {
+    await sheetScroll.evaluate((el, ratio) => {
+      const maxScroll = el.scrollHeight - el.clientHeight;
+      el.scrollTop = maxScroll * ratio;
+    }, step / steps);
+    await delay(120);
+
+    if (await serviceHeading.isVisible({ timeout: 300 }).catch(() => false)) {
+      await serviceHeading.scrollIntoViewIfNeeded();
+      break;
+    }
+  }
+
+  await delay(400);
+}
+
+/** Save up to `minCount` unsaved service providers from the open report sheet. */
+export async function saveProvidersFromReportSheet(
+  page: Page,
+  minCount = 3,
+): Promise<number> {
+  const opened = await openFullChatReportSheet(page);
+  if (!opened) return 0;
+
+  await scrollReportSheetToServiceProviders(page);
+
+  const sheet = page.locator('[role="dialog"]').last();
+  let savedCount = 0;
+
+  while (savedCount < minCount) {
+    const saveButtons = sheet
+      .locator('[data-testid="save-service-provider"][aria-label="Save provider"]')
+      .or(sheet.getByRole("button", { name: "Save provider", exact: true }));
+
+    const available = await saveButtons.count();
+    if (available === 0) {
+      if (savedCount === 0) {
+        console.log("  ⚠️  No saveable providers found in report sheet");
+      } else {
+        console.log(
+          `  ⚠️  Only ${savedCount} provider(s) available (wanted ${minCount})`,
+        );
+      }
+      break;
+    }
+
+    const button = saveButtons.first();
+    if (!(await button.isVisible({ timeout: 5000 }).catch(() => false))) {
+      break;
+    }
+
+    await button.scrollIntoViewIfNeeded();
+    await delay(300);
+    await button.click();
+    savedCount++;
+    console.log(`  ❤️  Saved provider ${savedCount}/${minCount}`);
+
+    const savedToast = page.getByText("Saved provider", { exact: true });
+    const alreadySavedToast = page.getByText("Already in saved providers", {
+      exact: true,
+    });
+    await Promise.race([
+      savedToast.waitFor({ state: "visible", timeout: 5000 }),
+      alreadySavedToast.waitFor({ state: "visible", timeout: 5000 }),
+    ]).catch(() => {
+      console.log("  ⚠️  Save toast not detected; continuing...");
+    });
+
+    await delay(800);
+  }
+
+  if (savedCount >= minCount) {
+    console.log(`  ✅ Saved ${savedCount} providers`);
+  }
+
+  return savedCount;
+}
+
+/** Open the Details tab and launch the My pros sheet. */
+export async function navigateToDetailsAndOpenMyPros(page: Page): Promise<void> {
+  if (!page.url().includes("/properties/")) {
+    throw new Error("Not on a property page");
+  }
+
+  await closeFullChatReportSheet(page);
+
+  const propertyId = page.url().match(/\/properties\/([^/]+)/)?.[1];
+  if (!propertyId) {
+    throw new Error("Could not resolve property id from URL");
+  }
+
+  if (!page.url().includes("/details")) {
+    const detailsTab = page.locator(config.selectors.propertyDetails.detailsTab).first();
+    const tabVisible = await detailsTab.isVisible({ timeout: 3000 }).catch(() => false);
+
+    if (tabVisible) {
+      await detailsTab.click({ force: false, timeout: 5000 }).catch(async () => {
+        console.log("  ⚠️  Details tab click blocked; navigating directly...");
+        await page.goto(`${config.baseUrl}/home/properties/${propertyId}/details`, {
+          waitUntil: "domcontentloaded",
+          timeout: 30000,
+        });
+      });
+      await page.waitForURL("**/details**", { timeout: 15000 }).catch(async () => {
+        console.log("  ⚠️  Details tab navigation timed out; using direct URL...");
+        await page.goto(`${config.baseUrl}/home/properties/${propertyId}/details`, {
+          waitUntil: "domcontentloaded",
+          timeout: 30000,
+        });
+      });
+    } else {
+      await page.goto(`${config.baseUrl}/home/properties/${propertyId}/details`, {
+        waitUntil: "domcontentloaded",
+        timeout: 30000,
+      });
+    }
+  }
+
+  await delay(1500);
+
+  const myProsCard = page
+    .locator('[data-testid="my-pros-card"]')
+    .first()
+    .or(page.getByRole("button", { name: /My pros/i }).first());
+
+  await myProsCard.waitFor({ state: "visible", timeout: 10000 });
+  await myProsCard.scrollIntoViewIfNeeded();
+  await delay(300);
+  await myProsCard.click();
+
+  const sheetTitle = page.getByRole("heading", { name: "My pros" });
+  await sheetTitle.waitFor({ state: "visible", timeout: 8000 }).catch(() => {
+    console.log("  ⚠️  My pros sheet title not visible");
+  });
+
+  await delay(1000);
+  console.log("  ✅ My pros sheet opened");
+}
+
 /** In-flight agent status copy (keep in sync with apps/webapp/src/lib/agent-display.ts). */
 const AGENT_LOADING_TEXT =
   /Working on it|Understanding your request|Analyzing your checkpoints|Writing your summary|Finishing your analysis|Loading your checkpoints|Thinking|Executing/i;

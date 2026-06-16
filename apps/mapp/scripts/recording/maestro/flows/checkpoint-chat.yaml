@@ -1,0 +1,43 @@
+appId: ${APP_ID}
+---
+- runFlow: prep/open-chat-settings.yaml
+
+- tapOn:
+    text: "Checkpoint"
+    optional: true
+- tapOn:
+    text: "Service"
+    optional: true
+- tapOn:
+    text: "Coverage"
+    optional: true
+- tapOn:
+    text: "Close settings"
+    optional: true
+
+- tapOn:
+    text: "Type a message..."
+    optional: true
+- tapOn:
+    text: "Chat input"
+    optional: true
+- inputText: "Give me a complete analysis of my property's issues"
+- hideKeyboard
+- tapOn:
+    text: "Send message"
+
+- extendedWaitUntil:
+    visible:
+      text: "Open full report"
+    timeout: 300000
+- tapOn:
+    text: "Open full report"
+- extendedWaitUntil:
+    visible:
+      text: "Close full report"
+    timeout: 10000
+- scroll
+- waitForAnimationToEnd
+- tapOn:
+    text: "Close full report"
+    optional: true

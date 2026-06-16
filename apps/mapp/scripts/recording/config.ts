@@ -1,62 +1,44 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
-// Get the directory of this config file
-// tsx supports ES modules, so we can use import.meta.url
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Load environment variables from .env.recording if it exists
-// Try multiple possible locations:
-// 1. Relative to config file: apps/mapp/.env.recording
-// 2. Relative to cwd: .env.recording (if running from apps/mapp)
 const possiblePaths = [
-  path.join(__dirname, '../../.env.recording'), // From config.ts location
-  path.join(process.cwd(), '.env.recording'), // From current working directory
+  path.join(__dirname, '../../.env.recording'),
+  path.join(process.cwd(), '.env.recording'),
 ];
 
-let result: dotenv.DotenvConfigOutput | null = null;
-let loadedPath: string | null = null;
-
 for (const envPath of possiblePaths) {
-  result = dotenv.config({ path: envPath });
+  const result = dotenv.config({ path: envPath });
   if (!result.error && result.parsed) {
-    loadedPath = envPath;
+    console.log(`✅ Loaded .env.recording from ${envPath}`);
     break;
   }
-}
-
-if (!loadedPath || result?.error) {
-  console.warn(`⚠️  Could not load .env.recording from any of these paths:`);
-  possiblePaths.forEach(p => console.warn(`   - ${p}`));
-  if (result?.error) {
-    console.warn(`   Last error: ${result.error.message}`);
-  }
-  console.warn(`   Current working directory: ${process.cwd()}`);
-  console.warn(`   Config file directory: ${__dirname}`);
-} else {
-  console.log(`✅ Loaded .env.recording from ${loadedPath}`);
-  console.log(`   Found variables: ${Object.keys(result.parsed || {}).join(', ')}`);
 }
 
 export interface RecordingConfig {
   email: string;
   password: string;
   outputDir: string;
+  /** iOS dev client bundle identifier (default: com.assetmem.staging). */
+  iosAppId: string;
+  /** Android dev client application id. */
+  androidAppId: string;
+  /** Deep link scheme (default: assetmem). */
+  appScheme: string;
 }
 
 export const config: RecordingConfig = {
   email: process.env.RECORDING_EMAIL || '',
   password: process.env.RECORDING_PASSWORD || '',
   outputDir: process.env.RECORDING_OUTPUT_DIR || path.join(process.cwd(), 'recordings'),
+  iosAppId: process.env.RECORDING_IOS_APP_ID || 'com.assetmem.staging',
+  androidAppId: process.env.RECORDING_ANDROID_APP_ID || 'com.assetmem.staging',
+  appScheme: process.env.RECORDING_APP_SCHEME || 'assetmem',
 };
 
-// Validate required configuration
 if (!config.email || !config.password) {
   console.warn('⚠️  RECORDING_EMAIL and RECORDING_PASSWORD not set in .env.recording');
-  console.warn('   Create .env.recording file with:');
-  console.warn('   RECORDING_EMAIL=your@email.com');
-  console.warn('   RECORDING_PASSWORD=yourpassword');
+}
+
+export function appIdForPlatform(platform: 'ios' | 'android'): string {
+  return platform === 'ios' ? config.iosAppId : config.androidAppId;
 }

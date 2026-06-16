@@ -1,0 +1,7 @@
+appId: ${APP_ID}
+---
+- openLink: ${APP_SCHEME}://home
+- extendedWaitUntil:
+    visible:
+      text: "Property AI Agent"
+    timeout: 20000
