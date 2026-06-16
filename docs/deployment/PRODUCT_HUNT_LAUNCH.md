@@ -143,7 +143,7 @@ UTM params (`utm_source`, etc.) are stored in `sessionStorage` and attached to c
 
 ### Social preview (Open Graph)
 
-When hunters share the homepage on X/LinkedIn, verify preview shows title, description, and image (`apps/webapp/src/app/opengraph-image.tsx`, `lib/metadata-shared.ts`). Requires `NEXT_PUBLIC_SITE_URL` (§2.1). Test with [opengraph.xyz](https://www.opengraph.xyz) on prod URL.
+When hunters share the homepage on X/LinkedIn/WhatsApp, verify preview shows title, description, and image (`apps/webapp/src/app/opengraph-image.tsx`, `lib/metadata-shared.ts`, hero copy in `lib/site.ts`). Requires `NEXT_PUBLIC_SITE_URL` (§2.1). Test with [opengraph.xyz](https://www.opengraph.xyz) on prod URL. After copy changes, refresh Meta’s cache via [Sharing Debugger](https://developers.facebook.com/tools/debug/) (WhatsApp uses the same scraper).
 
 ---
 
