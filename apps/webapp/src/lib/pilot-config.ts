@@ -21,7 +21,7 @@ export function getPilotConfigFromEnv(): PilotConfig {
 }
 
 export function getPilotMailtoHref(pilotsEmail: string): string {
-  const subject = encodeURIComponent("AssetMem AI pilot request");
+  const subject = encodeURIComponent("AssetMem AI demo request");
   return `mailto:${pilotsEmail}?subject=${subject}`;
 }
 

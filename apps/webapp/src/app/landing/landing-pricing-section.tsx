@@ -136,7 +136,7 @@ export function LandingPricingSection({
             Individuals start free.
             <br />
             <span className="font-medium" style={{ color: c.foreground }}>
-              Teams and enterprises — start with a pilot.
+              Teams and enterprises — request a demo.
             </span>
           </h2>
           <p
@@ -165,7 +165,7 @@ export function LandingPricingSection({
           showPaidCheckout={Boolean(user) && !isPaid}
           showSignupOnFree={!user}
           showEnterprisePilot
-          onPilotCta={() => trackPilotCta("pilot_cta_pricing_enterprise")}
+          onPilotCta={() => trackPilotCta("demo_cta_pricing_enterprise")}
         />
       </div>
     </section>

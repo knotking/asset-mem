@@ -277,7 +277,7 @@ export default function LandingPageClient() {
         activeSection={activeSection}
         onNavClick={(e, targetId) => {
           if (targetId === "#pilot") {
-            trackPilotCta("pilot_cta_nav");
+            trackPilotCta("demo_cta_nav");
           }
           handleNavClick(e, targetId);
         }}
@@ -424,7 +424,7 @@ export default function LandingPageClient() {
                   <>
                     <a
                       href="#pilot"
-                      onClick={(e) => handlePilotNavClick(e, "pilot_cta_hero")}
+                      onClick={(e) => handlePilotNavClick(e, "demo_cta_hero")}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor =
                           LANDING_COLORS.primaryHover;
@@ -441,7 +441,7 @@ export default function LandingPageClient() {
                         color: "#0a0a0f",
                       }}
                     >
-                      Book a pilot
+                      Request a demo
                       <svg
                         className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1"
                         fill="none"
@@ -511,7 +511,7 @@ export default function LandingPageClient() {
                     <a
                       href="#pilot"
                       onClick={(e) =>
-                        handlePilotNavClick(e, "pilot_cta_hero_scroll")
+                        handlePilotNavClick(e, "demo_cta_hero_scroll")
                       }
                       className="inline-block text-sm font-light transition-colors"
                       style={{ color: LANDING_COLORS.mutedForeground }}
@@ -523,7 +523,7 @@ export default function LandingPageClient() {
                           LANDING_COLORS.mutedForeground)
                       }
                     >
-                      Explore the pilot program{" "}
+                      See the team demo{" "}
                       <span aria-hidden>↓</span>
                     </a>
                   </div>
@@ -2090,7 +2090,7 @@ export default function LandingPageClient() {
               <a
                 href="#contact"
                 onClick={(e) => {
-                  trackPilotCta("pilot_cta_footer");
+                  trackPilotCta("demo_cta_footer");
                   handleNavClick(e, "#contact");
                 }}
                 className="inline-flex items-center justify-center rounded-lg font-medium border-2 transition-all"
@@ -2110,7 +2110,7 @@ export default function LandingPageClient() {
                   (e.currentTarget.style.backgroundColor = "transparent")
                 }
               >
-                Contact us
+                Schedule a demo
               </a>
             </div>
           </div>
@@ -2132,7 +2132,7 @@ export default function LandingPageClient() {
               className="text-4xl font-light tracking-tight"
               style={{ color: LANDING_COLORS.foreground }}
             >
-              Start a pilot conversation
+              Schedule a demo
             </h2>
             <p
               className="text-lg font-light leading-relaxed"
@@ -2146,14 +2146,14 @@ export default function LandingPageClient() {
                 href={pilotContactHref}
                 target={pilotContactExternal ? "_blank" : undefined}
                 rel={pilotContactExternal ? "noopener noreferrer" : undefined}
-                onClick={() => trackPilotCta("pilot_cta_contact")}
+                onClick={() => trackPilotCta("demo_cta_contact")}
                 className="inline-flex items-center justify-center rounded-lg px-8 py-4 text-base font-medium shadow-lg transition-all"
                 style={{
                   backgroundColor: LANDING_COLORS.primary,
                   color: "#0a0a0f",
                 }}
               >
-                Request a pilot
+                Request a demo
               </a>
               <a
                 href={`mailto:${pilotsEmail}`}
@@ -2265,7 +2265,7 @@ export default function LandingPageClient() {
                         LANDING_COLORS.mutedForeground)
                     }
                   >
-                    Pilot program
+                    Team demo
                   </Link>
                 </li>
                 <li>

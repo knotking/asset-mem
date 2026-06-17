@@ -60,7 +60,7 @@ export function PilotSection({ colors: c, pilot }: PilotSectionProps) {
 
   const ctaHref = formUrl ?? mailtoHref;
   const ctaExternal = Boolean(formUrl);
-  const ctaLabel = formUrl ? "Request a pilot" : "Email us about a pilot";
+  const ctaLabel = formUrl ? "Request a demo" : "Email us to schedule a demo";
 
   return (
     <section
@@ -91,25 +91,25 @@ export function PilotSection({ colors: c, pilot }: PilotSectionProps) {
               className="text-sm font-semibold tracking-wide"
               style={{ color: c.primary }}
             >
-              PILOT PROGRAM
+              FOR TEAMS
             </span>
           </div>
           <h2
             className="text-4xl lg:text-5xl font-light tracking-tight"
             style={{ color: c.foreground }}
           >
-            90-day pilot for{" "}
+            Demo for{" "}
             <span className="font-bold" style={{ color: c.primary }}>
-              property operators
+              property operations teams
             </span>
           </h2>
           <p
             className="text-lg max-w-2xl mx-auto font-light leading-relaxed"
             style={{ color: c.mutedForeground }}
           >
-            Partner with us to validate AI-powered condition tracking and
-            documentation at scale—using what ships today, with room to
-            co-design what comes next.
+            See how AssetMem captures evidence, generates audit-ready PDFs, and
+            answers questions across a portfolio—with room to co-design workflows
+            that fit your team.
           </p>
         </div>
 
@@ -199,7 +199,7 @@ export function PilotSection({ colors: c, pilot }: PilotSectionProps) {
               className="text-sm font-semibold uppercase tracking-wider mb-4"
               style={{ color: c.mutedForeground }}
             >
-              Co-designed in pilot
+              Co-designed with you
             </h3>
             <ul className="space-y-2">
               {CO_DESIGNED.map((item) => (
@@ -228,7 +228,7 @@ export function PilotSection({ colors: c, pilot }: PilotSectionProps) {
             href={ctaHref}
             target={ctaExternal ? "_blank" : undefined}
             rel={ctaExternal ? "noopener noreferrer" : undefined}
-            onClick={() => handlePilotCta("pilot_cta_section")}
+            onClick={() => handlePilotCta("demo_cta_section")}
             className="inline-flex items-center justify-center rounded-lg px-10 py-4 text-base font-medium shadow-xl transition-all"
             style={{ backgroundColor: c.primary, color: "#0a0a0f" }}
           >
@@ -243,7 +243,7 @@ export function PilotSection({ colors: c, pilot }: PilotSectionProps) {
           <div className="mt-10 max-w-2xl mx-auto rounded-xl overflow-hidden border min-h-[480px]">
             <iframe
               src={formUrl}
-              title="AssetMem AI pilot request form"
+              title="AssetMem AI demo request form"
               className="w-full min-h-[480px] border-0"
               loading="lazy"
             />

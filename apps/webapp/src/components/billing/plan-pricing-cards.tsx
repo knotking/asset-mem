@@ -352,7 +352,7 @@ function EnterprisePilotCard({
             borderStyle: "solid",
           }}
         >
-          Book a pilot
+          Request a demo
         </a>
       </div>
     </div>

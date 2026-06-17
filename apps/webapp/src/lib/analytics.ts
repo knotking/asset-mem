@@ -88,7 +88,7 @@ export function trackLandingCta(label: string): void {
 
 export function trackPilotCta(label: string): void {
   trackLandingCta(label);
-  trackEvent('pilot_cta_click', { event_category: 'CTA', event_label: label });
+  trackEvent('demo_cta_click', { event_category: 'CTA', event_label: label });
 }
 
 export function trackSignUp(method: string = 'email'): void {

@@ -21,7 +21,7 @@ export const ENTERPRISE_PILOT_CARD: EnterprisePilotCard = {
   priceLabel: 'Custom',
   blurb: 'For portfolios, claims workflows, and field operations at scale.',
   bullets: [
-    'Dedicated onboarding and pilot support',
+    'Dedicated onboarding and demo support',
     'Custom portfolio limits',
     'Co-designed workflows and report templates',
     'Priority feedback channel',
