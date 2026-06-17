@@ -139,19 +139,25 @@ export function LandingPricingSection({
             className="text-4xl lg:text-5xl font-light tracking-tight"
             style={{ color: c.foreground }}
           >
-            Individuals start free.
-            <br />
-            <span className="font-medium" style={{ color: c.foreground }}>
-              Enterprise — talk to us.
+            Choose{" "}
+            <span
+              className="font-bold"
+              style={{
+                background: `linear-gradient(to right, ${c.primary}, rgba(34,211,238,0.6))`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              your plan
             </span>
           </h2>
           <p
             className="text-lg max-w-2xl mx-auto font-light"
             style={{ color: c.mutedForeground }}
           >
-            Simple monthly plans for homeowners and landlords, with transparent
-            limits for AI evidence analysis, reports, and document intelligence.
-            Enterprise teams get custom AI rollout and support.
+            Free, Plus, and Pro for everyday property care. Enterprise for
+            portfolios and field operations.
           </p>
         </div>
 

@@ -287,8 +287,8 @@ export default function LandingPageClient() {
               className="text-lg max-w-2xl mx-auto font-light"
               style={{ color: LANDING_COLORS.mutedForeground }}
             >
-              One workflow for a single home or a portfolio—capture, understand,
-              act, and share without losing context.
+              One AI-assisted workflow for a single home or a portfolio—capture,
+              understand, act, and share without losing context.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
@@ -306,7 +306,7 @@ export default function LandingPageClient() {
               {
                 step: 3,
                 title: "Know what to do",
-                desc: "Costs, repair paths, and coverage context without tab-hopping.",
+                desc: "AI-suggested costs, repair paths, and coverage context without tab-hopping.",
               },
               {
                 step: 4,
@@ -371,7 +371,7 @@ export default function LandingPageClient() {
               <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>AI INTELLIGENCE LAYER</span>
             </div>
             <h2 className="text-4xl lg:text-5xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
-              Spot issues early.{' '}
+              Spot changes early.{' '}
               <span className="font-bold" style={{ background: `linear-gradient(to right, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                 Move with confidence.
               </span>
