@@ -32,7 +32,7 @@ const NAV_LINKS = [
   { href: '#ai-agents', targetId: '#ai-agents', label: 'AI Agents', sectionId: 'ai-agents' },
   { href: '#timeline-feature', targetId: '#timeline-feature', label: 'Timeline', sectionId: 'timeline-feature' },
   { href: '#how-it-works', targetId: '#how-it-works', label: 'How It Works', sectionId: 'how-it-works' },
-  { href: '#pilot', targetId: '#pilot', label: 'Demo', sectionId: 'pilot' },
+  { href: '#pilot', targetId: '#pilot', label: 'For teams', sectionId: 'pilot' },
   { href: '#pricing', targetId: '#pricing', label: 'Pricing', sectionId: 'pricing' },
 ] as const;
 

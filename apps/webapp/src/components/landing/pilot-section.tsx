@@ -60,7 +60,7 @@ export function PilotSection({ colors: c, pilot }: PilotSectionProps) {
 
   const ctaHref = formUrl ?? mailtoHref;
   const ctaExternal = Boolean(formUrl);
-  const ctaLabel = formUrl ? "Request a demo" : "Email us to schedule a demo";
+  const ctaLabel = formUrl ? "Talk to us" : "Email our team";
 
   return (
     <section
@@ -98,7 +98,7 @@ export function PilotSection({ colors: c, pilot }: PilotSectionProps) {
             className="text-4xl lg:text-5xl font-light tracking-tight"
             style={{ color: c.foreground }}
           >
-            Demo for{" "}
+            Built for{" "}
             <span className="font-bold" style={{ color: c.primary }}>
               property operations teams
             </span>
@@ -228,7 +228,7 @@ export function PilotSection({ colors: c, pilot }: PilotSectionProps) {
             href={ctaHref}
             target={ctaExternal ? "_blank" : undefined}
             rel={ctaExternal ? "noopener noreferrer" : undefined}
-            onClick={() => handlePilotCta("demo_cta_section")}
+            onClick={() => handlePilotCta("team_cta_section")}
             className="inline-flex items-center justify-center rounded-lg px-10 py-4 text-base font-medium shadow-xl transition-all"
             style={{ backgroundColor: c.primary, color: "#0a0a0f" }}
           >
@@ -243,7 +243,7 @@ export function PilotSection({ colors: c, pilot }: PilotSectionProps) {
           <div className="mt-10 max-w-2xl mx-auto rounded-xl overflow-hidden border min-h-[480px]">
             <iframe
               src={formUrl}
-              title="AssetMem AI demo request form"
+              title="AssetMem AI team contact form"
               className="w-full min-h-[480px] border-0"
               loading="lazy"
             />
