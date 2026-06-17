@@ -17,6 +17,7 @@ import {
   inferPlanTierFromLimits,
   type PlanTierKey,
 } from "@/components/billing/plan-pricing-data";
+import { trackPilotCta } from "@/lib/analytics";
 
 type BillingSummary = {
   subscriptionStatus?: string | null;
@@ -132,15 +133,19 @@ export function LandingPricingSection({
             className="text-4xl lg:text-5xl font-light tracking-tight"
             style={{ color: c.foreground }}
           >
-            Plans for homeowners and landlords
+            Individuals start free.
+            <br />
+            <span className="font-medium" style={{ color: c.foreground }}>
+              Teams and enterprises — start with a pilot.
+            </span>
           </h2>
           <p
             className="text-lg max-w-2xl mx-auto font-light"
             style={{ color: c.mutedForeground }}
           >
-            Simple monthly billing. Each plan includes a fair amount of AI chat,
-            document uploads, photo analysis, and property report
-            generations—you can always see what you have left in Settings.
+            Simple monthly billing for homeowners and landlords. Each plan
+            includes AI chat, document uploads, photo analysis, and property
+            reports—you can always see what you have left in Settings.
           </p>
         </div>
 
@@ -159,6 +164,8 @@ export function LandingPricingSection({
           }
           showPaidCheckout={Boolean(user) && !isPaid}
           showSignupOnFree={!user}
+          showEnterprisePilot
+          onPilotCta={() => trackPilotCta("pilot_cta_pricing_enterprise")}
         />
       </div>
     </section>

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
+  ENTERPRISE_PILOT_CARD,
   PLAN_CARDS,
   PLAN_TIER_ORDER,
   paidPortalActionLabel,
@@ -50,6 +51,9 @@ type PlanPricingCardsProps = {
   showPaidCheckout?: boolean;
   /** Landing only: show sign-up link on free when logged out */
   showSignupOnFree?: boolean;
+  /** Landing only: fourth Enterprise / Pilot card (no Stripe) */
+  showEnterprisePilot?: boolean;
+  onPilotCta?: () => void;
 };
 
 function portalButtonVariant(
@@ -283,6 +287,78 @@ function PlanCardActions({
   );
 }
 
+function EnterprisePilotCard({
+  landingColors: c,
+  onPilotCta,
+}: {
+  landingColors: LandingPricingPalette;
+  onPilotCta?: () => void;
+}) {
+  const card = ENTERPRISE_PILOT_CARD;
+
+  return (
+    <div
+      className="relative flex h-full flex-col rounded-2xl border p-6 md:p-8 transition-transform duration-300 hover:-translate-y-0.5"
+      style={{
+        backgroundColor: c.card,
+        borderColor: c.border,
+      }}
+    >
+      <h3
+        className="text-xl font-semibold mb-2"
+        style={{ color: c.foreground }}
+      >
+        {card.name}
+      </h3>
+      <div className="mb-3 flex items-baseline gap-1">
+        <span
+          className="text-3xl font-semibold tracking-tight"
+          style={{ color: c.foreground }}
+        >
+          {card.priceLabel}
+        </span>
+      </div>
+      <p
+        className="text-sm mb-5 min-h-[40px] font-light"
+        style={{ color: c.mutedForeground }}
+      >
+        {card.blurb}
+      </p>
+      <ul
+        className="text-sm space-y-2 flex-1 min-h-0 font-light"
+        style={{ color: c.mutedForeground }}
+      >
+        {card.bullets.map((line) => (
+          <li key={line} className="flex gap-2">
+            <Check
+              className="h-4 w-4 shrink-0"
+              style={{ color: c.primary }}
+              aria-hidden
+            />
+            <span>{line}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-auto w-full shrink-0 pt-6 min-h-10">
+        <a
+          href="#pilot"
+          onClick={() => onPilotCta?.()}
+          className="inline-flex w-full justify-center items-center rounded-lg px-6 py-3 text-sm font-medium border transition-colors"
+          style={{
+            borderColor: c.border,
+            color: c.foreground,
+            backgroundColor: c.muted30,
+            borderWidth: 1,
+            borderStyle: "solid",
+          }}
+        >
+          Book a pilot
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export function PlanPricingCards({
   variant,
   billingLoading = false,
@@ -297,6 +373,8 @@ export function PlanPricingCards({
   onOpenPortal,
   showPaidCheckout = false,
   showSignupOnFree = false,
+  showEnterprisePilot = false,
+  onPilotCta,
 }: PlanPricingCardsProps) {
   return (
     <div className="space-y-4">
@@ -324,7 +402,9 @@ export function PlanPricingCards({
           "grid gap-6 items-stretch",
           variant === "settings"
             ? "md:grid-cols-3"
-            : "md:grid-cols-3 max-w-5xl mx-auto",
+            : showEnterprisePilot
+              ? "md:grid-cols-2 xl:grid-cols-4 max-w-6xl mx-auto"
+              : "md:grid-cols-3 max-w-5xl mx-auto",
         )}
       >
         {PLAN_TIER_ORDER.map((tier) => {
@@ -497,6 +577,9 @@ export function PlanPricingCards({
             </div>
           );
         })}
+        {variant === "landing" && showEnterprisePilot && c ? (
+          <EnterprisePilotCard landingColors={c} onPilotCta={onPilotCta} />
+        ) : null}
       </div>
     </div>
   );

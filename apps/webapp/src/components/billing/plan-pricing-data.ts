@@ -9,6 +9,25 @@ import {
 
 export type PlanTierKey = 'free' | 'plus' | 'pro';
 
+export type EnterprisePilotCard = {
+  name: string;
+  priceLabel: string;
+  blurb: string;
+  bullets: string[];
+};
+
+export const ENTERPRISE_PILOT_CARD: EnterprisePilotCard = {
+  name: 'Enterprise',
+  priceLabel: 'Custom',
+  blurb: 'For portfolios, claims workflows, and field operations at scale.',
+  bullets: [
+    'Dedicated onboarding and pilot support',
+    'Custom portfolio limits',
+    'Co-designed workflows and report templates',
+    'Priority feedback channel',
+  ],
+};
+
 export type PlanCard = {
   name: string;
   blurb: string;

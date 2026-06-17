@@ -7,13 +7,19 @@ import AIGraphic from "./ai-graphic";
 import { LandingHeader } from "./landing-header";
 import { LandingPricingSection } from "./landing-pricing-section";
 import { YouTubeModal } from "@/components/landing/youtube-modal";
-import { trackLandingCta } from "@/lib/analytics";
+import { trackLandingCta, trackPilotCta } from "@/lib/analytics";
 import {
   getSupportEmail,
-  SITE_HERO_DESCRIPTION,
-  SITE_HERO_HEADLINE_ACCENT,
-  SITE_HERO_HEADLINE_PRIMARY,
+  SITE_HERO_DESCRIPTION_B2B,
+  SITE_HERO_HEADLINE_ACCENT_B2B,
+  SITE_HERO_HEADLINE_PRIMARY_B2B,
 } from "@/lib/site";
+import {
+  getPilotFormUrl,
+  getPilotMailtoHref,
+  getPilotsEmail,
+} from "@/lib/pilot-config";
+import { PilotSection } from "@/components/landing/pilot-section";
 import {
   DEFAULT_LANDING_DEMO_VIDEO_URLS,
   fetchLandingDemoVideoUrlsFromRemoteConfig,
@@ -142,6 +148,7 @@ export default function LandingPageClient() {
           el: document.querySelector("#timeline-feature"),
         },
         { id: "how-it-works", el: document.querySelector("#how-it-works") },
+        { id: "pilot", el: document.querySelector("#pilot") },
         { id: "pricing", el: document.querySelector("#pricing") },
       ];
 
@@ -214,6 +221,19 @@ export default function LandingPageClient() {
     scrollToLandingSection(targetId);
   };
 
+  const handlePilotNavClick = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    label: string,
+  ) => {
+    trackPilotCta(label);
+    handleNavClick(e, "#pilot");
+  };
+
+  const pilotFormUrl = getPilotFormUrl();
+  const pilotContactHref = pilotFormUrl ?? getPilotMailtoHref();
+  const pilotContactExternal = Boolean(pilotFormUrl);
+  const pilotsEmail = getPilotsEmail();
+
   // IMPORTANT: All hooks must be called before any conditional returns (Rules of Hooks)
 
   // While auth is loading, show minimal loading state to prevent flash
@@ -250,7 +270,12 @@ export default function LandingPageClient() {
       {/* Header/Navigation */}
       <LandingHeader
         activeSection={activeSection}
-        onNavClick={handleNavClick}
+        onNavClick={(e, targetId) => {
+          if (targetId === "#pilot") {
+            trackPilotCta("pilot_cta_nav");
+          }
+          handleNavClick(e, targetId);
+        }}
         onButtonClick={handleButtonClick}
       />
 
@@ -311,7 +336,7 @@ export default function LandingPageClient() {
                   className="text-sm font-semibold tracking-wide"
                   style={{ color: LANDING_COLORS.primary }}
                 >
-                  AI-POWERED INNOVATION
+                  FOR PROPERTY TEAMS &amp; ENTERPRISE PILOTS
                 </span>
               </div>
 
@@ -338,9 +363,11 @@ export default function LandingPageClient() {
                   className="text-3xl lg:text-4xl font-light leading-tight"
                   style={{ color: LANDING_COLORS.foreground90 }}
                 >
-                  {SITE_HERO_HEADLINE_PRIMARY}
+                  {SITE_HERO_HEADLINE_PRIMARY_B2B}
                   <br />
-                  <span className="font-medium">{SITE_HERO_HEADLINE_ACCENT}</span>
+                  <span className="font-medium">
+                    {SITE_HERO_HEADLINE_ACCENT_B2B}
+                  </span>
                 </h2>
               </div>
 
@@ -348,14 +375,14 @@ export default function LandingPageClient() {
                 className="text-xl leading-relaxed max-w-xl font-light"
                 style={{ color: LANDING_COLORS.foreground60 }}
               >
-                {SITE_HERO_DESCRIPTION}
+                {SITE_HERO_DESCRIPTION_B2B}
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center flex-wrap">
                 {user ? (
                   <Link
                     href="/home"
-                    onClick={handleButtonClick}
+                    onClick={(e) => handleButtonClick(e, "primary_cta")}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor =
                         LANDING_COLORS.primaryHover;
@@ -388,69 +415,89 @@ export default function LandingPageClient() {
                     </svg>
                   </Link>
                 ) : (
-                  <Link
-                    href="/login"
-                    onClick={handleButtonClick}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor =
-                        LANDING_COLORS.primaryHover;
-                      e.currentTarget.style.transform = "translateX(2px)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor =
-                        LANDING_COLORS.primary;
-                      e.currentTarget.style.transform = "translateX(0)";
-                    }}
-                    className="inline-flex items-center justify-center text-base px-10 py-7 rounded-lg font-medium shadow-xl hover:shadow-2xl transition-all group"
-                    style={{
-                      backgroundColor: LANDING_COLORS.primary,
-                      color: "#0a0a0f",
-                    }}
-                  >
-                    Get Started
-                    <svg
-                      className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 7l5 5m0 0l-5 5m5-5H6"
-                      />
-                    </svg>
-                  </Link>
-                )}
-                <YouTubeModal
-                  url={
-                    isMobile
-                      ? demoVideoUrls.mobile
-                      : demoVideoUrls.desktop
-                  }
-                  trigger={
-                    <button
-                      className="inline-flex items-center justify-center text-base rounded-lg font-medium border-2 transition-all cursor-pointer"
-                      style={{
-                        backgroundColor: "transparent",
-                        borderColor: LANDING_COLORS.border,
-                        color: LANDING_COLORS.foreground,
-                        padding: "1.75rem 2.5rem",
-                        height: "auto",
+                  <>
+                    <a
+                      href="#pilot"
+                      onClick={(e) => handlePilotNavClick(e, "pilot_cta_hero")}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                          LANDING_COLORS.primaryHover;
+                        e.currentTarget.style.transform = "translateX(2px)";
                       }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.backgroundColor =
-                          LANDING_COLORS.muted30)
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.backgroundColor = "transparent")
-                      }
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                          LANDING_COLORS.primary;
+                        e.currentTarget.style.transform = "translateX(0)";
+                      }}
+                      className="inline-flex items-center justify-center text-base px-10 py-7 rounded-lg font-medium shadow-xl hover:shadow-2xl transition-all group"
+                      style={{
+                        backgroundColor: LANDING_COLORS.primary,
+                        color: "#0a0a0f",
+                      }}
                     >
-                      Watch Demo
-                    </button>
-                  }
-                />
+                      Book a pilot
+                      <svg
+                        className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 7l5 5m0 0l-5 5m5-5H6"
+                        />
+                      </svg>
+                    </a>
+                    <YouTubeModal
+                      url={
+                        isMobile
+                          ? demoVideoUrls.mobile
+                          : demoVideoUrls.desktop
+                      }
+                      trigger={
+                        <button
+                          className="inline-flex items-center justify-center text-base rounded-lg font-medium border-2 transition-all cursor-pointer"
+                          style={{
+                            backgroundColor: "transparent",
+                            borderColor: LANDING_COLORS.border,
+                            color: LANDING_COLORS.foreground,
+                            padding: "1.75rem 2.5rem",
+                            height: "auto",
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.backgroundColor =
+                              LANDING_COLORS.muted30)
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.backgroundColor =
+                              "transparent")
+                          }
+                        >
+                          Watch Demo
+                        </button>
+                      }
+                    />
+                  </>
+                )}
+                {!user ? (
+                  <a
+                    href="#pricing"
+                    onClick={(e) => handleNavClick(e, "#pricing")}
+                    className="text-sm font-medium underline underline-offset-4 transition-colors sm:ml-2"
+                    style={{ color: LANDING_COLORS.mutedForeground }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.color = LANDING_COLORS.primary)
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.color =
+                        LANDING_COLORS.mutedForeground)
+                    }
+                  >
+                    For homeowners — see plans
+                  </a>
+                ) : null}
               </div>
             </div>
 
@@ -678,15 +725,16 @@ export default function LandingPageClient() {
               className="text-xl max-w-3xl mx-auto font-light leading-relaxed"
               style={{ color: LANDING_COLORS.mutedForeground }}
             >
-              From routine walkthroughs to seasonal planning, see how
-              checkpoint-driven workflows help homeowners and landlords stay ahead
+              From routine walkthroughs to claims documentation, see how
+              checkpoint-driven workflows support single homes and multi-property
+              operations
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-7xl mx-auto">
             {[
               {
-                title: "Seasonal Property Walkthrough",
+                title: "Portfolio inspection cadence",
                 scenario: "Capture spring and fall walkthroughs for each area",
                 icon: "M13 10V3L4 14h7v7l9-11h-7z",
                 color: LANDING_COLORS.accent,
@@ -697,10 +745,10 @@ export default function LandingPageClient() {
                   "Build a clear maintenance backlog before issues escalate",
                 ],
                 result:
-                  "Built a proactive plan that prevented in-season surprises",
+                  "Proactive portfolio plan that prevented in-season surprises",
               },
               {
-                title: "Property Condition Tracking",
+                title: "Early risk detection across units",
                 scenario:
                   "Monitor basement moisture over 6-month winter period",
                 icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
@@ -714,7 +762,7 @@ export default function LandingPageClient() {
                 result: "Caught water issue early, prevented $5,000+ damage",
               },
               {
-                title: "Rental Move-In / Move-Out",
+                title: "Turnover documentation at scale",
                 scenario:
                   "Document condition at lease start and end for security deposits",
                 icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
@@ -729,7 +777,7 @@ export default function LandingPageClient() {
                   "Resolved deposit dispute with dated, AI-verified evidence",
               },
               {
-                title: "Insurance Claim Documentation",
+                title: "Claims evidence for adjusters",
                 scenario: "Storm damage to roof requires insurance claim proof",
                 icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
                 color: LANDING_COLORS.primary,
@@ -755,6 +803,20 @@ export default function LandingPageClient() {
                 ],
                 result:
                   "Prioritized repairs, negotiated 20% discount with quotes",
+              },
+              {
+                title: "Vendor handoff",
+                scenario:
+                  "Share AI findings with contractors without granting account access",
+                icon: "M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z",
+                color: LANDING_COLORS.primary,
+                steps: [
+                  "Run checkpoint analysis or chat on property issues",
+                  "Generate a formal PDF report or share a read-only chat link",
+                  "Contractor reviews evidence without a login",
+                  "Everyone works from the same AI-verified source of truth",
+                ],
+                result: "Faster approvals with less back-and-forth email",
               },
               {
                 title: "Renovation Progress Tracking",
@@ -1873,6 +1935,8 @@ export default function LandingPageClient() {
         </div>
       </section>
 
+      <PilotSection colors={LANDING_COLORS} />
+
       <LandingPricingSection colors={LANDING_COLORS} />
 
       {/* CTA Section - dark base and radial highlight */}
@@ -1995,7 +2059,10 @@ export default function LandingPageClient() {
               )}
               <a
                 href="#contact"
-                onClick={(e) => handleNavClick(e, "#contact")}
+                onClick={(e) => {
+                  trackPilotCta("pilot_cta_footer");
+                  handleNavClick(e, "#contact");
+                }}
                 className="inline-flex items-center justify-center rounded-lg font-medium border-2 transition-all"
                 style={{
                   backgroundColor: "transparent",
@@ -2035,28 +2102,56 @@ export default function LandingPageClient() {
               className="text-4xl font-light tracking-tight"
               style={{ color: LANDING_COLORS.foreground }}
             >
-              Get in touch
+              Start a pilot conversation
             </h2>
             <p
               className="text-lg font-light leading-relaxed"
               style={{ color: LANDING_COLORS.mutedForeground }}
             >
-              Questions about AssetMem AI, partnerships, or enterprise use — we&apos;d love to hear
-              from you.
+              Tell us about your portfolio, claims workflow, or field operations
+              needs. We typically respond within one business day.
             </p>
-            <a
-              href={`mailto:${supportEmail}`}
-              className="inline-flex items-center text-lg font-medium underline underline-offset-4 transition-colors"
-              style={{ color: LANDING_COLORS.primary }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.color = LANDING_COLORS.primaryHover)
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.color = LANDING_COLORS.primary)
-              }
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-2">
+              <a
+                href={pilotContactHref}
+                target={pilotContactExternal ? "_blank" : undefined}
+                rel={pilotContactExternal ? "noopener noreferrer" : undefined}
+                onClick={() => trackPilotCta("pilot_cta_contact")}
+                className="inline-flex items-center justify-center rounded-lg px-8 py-4 text-base font-medium shadow-lg transition-all"
+                style={{
+                  backgroundColor: LANDING_COLORS.primary,
+                  color: "#0a0a0f",
+                }}
+              >
+                Request a pilot
+              </a>
+              <a
+                href={`mailto:${pilotsEmail}`}
+                className="inline-flex items-center text-base font-medium underline underline-offset-4 transition-colors"
+                style={{ color: LANDING_COLORS.primary }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.color = LANDING_COLORS.primaryHover)
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.color = LANDING_COLORS.primary)
+                }
+              >
+                {pilotsEmail}
+              </a>
+            </div>
+            <p
+              className="text-sm font-light pt-4"
+              style={{ color: LANDING_COLORS.mutedForeground }}
             >
-              {supportEmail}
-            </a>
+              General questions?{" "}
+              <a
+                href={`mailto:${supportEmail}`}
+                className="underline underline-offset-2"
+                style={{ color: LANDING_COLORS.foreground70 }}
+              >
+                {supportEmail}
+              </a>
+            </p>
           </div>
         </div>
       </section>
@@ -2083,7 +2178,7 @@ export default function LandingPageClient() {
                 className="text-sm"
                 style={{ color: LANDING_COLORS.mutedForeground }}
               >
-                Photos, documents, and AI guidance for every property you manage.
+                Photos, documents, and AI intelligence for every property you manage.
               </p>
             </div>
 
@@ -2126,6 +2221,36 @@ export default function LandingPageClient() {
                     }
                   >
                     Reports
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="#pilot"
+                    className="transition-colors hover:text-foreground"
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.color = LANDING_COLORS.foreground)
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.color =
+                        LANDING_COLORS.mutedForeground)
+                    }
+                  >
+                    Pilot program
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="#pricing"
+                    className="transition-colors hover:text-foreground"
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.color = LANDING_COLORS.foreground)
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.color =
+                        LANDING_COLORS.mutedForeground)
+                    }
+                  >
+                    Pricing
                   </Link>
                 </li>
                 <li>

@@ -1,6 +1,6 @@
 # B2B landing pilot plan
 
-**Status:** Approved for implementation  
+**Status:** Tier A implemented (2026-06-17)  
 **Branch:** `plan/b2b-landing-pilot`  
 **Last updated:** 2026-06-17  
 **Goal:** Explore the B2B market and convert inbound interest into **qualified pilot conversations** — without building org/team billing or multi-tenant product features yet.
