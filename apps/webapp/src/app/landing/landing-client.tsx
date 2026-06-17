@@ -103,17 +103,17 @@ export default function LandingPageClient() {
         return;
       }
 
+      // Order must match the on-page section order for the early-break below.
       const sections = [
+        { id: "how-it-works", el: document.querySelector("#how-it-works") },
+        { id: "ai-pipeline", el: document.querySelector("#ai-pipeline") },
         { id: "use-cases", el: document.querySelector("#use-cases") },
-        { id: "features", el: document.querySelector("#features") },
-        { id: "reports", el: document.querySelector("#reports") },
-        { id: "ai-agents", el: document.querySelector("#ai-agents") },
         {
           id: "timeline-feature",
           el: document.querySelector("#timeline-feature"),
         },
-        { id: "how-it-works", el: document.querySelector("#how-it-works") },
-        { id: "trust", el: document.querySelector("#trust") },
+        { id: "docs-chat", el: document.querySelector("#docs-chat") },
+        { id: "reports", el: document.querySelector("#reports") },
         { id: "pilot", el: document.querySelector("#pilot") },
         { id: "pricing", el: document.querySelector("#pricing") },
       ];
@@ -210,15 +210,7 @@ export default function LandingPageClient() {
       <div
         className="min-h-screen w-full flex items-center justify-center"
         style={{ backgroundColor: LANDING_COLORS.background }}
-      >
-        {/* Minimal spinner - matches landing page design */}
-        {/* <div className="flex flex-col items-center gap-3">
-          <div 
-            className="animate-spin rounded-full h-8 w-8 border-2 border-t-transparent" 
-            style={{ borderColor: LANDING_COLORS.primary }}
-          ></div>
-        </div> */}
-      </div>
+      />
     );
   }
 
@@ -256,6 +248,125 @@ export default function LandingPageClient() {
         onPrimaryCta={handleButtonClick}
         onNavClick={handleNavClick}
       />
+
+      {/* How It Works */}
+      <section
+        id="how-it-works"
+        className="py-32 relative overflow-hidden w-full"
+        style={{ backgroundColor: "#0f0f14" }}
+      >
+        <div
+          className="absolute inset-0 w-full"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+        <div
+          className="container relative mx-auto px-4"
+          style={{ maxWidth: "1400px" }}
+        >
+          <div className="text-center mb-16 space-y-4">
+            <div
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm"
+              style={{
+                backgroundColor: LANDING_COLORS.primaryLight,
+                borderColor: LANDING_COLORS.primaryBorder,
+              }}
+            >
+              <span
+                className="text-sm font-semibold tracking-wide"
+                style={{ color: LANDING_COLORS.primary }}
+              >
+                GET STARTED IN MINUTES
+              </span>
+            </div>
+            <h2
+              className="text-4xl lg:text-5xl font-light tracking-tight"
+              style={{ color: LANDING_COLORS.foreground }}
+            >
+              Four steps.{" "}
+              <span
+                className="font-bold"
+                style={{
+                  background: `linear-gradient(to right, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                Full clarity.
+              </span>
+            </h2>
+            <p
+              className="text-lg max-w-2xl mx-auto font-light"
+              style={{ color: LANDING_COLORS.mutedForeground }}
+            >
+              Add a property, ask a question, get a clear answer, stay
+              organised. That&apos;s it.
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+            {[
+              {
+                step: 1,
+                title: "Add Your Property",
+                desc: "Create a property, snap your first photos, and upload any documents. Takes under five minutes.",
+              },
+              {
+                step: 2,
+                title: "Ask a Question",
+                desc: "Chat with your photos or your paperwork — whichever fits your question. Switch modes anytime.",
+              },
+              {
+                step: 3,
+                title: "Get Clear Answers",
+                desc: "Costs, repair steps, coverage checks, and matched local pros — one conversation, no tab-switching.",
+              },
+              {
+                step: 4,
+                title: "Stay on Top of It",
+                desc: "Save pros, generate PDF reports, share links, and revisit your timeline whenever something changes.",
+              },
+            ].map((item, i) => (
+              <div
+                key={item.step}
+                className="relative flex flex-col items-center text-center animate-stagger-in"
+                style={{ animationDelay: `${i * 0.1}s` }}
+              >
+                <div
+                  className="h-16 w-16 rounded-2xl flex items-center justify-center mb-4 font-bold text-xl"
+                  style={{
+                    background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
+                    color: LANDING_COLORS.white,
+                  }}
+                >
+                  {item.step}
+                </div>
+                <h3
+                  className="font-bold text-lg mb-2"
+                  style={{ color: LANDING_COLORS.foreground }}
+                >
+                  {item.title}
+                </h3>
+                <p
+                  className="text-sm font-light leading-relaxed"
+                  style={{ color: LANDING_COLORS.mutedForeground }}
+                >
+                  {item.desc}
+                </p>
+                {item.step < 4 && (
+                  <div
+                    className="hidden lg:block absolute top-8 -right-4 w-8 h-0.5"
+                    style={{ backgroundColor: LANDING_COLORS.primary20 }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* AI Intelligence Engine Section */}
       <section
@@ -701,477 +812,6 @@ export default function LandingPageClient() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section
-        id="features"
-        className="py-32 relative overflow-hidden w-full transition-all duration-1000"
-        style={{ backgroundColor: "#0f0f14" }}
-      >
-        <div
-          className="absolute inset-0 w-full"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
-          }}
-        />
-        <div
-          className="container relative mx-auto px-4"
-          style={{ maxWidth: "1400px" }}
-        >
-          <div className="text-center mb-20 space-y-6">
-            <div
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm"
-              style={{
-                backgroundColor: LANDING_COLORS.primaryLight,
-                borderColor: LANDING_COLORS.primaryBorder,
-              }}
-            >
-              <span
-                className="text-sm font-semibold tracking-wide"
-                style={{ color: LANDING_COLORS.primary }}
-              >
-                INTEGRATED PLATFORM SERVICES
-              </span>
-            </div>
-            <h2
-              className="text-5xl lg:text-6xl font-light tracking-tight"
-              style={{ color: LANDING_COLORS.foreground }}
-            >
-              Everything You Need
-              <br />
-              <span
-                className="font-bold"
-                style={{
-                  background: `linear-gradient(to right, ${LANDING_COLORS.foreground}, ${LANDING_COLORS.foreground70})`,
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
-                In One Platform
-              </span>
-            </h2>
-            <p
-              className="text-xl max-w-2xl mx-auto font-light"
-              style={{ color: LANDING_COLORS.mutedForeground }}
-            >
-              A unified platform where checkpoints, timeline insights,
-              document management, and service planning work together
-              seamlessly
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
-            {[
-              {
-                title: "Timeline",
-                desc: "Take photos and videos over time and build a visual history for every room and area.",
-                icon: "M13 10V3L4 14h7v7l9-11h-7z",
-              },
-              {
-                title: "Property Checkpoints",
-                desc: "See simple condition scores and trends so you know what needs attention first.",
-                icon: "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
-              },
-              {
-                title: "Two Ways to Chat",
-                desc: "Ask about your documents, or chat about photos from your timeline. Switch anytime.",
-                icon: "M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z",
-              },
-              {
-                title: "Before & After Comparisons",
-                desc: "Line up two visits side by side and clearly see what changed.",
-                icon: "M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z",
-              },
-              {
-                title: "My pros",
-                desc: "Save local pros the AI recommends and find them again on the property Details tab.",
-                icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z",
-              },
-              {
-                title: "Share Your Answers",
-                desc: "Send a read-only link to a chat so contractors or family can see what the AI found.",
-                icon: "M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z",
-              },
-              {
-                title: "Multiple Properties",
-                desc: "Manage every home or rental from one account—each with its own timeline, docs, and chats.",
-                icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
-              },
-              {
-                title: "Property Reports",
-                desc: "Turn checkpoint photos into branded PDFs—snapshot for showings, comparison for move-in/out, or insurance documentation. Share or download.",
-                icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-              },
-              {
-                title: "Repair Guidance",
-                desc: "Get clear next steps, cost ranges, and product ideas without reading long reports.",
-                icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-              },
-            ].map((item, i) => (
-              <div
-                key={item.title}
-                className="border rounded-lg transition-all duration-500 hover:-translate-y-2 p-6 animate-stagger-in"
-                style={{
-                  backgroundColor: "rgba(20,20,28,0.6)",
-                  backdropFilter: "blur(4px)",
-                  borderColor: LANDING_COLORS.border,
-                  animationDelay: `${i * 0.08}s`,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(34,211,238,0.4)";
-                  e.currentTarget.style.boxShadow = `0 25px 50px -12px ${LANDING_COLORS.primary20}`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = LANDING_COLORS.border;
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-              >
-                <div className="flex items-start gap-4">
-                  <div
-                    className="h-14 w-14 rounded-xl flex flex-shrink-0 items-center justify-center"
-                    style={{
-                      background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
-                    }}
-                  >
-                    <svg
-                      className="h-7 w-7"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      style={{ color: LANDING_COLORS.white }}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d={item.icon}
-                      />
-                    </svg>
-                  </div>
-                  <div className="flex-1 pt-0.5">
-                    <h3
-                      className="text-xl font-bold mb-2"
-                      style={{ color: LANDING_COLORS.foreground }}
-                    >
-                      {item.title}
-                    </h3>
-                    <p
-                      className="text-sm leading-relaxed font-light"
-                      style={{ color: LANDING_COLORS.mutedForeground }}
-                    >
-                      {item.desc}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Property Reports Section */}
-      <section
-        id="reports"
-        className="py-32 relative overflow-hidden w-full scroll-mt-24"
-        style={{ backgroundColor: LANDING_COLORS.background }}
-      >
-        <div
-          className="absolute inset-0 w-full"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
-          }}
-        />
-        <div
-          className="container relative mx-auto px-4"
-          style={{ maxWidth: "1400px" }}
-        >
-          <div className="text-center mb-20 space-y-6">
-            <div
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm"
-              style={{
-                backgroundColor: LANDING_COLORS.primaryLight,
-                borderColor: LANDING_COLORS.primaryBorder,
-              }}
-            >
-              <span
-                className="text-sm font-semibold tracking-wide"
-                style={{ color: LANDING_COLORS.primary }}
-              >
-                FORMAL PDF REPORTS
-              </span>
-            </div>
-            <h2
-              className="text-5xl lg:text-6xl font-light tracking-tight"
-              style={{ color: LANDING_COLORS.foreground }}
-            >
-              Turn Checkpoints Into
-              <br />
-              <span
-                className="font-bold"
-                style={{
-                  background: `linear-gradient(to right, ${LANDING_COLORS.primary}, ${LANDING_COLORS.foreground70})`,
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
-                Shareable Reports
-              </span>
-            </h2>
-            <p
-              className="text-xl max-w-3xl mx-auto font-light leading-relaxed"
-              style={{ color: LANDING_COLORS.mutedForeground }}
-            >
-              Generate branded PDFs from your timeline—frozen at generation time
-              so what you share stays accurate. Pick a purpose, preview sections,
-              then download or send a link.
-            </p>
-            <p
-              className="text-sm max-w-2xl mx-auto font-light mt-6"
-              style={{ color: LANDING_COLORS.mutedForeground }}
-            >
-              Insurance teams can request a redacted sample during a pilot — see{" "}
-              <Link
-                href="/solutions/insurance"
-                className="underline underline-offset-4"
-                style={{ color: LANDING_COLORS.primary }}
-              >
-                insurance solutions
-              </Link>
-              .
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {[
-              {
-                title: "Showing / listing",
-                desc: "Single-date condition snapshot with executive summary, room status, and headline metrics—ideal before or after a showing.",
-              },
-              {
-                title: "Move-in / move-out",
-                desc: "Compare two periods with before/after photos, issue tables, and visual-diff callouts—built for security deposits and lease records.",
-              },
-              {
-                title: "Insurance / claim",
-                desc: "Document damage with photos, metrics, and change highlights in a formal PDF you can attach to a claim or share with an adjuster.",
-              },
-            ].map((item, i) => (
-              <div
-                key={item.title}
-                className="border rounded-2xl p-8 transition-all duration-500 hover:-translate-y-2 animate-stagger-in"
-                style={{
-                  backgroundColor: "rgba(20,20,28,0.6)",
-                  backdropFilter: "blur(4px)",
-                  borderColor: LANDING_COLORS.border,
-                  animationDelay: `${i * 0.1}s`,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(34,211,238,0.4)";
-                  e.currentTarget.style.boxShadow = `0 25px 50px -12px ${LANDING_COLORS.primary20}`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = LANDING_COLORS.border;
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-              >
-                <h3
-                  className="text-xl font-bold mb-3"
-                  style={{ color: LANDING_COLORS.foreground }}
-                >
-                  {item.title}
-                </h3>
-                <p
-                  className="text-sm leading-relaxed font-light"
-                  style={{ color: LANDING_COLORS.mutedForeground }}
-                >
-                  {item.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* AI Agents Section */}
-      <section
-        id="ai-agents"
-        className="py-32 relative overflow-hidden w-full"
-        style={{ backgroundColor: LANDING_COLORS.background }}
-      >
-        <div
-          className="absolute inset-0 w-full"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
-          }}
-        />
-        <div
-          className="container relative mx-auto px-4"
-          style={{ maxWidth: "1400px" }}
-        >
-          <div className="text-center mb-20 space-y-6">
-            <div
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm"
-              style={{
-                backgroundColor: LANDING_COLORS.primaryLight,
-                borderColor: LANDING_COLORS.primaryBorder,
-              }}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                style={{ color: LANDING_COLORS.primary }}
-              >
-                <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2Z" />
-              </svg>
-              <span
-                className="text-sm font-semibold tracking-wide"
-                style={{ color: LANDING_COLORS.primary }}
-              >
-                CHECKPOINT-POWERED INTELLIGENCE
-              </span>
-            </div>
-            <h2
-              className="text-5xl lg:text-6xl font-light tracking-tight"
-              style={{ color: LANDING_COLORS.foreground }}
-            >
-              Platform Intelligence
-              <br />
-              <span
-                className="font-bold"
-                style={{
-                  background: `linear-gradient(to right, ${LANDING_COLORS.primary}, ${LANDING_COLORS.foreground70})`,
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
-                Powered by AI Agents
-              </span>
-            </h2>
-            <p
-              className="text-xl max-w-3xl mx-auto font-light leading-relaxed"
-              style={{ color: LANDING_COLORS.mutedForeground }}
-            >
-              Specialized agents work together—starting with your timeline
-              photos or saved reports, then pulling in warranty checks, repair
-              steps, local pros, and cost estimates when you need them.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-            {[
-              {
-                title: "Timeline Agent",
-                desc: "Looks at your photos and past visits first, then brings in other help when you ask a question.",
-                icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-              },
-              {
-                title: "Coverage Agent",
-                desc: "Checks warranties, insurance, and service contracts against what your photos and documents show.",
-                icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
-              },
-              {
-                title: "DIY Agent",
-                desc: "Walks you through fixes step by step, including tools, safety tips, and helpful product ideas.",
-                icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z",
-              },
-              {
-                title: "Service Agent",
-                desc: "Suggests nearby pros that fit the issue shown in your photos and notes.",
-                icon: "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z",
-              },
-              {
-                title: "Cost Agent",
-                desc: "Gives rough cost ranges and compares doing it yourself versus hiring someone.",
-                icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-              },
-              {
-                title: "Report Agent",
-                desc: "Answers questions about saved property reports you attach in chat—using the frozen snapshot captured when each PDF was generated.",
-                icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-              },
-              {
-                title: "Working Together",
-                desc: "Everything stays connected—your photos, documents, saved reports, saved providers, and past chats feed into one clear answer.",
-                icon: "M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 17a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM14 17a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1v-2z",
-              },
-            ].map((item, i) => (
-              <div
-                key={item.title}
-                className="border rounded-lg transition-all duration-500 hover:-translate-y-2 p-6 animate-stagger-in"
-                style={{
-                  backgroundColor: "rgba(20,20,28,0.6)",
-                  backdropFilter: "blur(4px)",
-                  borderColor: LANDING_COLORS.border,
-                  animationDelay: `${i * 0.08}s`,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(34,211,238,0.4)";
-                  e.currentTarget.style.boxShadow = `0 25px 50px -12px ${LANDING_COLORS.primary20}`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = LANDING_COLORS.border;
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-              >
-                <div className="flex items-start gap-4">
-                  <div
-                    className="h-14 w-14 rounded-xl flex flex-shrink-0 items-center justify-center"
-                    style={{
-                      background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
-                    }}
-                  >
-                    <svg
-                      className="h-7 w-7"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      style={{ color: LANDING_COLORS.white }}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d={item.icon}
-                      />
-                    </svg>
-                  </div>
-                  <div className="flex-1 pt-0.5">
-                    <h3
-                      className="text-xl font-bold mb-2"
-                      style={{ color: LANDING_COLORS.foreground }}
-                    >
-                      {item.title}
-                    </h3>
-                    <p
-                      className="text-sm leading-relaxed font-light"
-                      style={{ color: LANDING_COLORS.mutedForeground }}
-                    >
-                      {item.desc}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Timeline Feature Details - Property Checkpoints */}
       <section
         id="timeline-feature"
@@ -1580,17 +1220,17 @@ export default function LandingPageClient() {
         </div>
       </section>
 
-      {/* How It Works */}
+      {/* Property Reports Section */}
       <section
-        id="how-it-works"
-        className="py-32 relative overflow-hidden w-full"
-        style={{ backgroundColor: "#0f0f14" }}
+        id="reports"
+        className="py-32 relative overflow-hidden w-full scroll-mt-24"
+        style={{ backgroundColor: LANDING_COLORS.background }}
       >
         <div
           className="absolute inset-0 w-full"
           style={{
             backgroundImage:
-              "linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)",
+              "linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)",
             backgroundSize: "24px 24px",
           }}
         />
@@ -1598,7 +1238,7 @@ export default function LandingPageClient() {
           className="container relative mx-auto px-4"
           style={{ maxWidth: "1400px" }}
         >
-          <div className="text-center mb-16 space-y-4">
+          <div className="text-center mb-20 space-y-6">
             <div
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm"
               style={{
@@ -1610,89 +1250,96 @@ export default function LandingPageClient() {
                 className="text-sm font-semibold tracking-wide"
                 style={{ color: LANDING_COLORS.primary }}
               >
-                GET STARTED IN MINUTES
+                FORMAL PDF REPORTS
               </span>
             </div>
             <h2
-              className="text-4xl lg:text-5xl font-light tracking-tight"
+              className="text-5xl lg:text-6xl font-light tracking-tight"
               style={{ color: LANDING_COLORS.foreground }}
             >
-              Four steps.{" "}
+              Turn Checkpoints Into
+              <br />
               <span
                 className="font-bold"
                 style={{
-                  background: `linear-gradient(to right, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
+                  background: `linear-gradient(to right, ${LANDING_COLORS.primary}, ${LANDING_COLORS.foreground70})`,
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
                 }}
               >
-                Full clarity.
+                Shareable Reports
               </span>
             </h2>
             <p
-              className="text-lg max-w-2xl mx-auto font-light"
+              className="text-xl max-w-3xl mx-auto font-light leading-relaxed"
               style={{ color: LANDING_COLORS.mutedForeground }}
             >
-              Add a property, ask a question, get a clear answer, stay
-              organised. That&apos;s it.
+              Generate branded PDFs from your timeline—frozen at generation time
+              so what you share stays accurate. Pick a purpose, preview sections,
+              then download or send a link.
+            </p>
+            <p
+              className="text-sm max-w-2xl mx-auto font-light mt-6"
+              style={{ color: LANDING_COLORS.mutedForeground }}
+            >
+              Insurance teams can request a redacted sample during a pilot — see{" "}
+              <Link
+                href="/solutions/insurance"
+                className="underline underline-offset-4"
+                style={{ color: LANDING_COLORS.primary }}
+              >
+                insurance solutions
+              </Link>
+              .
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {[
               {
-                step: 1,
-                title: "Add Your Property",
-                desc: "Create a property, snap your first photos, and upload any documents. Takes under five minutes.",
+                title: "Showing / listing",
+                desc: "Single-date condition snapshot with executive summary, room status, and headline metrics—ideal before or after a showing.",
               },
               {
-                step: 2,
-                title: "Ask a Question",
-                desc: "Chat with your photos or your paperwork — whichever fits your question. Switch modes anytime.",
+                title: "Move-in / move-out",
+                desc: "Compare two periods with before/after photos, issue tables, and visual-diff callouts—built for security deposits and lease records.",
               },
               {
-                step: 3,
-                title: "Get Clear Answers",
-                desc: "Costs, repair steps, coverage checks, and matched local pros — one conversation, no tab-switching.",
-              },
-              {
-                step: 4,
-                title: "Stay on Top of It",
-                desc: "Save pros, generate PDF reports, share links, and revisit your timeline whenever something changes.",
+                title: "Insurance / claim",
+                desc: "Document damage with photos, metrics, and change highlights in a formal PDF you can attach to a claim or share with an adjuster.",
               },
             ].map((item, i) => (
               <div
-                key={item.step}
-                className="relative flex flex-col items-center text-center animate-stagger-in"
-                style={{ animationDelay: `${i * 0.1}s` }}
+                key={item.title}
+                className="border rounded-2xl p-8 transition-all duration-500 hover:-translate-y-2 animate-stagger-in"
+                style={{
+                  backgroundColor: "rgba(20,20,28,0.6)",
+                  backdropFilter: "blur(4px)",
+                  borderColor: LANDING_COLORS.border,
+                  animationDelay: `${i * 0.1}s`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(34,211,238,0.4)";
+                  e.currentTarget.style.boxShadow = `0 25px 50px -12px ${LANDING_COLORS.primary20}`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = LANDING_COLORS.border;
+                  e.currentTarget.style.boxShadow = "none";
+                }}
               >
-                <div
-                  className="h-16 w-16 rounded-2xl flex items-center justify-center mb-4 font-bold text-xl"
-                  style={{
-                    background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
-                    color: LANDING_COLORS.white,
-                  }}
-                >
-                  {item.step}
-                </div>
                 <h3
-                  className="font-bold text-lg mb-2"
+                  className="text-xl font-bold mb-3"
                   style={{ color: LANDING_COLORS.foreground }}
                 >
                   {item.title}
                 </h3>
                 <p
-                  className="text-sm font-light leading-relaxed"
+                  className="text-sm leading-relaxed font-light"
                   style={{ color: LANDING_COLORS.mutedForeground }}
                 >
                   {item.desc}
                 </p>
-                {item.step < 4 && (
-                  <div
-                    className="hidden lg:block absolute top-8 -right-4 w-8 h-0.5"
-                    style={{ backgroundColor: LANDING_COLORS.primary20 }}
-                  />
-                )}
               </div>
             ))}
           </div>
@@ -1746,8 +1393,9 @@ export default function LandingPageClient() {
               className="text-xl max-w-2xl mx-auto font-light leading-relaxed"
               style={{ color: LANDING_COLORS.mutedForeground }}
             >
-              Join thousands of homeowners, landlords, and property managers using our
-              unified platform for all their property care needs
+              One unified platform for homeowners, landlords, and property
+              managers to capture, understand, and act on everything their
+              properties need.
             </p>
             <div className="flex flex-col sm:flex-row gap-5 justify-center pt-6">
               {user ? (

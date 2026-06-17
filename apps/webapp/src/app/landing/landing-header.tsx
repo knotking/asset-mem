@@ -16,10 +16,9 @@ import { LANDING_COLORS } from '@/lib/landing-theme';
 
 const NAV_LINKS = [
   { href: '#', targetId: '#', label: 'Home', sectionId: '' },
-  { href: '#use-cases', targetId: '#use-cases', label: 'Use Cases', sectionId: 'use-cases' },
-  { href: '#features', targetId: '#features', label: 'Features', sectionId: 'features' },
-  { href: '#reports', targetId: '#reports', label: 'Reports', sectionId: 'reports' },
   { href: '#how-it-works', targetId: '#how-it-works', label: 'How It Works', sectionId: 'how-it-works' },
+  { href: '#use-cases', targetId: '#use-cases', label: 'Use Cases', sectionId: 'use-cases' },
+  { href: '#reports', targetId: '#reports', label: 'Reports', sectionId: 'reports' },
   { href: '#pricing', targetId: '#pricing', label: 'Pricing', sectionId: 'pricing' },
 ] as const;
 

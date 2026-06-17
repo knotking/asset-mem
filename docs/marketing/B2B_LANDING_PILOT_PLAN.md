@@ -19,7 +19,7 @@ AssetMem AI is a B2C product today (individual Firebase users, Stripe Free/Plus/
 | Shareable report + chat links | Shipped | `apps/common/src/lib/shared-report.ts`, `shared-chat.ts` |
 | Org accounts, SSO, API keys | **Not built** | Do not promise on landing |
 
-The landing page (`apps/webapp/src/app/landing/`) uses a **dual-path** model on one URL: B2C-primary by default (`Get Started` → `/login`, `#pricing`), with a parallel B2B path (`#pilot`, Talk to us). Outbound B2B campaigns can use `?audience=b2b` for a team-first hero. Segment detail pages live under `/solutions/*`.
+The landing page (`apps/webapp/src/app/landing/`) uses a **dual-path** model on one URL: B2C-primary by default (`Get Started` → `/login`, `#pricing`), with a parallel B2B path (`#pilot`, Talk to us). Segment detail pages live under `/solutions/*`. (A `?audience=b2b` hero switch and a dedicated `#trust` block were scoped but **dropped** — the single B2C-first hero serves both paths.)
 
 ---
 
@@ -58,10 +58,10 @@ Minimum viable B2B landing for outbound and LinkedIn tests.
 |---|--------|-------|
 | B1 | Nav: **Solutions** dropdown + **Pilot** link | `landing-header.tsx` |
 | B2 | Solution pages (copy-only routes) | `apps/webapp/src/app/solutions/*/page.tsx` |
-| B3 | Trust / security block (honest, no overclaim) | `components/landing/trust-section.tsx`, `landing-client.tsx` |
+| B3 | ~~Trust / security block~~ — **dropped** (kept landing lean) | — |
 | B4 | Sample insurance report PDF (redacted) in `public/` | `public/samples/`, reports section link |
 | B5 | SEO: B2B keywords + OG for solutions pages | `lib/site.ts`, per-page `metadata` |
-| B6 | Top banner for B2B visitors (optional UTM `?audience=b2b`) | `landing-client.tsx` or `components/landing/b2b-banner.tsx` |
+| B6 | ~~Top banner / `?audience=b2b` hero switch~~ — **dropped** (single B2C-first hero) | — |
 
 ### Tier C — After first signed pilot
 

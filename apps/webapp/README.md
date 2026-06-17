@@ -68,11 +68,10 @@ Publish new Remote Config values and the webapp will pick them up on the next fe
 
 ## Landing dual path (B2C + B2B)
 
-One homepage (`/`) serves both audiences:
+One homepage (`/`) is B2C-primary (homeowner hero, **Get Started** + Watch Demo) with a parallel B2B path layered in:
 
-| Audience | URL | Hero |
-|----------|-----|------|
-| Default (homeowners) | `/` | B2C headline, **Get Started** + Watch Demo |
-| B2B campaigns | `/?audience=b2b` | Team headline, **Talk to us** + banner to switch back |
+- B2B section `#pilot` (Talk to us / pilot CTA)
+- Enterprise card in the pricing section
+- Segment detail pages under `/solutions/*` (property managers, insurance, field teams, prop-tech)
 
-B2B sections: `#pilot`, Enterprise pricing card, `/solutions/*` (property managers, insurance, field teams, prop-tech). Trust block at `#trust`.
+Section order: hero → how-it-works → AI engine → use cases → features → timeline → docs chat → reports → pilot → pricing → CTA → contact.
