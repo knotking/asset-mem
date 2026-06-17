@@ -15,14 +15,14 @@ import {
   SITE_HERO_HEADLINE_PRIMARY_B2B,
 } from "@/lib/site";
 import {
-  getPilotFormUrl,
+  getPilotConfigFromEnv,
   getPilotMailtoHref,
-  getPilotsEmail,
+  type PilotConfig,
 } from "@/lib/pilot-config";
 import { PilotSection } from "@/components/landing/pilot-section";
 import {
   DEFAULT_LANDING_DEMO_VIDEO_URLS,
-  fetchLandingDemoVideoUrlsFromRemoteConfig,
+  fetchLandingRemoteConfig,
   type LandingDemoVideoUrls,
 } from "@/lib/landing-demo-video";
 import "./landing-animations.css";
@@ -99,17 +99,21 @@ export default function LandingPageClient() {
   const [demoVideoUrls, setDemoVideoUrls] = useState<LandingDemoVideoUrls>(
     DEFAULT_LANDING_DEMO_VIDEO_URLS,
   );
+  const [pilotConfig, setPilotConfig] = useState<PilotConfig>(() =>
+    getPilotConfigFromEnv(),
+  );
 
   useEffect(() => {
     let cancelled = false;
-    const loadDemoVideoUrls = async () => {
-      const urls = await fetchLandingDemoVideoUrlsFromRemoteConfig();
+    const loadLandingRemoteConfig = async () => {
+      const remote = await fetchLandingRemoteConfig();
       if (!cancelled) {
-        setDemoVideoUrls(urls);
+        setDemoVideoUrls(remote.demoVideos);
+        setPilotConfig(remote.pilot);
       }
     };
 
-    void loadDemoVideoUrls();
+    void loadLandingRemoteConfig();
     return () => {
       cancelled = true;
     };
@@ -229,10 +233,11 @@ export default function LandingPageClient() {
     handleNavClick(e, "#pilot");
   };
 
-  const pilotFormUrl = getPilotFormUrl();
-  const pilotContactHref = pilotFormUrl ?? getPilotMailtoHref();
+  const pilotFormUrl = pilotConfig.formUrl;
+  const pilotContactHref =
+    pilotFormUrl ?? getPilotMailtoHref(pilotConfig.pilotsEmail);
   const pilotContactExternal = Boolean(pilotFormUrl);
-  const pilotsEmail = getPilotsEmail();
+  const pilotsEmail = pilotConfig.pilotsEmail;
 
   // IMPORTANT: All hooks must be called before any conditional returns (Rules of Hooks)
 
@@ -1960,7 +1965,7 @@ export default function LandingPageClient() {
         </div>
       </section>
 
-      <PilotSection colors={LANDING_COLORS} />
+      <PilotSection colors={LANDING_COLORS} pilot={pilotConfig} />
 
       <LandingPricingSection colors={LANDING_COLORS} />
 

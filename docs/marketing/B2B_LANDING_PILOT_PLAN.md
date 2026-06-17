@@ -52,7 +52,7 @@ Minimum viable B2B landing for outbound and LinkedIn tests.
 | A4 | Reframe 3–4 use-case cards for B2B language | `landing-client.tsx` (use-cases array) |
 | A5 | Upgrade `#contact` → pilot-focused CTA block | `landing-client.tsx` |
 | A6 | Analytics labels on B2B CTAs | `landing-client.tsx`, `landing-header.tsx`, `lib/analytics.ts` |
-| A7 | Env var for pilot form URL (Typeform / Calendly / Tally) | `apps/webapp/.env.example`, `lib/site.ts` or `lib/pilot-config.ts` |
+| A7 | Pilot form URL + email via Firebase Remote Config (`pilot_form_url`, `pilots_email`); env fallbacks | `landing-remote-config.ts`, `pilot-config.ts`, `.env.example` |
 
 ### Tier B — Better inbound (3–5 days)
 
@@ -138,7 +138,7 @@ Insert after `#how-it-works`, before `#pricing`.
    - Weekly feedback cadence
 6. **CTA:** embed or link to external form
 
-**Env config:**
+**Env config (local / fallback):**
 
 ```bash
 # apps/webapp/.env.example
@@ -146,7 +146,9 @@ NEXT_PUBLIC_PILOT_FORM_URL=https://tally.so/r/xxxx  # or Calendly / Typeform
 NEXT_PUBLIC_PILOTS_EMAIL=pilots@asset-mem.com
 ```
 
-If `NEXT_PUBLIC_PILOT_FORM_URL` is set, render iframe or prominent button; else fall back to `mailto:NEXT_PUBLIC_PILOTS_EMAIL` with prefilled subject `AssetMem AI pilot request`.
+**Production (preferred):** Firebase Remote Config parameters `pilot_form_url` and `pilots_email` (same fetch as landing demo URLs — see `apps/webapp/src/lib/landing-remote-config.ts`). Non-empty Remote Config values override env at runtime.
+
+If no form URL is configured, fall back to `mailto:` using `pilots_email` / `NEXT_PUBLIC_PILOTS_EMAIL` with prefilled subject `AssetMem AI pilot request`.
 
 **Form fields** (external form — document in ops runbook):
 
@@ -335,7 +337,7 @@ Use *"co-designed in pilot"* or *"on our enterprise roadmap"* for gaps.
 
 ## Deploy and ops
 
-1. Create external pilot form (Tally / Typeform / Calendly) and set `NEXT_PUBLIC_PILOT_FORM_URL` in `apphosting.staging.yaml` / `apphosting.prod.yaml`.
+1. Create external pilot form (Tally / Typeform / Calendly) and publish `pilot_form_url` + `pilots_email` in Firebase Remote Config (staging/prod). Optional env fallbacks in `apphosting.*.yaml` for first paint.
 2. Optional: `pilots@asset-mem.com` alias → `support@asset-mem.com`.
 3. Deploy webapp via `deploy-webapp-apphosting.yaml`.
 4. Smoke test: all `#pilot` anchors, solution pages, B2C signup/checkout unchanged.

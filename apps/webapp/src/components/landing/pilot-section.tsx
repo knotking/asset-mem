@@ -1,9 +1,9 @@
 "use client";
 
 import {
-  getPilotFormUrl,
   getPilotMailtoHref,
   isEmbeddablePilotFormUrl,
+  type PilotConfig,
 } from "@/lib/pilot-config";
 import { trackPilotCta } from "@/lib/analytics";
 import type { LandingPricingPalette } from "@/components/billing/plan-pricing-cards";
@@ -46,11 +46,12 @@ const CO_DESIGNED = [
 
 type PilotSectionProps = {
   colors: LandingPricingPalette;
+  pilot: PilotConfig;
 };
 
-export function PilotSection({ colors: c }: PilotSectionProps) {
-  const formUrl = getPilotFormUrl();
-  const mailtoHref = getPilotMailtoHref();
+export function PilotSection({ colors: c, pilot }: PilotSectionProps) {
+  const formUrl = pilot.formUrl;
+  const mailtoHref = getPilotMailtoHref(pilot.pilotsEmail);
   const showEmbed = formUrl && isEmbeddablePilotFormUrl(formUrl);
 
   const handlePilotCta = (label: string) => {

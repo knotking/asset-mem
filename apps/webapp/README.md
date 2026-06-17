@@ -52,12 +52,16 @@ Copy `.env.example` to `.env` and set values. For **Settings → AI usage**, lim
 - `src/lib/`: Utility functions and types.
 - `src/scripts/`: Migration and utility scripts.
 
-## Landing Demo Video URLs (No Redeploy)
+## Landing Remote Config (No Redeploy)
 
-Landing page demo links are loaded from Firebase Remote Config at runtime (with safe defaults).
+Landing page values are loaded from Firebase Remote Config at runtime (with env / built-in fallbacks).
 
 - Parameters:
   - `landing_demo_mobile_url` (string)
   - `landing_demo_desktop_url` (string)
+  - `pilot_form_url` (string) — Tally, Typeform, Calendly, etc.
+  - `pilots_email` (string) — B2B pilot contact inbox
+
+Local dev fallbacks: `NEXT_PUBLIC_PILOT_FORM_URL`, `NEXT_PUBLIC_PILOTS_EMAIL` in `.env`.
 
 Publish new Remote Config values and the webapp will pick them up on the next fetch interval (short in non-prod, longer in prod).
