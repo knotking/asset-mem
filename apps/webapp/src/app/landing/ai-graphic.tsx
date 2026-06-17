@@ -7,7 +7,48 @@ const LANDING_COLORS = {
   surfaceBorder: 'rgba(148, 163, 184, 0.2)',
   textMain: '#e2e8f0',
   textMuted: 'rgba(203, 213, 225, 0.78)',
+  warn: '#fca5a5',
+  warnBg: 'rgba(239, 68, 68, 0.12)',
+  ok: '#86efac',
+  okBg: 'rgba(34, 197, 94, 0.12)',
 };
+
+const PORTFOLIO_PROPERTIES = [
+  {
+    name: 'Unit 4B — Maple Apts',
+    score: 58,
+    status: 'Attention',
+    statusTone: 'warn' as const,
+    detail: 'Moisture trend ↑',
+  },
+  {
+    name: '1842 Oak Street',
+    score: 74,
+    status: 'Stable',
+    statusTone: 'ok' as const,
+    detail: 'Last walkthrough 3d ago',
+  },
+  {
+    name: 'Claim #CC-9021',
+    score: 52,
+    status: 'Review',
+    statusTone: 'warn' as const,
+    detail: 'Roof damage flagged',
+  },
+];
+
+function statusStyles(tone: 'warn' | 'ok') {
+  if (tone === 'warn') {
+    return {
+      color: LANDING_COLORS.warn,
+      backgroundColor: LANDING_COLORS.warnBg,
+    };
+  }
+  return {
+    color: LANDING_COLORS.ok,
+    backgroundColor: LANDING_COLORS.okBg,
+  };
+}
 
 export default function AIGraphic() {
   return (
@@ -43,115 +84,248 @@ export default function AIGraphic() {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.06)_1px,transparent_1px)] bg-[size:36px_36px] opacity-35" />
 
         <div className="relative z-10 flex h-full flex-col gap-3 p-4 sm:p-6">
-          <div className="flex items-center justify-between rounded-xl border px-4 py-2 text-xs backdrop-blur-sm"
-            style={{ backgroundColor: LANDING_COLORS.surface, borderColor: LANDING_COLORS.surfaceBorder, color: LANDING_COLORS.textMuted }}>
-            <span style={{ color: 'rgba(226,232,240,0.92)' }}>Property Timeline</span>
-            <span className="rounded-full px-2 py-0.5 text-[10px]" style={{ backgroundColor: 'rgba(34,211,238,0.15)', color: '#67e8f9' }}>
-              Live
+          <div
+            className="flex items-center justify-between rounded-xl border px-4 py-2 text-xs backdrop-blur-sm"
+            style={{
+              backgroundColor: LANDING_COLORS.surface,
+              borderColor: LANDING_COLORS.surfaceBorder,
+              color: LANDING_COLORS.textMuted,
+            }}
+          >
+            <span style={{ color: 'rgba(226,232,240,0.92)' }}>
+              Portfolio overview
             </span>
-          </div>
-
-          <div className="relative grid grid-cols-2 gap-2 sm:gap-3">
-            {/* Before */}
-            <div className="rounded-xl border p-2.5 sm:p-3 backdrop-blur-sm" style={{ backgroundColor: LANDING_COLORS.surface, borderColor: LANDING_COLORS.surfaceBorder }}>
-              <div className="mb-2 flex items-center justify-between text-[11px]">
-                <span style={{ color: LANDING_COLORS.textMuted }}>Kitchen • Feb 2026</span>
-                <span className="rounded px-1.5 py-0.5 text-[9px] font-semibold" style={{ backgroundColor: 'rgba(148,163,184,0.12)', color: 'rgba(148,163,184,0.8)' }}>BEFORE</span>
-              </div>
-              <div className="relative h-16 sm:h-20 rounded-md overflow-hidden" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #1e293b 100%)' }}>
-                <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(148,163,184,0.08) 8px, rgba(148,163,184,0.08) 9px), repeating-linear-gradient(90deg, transparent, transparent 12px, rgba(148,163,184,0.06) 12px, rgba(148,163,184,0.06) 13px)' }} />
-                <div className="absolute bottom-2 left-2 right-2 h-1.5 rounded-full opacity-20" style={{ backgroundColor: 'rgba(148,163,184,0.5)' }} />
-              </div>
-              <div className="mt-2 text-[11px] font-medium" style={{ color: LANDING_COLORS.textMain }}>Minor wear detected</div>
-            </div>
-
-            {/* After */}
-            <div className="rounded-xl border p-2.5 sm:p-3 backdrop-blur-sm" style={{ backgroundColor: LANDING_COLORS.surface, borderColor: 'rgba(34,211,238,0.4)' }}>
-              <div className="mb-2 flex items-center justify-between text-[11px]">
-                <span style={{ color: LANDING_COLORS.textMuted }}>Kitchen • Jun 2026</span>
-                <span className="rounded px-1.5 py-0.5 text-[9px] font-semibold" style={{ backgroundColor: 'rgba(34,211,238,0.15)', color: '#67e8f9' }}>AFTER</span>
-              </div>
-              <div className="relative h-16 sm:h-20 rounded-md overflow-hidden" style={{ background: 'linear-gradient(135deg, #0c2233 0%, #0a1628 50%, #0d1f35 100%)' }}>
-                <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(34,211,238,0.06) 8px, rgba(34,211,238,0.06) 9px), repeating-linear-gradient(90deg, transparent, transparent 12px, rgba(34,211,238,0.04) 12px, rgba(34,211,238,0.04) 13px)' }} />
-                <div className="absolute top-2 right-2 h-2 w-2 rounded-full animate-pulse" style={{ backgroundColor: 'rgba(239,68,68,0.7)' }} />
-                <div className="absolute bottom-2 left-2 right-8 h-1.5 rounded-full opacity-30" style={{ backgroundColor: 'rgba(34,211,238,0.6)' }} />
-              </div>
-              <div className="mt-2 text-[11px] font-medium" style={{ color: '#a5f3fc' }}>Moisture risk increased</div>
-            </div>
-
-            {/* Change badge */}
-            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-10 rounded-full border px-2.5 py-0.5 text-[9px] font-bold whitespace-nowrap" style={{ borderColor: 'rgba(239,68,68,0.4)', backgroundColor: 'rgba(239,68,68,0.12)', color: '#fca5a5' }}>
-              ▲ Change detected
-            </div>
-          </div>
-
-          <div className="mt-3 rounded-xl border p-3 backdrop-blur-sm" style={{ backgroundColor: LANDING_COLORS.surface, borderColor: LANDING_COLORS.surfaceBorder }}>
-            <div className="mb-3 flex items-center justify-between text-[11px]" style={{ color: 'rgba(226,232,240,0.84)' }}>
-              <span>Condition trend score</span>
-              <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: 'rgba(239,68,68,0.12)', color: '#fca5a5' }}>↑ +18% risk</span>
-            </div>
-            <div className="relative">
-              <div className="flex h-16 items-end gap-1.5 px-1">
-                {[24, 30, 36, 41, 47, 54, 61, 72, 84].map((h, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 rounded-sm"
-                    style={{
-                      height: `${h}%`,
-                      backgroundColor: i === 8 ? 'rgba(34,211,238,0.9)' : `rgba(34,211,238,${0.25 + i * 0.07})`,
-                      boxShadow: i === 8 ? '0 0 8px rgba(34,211,238,0.5)' : 'none',
-                    }}
-                  />
-                ))}
-              </div>
-              <div className="mt-1.5 flex justify-between text-[10px] px-1" style={{ color: 'rgba(148,163,184,0.7)' }}>
-                <span>Feb</span>
-                <span>Jun</span>
-              </div>
-            </div>
+            <span
+              className="rounded-full px-2 py-0.5 text-[10px]"
+              style={{
+                backgroundColor: 'rgba(34,211,238,0.15)',
+                color: '#67e8f9',
+              }}
+            >
+              24 properties
+            </span>
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-[11px]">
-            <div className="rounded-lg border px-2.5 py-2 sm:px-3" style={{ borderColor: LANDING_COLORS.surfaceBorder, backgroundColor: 'rgba(15,23,42,0.58)' }}>
-              <div style={{ color: LANDING_COLORS.textMuted }}>Risk score</div>
-              <div className="mt-1 text-sm font-semibold" style={{ color: '#a5f3fc' }}>62 / 100</div>
+            <div
+              className="rounded-lg border px-2.5 py-2 sm:px-3"
+              style={{
+                borderColor: LANDING_COLORS.surfaceBorder,
+                backgroundColor: 'rgba(15,23,42,0.58)',
+              }}
+            >
+              <div style={{ color: LANDING_COLORS.textMuted }}>Need attention</div>
+              <div
+                className="mt-1 text-sm font-semibold"
+                style={{ color: LANDING_COLORS.warn }}
+              >
+                3 units
+              </div>
             </div>
-            <div className="rounded-lg border px-2.5 py-2 sm:px-3" style={{ borderColor: LANDING_COLORS.surfaceBorder, backgroundColor: 'rgba(15,23,42,0.58)' }}>
-              <div style={{ color: LANDING_COLORS.textMuted }}>Updated</div>
-              <div className="mt-1 text-sm font-semibold" style={{ color: LANDING_COLORS.textMain }}>2h ago</div>
+            <div
+              className="rounded-lg border px-2.5 py-2 sm:px-3"
+              style={{
+                borderColor: LANDING_COLORS.surfaceBorder,
+                backgroundColor: 'rgba(15,23,42,0.58)',
+              }}
+            >
+              <div style={{ color: LANDING_COLORS.textMuted }}>Avg score</div>
+              <div
+                className="mt-1 text-sm font-semibold"
+                style={{ color: '#a5f3fc' }}
+              >
+                71 / 100
+              </div>
             </div>
-            <div className="rounded-lg border px-2.5 py-2 sm:px-3" style={{ borderColor: LANDING_COLORS.surfaceBorder, backgroundColor: 'rgba(15,23,42,0.58)' }}>
-              <div style={{ color: LANDING_COLORS.textMuted }}>Priority</div>
-              <div className="mt-1 text-sm font-semibold" style={{ color: '#67e8f9' }}>Medium</div>
+            <div
+              className="rounded-lg border px-2.5 py-2 sm:px-3"
+              style={{
+                borderColor: LANDING_COLORS.surfaceBorder,
+                backgroundColor: 'rgba(15,23,42,0.58)',
+              }}
+            >
+              <div style={{ color: LANDING_COLORS.textMuted }}>Reports due</div>
+              <div
+                className="mt-1 text-sm font-semibold"
+                style={{ color: LANDING_COLORS.textMain }}
+              >
+                2 ready
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-1.5 sm:gap-2 text-[11px]">
-            <span className="rounded-full border px-2.5 py-1" style={{ borderColor: 'rgba(34,211,238,0.3)', color: '#a5f3fc', backgroundColor: 'rgba(34,211,238,0.1)' }}>
-              Seal grout in 30 days
-            </span>
-            <span className="rounded-full border px-2.5 py-1" style={{ borderColor: LANDING_COLORS.surfaceBorder, color: LANDING_COLORS.textMuted, backgroundColor: 'rgba(15,23,42,0.55)' }}>
-              Estimated cost: $220–$380
-            </span>
-            <span className="hidden sm:inline-flex rounded-full border px-2.5 py-1" style={{ borderColor: LANDING_COLORS.surfaceBorder, color: LANDING_COLORS.textMuted, backgroundColor: 'rgba(15,23,42,0.55)' }}>
-              2 local pros matched
-            </span>
+          <div
+            className="flex-1 min-h-0 rounded-xl border p-2.5 sm:p-3 backdrop-blur-sm space-y-2 overflow-hidden"
+            style={{
+              backgroundColor: LANDING_COLORS.surface,
+              borderColor: LANDING_COLORS.surfaceBorder,
+            }}
+          >
+            <div
+              className="flex items-center justify-between text-[11px] px-0.5"
+              style={{ color: 'rgba(226,232,240,0.84)' }}
+            >
+              <span>Flagged this week</span>
+              <span
+                className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                style={{
+                  backgroundColor: LANDING_COLORS.warnBg,
+                  color: LANDING_COLORS.warn,
+                }}
+              >
+                ↑ 2 new
+              </span>
+            </div>
+
+            {PORTFOLIO_PROPERTIES.map((property) => {
+              const badge = statusStyles(property.statusTone);
+              return (
+                <div
+                  key={property.name}
+                  className="flex items-center gap-2.5 rounded-lg border px-2.5 py-2 sm:px-3"
+                  style={{
+                    borderColor:
+                      property.statusTone === 'warn'
+                        ? 'rgba(239,68,68,0.25)'
+                        : LANDING_COLORS.surfaceBorder,
+                    backgroundColor: 'rgba(15,23,42,0.45)',
+                  }}
+                >
+                  <div
+                    className="h-9 w-9 shrink-0 rounded-md flex items-center justify-center text-xs font-bold tabular-nums"
+                    style={{
+                      backgroundColor:
+                        property.statusTone === 'warn'
+                          ? 'rgba(239,68,68,0.15)'
+                          : 'rgba(34,211,238,0.12)',
+                      color:
+                        property.statusTone === 'warn' ? '#fca5a5' : '#67e8f9',
+                    }}
+                  >
+                    {property.score}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className="text-[11px] font-medium truncate"
+                      style={{ color: LANDING_COLORS.textMain }}
+                    >
+                      {property.name}
+                    </div>
+                    <div
+                      className="text-[10px] truncate"
+                      style={{ color: LANDING_COLORS.textMuted }}
+                    >
+                      {property.detail}
+                    </div>
+                  </div>
+                  <span
+                    className="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-semibold"
+                    style={badge}
+                  >
+                    {property.status}
+                  </span>
+                </div>
+              );
+            })}
           </div>
 
-          <div className="mt-auto rounded-xl p-3 sm:p-4 transition-all duration-300 hover:-translate-y-0.5"
-            style={{ backgroundColor: 'rgba(12,18,32,0.95)', border: '1px solid rgba(34,211,238,0.3)', boxShadow: '0 0 0 1px rgba(34,211,238,0.06), 0 8px 32px -8px rgba(34,211,238,0.25)' }}>
+          <div
+            className="rounded-xl border p-3 backdrop-blur-sm"
+            style={{
+              backgroundColor: LANDING_COLORS.surface,
+              borderColor: LANDING_COLORS.surfaceBorder,
+            }}
+          >
+            <div
+              className="mb-2 flex items-center justify-between text-[11px]"
+              style={{ color: 'rgba(226,232,240,0.84)' }}
+            >
+              <span>Portfolio risk trend</span>
+              <span
+                className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                style={{
+                  backgroundColor: LANDING_COLORS.warnBg,
+                  color: LANDING_COLORS.warn,
+                }}
+              >
+                4 sites worsening
+              </span>
+            </div>
+            <div className="flex h-12 items-end gap-1 px-1">
+              {[38, 42, 45, 49, 53, 58, 62, 68, 74].map((h, i) => (
+                <div
+                  key={i}
+                  className="flex-1 rounded-sm"
+                  style={{
+                    height: `${h}%`,
+                    backgroundColor:
+                      i >= 7
+                        ? 'rgba(239,68,68,0.75)'
+                        : `rgba(34,211,238,${0.2 + i * 0.06})`,
+                    boxShadow:
+                      i === 8 ? '0 0 8px rgba(239,68,68,0.35)' : 'none',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div
+            className="mt-auto rounded-xl p-3 sm:p-4 transition-all duration-300 hover:-translate-y-0.5"
+            style={{
+              backgroundColor: 'rgba(12,18,32,0.95)',
+              border: '1px solid rgba(34,211,238,0.3)',
+              boxShadow:
+                '0 0 0 1px rgba(34,211,238,0.06), 0 8px 32px -8px rgba(34,211,238,0.25)',
+            }}
+          >
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(34,211,238,0.25), rgba(34,211,238,0.1))' }}>
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: '#22d3ee', width: '1.1rem', height: '1.1rem' }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-4m3 4V7m3 10v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <div
+                className="h-9 w-9 rounded-lg flex-shrink-0 flex items-center justify-center"
+                style={{
+                  background:
+                    'linear-gradient(135deg, rgba(34,211,238,0.25), rgba(34,211,238,0.1))',
+                }}
+              >
+                <svg
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  style={{ color: '#22d3ee', width: '1.1rem', height: '1.1rem' }}
+                  aria-hidden
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 17v-4m3 4V7m3 10v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-sm" style={{ color: LANDING_COLORS.textMain }}>Monthly report ready</span>
-                  <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: 'rgba(34,211,238,0.15)', color: '#67e8f9' }}>NEW</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span
+                    className="font-semibold text-sm"
+                    style={{ color: LANDING_COLORS.textMain }}
+                  >
+                    Portfolio report ready
+                  </span>
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[9px] font-bold"
+                    style={{
+                      backgroundColor: 'rgba(34,211,238,0.15)',
+                      color: '#67e8f9',
+                    }}
+                  >
+                    PDF
+                  </span>
                 </div>
-                <div className="text-xs mt-0.5" style={{ color: LANDING_COLORS.textMuted }}>3 changes flagged · 1 preventive action recommended</div>
+                <div
+                  className="text-xs mt-0.5"
+                  style={{ color: LANDING_COLORS.textMuted }}
+                >
+                  3 properties flagged · 2 claims docs attached
+                </div>
               </div>
             </div>
           </div>

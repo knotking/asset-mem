@@ -336,7 +336,7 @@ export default function LandingPageClient() {
                   className="text-sm font-semibold tracking-wide"
                   style={{ color: LANDING_COLORS.primary }}
                 >
-                  FOR PROPERTY TEAMS &amp; ENTERPRISE PILOTS
+                  FOR PROPERTY TEAMS
                 </span>
               </div>
 
@@ -378,7 +378,8 @@ export default function LandingPageClient() {
                 {SITE_HERO_DESCRIPTION_B2B}
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center flex-wrap">
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row gap-4">
                 {user ? (
                   <Link
                     href="/home"
@@ -481,11 +482,12 @@ export default function LandingPageClient() {
                     />
                   </>
                 )}
+                </div>
                 {!user ? (
                   <a
                     href="#pricing"
                     onClick={(e) => handleNavClick(e, "#pricing")}
-                    className="text-sm font-medium underline underline-offset-4 transition-colors sm:ml-2"
+                    className="inline-block text-sm font-light transition-colors"
                     style={{ color: LANDING_COLORS.mutedForeground }}
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.color = LANDING_COLORS.primary)
@@ -495,7 +497,10 @@ export default function LandingPageClient() {
                         LANDING_COLORS.mutedForeground)
                     }
                   >
-                    For homeowners — see plans
+                    For homeowners —{" "}
+                    <span className="underline underline-offset-4">
+                      see plans
+                    </span>
                   </a>
                 ) : null}
               </div>
