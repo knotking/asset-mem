@@ -74,4 +74,4 @@ One homepage (`/`) is B2C-primary (homeowner hero, **Get Started** + Watch Demo)
 - Enterprise card in the pricing section
 - Segment detail pages under `/solutions/*` (property managers, insurance, field teams, prop-tech)
 
-Section order: hero → how-it-works → AI engine → use cases → features → timeline → docs chat → reports → pilot → pricing → CTA → contact.
+Section order: hero → how-it-works → AI engine → use cases → docs chat → reports → pilot → pricing → CTA → contact.
