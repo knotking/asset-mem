@@ -79,13 +79,12 @@ export function LandingHero({
       >
         <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
           <div className="space-y-10 text-center lg:text-left">
-            <div className="space-y-6">
-              <h1
-                className="text-6xl lg:text-8xl font-light tracking-tight leading-none"
-                style={{ color: c.foreground }}
+            <div className="space-y-2">
+              <p
+                className="text-xs sm:text-sm font-medium tracking-[0.18em] uppercase"
+                style={{ color: c.foreground60 }}
               >
-                AssetMem
-                <br />
+                ASSETMEM{' '}
                 <span
                   className="font-bold"
                   style={{
@@ -97,15 +96,24 @@ export function LandingHero({
                 >
                   AI
                 </span>
-              </h1>
-              <h2
-                className="text-3xl lg:text-4xl font-light leading-tight"
-                style={{ color: c.foreground90 }}
+              </p>
+              <h1
+                className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-light tracking-tight leading-[1.1]"
+                style={{ color: c.foreground }}
               >
                 {headlinePrimary}
-                <br />
-                <span className="font-medium">{headlineAccent}</span>
-              </h2>
+                {headlineAccent ? (
+                  <>
+                    <br />
+                    <span
+                      className="mt-2 block text-lg sm:text-xl lg:text-xl xl:text-lg font-light"
+                      style={{ color: c.foreground60 }}
+                    >
+                      {headlineAccent}
+                    </span>
+                  </>
+                ) : null}
+              </h1>
             </div>
 
             <p

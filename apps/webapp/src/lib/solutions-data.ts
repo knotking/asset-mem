@@ -92,7 +92,7 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
     problem:
       'Adjusters and policyholders need timestamped photos, structured condition metrics, and formal reports—not camera rolls scattered across email.',
     bullets: [
-      'Insurance-purpose reports with photos and change highlights',
+      'AI-assisted insurance reports with photos and change highlights',
       'Timeline of condition evidence across a property',
       'AI summaries grounded in captured media and documents',
       'Shareable links for carriers, adjusters, or counsel',
@@ -104,7 +104,7 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
         steps: [
           'Policyholder captures pre-storm baseline photos (roof, exterior, yard)',
           'After event, capture damage photos using the same area-by-area structure',
-          'AI detects changes: missing shingles, water intrusion, structural damage',
+          'AI detects claim-relevant changes: missing shingles, water intrusion, structural damage',
           'Generate formal report with before/after comparisons and share with adjuster',
         ],
       },
@@ -113,7 +113,7 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
         description: 'Review policyholder evidence and validate damage claims',
         steps: [
           'Policyholder shares read-only report link',
-          'Review timestamped photos, AI condition scores, and change highlights',
+          'Review timestamped photos, AI condition scores, and AI-generated change highlights',
           'Ask follow-up questions via chat on specific damage areas',
           'Accept or request additional photos without back-and-forth emails',
         ],

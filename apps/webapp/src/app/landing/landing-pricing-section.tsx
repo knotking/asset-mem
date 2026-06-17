@@ -144,8 +144,8 @@ export function LandingPricingSection({
             style={{ color: c.mutedForeground }}
           >
             Simple monthly plans for homeowners and landlords, with transparent
-            limits for evidence analysis, reports, and document intelligence.
-            Enterprise teams get custom rollout and support.
+            limits for AI evidence analysis, reports, and document intelligence.
+            Enterprise teams get custom AI rollout and support.
           </p>
         </div>
 

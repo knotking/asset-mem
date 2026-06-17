@@ -11,7 +11,12 @@ const LANDING_COLORS = {
 
 export function HomeownerHeroGraphic() {
   return (
-    <div className="relative h-[600px] sm:h-[640px] lg:h-[650px]">
+    <div className="flex flex-col min-h-0">
+    <div
+      className="relative h-[600px] sm:h-[640px] lg:h-[650px]"
+      role="img"
+      aria-label="Example workflow showing AI property timeline with risk detection and repair guidance"
+    >
       <div
         className="absolute -top-4 -right-4 w-72 h-72 rounded-full blur-3xl animate-pulse"
         style={{ backgroundColor: LANDING_COLORS.primarySoft }}
@@ -43,11 +48,20 @@ export function HomeownerHeroGraphic() {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.06)_1px,transparent_1px)] bg-[size:36px_36px] opacity-35" />
 
         <div className="relative z-10 flex h-full flex-col gap-3 p-4 sm:p-6">
-          <div className="flex items-center justify-between rounded-xl border px-4 py-2 text-xs backdrop-blur-sm"
+          <div className="flex items-center rounded-xl border px-4 py-2 text-xs backdrop-blur-sm"
             style={{ backgroundColor: LANDING_COLORS.surface, borderColor: LANDING_COLORS.surfaceBorder, color: LANDING_COLORS.textMuted }}>
-            <span style={{ color: 'rgba(226,232,240,0.92)' }}>Property Timeline</span>
-            <span className="rounded-full px-2 py-0.5 text-[10px]" style={{ backgroundColor: 'rgba(34,211,238,0.15)', color: '#67e8f9' }}>
-              Live
+            <span className="flex items-center gap-2 min-w-0">
+              <span style={{ color: 'rgba(226,232,240,0.92)' }}>AI Property Timeline</span>
+              <span
+                className="rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide shrink-0"
+                style={{
+                  backgroundColor: 'rgba(34,211,238,0.12)',
+                  borderColor: 'rgba(34,211,238,0.28)',
+                  color: 'rgba(165,243,252,0.92)',
+                }}
+              >
+                Example workflow
+              </span>
             </span>
           </div>
 
@@ -55,7 +69,7 @@ export function HomeownerHeroGraphic() {
             {/* Before */}
             <div className="rounded-xl border p-2.5 sm:p-3 backdrop-blur-sm" style={{ backgroundColor: LANDING_COLORS.surface, borderColor: LANDING_COLORS.surfaceBorder }}>
               <div className="mb-2 flex items-center justify-between text-[11px]">
-                <span style={{ color: LANDING_COLORS.textMuted }}>Kitchen • Feb 2026</span>
+                <span style={{ color: LANDING_COLORS.textMuted }}>Wet zone • Feb 2026</span>
                 <span className="rounded px-1.5 py-0.5 text-[9px] font-semibold" style={{ backgroundColor: 'rgba(148,163,184,0.12)', color: 'rgba(148,163,184,0.8)' }}>BEFORE</span>
               </div>
               <div className="relative h-16 sm:h-20 rounded-md overflow-hidden" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #1e293b 100%)' }}>
@@ -68,7 +82,7 @@ export function HomeownerHeroGraphic() {
             {/* After */}
             <div className="rounded-xl border p-2.5 sm:p-3 backdrop-blur-sm" style={{ backgroundColor: LANDING_COLORS.surface, borderColor: 'rgba(34,211,238,0.4)' }}>
               <div className="mb-2 flex items-center justify-between text-[11px]">
-                <span style={{ color: LANDING_COLORS.textMuted }}>Kitchen • Jun 2026</span>
+                <span style={{ color: LANDING_COLORS.textMuted }}>Wet zone • Jun 2026</span>
                 <span className="rounded px-1.5 py-0.5 text-[9px] font-semibold" style={{ backgroundColor: 'rgba(34,211,238,0.15)', color: '#67e8f9' }}>AFTER</span>
               </div>
               <div className="relative h-16 sm:h-20 rounded-md overflow-hidden" style={{ background: 'linear-gradient(135deg, #0c2233 0%, #0a1628 50%, #0d1f35 100%)' }}>
@@ -81,13 +95,13 @@ export function HomeownerHeroGraphic() {
 
             {/* Change badge */}
             <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-10 rounded-full border px-2.5 py-0.5 text-[9px] font-bold whitespace-nowrap" style={{ borderColor: 'rgba(239,68,68,0.4)', backgroundColor: 'rgba(239,68,68,0.12)', color: '#fca5a5' }}>
-              ▲ Change detected
+              ▲ AI change detected
             </div>
           </div>
 
           <div className="mt-3 rounded-xl border p-3 backdrop-blur-sm" style={{ backgroundColor: LANDING_COLORS.surface, borderColor: LANDING_COLORS.surfaceBorder }}>
             <div className="mb-3 flex items-center justify-between text-[11px]" style={{ color: 'rgba(226,232,240,0.84)' }}>
-              <span>Condition trend score</span>
+              <span>AI condition trend score</span>
               <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: 'rgba(239,68,68,0.12)', color: '#fca5a5' }}>↑ +18% risk</span>
             </div>
             <div className="relative">
@@ -128,13 +142,13 @@ export function HomeownerHeroGraphic() {
 
           <div className="flex flex-wrap gap-1.5 sm:gap-2 text-[11px]">
             <span className="rounded-full border px-2.5 py-1" style={{ borderColor: 'rgba(34,211,238,0.3)', color: '#a5f3fc', backgroundColor: 'rgba(34,211,238,0.1)' }}>
-              Seal grout in 30 days
+              Preventive fix: seal grout
             </span>
             <span className="rounded-full border px-2.5 py-1" style={{ borderColor: LANDING_COLORS.surfaceBorder, color: LANDING_COLORS.textMuted, backgroundColor: 'rgba(15,23,42,0.55)' }}>
-              Estimated cost: $220–$380
+              Repair range: $220–$380
             </span>
             <span className="hidden sm:inline-flex rounded-full border px-2.5 py-1" style={{ borderColor: LANDING_COLORS.surfaceBorder, color: LANDING_COLORS.textMuted, backgroundColor: 'rgba(15,23,42,0.55)' }}>
-              2 local pros matched
+              Service matches: 2 nearby
             </span>
           </div>
 
@@ -151,12 +165,13 @@ export function HomeownerHeroGraphic() {
                   <span className="font-semibold text-sm" style={{ color: LANDING_COLORS.textMain }}>Monthly report ready</span>
                   <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: 'rgba(34,211,238,0.15)', color: '#67e8f9' }}>NEW</span>
                 </div>
-                <div className="text-xs mt-0.5" style={{ color: LANDING_COLORS.textMuted }}>3 changes flagged · 1 preventive action recommended</div>
+                <div className="text-xs mt-0.5" style={{ color: LANDING_COLORS.textMuted }}>3 flagged changes · 1 recommended action</div>
               </div>
             </div>
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

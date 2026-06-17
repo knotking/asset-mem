@@ -3,16 +3,19 @@
 export const SITE_NAME = 'AssetMem AI';
 
 /** Hero headline lines — keep in sync with landing page and Open Graph metadata. */
-export const SITE_HERO_HEADLINE_PRIMARY = 'Property Intelligence';
-export const SITE_HERO_HEADLINE_ACCENT = 'That Prevents Problems';
-export const SITE_TAGLINE = `${SITE_HERO_HEADLINE_PRIMARY} ${SITE_HERO_HEADLINE_ACCENT}`;
+export const SITE_HERO_HEADLINE_PRIMARY = 'Timeline Intelligence';
+export const SITE_HERO_HEADLINE_ACCENT = '';
+export const SITE_TAGLINE = SITE_HERO_HEADLINE_PRIMARY;
 
 export const SITE_HERO_HEADLINE_PRIMARY_B2B = 'AI property intelligence';
 export const SITE_HERO_HEADLINE_ACCENT_B2B =
   'for portfolios, claims, and field teams';
 
 export const SITE_HERO_DESCRIPTION =
-  'Capture property evidence, spot issues earlier, and move faster with clear repair and reporting guidance.';
+  'Track every asset change with AI for repairs, claims, audits, and reports.';
+
+/** Footer blurb — keep aligned with hero value proposition. */
+export const SITE_FOOTER_TAGLINE = SITE_HERO_DESCRIPTION;
 
 export const SITE_HERO_DESCRIPTION_B2B =
   'Capture evidence, generate audit-ready reports, and answer questions across properties—from one platform.';

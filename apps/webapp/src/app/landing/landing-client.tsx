@@ -18,6 +18,7 @@ import {
   fetchLandingRemoteConfig,
   type LandingDemoVideoUrls,
 } from "@/lib/landing-demo-video";
+import { SITE_FOOTER_TAGLINE } from "@/lib/site";
 import "./landing-animations.css";
 
 function scrollToLandingSection(
@@ -367,7 +368,7 @@ export default function LandingPageClient() {
               <svg className="h-4 w-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.primary }}>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>INTELLIGENCE LAYER</span>
+              <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>AI INTELLIGENCE LAYER</span>
             </div>
             <h2 className="text-4xl lg:text-5xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
               Spot issues early.{' '}
@@ -424,7 +425,7 @@ export default function LandingPageClient() {
                     </svg>
                   </div>
                   <div>
-                    <div className="text-sm font-bold" style={{ color: '#a5f3fc' }}>Smart coordination</div>
+                    <div className="text-sm font-bold" style={{ color: '#a5f3fc' }}>AI smart coordination</div>
                     <div className="text-xs" style={{ color: 'rgba(165,243,252,0.6)' }}>Reads context across the property, surfaces what matters, routes to the right analysis</div>
                   </div>
                 </div>
@@ -585,7 +586,7 @@ export default function LandingPageClient() {
                 color: LANDING_COLORS.accent,
                 steps: [
                   "Capture structured walkthrough photos for roof, exterior, basement, and HVAC",
-                  "Track condition shifts by area across each season",
+                  "Track AI-scored condition shifts by area across each season",
                   "Highlight recurring moisture and weather-related wear",
                   "Build a clear maintenance backlog before issues escalate",
                 ],
@@ -601,7 +602,7 @@ export default function LandingPageClient() {
                 steps: [
                   "Capture monthly walkthrough photos",
                   "AI detects condition score drop: 78 → 65 (attention needed)",
-                  "Platform highlights increased moisture and wall staining",
+                  "AI highlights increased moisture and wall staining",
                   "Get preventive maintenance recommendations before major damage",
                 ],
                 result: "Caught water issue early, prevented $5,000+ damage",
@@ -657,7 +658,7 @@ export default function LandingPageClient() {
                 color: LANDING_COLORS.accent,
                 steps: [
                   "Capture before/after walkthroughs for each milestone",
-                  "Compare workmanship and finish quality over time",
+                  "Use AI comparisons to track workmanship and finish quality over time",
                   "Attach invoices, warranties, and notes to each milestone",
                   "Share a secure evidence link with your contractor or family",
                 ],
@@ -811,7 +812,7 @@ export default function LandingPageClient() {
                 className="text-sm"
                 style={{ color: LANDING_COLORS.mutedForeground }}
               >
-                Photos, documents, and AI intelligence for every property you manage.
+                {SITE_FOOTER_TAGLINE}
               </p>
             </div>
 

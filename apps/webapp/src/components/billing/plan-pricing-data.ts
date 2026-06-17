@@ -97,13 +97,13 @@ export function planLimitBullets(
     bullets.push(tier === 'free' ? freeTierTokenLabel() : '');
   }
   bullets.push(
-    `${formatMonthlyLimit(limits.documentsPerMonth)} document analyses / month`,
-  );
-  bullets.push(
-    `${formatMonthlyLimit(limits.reportsPerMonth)} property report generations / month`,
+    `${formatMonthlyLimit(limits.documentsPerMonth)} document AI analyses / month`,
   );
   bullets.push(
     `${formatMonthlyLimit(limits.checkpointsPerMonth)} checkpoint AI runs / month`,
+  );
+  bullets.push(
+    `${formatMonthlyLimit(limits.reportsPerMonth)} property report generations / month`,
   );
   return bullets.filter(Boolean);
 }
