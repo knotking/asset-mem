@@ -136,7 +136,7 @@ export function LandingPricingSection({
             Individuals start free.
             <br />
             <span className="font-medium" style={{ color: c.foreground }}>
-              Teams and enterprises — talk to us.
+              Enterprise — talk to us.
             </span>
           </h2>
           <p

@@ -91,7 +91,7 @@ export function PilotSection({ colors: c, pilot }: PilotSectionProps) {
               className="text-sm font-semibold tracking-wide"
               style={{ color: c.primary }}
             >
-              FOR TEAMS
+              FOR ENTERPRISE
             </span>
           </div>
           <h2
