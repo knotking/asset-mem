@@ -646,20 +646,6 @@ export default function LandingPageClient() {
                   "Claim approved in 3 days with AI-verified documentation",
               },
               {
-                title: "Home Inspection Follow-up",
-                scenario: "50-page inspection report with 15 issues to address",
-                icon: "M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z",
-                color: LANDING_COLORS.primary,
-                steps: [
-                  "Upload inspection PDF → AI indexes all issues",
-                  "Ask: 'What are the critical issues?' → Get prioritized list",
-                  "Chat: 'Cost to fix the roof?' → $4,500-$7,200 estimate",
-                  "Find local roofers, compare quotes, check warranty coverage",
-                ],
-                result:
-                  "Prioritized repairs, negotiated 20% discount with quotes",
-              },
-              {
                 title: "Vendor handoff",
                 scenario:
                   "Share AI findings with contractors without granting account access",
