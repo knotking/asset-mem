@@ -484,24 +484,44 @@ export default function LandingPageClient() {
                 )}
                 </div>
                 {!user ? (
-                  <a
-                    href="#pricing"
-                    onClick={(e) => handleNavClick(e, "#pricing")}
-                    className="inline-block text-sm font-light transition-colors"
-                    style={{ color: LANDING_COLORS.mutedForeground }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.color = LANDING_COLORS.primary)
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.color =
-                        LANDING_COLORS.mutedForeground)
-                    }
-                  >
-                    For homeowners —{" "}
-                    <span className="underline underline-offset-4">
-                      see plans
-                    </span>
-                  </a>
+                  <div className="flex flex-col gap-1.5">
+                    <a
+                      href="#pricing"
+                      onClick={(e) => handleNavClick(e, "#pricing")}
+                      className="inline-block text-sm font-light transition-colors"
+                      style={{ color: LANDING_COLORS.mutedForeground }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.color = LANDING_COLORS.primary)
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.color =
+                          LANDING_COLORS.mutedForeground)
+                      }
+                    >
+                      For homeowners —{" "}
+                      <span className="underline underline-offset-4">
+                        see plans
+                      </span>
+                    </a>
+                    <a
+                      href="#pilot"
+                      onClick={(e) =>
+                        handlePilotNavClick(e, "pilot_cta_hero_scroll")
+                      }
+                      className="inline-block text-sm font-light transition-colors"
+                      style={{ color: LANDING_COLORS.mutedForeground }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.color = LANDING_COLORS.primary)
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.color =
+                          LANDING_COLORS.mutedForeground)
+                      }
+                    >
+                      Explore the pilot program{" "}
+                      <span aria-hidden>↓</span>
+                    </a>
+                  </div>
                 ) : null}
               </div>
             </div>
