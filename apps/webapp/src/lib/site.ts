@@ -1,4 +1,4 @@
-/** Public marketing site constants (AssetMem AI). */
+import { DEFAULT_SUPPORT_EMAIL, getEnterpriseConfigFromEnv } from '@/lib/enterprise-config';
 
 export const SITE_NAME = 'AssetMem AI';
 
@@ -54,5 +54,5 @@ export function getSiteUrl(): string {
 }
 
 export function getSupportEmail(): string {
-  return process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@asset-mem.com';
+  return getEnterpriseConfigFromEnv().supportEmail || DEFAULT_SUPPORT_EMAIL;
 }

@@ -59,10 +59,10 @@ Landing page values are loaded from Firebase Remote Config at runtime (with env 
 - Parameters:
   - `landing_demo_mobile_url` (string)
   - `landing_demo_desktop_url` (string)
-  - `pilot_form_url` (string) — Tally, Typeform, Calendly, etc. (Remote Config key; legacy name)
-  - `pilots_email` (string) — B2B enterprise contact inbox (Remote Config key; legacy name)
+  - `enterprise_email` (string) — B2B enterprise contact inbox
+  - `support_email` (string) — Landing enterprise section support inbox override
 
-Local dev fallbacks: `NEXT_PUBLIC_PILOT_FORM_URL`, `NEXT_PUBLIC_PILOTS_EMAIL` in `.env`.
+Local dev fallback: `NEXT_PUBLIC_ENTERPRISE_EMAIL` in `.env`.
 
 Publish new Remote Config values and the webapp will pick them up on the next fetch interval (short in non-prod, longer in prod).
 

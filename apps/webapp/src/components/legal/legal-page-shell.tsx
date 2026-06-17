@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { LegalSupportEmailProvider } from '@/components/legal/legal-support-email';
 
 export function LegalPageShell({
   title,
@@ -12,6 +13,7 @@ export function LegalPageShell({
   children: React.ReactNode;
 }) {
   return (
+    <LegalSupportEmailProvider>
     <div className="relative min-h-svh w-full min-w-0 overflow-hidden bg-[#0a0a0f] text-slate-100">
       <div
         aria-hidden
@@ -67,5 +69,6 @@ export function LegalPageShell({
         </div>
       </main>
     </div>
+    </LegalSupportEmailProvider>
   );
 }

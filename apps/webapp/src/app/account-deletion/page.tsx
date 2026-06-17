@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LegalPageShell } from '@/components/legal/legal-page-shell';
+import { SupportEmailLink } from '@/components/legal/legal-support-email';
 import { buildPageMetadata } from '@/lib/metadata-shared';
-import { getSiteUrl, getSupportEmail, SITE_NAME } from '@/lib/site';
+import { getSiteUrl, SITE_NAME } from '@/lib/site';
 
 export const metadata: Metadata = buildPageMetadata({
   title: `Delete Your Account | ${SITE_NAME}`,
@@ -13,7 +14,6 @@ export const metadata: Metadata = buildPageMetadata({
 const LAST_UPDATED = 'May 25, 2026';
 
 export default function AccountDeletionPage() {
-  const supportEmail = getSupportEmail();
   const siteUrl = getSiteUrl();
 
   return (
@@ -60,7 +60,7 @@ export default function AccountDeletionPage() {
       </p>
       <p>
         To request <strong>complete erasure</strong> of stored property data, email{' '}
-        <a href={`mailto:${supportEmail}`}>{supportEmail}</a> from the address on your account.
+        <SupportEmailLink /> from the address on your account.
       </p>
 
       <h2>Subscriptions and billing</h2>
@@ -74,7 +74,7 @@ export default function AccountDeletionPage() {
       <h2>More information</h2>
       <p>
         See our <Link href="/privacy">Privacy Policy</Link> for retention and your rights. Questions:{' '}
-        <a href={`mailto:${supportEmail}`}>{supportEmail}</a>.
+        <SupportEmailLink />.
       </p>
     </LegalPageShell>
   );

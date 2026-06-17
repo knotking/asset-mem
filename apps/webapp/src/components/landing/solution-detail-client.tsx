@@ -35,13 +35,6 @@ export function SolutionDetailClient({ page }: SolutionDetailClientProps) {
     };
   }, []);
 
-  const enterpriseHref = enterprise.formUrl ?? getEnterpriseMailtoHref(enterprise.enterpriseEmail);
-  const enterpriseExternal = Boolean(enterprise.formUrl);
-
-  const handleEnterpriseCta = () => {
-    trackEnterpriseCta(page.analyticsLabel);
-  };
-
   return (
     <SolutionMarketingShell>
       <section className="py-20 lg:py-28">
@@ -190,14 +183,12 @@ export function SolutionDetailClient({ page }: SolutionDetailClientProps) {
 
           <div className="mt-8">
             <a
-              href={enterpriseHref}
-              target={enterpriseExternal ? '_blank' : undefined}
-              rel={enterpriseExternal ? 'noopener noreferrer' : undefined}
-              onClick={handleEnterpriseCta}
+              href={getEnterpriseMailtoHref(enterprise.enterpriseEmail)}
+              onClick={() => trackEnterpriseCta(page.analyticsLabel)}
               className="inline-flex items-center rounded-lg px-8 py-3.5 text-base font-medium"
               style={{ backgroundColor: LANDING_COLORS.primary, color: '#0a0a0f' }}
             >
-              Talk to us
+              Email our team
             </a>
           </div>
         </div>

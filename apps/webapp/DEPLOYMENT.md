@@ -112,14 +112,14 @@ Minimal configuration for Firestore rules. App Hosting doesn't require hosting c
 
 ### Remote Config (Landing)
 
-Landing demo video URLs and B2B pilot contact settings are managed in Firebase Remote Config:
+Landing demo video URLs and B2B enterprise contact email are managed in Firebase Remote Config:
 
 - `landing_demo_mobile_url`
 - `landing_demo_desktop_url`
-- `pilot_form_url`
-- `pilots_email`
+- `enterprise_email`
+- `support_email`
 
-Publish these values in the target Firebase project (`homegeek-staging` or `homegeek-prod`) to update the landing page without redeploying webapp. Env vars `NEXT_PUBLIC_PILOT_FORM_URL` and `NEXT_PUBLIC_PILOTS_EMAIL` are fallbacks for local dev and first paint.
+Publish these values in the target Firebase project (`homegeek-staging` or `homegeek-prod`) to update the landing page without redeploying webapp. Env var `NEXT_PUBLIC_ENTERPRISE_EMAIL` is a fallback for local dev and first paint.
 
 ## Backend Information
 

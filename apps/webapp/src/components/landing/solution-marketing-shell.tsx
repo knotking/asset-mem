@@ -39,9 +39,6 @@ export function SolutionMarketingShell({
     };
   }, []);
 
-  const enterpriseHref = enterprise.formUrl ?? getEnterpriseMailtoHref(enterprise.enterpriseEmail);
-  const enterpriseExternal = Boolean(enterprise.formUrl);
-
   return (
     <div
       className={`min-h-screen w-full ${compactHub ? 'flex flex-col' : ''}`}
@@ -94,14 +91,12 @@ export function SolutionMarketingShell({
               </Link>
             ) : null}
             <a
-              href={enterpriseHref}
-              target={enterpriseExternal ? '_blank' : undefined}
-              rel={enterpriseExternal ? 'noopener noreferrer' : undefined}
+              href={getEnterpriseMailtoHref(enterprise.enterpriseEmail)}
               onClick={() => trackEnterpriseCta('team_cta_solutions_header')}
               className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium"
               style={{ backgroundColor: LANDING_COLORS.primary, color: '#0a0a0f' }}
             >
-              Talk to us
+              Email our team
             </a>
           </div>
         </div>

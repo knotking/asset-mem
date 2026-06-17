@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LegalPageShell } from '@/components/legal/legal-page-shell';
+import { SupportEmailLink } from '@/components/legal/legal-support-email';
 import { buildPageMetadata } from '@/lib/metadata-shared';
-import { getSupportEmail, SITE_HERO_DESCRIPTION, SITE_NAME, SITE_TAGLINE } from '@/lib/site';
+import { SITE_HERO_DESCRIPTION, SITE_NAME, SITE_TAGLINE } from '@/lib/site';
 
 export const metadata: Metadata = buildPageMetadata({
   title: `About | ${SITE_NAME}`,
@@ -13,8 +14,6 @@ export const metadata: Metadata = buildPageMetadata({
 const LAST_UPDATED = 'June 17, 2026';
 
 export default function AboutPage() {
-  const supportEmail = getSupportEmail();
-
   return (
     <LegalPageShell title={`About ${SITE_NAME}`} lastUpdated={LAST_UPDATED}>
       <p>
@@ -53,7 +52,7 @@ export default function AboutPage() {
         <Link href="/login" className="text-primary underline underline-offset-4">
           Get started
         </Link>{' '}
-        or contact us at <a href={`mailto:${supportEmail}`}>{supportEmail}</a>.
+        or contact us at <SupportEmailLink className="text-primary underline underline-offset-4" />.
       </p>
     </LegalPageShell>
   );

@@ -3,11 +3,9 @@
 import Link from "next/link";
 import {
   getEnterpriseMailtoHref,
-  isEmbeddableEnterpriseFormUrl,
   type EnterpriseConfig,
 } from "@/lib/enterprise-config";
 import { trackEnterpriseCta } from "@/lib/analytics";
-import { getSupportEmail } from "@/lib/site";
 import type { SolutionSlug } from "@/lib/solutions-data";
 import type { LandingPricingPalette } from "@/components/billing/plan-pricing-cards";
 
@@ -65,18 +63,7 @@ export function EnterpriseSection({
   colors: c,
   enterprise,
 }: EnterpriseSectionProps) {
-  const formUrl = enterprise.formUrl;
   const mailtoHref = getEnterpriseMailtoHref(enterprise.enterpriseEmail);
-  const showEmbed = formUrl && isEmbeddableEnterpriseFormUrl(formUrl);
-  const supportEmail = getSupportEmail();
-
-  const handleEnterpriseCta = (label: string) => {
-    trackEnterpriseCta(label);
-  };
-
-  const ctaHref = formUrl ?? mailtoHref;
-  const ctaExternal = Boolean(formUrl);
-  const ctaLabel = formUrl ? "Get in touch" : "Email our team";
 
   return (
     <section
@@ -242,64 +229,22 @@ export function EnterpriseSection({
           </div>
         </div>
 
-        <div className="text-center space-y-6">
-          <h3
-            className="text-2xl font-light tracking-tight"
-            style={{ color: c.foreground }}
-          >
-            Talk to our team
-          </h3>
+        <div className="mt-12 border-t border-white/10 pt-12 text-center space-y-4">
           <p
-            className="text-base max-w-xl mx-auto font-light leading-relaxed"
+            className="text-sm font-light"
             style={{ color: c.mutedForeground }}
           >
-            Tell us about your portfolio, claims workflow, or field operations
-            needs.
+            Share a bit about your team and we&apos;ll be in touch within a day.
           </p>
-          <div className="flex justify-center pt-2">
-            <a
-              href={ctaHref}
-              target={ctaExternal ? "_blank" : undefined}
-              rel={ctaExternal ? "noopener noreferrer" : undefined}
-              onClick={() => handleEnterpriseCta("team_cta_section")}
-              className="inline-flex items-center justify-center rounded-lg px-10 py-4 text-base font-medium shadow-xl transition-all"
-              style={{ backgroundColor: c.primary, color: "#0a0a0f" }}
-            >
-              {ctaLabel}
-            </a>
-          </div>
-          <p className="text-sm font-light" style={{ color: c.mutedForeground }}>
-            We typically respond within one business day. Or email{" "}
-            <a
-              href={`mailto:${enterprise.enterpriseEmail}`}
-              className="underline underline-offset-4"
-              style={{ color: c.primary }}
-            >
-              {enterprise.enterpriseEmail}
-            </a>
-          </p>
-          <p className="text-sm font-light" style={{ color: c.mutedForeground }}>
-            General questions?{" "}
-            <a
-              href={`mailto:${supportEmail}`}
-              className="underline underline-offset-2"
-              style={{ color: c.mutedForeground }}
-            >
-              {supportEmail}
-            </a>
-          </p>
+          <a
+            href={mailtoHref}
+            onClick={() => trackEnterpriseCta("team_cta_section")}
+            className="inline-flex items-center justify-center rounded-lg px-8 py-3.5 text-base font-medium shadow-lg transition-all"
+            style={{ backgroundColor: c.primary, color: "#0a0a0f" }}
+          >
+            Get in touch
+          </a>
         </div>
-
-        {showEmbed && formUrl ? (
-          <div className="mt-10 max-w-2xl mx-auto rounded-xl overflow-hidden border min-h-[480px]">
-            <iframe
-              src={formUrl}
-              title="AssetMem AI team contact form"
-              className="w-full min-h-[480px] border-0"
-              loading="lazy"
-            />
-          </div>
-        ) : null}
       </div>
     </section>
   );

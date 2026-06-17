@@ -12,7 +12,8 @@ import {
 } from "@/lib/landing-demo-video-constants";
 import {
   ENTERPRISE_EMAIL_REMOTE_PARAM,
-  ENTERPRISE_FORM_URL_REMOTE_PARAM,
+  SUPPORT_EMAIL_REMOTE_PARAM,
+  DEFAULT_SUPPORT_EMAIL,
   getEnterpriseConfigFromEnv,
   type EnterpriseConfig,
 } from "@/lib/enterprise-config";
@@ -32,7 +33,7 @@ const getMinimumFetchIntervalMillis = (): number => {
 
 let inflightFetch: Promise<LandingRemoteConfig> | null = null;
 
-/** Demo video URLs + B2B enterprise form/email from Firebase Remote Config (env fallbacks). */
+/** Demo video URLs + B2B enterprise email from Firebase Remote Config (env fallbacks). */
 export async function fetchLandingRemoteConfig(): Promise<LandingRemoteConfig> {
   if (!inflightFetch) {
     inflightFetch = (async () => {
@@ -46,8 +47,8 @@ export async function fetchLandingRemoteConfig(): Promise<LandingRemoteConfig> {
       remoteConfig.defaultConfig = {
         [LANDING_DEMO_MOBILE_URL_PARAM]: DEFAULT_LANDING_DEMO_VIDEO_URLS.mobile,
         [LANDING_DEMO_DESKTOP_URL_PARAM]: DEFAULT_LANDING_DEMO_VIDEO_URLS.desktop,
-        [ENTERPRISE_FORM_URL_REMOTE_PARAM]: envEnterprise.formUrl ?? "",
         [ENTERPRISE_EMAIL_REMOTE_PARAM]: envEnterprise.enterpriseEmail,
+        [SUPPORT_EMAIL_REMOTE_PARAM]: envEnterprise.supportEmail,
       };
 
       try {
@@ -64,13 +65,13 @@ export async function fetchLandingRemoteConfig(): Promise<LandingRemoteConfig> {
         remoteConfig,
         LANDING_DEMO_DESKTOP_URL_PARAM,
       ).asString();
-      const enterpriseFormUrl = getValue(
-        remoteConfig,
-        ENTERPRISE_FORM_URL_REMOTE_PARAM,
-      ).asString();
       const enterpriseEmail = getValue(
         remoteConfig,
         ENTERPRISE_EMAIL_REMOTE_PARAM,
+      ).asString();
+      const supportEmail = getValue(
+        remoteConfig,
+        SUPPORT_EMAIL_REMOTE_PARAM,
       ).asString();
 
       return {
@@ -83,12 +84,12 @@ export async function fetchLandingRemoteConfig(): Promise<LandingRemoteConfig> {
             : DEFAULT_LANDING_DEMO_VIDEO_URLS.desktop,
         },
         enterprise: {
-          formUrl: isNonEmptyString(enterpriseFormUrl)
-            ? enterpriseFormUrl.trim()
-            : envEnterprise.formUrl,
           enterpriseEmail: isNonEmptyString(enterpriseEmail)
             ? enterpriseEmail.trim()
             : envEnterprise.enterpriseEmail,
+          supportEmail: isNonEmptyString(supportEmail)
+            ? supportEmail.trim()
+            : envEnterprise.supportEmail || DEFAULT_SUPPORT_EMAIL,
         },
       };
     })().finally(() => {

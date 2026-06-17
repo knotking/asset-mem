@@ -1,41 +1,46 @@
-/** B2B enterprise — landing CTAs and external form. */
+/** B2B enterprise — landing contact emails. */
 
-/** Firebase Remote Config keys (legacy param names kept for deployed config). */
-export const ENTERPRISE_FORM_URL_REMOTE_PARAM = "pilot_form_url";
-export const ENTERPRISE_EMAIL_REMOTE_PARAM = "pilots_email";
+/** Firebase Remote Config keys. */
+export const ENTERPRISE_EMAIL_REMOTE_PARAM = "enterprise_email";
+export const SUPPORT_EMAIL_REMOTE_PARAM = "support_email";
+export const DEFAULT_SUPPORT_EMAIL = "support@asset-mem.com";
 
 export type EnterpriseConfig = {
-  formUrl: string | undefined;
   enterpriseEmail: string;
+  supportEmail: string;
 };
 
 /** Sync defaults from env (SSR / first paint before Remote Config fetch). */
 export function getEnterpriseConfigFromEnv(): EnterpriseConfig {
-  const formUrl = process.env.NEXT_PUBLIC_PILOT_FORM_URL?.trim();
+  const supportEmail =
+    process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || DEFAULT_SUPPORT_EMAIL;
+  const enterpriseEmail = process.env.NEXT_PUBLIC_ENTERPRISE_EMAIL?.trim();
   return {
-    formUrl: formUrl || undefined,
-    enterpriseEmail:
-      process.env.NEXT_PUBLIC_PILOTS_EMAIL?.trim() ||
-      process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() ||
-      "support@asset-mem.com",
+    enterpriseEmail: enterpriseEmail || supportEmail || DEFAULT_SUPPORT_EMAIL,
+    supportEmail,
   };
 }
 
-export function getEnterpriseMailtoHref(enterpriseEmail: string): string {
-  const subject = encodeURIComponent("AssetMem AI — team inquiry");
-  return `mailto:${enterpriseEmail}?subject=${subject}`;
-}
+/** Plain-text template shown in the user's mail client (mailto body). */
+export const ENTERPRISE_INQUIRY_EMAIL_BODY = `Hi AssetMem team,
 
-/** True when the URL is likely safe to embed in an iframe (Tally, Typeform). */
-export function isEmbeddableEnterpriseFormUrl(url: string): boolean {
-  try {
-    const host = new URL(url).hostname.toLowerCase();
-    return (
-      host.endsWith("tally.so") ||
-      host.endsWith("typeform.com") ||
-      host.endsWith("fillout.com")
-    );
-  } catch {
-    return false;
-  }
+I'd like to learn more about AssetMem for our organization.
+
+Full name:
+Work email:
+Company:
+Role / title:
+Organization type: (Property managers / Insurers & adjusters / Service & field teams / Prop-tech / Other)
+Portfolio / property count: (1–10 / 11–50 / 51–200 / 200+)
+Primary use case:
+
+Timeline (optional): (ASAP / 1–3 months / 3–6 months / Just exploring)
+
+Thanks!`;
+
+export function getEnterpriseMailtoHref(enterpriseEmail: string): string {
+  const email = enterpriseEmail?.trim() || DEFAULT_SUPPORT_EMAIL;
+  const subject = encodeURIComponent("AssetMem AI — team inquiry");
+  const body = encodeURIComponent(ENTERPRISE_INQUIRY_EMAIL_BODY);
+  return `mailto:${email}?subject=${subject}&body=${body}`;
 }

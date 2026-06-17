@@ -788,7 +788,7 @@ export default function LandingPageClient() {
         enterprise={enterpriseConfig}
       />
 
-      <LandingPricingSection colors={LANDING_COLORS} />
+      <LandingPricingSection colors={LANDING_COLORS} enterprise={enterpriseConfig} />
 
       {/* Footer - dark */}
       <footer

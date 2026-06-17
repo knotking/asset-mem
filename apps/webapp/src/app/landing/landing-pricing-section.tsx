@@ -18,6 +18,10 @@ import {
   type PlanTierKey,
 } from "@/components/billing/plan-pricing-data";
 import { trackEnterpriseCta } from "@/lib/analytics";
+import {
+  getEnterpriseMailtoHref,
+  type EnterpriseConfig,
+} from "@/lib/enterprise-config";
 
 type BillingSummary = {
   subscriptionStatus?: string | null;
@@ -27,8 +31,10 @@ type BillingSummary = {
 
 export function LandingPricingSection({
   colors: c,
+  enterprise,
 }: {
   colors: LandingPricingPalette;
+  enterprise: EnterpriseConfig;
 }) {
   const { user } = useAuth();
   const [summary, setSummary] = useState<BillingSummary | null>(null);
@@ -165,6 +171,7 @@ export function LandingPricingSection({
           showPaidCheckout={Boolean(user) && !isPaid}
           showSignupOnFree={!user}
           showEnterprisePricing
+          enterpriseMailtoHref={getEnterpriseMailtoHref(enterprise.enterpriseEmail)}
           onEnterpriseCta={() => trackEnterpriseCta("team_cta_pricing_enterprise")}
         />
       </div>

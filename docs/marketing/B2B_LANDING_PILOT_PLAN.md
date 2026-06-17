@@ -50,7 +50,7 @@ Minimum viable B2B landing for outbound and LinkedIn tests.
 | A4 | Reframe 3–4 use-case cards for B2B language | `landing-client.tsx` (use-cases array) |
 | A5 | Upgrade `#contact` → pilot-focused CTA block | `landing-client.tsx` |
 | A6 | Analytics labels on B2B CTAs | `landing-client.tsx`, `landing-header.tsx`, `lib/analytics.ts` |
-| A7 | Pilot form URL + email via Firebase Remote Config (`pilot_form_url`, `pilots_email`); env fallbacks | `landing-remote-config.ts`, `pilot-config.ts`, `.env.example` |
+| A7 | Enterprise contact email via Firebase Remote Config (`enterprise_email`); env fallback | `landing-remote-config.ts`, `enterprise-config.ts`, `.env.example` |
 
 ### Tier B — Better inbound (3–5 days)
 
@@ -140,13 +140,12 @@ Insert after `#how-it-works`, before `#pricing`.
 
 ```bash
 # apps/webapp/.env.example
-NEXT_PUBLIC_PILOT_FORM_URL=https://tally.so/r/xxxx  # or Calendly / Typeform
-NEXT_PUBLIC_PILOTS_EMAIL=pilots@asset-mem.com
+NEXT_PUBLIC_ENTERPRISE_EMAIL=enterprise@asset-mem.com
 ```
 
-**Production (preferred):** Firebase Remote Config parameters `pilot_form_url` and `pilots_email` (same fetch as landing demo URLs — see `apps/webapp/src/lib/landing-remote-config.ts`). Non-empty Remote Config values override env at runtime.
+**Production (preferred):** Firebase Remote Config parameter `enterprise_email` (same fetch as landing demo URLs — see `apps/webapp/src/lib/landing-remote-config.ts`). Non-empty Remote Config values override env at runtime.
 
-If no form URL is configured, fall back to `mailto:` using `pilots_email` / `NEXT_PUBLIC_PILOTS_EMAIL` with prefilled subject `AssetMem AI pilot request`.
+Enterprise CTAs use `mailto:` with prefilled subject `AssetMem AI — team inquiry` and a questionnaire template in the body.
 
 **Form fields** (external form — document in ops runbook):
 
@@ -258,7 +257,7 @@ Each page template:
 1. Segment headline + problem statement  
 2. How AssetMem helps **today** (3 bullets, shipped only)  
 3. Report/checkpoint screenshot or link to sample PDF  
-4. `Book a pilot` CTA → `NEXT_PUBLIC_PILOT_FORM_URL` or `/landing#pilot`  
+4. `Book a pilot` CTA → `mailto:` via `enterprise_email` or scroll to `/landing#enterprise`  
 5. Link: *Also available for individual homeowners* → `/` `#pricing`
 
 Reuse landing dark theme styles (extract shared `LANDING_COLORS` to `lib/landing-theme.ts` if duplication becomes painful).
@@ -289,7 +288,7 @@ Bullets (factual):
 
 ```
 apps/webapp/src/lib/site.ts                          # B2B copy + keywords
-apps/webapp/src/lib/pilot-config.ts                  # NEW — form URL, pilots email
+apps/webapp/src/lib/enterprise-config.ts              # form URL, enterprise email
 apps/webapp/src/lib/landing-theme.ts                 # NEW (Tier B) — shared colors
 apps/webapp/src/lib/analytics.ts                     # optional pilot_form_click
 apps/webapp/src/components/landing/pilot-section.tsx # NEW
@@ -335,7 +334,7 @@ Use *"co-designed in pilot"* or *"on our enterprise roadmap"* for gaps.
 
 ## Deploy and ops
 
-1. Create external pilot form (Tally / Typeform / Calendly) and publish `pilot_form_url` + `pilots_email` in Firebase Remote Config (staging/prod). Optional env fallbacks in `apphosting.*.yaml` for first paint.
+1. Set `enterprise_email` in Firebase Remote Config (staging/prod). Optional env fallback `NEXT_PUBLIC_ENTERPRISE_EMAIL` in `apphosting.*.yaml` for first paint.
 2. Optional: `pilots@asset-mem.com` alias → `support@asset-mem.com`.
 3. Deploy webapp via `deploy-webapp-apphosting.yaml`.
 4. Smoke test: all `#pilot` anchors, solution pages, B2C signup/checkout unchanged.

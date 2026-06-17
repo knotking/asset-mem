@@ -53,6 +53,7 @@ type PlanPricingCardsProps = {
   showSignupOnFree?: boolean;
   /** Landing only: fourth Enterprise card (no Stripe) */
   showEnterprisePricing?: boolean;
+  enterpriseMailtoHref?: string;
   onEnterpriseCta?: () => void;
 };
 
@@ -289,9 +290,11 @@ function PlanCardActions({
 
 function EnterprisePricingCard({
   landingColors: c,
+  enterpriseMailtoHref,
   onEnterpriseCta,
 }: {
   landingColors: LandingPricingPalette;
+  enterpriseMailtoHref: string;
   onEnterpriseCta?: () => void;
 }) {
   const card = ENTERPRISE_PRICING_CARD;
@@ -341,7 +344,7 @@ function EnterprisePricingCard({
       </ul>
       <div className="mt-auto w-full shrink-0 pt-6 min-h-10">
         <a
-          href="#enterprise"
+          href={enterpriseMailtoHref}
           onClick={() => onEnterpriseCta?.()}
           className="inline-flex w-full justify-center items-center rounded-lg px-6 py-3 text-sm font-medium border transition-colors"
           style={{
@@ -352,7 +355,7 @@ function EnterprisePricingCard({
             borderStyle: "solid",
           }}
         >
-          Talk to us
+          Get in touch
         </a>
       </div>
     </div>
@@ -374,6 +377,7 @@ export function PlanPricingCards({
   showPaidCheckout = false,
   showSignupOnFree = false,
   showEnterprisePricing = false,
+  enterpriseMailtoHref,
   onEnterpriseCta,
 }: PlanPricingCardsProps) {
   return (
@@ -577,8 +581,12 @@ export function PlanPricingCards({
             </div>
           );
         })}
-        {variant === "landing" && showEnterprisePricing && c ? (
-          <EnterprisePricingCard landingColors={c} onEnterpriseCta={onEnterpriseCta} />
+        {variant === "landing" && showEnterprisePricing && c && enterpriseMailtoHref ? (
+          <EnterprisePricingCard
+            landingColors={c}
+            enterpriseMailtoHref={enterpriseMailtoHref}
+            onEnterpriseCta={onEnterpriseCta}
+          />
         ) : null}
       </div>
     </div>
