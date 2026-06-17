@@ -194,6 +194,7 @@ module.exports = {
       iosStoreUrl: storeUrls.iosStoreUrl ?? undefined,
       androidStoreUrl: storeUrls.androidStoreUrl ?? undefined,
       supportEmail: process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@asset-mem.com',
+      enterpriseEmail: process.env.EXPO_PUBLIC_ENTERPRISE_EMAIL?.trim() || undefined,
     },
     runtimeVersion: {
       policy: 'appVersion',

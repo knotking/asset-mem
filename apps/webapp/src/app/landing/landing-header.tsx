@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Menu } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
+import { AssetMemWordmark } from '@/components/brand/asset-mem-wordmark';
 import {
   Sheet,
   SheetContent,
@@ -184,12 +185,7 @@ export function LandingHeader({
               markTheme="landing"
               className="shrink-0 group-hover:scale-105 transition-transform"
             />
-            <span
-              className="truncate text-xl lg:text-2xl font-light tracking-tight"
-              style={{ color: LANDING_COLORS.foreground }}
-            >
-              AssetMem <span className="font-bold">AI</span>
-            </span>
+            <AssetMemWordmark size="header" className="truncate" />
           </Link>
 
           <nav className="hidden xl:flex items-center gap-5 2xl:gap-6">

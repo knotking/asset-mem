@@ -12,6 +12,7 @@ import {
 } from "@/lib/enterprise-config";
 import { EnterpriseSection } from "@/components/landing/enterprise-section";
 import { LandingHero } from "@/components/landing/landing-hero";
+import { AssetMemWordmark } from "@/components/brand/asset-mem-wordmark";
 import { LANDING_COLORS, LANDING_HEADER_OFFSET } from "@/lib/landing-theme";
 import {
   DEFAULT_LANDING_DEMO_VIDEO_URLS,
@@ -801,12 +802,8 @@ export default function LandingPageClient() {
         <div className="container mx-auto px-4" style={{ maxWidth: "1400px" }}>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8">
             <div className="space-y-4">
-              <Link
-                href="/"
-                className="text-xl font-light tracking-tight"
-                style={{ color: LANDING_COLORS.foreground }}
-              >
-                AssetMem <span className="font-bold">AI</span>
+              <Link href="/" className="inline-flex">
+                <AssetMemWordmark size="footer" />
               </Link>
               <p
                 className="text-sm"

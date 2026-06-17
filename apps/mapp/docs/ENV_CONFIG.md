@@ -27,6 +27,25 @@ Auth: Authorization: Bearer <Firebase ID token>
 
 The [app.config.js](apps/mapp/app.config.js) `buildProxyUrl()` helper constructs these URLs automatically.
 
+### Landing Remote Config
+
+The landing page loads **demo video URL** and **enterprise/support emails** from Firebase Remote Config at runtime (same parameter keys as the webapp). Built-in defaults and `expo.extra` values apply on first paint before fetch completes.
+
+Landing visuals (colors, hero/section gradients, gradient text) mirror the webapp via `apps/mapp/lib/landing-theme.ts` and `apps/mapp/components/landing/landing-backgrounds.tsx` — keep those in sync with `apps/webapp/src/lib/landing-theme.ts` and the webapp landing sections.
+
+| Remote Config key | Mapp usage |
+| ----------------- | ---------- |
+| `landing_demo_mobile_url` | Watch Demo / YouTube modal |
+| `enterprise_email` | Get in touch mailto |
+| `support_email` | Footer support link |
+
+Optional env fallbacks in `.env` / EAS (baked into `expo.extra` at build time):
+
+- `EXPO_PUBLIC_SUPPORT_EMAIL` → `extra.supportEmail`
+- `EXPO_PUBLIC_ENTERPRISE_EMAIL` → `extra.enterpriseEmail`
+
+Implementation: [lib/landing-remote-config.ts](../lib/landing-remote-config.ts). Publish values in the Firebase console for `homegeek-staging` / `homegeek-prod` — no app redeploy required for copy/email/demo URL changes.
+
 ### API Endpoints
 
 The following endpoints are constructed from the proxy base URL:

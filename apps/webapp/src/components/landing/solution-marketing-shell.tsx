@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
+import { AssetMemWordmark } from '@/components/brand/asset-mem-wordmark';
 import {
   getEnterpriseConfigFromEnv,
   getEnterpriseMailtoHref,
@@ -57,9 +58,7 @@ export function SolutionMarketingShell({
         >
           <Link href="/" className="flex items-center gap-2 min-w-0">
             <AssetMemBrandIcon variant="mark" size="sm" markTheme="landing" className="shrink-0" />
-            <span className="truncate text-lg font-light">
-              AssetMem <span className="font-bold">AI</span>
-            </span>
+            <AssetMemWordmark size="solutions" className="truncate" />
           </Link>
           <div className="flex items-center gap-3 sm:gap-4 shrink-0">
             <Link

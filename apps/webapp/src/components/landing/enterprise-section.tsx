@@ -136,38 +136,42 @@ export function EnterpriseSection({
                 backgroundColor: "rgba(20,20,28,0.6)",
               }}
             >
-              <div
-                className="h-10 w-10 rounded-lg flex items-center justify-center mb-3"
-                style={{ backgroundColor: c.primaryLight }}
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  style={{ color: c.primary }}
-                  aria-hidden
+              <div className="flex items-start gap-3">
+                <div
+                  className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: c.primaryLight }}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d={segment.icon}
-                  />
-                </svg>
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    style={{ color: c.primary }}
+                    aria-hidden
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d={segment.icon}
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3
+                    className="font-semibold text-sm mb-1"
+                    style={{ color: c.foreground }}
+                  >
+                    {segment.title}
+                  </h3>
+                  <p
+                    className="text-xs leading-relaxed font-light"
+                    style={{ color: c.mutedForeground }}
+                  >
+                    {segment.desc}
+                  </p>
+                </div>
               </div>
-              <h3
-                className="font-semibold text-sm mb-1"
-                style={{ color: c.foreground }}
-              >
-                {segment.title}
-              </h3>
-              <p
-                className="text-xs leading-relaxed font-light"
-                style={{ color: c.mutedForeground }}
-              >
-                {segment.desc}
-              </p>
             </Link>
           ))}
         </div>
