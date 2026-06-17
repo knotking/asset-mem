@@ -262,14 +262,14 @@ export default function LandingPageClient() {
                 className="text-sm font-semibold tracking-wide"
                 style={{ color: LANDING_COLORS.primary }}
               >
-                GET STARTED IN MINUTES
+                THE WORKFLOW
               </span>
             </div>
             <h2
               className="text-4xl lg:text-5xl font-light tracking-tight"
               style={{ color: LANDING_COLORS.foreground }}
             >
-              Four steps.{" "}
+              From site visit to{" "}
               <span
                 className="font-bold"
                 style={{
@@ -279,38 +279,38 @@ export default function LandingPageClient() {
                   backgroundClip: "text",
                 }}
               >
-                Full clarity.
+                evidence teams trust
               </span>
             </h2>
             <p
               className="text-lg max-w-2xl mx-auto font-light"
               style={{ color: LANDING_COLORS.mutedForeground }}
             >
-              Add a property, ask a question, get a clear answer, stay
-              organised. That&apos;s it.
+              One workflow for a single home or a portfolio—capture, understand,
+              act, and share without losing context.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
             {[
               {
                 step: 1,
-                title: "Add Your Property",
-                desc: "Create a property, snap your first photos, and upload any documents. Takes under five minutes.",
+                title: "Capture the property",
+                desc: "Structured photos and documents on site—per home or across a portfolio.",
               },
               {
                 step: 2,
-                title: "Ask a Question",
-                desc: "Chat with your photos or your paperwork — whichever fits your question. Switch modes anytime.",
+                title: "See what changed",
+                desc: "AI condition scoring and answers grounded in your evidence.",
               },
               {
                 step: 3,
-                title: "Get Clear Answers",
-                desc: "Costs, repair steps, coverage checks, and matched local pros — one conversation, no tab-switching.",
+                title: "Know what to do",
+                desc: "Costs, repair paths, and coverage context without tab-hopping.",
               },
               {
                 step: 4,
-                title: "Stay on Top of It",
-                desc: "Save pros, generate reports, share links, and revisit your timeline whenever something changes.",
+                title: "Prove it later",
+                desc: "Formal reports and share links for owners, tenants, or adjusters.",
               },
             ].map((item, i) => (
               <div
@@ -367,16 +367,17 @@ export default function LandingPageClient() {
               <svg className="h-4 w-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.primary }}>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>AI INTELLIGENCE ENGINE</span>
+              <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>INTELLIGENCE LAYER</span>
             </div>
             <h2 className="text-4xl lg:text-5xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
-              See risk early.{' '}
+              Spot issues early.{' '}
               <span className="font-bold" style={{ background: `linear-gradient(to right, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                Act with confidence.
+                Move with confidence.
               </span>
             </h2>
             <p className="text-lg max-w-2xl mx-auto font-light" style={{ color: LANDING_COLORS.mutedForeground }}>
-              Your property data flows into a coordinated AI pipeline — from ingestion through analysis, straight to a clear action plan.
+              Photos, documents, and questions feed one coordinated layer—from
+              condition signals to prioritized next steps your team can act on.
             </p>
           </div>
 
@@ -385,13 +386,13 @@ export default function LandingPageClient() {
 
             {/* Stage 1: Inputs */}
             <div className="px-8 pt-6 pb-5 border-b" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-              <div className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: LANDING_COLORS.mutedForeground }}>Your data</div>
+              <div className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: LANDING_COLORS.mutedForeground }}>Evidence in</div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z', label: 'Checkpoint photos' },
-                  { icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', label: 'Docs & warranties' },
-                  { icon: 'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z', label: 'Your questions' },
-                  { icon: 'M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z', label: 'Before / after history' },
+                  { icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z', label: 'Field & inspection photos' },
+                  { icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', label: 'Policies & vendor records' },
+                  { icon: 'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z', label: 'Team questions' },
+                  { icon: 'M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z', label: 'Condition over time' },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center gap-2 rounded-lg border px-3 py-2.5 text-xs" style={{ borderColor: LANDING_COLORS.border, backgroundColor: 'rgba(20,20,28,0.8)', color: LANDING_COLORS.foreground }}>
                     <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.mutedForeground }}>
@@ -423,12 +424,12 @@ export default function LandingPageClient() {
                     </svg>
                   </div>
                   <div>
-                    <div className="text-sm font-bold" style={{ color: '#a5f3fc' }}>AI Orchestrator</div>
-                    <div className="text-xs" style={{ color: 'rgba(165,243,252,0.6)' }}>Understands context, prioritises what matters, dispatches specialists instantly</div>
+                    <div className="text-sm font-bold" style={{ color: '#a5f3fc' }}>Smart coordination</div>
+                    <div className="text-xs" style={{ color: 'rgba(165,243,252,0.6)' }}>Reads context across the property, surfaces what matters, routes to the right analysis</div>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  {['Real-time analysis', 'Always-on'].map((tag) => (
+                  {['Live analysis', 'Portfolio-ready'].map((tag) => (
                     <span key={tag} className="rounded-full border px-3 py-1 text-xs" style={{ borderColor: 'rgba(34,211,238,0.3)', color: '#67e8f9', backgroundColor: 'rgba(34,211,238,0.1)' }}>{tag}</span>
                   ))}
                 </div>
@@ -447,14 +448,14 @@ export default function LandingPageClient() {
 
             {/* Stage 3: Agents */}
             <div className="px-8 pt-0 pb-5 border-b" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-              <div className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: LANDING_COLORS.mutedForeground }}>Specialist agents</div>
+              <div className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: LANDING_COLORS.mutedForeground }}>Focused analysis</div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                 {[
-                  { label: 'Coverage', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
-                  { label: 'DIY repair', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
-                  { label: 'Local pros', icon: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z' },
-                  { label: 'Cost estimate', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-                  { label: 'Trend analysis', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', accent: true },
+                  { label: 'Coverage & policies', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
+                  { label: 'Repair guidance', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
+                  { label: 'Vendor matches', icon: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z' },
+                  { label: 'Cost outlook', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+                  { label: 'Change detection', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', accent: true },
                 ].map((item) => (
                   <div
                     key={item.label}
@@ -486,15 +487,15 @@ export default function LandingPageClient() {
 
             {/* Stage 4: Output */}
             <div className="mx-6 mb-6 rounded-xl border px-5 py-4" style={{ borderColor: 'rgba(34,211,238,0.25)', backgroundColor: 'rgba(34,211,238,0.04)' }}>
-              <div className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: '#67e8f9' }}>Your action plan</div>
+              <div className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: '#67e8f9' }}>Clear outputs</div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                 {[
-                  { label: 'Risk score', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
-                  { label: 'Priority ranking', icon: 'M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12' },
-                  { label: 'Step-by-step repairs', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
-                  { label: 'Cost estimate', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-                  { label: 'Matched local pros', icon: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z' },
-                  { label: 'Monthly report', icon: 'M9 17v-4m3 4V7m3 10v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+                  { label: 'Condition score', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
+                  { label: 'Fix first', icon: 'M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12' },
+                  { label: 'Repair playbook', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
+                  { label: 'Budget outlook', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+                  { label: 'Trusted vendors', icon: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z' },
+                  { label: 'Shareable reports', icon: 'M9 17v-4m3 4V7m3 10v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
                 ].map((item) => (
                   <div
                     key={item.label}
@@ -569,9 +570,9 @@ export default function LandingPageClient() {
               className="text-xl max-w-3xl mx-auto font-light leading-relaxed"
               style={{ color: LANDING_COLORS.mutedForeground }}
             >
-              From routine walkthroughs to claims documentation, see how
-              checkpoint-driven workflows support single homes and multi-property
-              operations
+              From routine walkthroughs to claims documentation, see how one
+              evidence workflow supports single homes and multi-property
+              operations.
             </p>
           </div>
 
@@ -583,7 +584,7 @@ export default function LandingPageClient() {
                 icon: "M13 10V3L4 14h7v7l9-11h-7z",
                 color: LANDING_COLORS.accent,
                 steps: [
-                  "Create checkpoints for roof, exterior, basement, and HVAC",
+                  "Capture structured walkthrough photos for roof, exterior, basement, and HVAC",
                   "Track condition shifts by area across each season",
                   "Highlight recurring moisture and weather-related wear",
                   "Build a clear maintenance backlog before issues escalate",
@@ -598,9 +599,9 @@ export default function LandingPageClient() {
                 icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
                 color: LANDING_COLORS.primary,
                 steps: [
-                  "Create monthly checkpoints with photos",
+                  "Capture monthly walkthrough photos",
                   "AI detects condition score drop: 78 → 65 (attention needed)",
-                  "Platform identifies increased moisture + wall staining",
+                  "Platform highlights increased moisture and wall staining",
                   "Get preventive maintenance recommendations before major damage",
                 ],
                 result: "Caught water issue early, prevented $5,000+ damage",
@@ -612,9 +613,9 @@ export default function LandingPageClient() {
                 icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
                 color: LANDING_COLORS.accent,
                 steps: [
-                  "Capture move-in checkpoints room by room",
+                  "Capture move-in walkthroughs room by room",
                   "At move-out, generate a comparison report with before/after photos",
-                  "Review issue tables and visual-diff callouts automatically",
+                  "Review issue tables and change callouts automatically",
                   "Share the report with your landlord or tenant",
                 ],
                 result:
@@ -626,7 +627,7 @@ export default function LandingPageClient() {
                 icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
                 color: LANDING_COLORS.primary,
                 steps: [
-                  "Platform auto-compares before/after checkpoint photos",
+                  "Platform compares before/after evidence from prior walkthroughs",
                   "AI detects: missing shingles, damaged flashing, water damage",
                   "Generate a formal report with photos, issue tables, and change highlights",
                   "Share the report and comparisons with your insurance adjuster",
@@ -641,8 +642,8 @@ export default function LandingPageClient() {
                 icon: "M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z",
                 color: LANDING_COLORS.primary,
                 steps: [
-                  "Run checkpoint analysis or chat on property issues",
-                  "Generate a formal report or share a read-only chat link",
+                  "Run issue analysis on captured evidence",
+                  "Generate a formal report or share a secure evidence link",
                   "Contractor reviews evidence without a login",
                   "Everyone works from the same AI-verified source of truth",
                 ],
@@ -655,10 +656,10 @@ export default function LandingPageClient() {
                 icon: "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
                 color: LANDING_COLORS.accent,
                 steps: [
-                  "Capture before/after checkpoints for each milestone",
+                  "Capture before/after walkthroughs for each milestone",
                   "Compare workmanship and finish quality over time",
-                  "Attach invoices, warranties, and notes to each checkpoint",
-                  "Share a read-only chat link with your contractor or family",
+                  "Attach invoices, warranties, and notes to each milestone",
+                  "Share a secure evidence link with your contractor or family",
                 ],
                 result: "Kept everyone aligned with one source of truth",
               },

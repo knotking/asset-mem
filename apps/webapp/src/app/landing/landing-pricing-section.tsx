@@ -143,9 +143,9 @@ export function LandingPricingSection({
             className="text-lg max-w-2xl mx-auto font-light"
             style={{ color: c.mutedForeground }}
           >
-            Simple monthly billing for homeowners and landlords. Each plan
-            includes AI chat, document uploads, photo analysis, and property
-            reports—you can always see what you have left in Settings.
+            Simple monthly plans for homeowners and landlords, with transparent
+            limits for evidence analysis, reports, and document intelligence.
+            Enterprise teams get custom rollout and support.
           </p>
         </div>
 

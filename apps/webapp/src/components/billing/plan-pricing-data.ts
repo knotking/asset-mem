@@ -49,7 +49,7 @@ export const PLAN_CARDS: Record<PlanTierKey, PlanCard> = {
   },
   pro: {
     name: 'Pro',
-    blurb: 'Heavy documents, checkpoints, and agent sessions.',
+    blurb: 'For high-volume documents, inspections, and AI guidance.',
     limits: PRO_PLAN_LIMITS,
   },
 };

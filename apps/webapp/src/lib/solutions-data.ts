@@ -41,7 +41,7 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
     bullets: [
       'Standardized walkthroughs per unit with AI condition scores',
       'Move-in / move-out reports with before/after comparisons',
-      'Document Q&A on leases, inspections, and vendor notes',
+      'Document intelligence on leases, inspections, and vendor notes',
       'Share read-only report links with owners and contractors',
     ],
     workflows: [
@@ -147,7 +147,7 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
     bullets: [
       'Mobile field capture with instant AI analysis',
       'Formal reports for job completion and customer sign-off',
-      'Shareable chat and report links for dispatchers',
+      'Shareable evidence links and reports for dispatchers',
       'Multiple properties under one technician account today',
     ],
     workflows: [
@@ -196,11 +196,11 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
     headline: 'Property intelligence',
     accent: 'for your product roadmap',
     problem:
-      'Platforms serving owners, renters, or insurers need a credible AI layer for condition evidence and document Q&A—co-designed before you commit engineering.',
+      'Platforms serving owners, renters, or insurers need a credible AI layer for condition evidence and document intelligence—co-designed before you commit engineering.',
     bullets: [
       'AI condition analysis, reports, and document retrieval today',
       'Shareable evidence links embeddable in your workflows',
-      'Pilot program to map integrations and portfolio rollups',
+      'Enterprise program to map integrations and portfolio rollups',
       'Built on Google Cloud infrastructure',
     ],
     workflows: [
@@ -209,7 +209,7 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
         description: 'Test property intelligence features with your users',
         steps: [
           'Your users access AssetMem via standalone app or shared links',
-          'Capture property condition, generate reports, run document Q&A',
+          'Capture property condition, generate reports, and answer document questions',
           'Review results to validate AI quality and feature fit',
           'Map integration points: where reports/data flow into your platform',
         ],
@@ -238,7 +238,7 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
     analyticsLabel: 'solutions_platform',
     keywords: [
       'prop-tech AI integration',
-      'property intelligence API pilot',
+      'property intelligence API',
       'embedded property inspection',
     ],
   },

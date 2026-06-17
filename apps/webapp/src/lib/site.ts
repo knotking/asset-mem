@@ -12,7 +12,7 @@ export const SITE_HERO_HEADLINE_ACCENT_B2B =
   'for portfolios, claims, and field teams';
 
 export const SITE_HERO_DESCRIPTION =
-  'Never miss property damage again. AI analyzes your photos, tracks changes over time, and tells you exactly what to fix and what it costs.';
+  'Capture property evidence, spot issues earlier, and move faster with clear repair and reporting guidance.';
 
 export const SITE_HERO_DESCRIPTION_B2B =
   'Capture evidence, generate audit-ready reports, and answer questions across properties—from one platform.';
