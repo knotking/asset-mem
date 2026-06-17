@@ -1,41 +1,53 @@
 "use client";
 
+import Link from "next/link";
 import {
-  getPilotMailtoHref,
-  isEmbeddablePilotFormUrl,
-  type PilotConfig,
-} from "@/lib/pilot-config";
-import { trackPilotCta } from "@/lib/analytics";
+  getEnterpriseMailtoHref,
+  isEmbeddableEnterpriseFormUrl,
+  type EnterpriseConfig,
+} from "@/lib/enterprise-config";
+import { trackEnterpriseCta } from "@/lib/analytics";
+import { getSupportEmail } from "@/lib/site";
+import type { SolutionSlug } from "@/lib/solutions-data";
 import type { LandingPricingPalette } from "@/components/billing/plan-pricing-cards";
 
-const SEGMENTS = [
+const SEGMENTS: ReadonlyArray<{
+  title: string;
+  desc: string;
+  icon: string;
+  slug: SolutionSlug;
+}> = [
   {
-    title: "Property managers",
-    desc: "Portfolio inspections, turnover docs, and maintenance triage.",
+    title: "Property managers, rentals & hospitality",
+    desc: "Portfolio-wide turnovers, walkthroughs, and maintenance evidence.",
     icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
+    slug: "property-managers",
   },
   {
     title: "Insurers & adjusters",
-    desc: "Claims evidence packs with photos, metrics, and formal PDFs.",
+    desc: "Carrier-grade claim packs with timestamped photos, condition metrics, and formal reports.",
     icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
+    slug: "insurance",
   },
   {
     title: "Service & field teams",
-    desc: "Mobile capture, AI analysis, and shareable handoffs to the office.",
+    desc: "Dispatch-ready mobile capture, on-site AI analysis, and report handoffs to operations.",
     icon: "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z",
+    slug: "field-teams",
   },
   {
     title: "Prop-tech platforms",
-    desc: "Property intelligence layer for your product roadmap.",
+    desc: "Embeddable evidence layer and document intelligence—co-designed with your product team.",
     icon: "M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 17a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM14 17a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1v-2z",
+    slug: "platform",
   },
 ] as const;
 
 const INCLUDED_TODAY = [
-  "Checkpoint capture with AI condition scoring",
-  "Formal PDF reports (insurance, move-in/out, listing)",
-  "Document Q&A on inspections, policies, and warranties",
-  "Shareable evidence links for reports and AI chat",
+  "Standardized field capture with AI condition scores across properties",
+  "Audit-ready reports for claims, turnovers, and portfolio reviews",
+  "Document intelligence on inspections, policies, and vendor records",
+  "Secure share links for reports, evidence packs, and stakeholder review",
 ] as const;
 
 const CO_DESIGNED = [
@@ -44,27 +56,31 @@ const CO_DESIGNED = [
   "Integrations with your existing tools",
 ] as const;
 
-type PilotSectionProps = {
+type EnterpriseSectionProps = {
   colors: LandingPricingPalette;
-  pilot: PilotConfig;
+  enterprise: EnterpriseConfig;
 };
 
-export function PilotSection({ colors: c, pilot }: PilotSectionProps) {
-  const formUrl = pilot.formUrl;
-  const mailtoHref = getPilotMailtoHref(pilot.pilotsEmail);
-  const showEmbed = formUrl && isEmbeddablePilotFormUrl(formUrl);
+export function EnterpriseSection({
+  colors: c,
+  enterprise,
+}: EnterpriseSectionProps) {
+  const formUrl = enterprise.formUrl;
+  const mailtoHref = getEnterpriseMailtoHref(enterprise.enterpriseEmail);
+  const showEmbed = formUrl && isEmbeddableEnterpriseFormUrl(formUrl);
+  const supportEmail = getSupportEmail();
 
-  const handlePilotCta = (label: string) => {
-    trackPilotCta(label);
+  const handleEnterpriseCta = (label: string) => {
+    trackEnterpriseCta(label);
   };
 
   const ctaHref = formUrl ?? mailtoHref;
   const ctaExternal = Boolean(formUrl);
-  const ctaLabel = formUrl ? "Talk to us" : "Email our team";
+  const ctaLabel = formUrl ? "Get in touch" : "Email our team";
 
   return (
     <section
-      id="pilot"
+      id="enterprise"
       className="py-28 relative overflow-hidden w-full scroll-mt-24"
       style={{ backgroundColor: "#0f0f14" }}
     >
@@ -107,17 +123,27 @@ export function PilotSection({ colors: c, pilot }: PilotSectionProps) {
             className="text-lg max-w-2xl mx-auto font-light leading-relaxed"
             style={{ color: c.mutedForeground }}
           >
-            See how AssetMem captures evidence, generates audit-ready PDFs, and
+            See how AssetMem captures evidence, generates audit-ready reports, and
             answers questions across a portfolio—with room to co-design workflows
             that fit your team.
+          </p>
+          <p className="pt-2">
+            <Link
+              href="/solutions"
+              className="text-sm font-medium underline underline-offset-4 transition-colors"
+              style={{ color: c.primary }}
+            >
+              Explore solutions by segment →
+            </Link>
           </p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
           {SEGMENTS.map((segment) => (
-            <div
+            <Link
               key={segment.title}
-              className="rounded-xl border p-5"
+              href={`/solutions/${segment.slug}`}
+              className="rounded-xl border p-5 transition-all hover:-translate-y-0.5"
               style={{
                 borderColor: c.border,
                 backgroundColor: "rgba(20,20,28,0.6)",
@@ -155,7 +181,7 @@ export function PilotSection({ colors: c, pilot }: PilotSectionProps) {
               >
                 {segment.desc}
               </p>
-            </div>
+            </Link>
           ))}
         </div>
 
@@ -217,18 +243,50 @@ export function PilotSection({ colors: c, pilot }: PilotSectionProps) {
         </div>
 
         <div className="text-center space-y-6">
-          <a
-            href={ctaHref}
-            target={ctaExternal ? "_blank" : undefined}
-            rel={ctaExternal ? "noopener noreferrer" : undefined}
-            onClick={() => handlePilotCta("team_cta_section")}
-            className="inline-flex items-center justify-center rounded-lg px-10 py-4 text-base font-medium shadow-xl transition-all"
-            style={{ backgroundColor: c.primary, color: "#0a0a0f" }}
+          <h3
+            className="text-2xl font-light tracking-tight"
+            style={{ color: c.foreground }}
           >
-            {ctaLabel}
-          </a>
+            Talk to our team
+          </h3>
+          <p
+            className="text-base max-w-xl mx-auto font-light leading-relaxed"
+            style={{ color: c.mutedForeground }}
+          >
+            Tell us about your portfolio, claims workflow, or field operations
+            needs.
+          </p>
+          <div className="flex justify-center pt-2">
+            <a
+              href={ctaHref}
+              target={ctaExternal ? "_blank" : undefined}
+              rel={ctaExternal ? "noopener noreferrer" : undefined}
+              onClick={() => handleEnterpriseCta("team_cta_section")}
+              className="inline-flex items-center justify-center rounded-lg px-10 py-4 text-base font-medium shadow-xl transition-all"
+              style={{ backgroundColor: c.primary, color: "#0a0a0f" }}
+            >
+              {ctaLabel}
+            </a>
+          </div>
           <p className="text-sm font-light" style={{ color: c.mutedForeground }}>
-            We typically respond within one business day.
+            We typically respond within one business day. Or email{" "}
+            <a
+              href={`mailto:${enterprise.enterpriseEmail}`}
+              className="underline underline-offset-4"
+              style={{ color: c.primary }}
+            >
+              {enterprise.enterpriseEmail}
+            </a>
+          </p>
+          <p className="text-sm font-light" style={{ color: c.mutedForeground }}>
+            General questions?{" "}
+            <a
+              href={`mailto:${supportEmail}`}
+              className="underline underline-offset-2"
+              style={{ color: c.mutedForeground }}
+            >
+              {supportEmail}
+            </a>
           </p>
         </div>
 

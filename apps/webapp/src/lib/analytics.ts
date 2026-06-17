@@ -86,7 +86,7 @@ export function trackLandingCta(label: string): void {
   trackEvent('landing_cta_click', { event_category: 'CTA', event_label: label });
 }
 
-export function trackPilotCta(label: string): void {
+export function trackEnterpriseCta(label: string): void {
   trackLandingCta(label);
   trackEvent('team_cta_click', { event_category: 'CTA', event_label: label });
 }

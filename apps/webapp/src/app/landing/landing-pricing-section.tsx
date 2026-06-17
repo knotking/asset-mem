@@ -17,7 +17,7 @@ import {
   inferPlanTierFromLimits,
   type PlanTierKey,
 } from "@/components/billing/plan-pricing-data";
-import { trackPilotCta } from "@/lib/analytics";
+import { trackEnterpriseCta } from "@/lib/analytics";
 
 type BillingSummary = {
   subscriptionStatus?: string | null;
@@ -164,8 +164,8 @@ export function LandingPricingSection({
           }
           showPaidCheckout={Boolean(user) && !isPaid}
           showSignupOnFree={!user}
-          showEnterprisePilot
-          onPilotCta={() => trackPilotCta("team_cta_pricing_enterprise")}
+          showEnterprisePricing
+          onEnterpriseCta={() => trackEnterpriseCta("team_cta_pricing_enterprise")}
         />
       </div>
     </section>

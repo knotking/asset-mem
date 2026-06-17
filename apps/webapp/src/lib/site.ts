@@ -15,7 +15,7 @@ export const SITE_HERO_DESCRIPTION =
   'Never miss property damage again. AI analyzes your photos, tracks changes over time, and tells you exactly what to fix and what it costs.';
 
 export const SITE_HERO_DESCRIPTION_B2B =
-  'Capture evidence, generate audit-ready PDFs, and answer questions across properties—from one platform.';
+  'Capture evidence, generate audit-ready reports, and answer questions across properties—from one platform.';
 
 /** Default meta description for marketing pages and OG fallbacks. */
 export const SITE_DESCRIPTION = SITE_HERO_DESCRIPTION;

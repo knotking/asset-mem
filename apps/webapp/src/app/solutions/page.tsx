@@ -6,7 +6,7 @@ import { SolutionsHubClient } from '@/components/landing/solutions-hub-client';
 export const metadata: Metadata = buildPageMetadata({
   title: `${SITE_NAME} — Enterprise Solutions`,
   description:
-    'Property intelligence for managers, insurers, field teams, and prop-tech platforms. AI checkpoints, formal PDFs, and document Q&A.',
+    'Property intelligence for managers, insurers, field teams, and prop-tech platforms. AI condition capture, formal reports, and document Q&A.',
   path: '/solutions',
 });
 

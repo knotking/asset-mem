@@ -35,7 +35,82 @@ const PORTFOLIO_PROPERTIES = [
     statusTone: 'warn' as const,
     detail: 'Roof damage flagged',
   },
-];
+] as const;
+
+const UPCOMING_ITEMS = [
+  { label: 'Move-out walkthrough', where: 'Unit 4B — Maple', when: 'Tomorrow' },
+  { label: 'Adjuster site visit', where: 'Claim #CC-9021', when: 'Thu' },
+] as const;
+
+function panelSurfaceClassName() {
+  return 'rounded-xl border p-2.5 sm:p-3 backdrop-blur-sm';
+}
+
+function panelSurfaceStyle() {
+  return {
+    backgroundColor: LANDING_COLORS.surface,
+    borderColor: LANDING_COLORS.surfaceBorder,
+  } as const;
+}
+
+function PropertyRow({
+  property,
+}: {
+  property: {
+    name: string;
+    score: number;
+    status: string;
+    statusTone: 'warn' | 'ok';
+    detail: string;
+  };
+}) {
+  const badge = statusStyles(property.statusTone);
+  return (
+    <div
+      className="flex items-center gap-2.5 rounded-lg border px-2.5 py-2 sm:px-3"
+      style={{
+        borderColor:
+          property.statusTone === 'warn'
+            ? 'rgba(239,68,68,0.25)'
+            : LANDING_COLORS.surfaceBorder,
+        backgroundColor: 'rgba(15,23,42,0.45)',
+      }}
+    >
+      <div
+        className="h-9 w-9 shrink-0 rounded-md flex items-center justify-center text-xs font-bold tabular-nums"
+        style={{
+          backgroundColor:
+            property.statusTone === 'warn'
+              ? 'rgba(239,68,68,0.15)'
+              : 'rgba(34,211,238,0.12)',
+          color: property.statusTone === 'warn' ? '#fca5a5' : '#67e8f9',
+        }}
+      >
+        {property.score}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div
+          className="text-[11px] font-medium truncate"
+          style={{ color: LANDING_COLORS.textMain }}
+        >
+          {property.name}
+        </div>
+        <div
+          className="text-[10px] truncate"
+          style={{ color: LANDING_COLORS.textMuted }}
+        >
+          {property.detail}
+        </div>
+      </div>
+      <span
+        className="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-semibold"
+        style={badge}
+      >
+        {property.status}
+      </span>
+    </div>
+  );
+}
 
 function statusStyles(tone: 'warn' | 'ok') {
   if (tone === 'warn') {
@@ -50,9 +125,36 @@ function statusStyles(tone: 'warn' | 'ok') {
   };
 }
 
-export function PortfolioHeroGraphic() {
+export function PortfolioHeroGraphic({
+  layout = 'default',
+  showConceptPreview = false,
+}: {
+  layout?: 'default' | 'sidebar';
+  /** Subtle “not in product yet” cues for marketing mockups. */
+  showConceptPreview?: boolean;
+}) {
+  const heightClass =
+    layout === 'sidebar'
+      ? 'h-auto xl:h-full'
+      : 'h-[600px] sm:h-[640px] lg:h-[650px]';
+  const contentGap = layout === 'sidebar' ? 'gap-2' : 'gap-3';
+  const contentPadding = layout === 'sidebar' ? 'p-3 sm:p-4' : 'p-4 sm:p-6';
+  const shellClass =
+    layout === 'sidebar'
+      ? 'relative rounded-3xl overflow-hidden shadow-2xl border transition-all duration-500 xl:h-full'
+      : 'relative h-full rounded-3xl overflow-hidden shadow-2xl border transition-all duration-500';
+
   return (
-    <div className="relative h-[600px] sm:h-[640px] lg:h-[650px]">
+    <div className={showConceptPreview ? 'flex flex-col min-h-0' : undefined}>
+    <div
+      className={`relative ${heightClass}`}
+      role={showConceptPreview ? 'img' : undefined}
+      aria-label={
+        showConceptPreview
+          ? 'Illustrative concept preview of a portfolio dashboard'
+          : undefined
+      }
+    >
       <div
         className="absolute -top-4 -right-4 w-72 h-72 rounded-full blur-3xl animate-pulse"
         style={{ backgroundColor: LANDING_COLORS.primarySoft }}
@@ -63,7 +165,7 @@ export function PortfolioHeroGraphic() {
       />
 
       <div
-        className="relative h-full rounded-3xl overflow-hidden shadow-2xl border transition-all duration-500"
+        className={shellClass}
         style={{ borderColor: 'rgba(255,255,255,0.08)' }}
         onMouseEnter={(e) => {
           e.currentTarget.style.borderColor = 'rgba(34,211,238,0.3)';
@@ -83,7 +185,9 @@ export function PortfolioHeroGraphic() {
         />
         <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.06)_1px,transparent_1px)] bg-[size:36px_36px] opacity-35" />
 
-        <div className="relative z-10 flex h-full flex-col gap-3 p-4 sm:p-6">
+        <div
+          className={`relative z-10 flex flex-col ${contentGap} ${contentPadding} ${layout === 'sidebar' ? 'xl:h-full' : ''}`}
+        >
           <div
             className="flex items-center justify-between rounded-xl border px-4 py-2 text-xs backdrop-blur-sm"
             style={{
@@ -92,8 +196,21 @@ export function PortfolioHeroGraphic() {
               color: LANDING_COLORS.textMuted,
             }}
           >
-            <span style={{ color: 'rgba(226,232,240,0.92)' }}>
-              Portfolio overview
+            <span className="flex items-center gap-2 min-w-0">
+              <span style={{ color: 'rgba(226,232,240,0.92)' }}>
+                Portfolio overview
+              </span>
+              {showConceptPreview ? (
+                <span
+                  className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide shrink-0"
+                  style={{
+                    backgroundColor: 'rgba(148,163,184,0.14)',
+                    color: 'rgba(203,213,225,0.72)',
+                  }}
+                >
+                  Preview
+                </span>
+              ) : null}
             </span>
             <span
               className="rounded-full px-2 py-0.5 text-[10px]"
@@ -155,89 +272,102 @@ export function PortfolioHeroGraphic() {
           </div>
 
           <div
-            className="flex-1 min-h-0 rounded-xl border p-2.5 sm:p-3 backdrop-blur-sm space-y-2 overflow-hidden"
-            style={{
-              backgroundColor: LANDING_COLORS.surface,
-              borderColor: LANDING_COLORS.surfaceBorder,
-            }}
+            className={
+              layout === 'sidebar'
+                ? 'flex flex-col gap-2 shrink-0'
+                : 'flex-1 min-h-0 rounded-xl border p-2.5 sm:p-3 backdrop-blur-sm space-y-2 overflow-hidden'
+            }
+            style={layout === 'sidebar' ? undefined : panelSurfaceStyle()}
           >
             <div
-              className="flex items-center justify-between text-[11px] px-0.5"
-              style={{ color: 'rgba(226,232,240,0.84)' }}
+              className={
+                layout === 'sidebar'
+                  ? `${panelSurfaceClassName()} space-y-2 min-h-0`
+                  : 'space-y-2'
+              }
+              style={layout === 'sidebar' ? panelSurfaceStyle() : undefined}
             >
-              <span>Flagged this week</span>
-              <span
-                className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                style={{
-                  backgroundColor: LANDING_COLORS.warnBg,
-                  color: LANDING_COLORS.warn,
-                }}
+              <div
+                className="flex items-center justify-between text-[11px] px-0.5"
+                style={{ color: 'rgba(226,232,240,0.84)' }}
               >
-                ↑ 2 new
-              </span>
-            </div>
-
-            {PORTFOLIO_PROPERTIES.map((property) => {
-              const badge = statusStyles(property.statusTone);
-              return (
-                <div
-                  key={property.name}
-                  className="flex items-center gap-2.5 rounded-lg border px-2.5 py-2 sm:px-3"
+                <span>Flagged this week</span>
+                <span
+                  className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
                   style={{
-                    borderColor:
-                      property.statusTone === 'warn'
-                        ? 'rgba(239,68,68,0.25)'
-                        : LANDING_COLORS.surfaceBorder,
-                    backgroundColor: 'rgba(15,23,42,0.45)',
+                    backgroundColor: LANDING_COLORS.warnBg,
+                    color: LANDING_COLORS.warn,
                   }}
                 >
+                  ↑ 2 new
+                </span>
+              </div>
+
+              {PORTFOLIO_PROPERTIES.map((property) => (
+                <PropertyRow key={property.name} property={property} />
+              ))}
+            </div>
+
+            {layout === 'sidebar' ? (
+              <>
+                <div
+                  className={`${panelSurfaceClassName()} space-y-2 min-h-0`}
+                  style={panelSurfaceStyle()}
+                >
                   <div
-                    className="h-9 w-9 shrink-0 rounded-md flex items-center justify-center text-xs font-bold tabular-nums"
-                    style={{
-                      backgroundColor:
-                        property.statusTone === 'warn'
-                          ? 'rgba(239,68,68,0.15)'
-                          : 'rgba(34,211,238,0.12)',
-                      color:
-                        property.statusTone === 'warn' ? '#fca5a5' : '#67e8f9',
-                    }}
+                    className="text-[11px] px-0.5"
+                    style={{ color: 'rgba(226,232,240,0.84)' }}
                   >
-                    {property.score}
+                    Upcoming this week
                   </div>
-                  <div className="flex-1 min-w-0">
+                  {UPCOMING_ITEMS.map((item) => (
                     <div
-                      className="text-[11px] font-medium truncate"
-                      style={{ color: LANDING_COLORS.textMain }}
+                      key={item.label}
+                      className="flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2"
+                      style={{
+                        borderColor: LANDING_COLORS.surfaceBorder,
+                        backgroundColor: 'rgba(15,23,42,0.45)',
+                      }}
                     >
-                      {property.name}
+                      <div className="min-w-0">
+                        <div
+                          className="text-[11px] font-medium truncate"
+                          style={{ color: LANDING_COLORS.textMain }}
+                        >
+                          {item.label}
+                        </div>
+                        <div
+                          className="text-[10px] truncate"
+                          style={{ color: LANDING_COLORS.textMuted }}
+                        >
+                          {item.where}
+                        </div>
+                      </div>
+                      <span
+                        className="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-semibold"
+                        style={{
+                          backgroundColor: 'rgba(34,211,238,0.12)',
+                          color: '#67e8f9',
+                        }}
+                      >
+                        {item.when}
+                      </span>
                     </div>
-                    <div
-                      className="text-[10px] truncate"
-                      style={{ color: LANDING_COLORS.textMuted }}
-                    >
-                      {property.detail}
-                    </div>
-                  </div>
-                  <span
-                    className="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-semibold"
-                    style={badge}
-                  >
-                    {property.status}
-                  </span>
+                  ))}
                 </div>
-              );
-            })}
+              </>
+            ) : null}
           </div>
 
           <div
-            className="rounded-xl border p-3 backdrop-blur-sm"
+            className={`rounded-xl border backdrop-blur-sm ${layout === 'sidebar' ? 'p-2.5' : 'p-3'}`}
             style={{
               backgroundColor: LANDING_COLORS.surface,
               borderColor: LANDING_COLORS.surfaceBorder,
             }}
           >
             <div
-              className="mb-2 flex items-center justify-between text-[11px]"
+              className={`flex items-center justify-between text-[11px] ${layout === 'sidebar' ? 'mb-1.5' : 'mb-2'}`}
               style={{ color: 'rgba(226,232,240,0.84)' }}
             >
               <span>Portfolio risk trend</span>
@@ -251,7 +381,9 @@ export function PortfolioHeroGraphic() {
                 4 sites worsening
               </span>
             </div>
-            <div className="flex h-12 items-end gap-1 px-1">
+            <div
+              className={`flex items-end gap-1 px-1 ${layout === 'sidebar' ? 'h-9' : 'h-12'}`}
+            >
               {[38, 42, 45, 49, 53, 58, 62, 68, 74].map((h, i) => (
                 <div
                   key={i}
@@ -271,7 +403,7 @@ export function PortfolioHeroGraphic() {
           </div>
 
           <div
-            className="mt-auto rounded-xl p-3 sm:p-4 transition-all duration-300 hover:-translate-y-0.5"
+            className={`rounded-xl transition-all duration-300 hover:-translate-y-0.5 ${layout === 'sidebar' ? 'p-2.5 xl:mt-auto' : 'mt-auto p-3 sm:p-4'}`}
             style={{
               backgroundColor: 'rgba(12,18,32,0.95)',
               border: '1px solid rgba(34,211,238,0.3)',
@@ -317,7 +449,7 @@ export function PortfolioHeroGraphic() {
                       color: '#67e8f9',
                     }}
                   >
-                    PDF
+                    Report
                   </span>
                 </div>
                 <div
@@ -331,6 +463,16 @@ export function PortfolioHeroGraphic() {
           </div>
         </div>
       </div>
+    </div>
+    {showConceptPreview ? (
+      <p
+        className="mt-2 text-[11px] font-light leading-snug text-center xl:text-left shrink-0"
+        style={{ color: LANDING_COLORS.textMuted }}
+      >
+        Illustrative preview — portfolio dashboard co-developed with enterprise
+        teams.
+      </p>
+    ) : null}
     </div>
   );
 }

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
-  ENTERPRISE_PILOT_CARD,
+  ENTERPRISE_PRICING_CARD,
   PLAN_CARDS,
   PLAN_TIER_ORDER,
   paidPortalActionLabel,
@@ -51,9 +51,9 @@ type PlanPricingCardsProps = {
   showPaidCheckout?: boolean;
   /** Landing only: show sign-up link on free when logged out */
   showSignupOnFree?: boolean;
-  /** Landing only: fourth Enterprise / Pilot card (no Stripe) */
-  showEnterprisePilot?: boolean;
-  onPilotCta?: () => void;
+  /** Landing only: fourth Enterprise card (no Stripe) */
+  showEnterprisePricing?: boolean;
+  onEnterpriseCta?: () => void;
 };
 
 function portalButtonVariant(
@@ -287,14 +287,14 @@ function PlanCardActions({
   );
 }
 
-function EnterprisePilotCard({
+function EnterprisePricingCard({
   landingColors: c,
-  onPilotCta,
+  onEnterpriseCta,
 }: {
   landingColors: LandingPricingPalette;
-  onPilotCta?: () => void;
+  onEnterpriseCta?: () => void;
 }) {
-  const card = ENTERPRISE_PILOT_CARD;
+  const card = ENTERPRISE_PRICING_CARD;
 
   return (
     <div
@@ -341,8 +341,8 @@ function EnterprisePilotCard({
       </ul>
       <div className="mt-auto w-full shrink-0 pt-6 min-h-10">
         <a
-          href="#pilot"
-          onClick={() => onPilotCta?.()}
+          href="#enterprise"
+          onClick={() => onEnterpriseCta?.()}
           className="inline-flex w-full justify-center items-center rounded-lg px-6 py-3 text-sm font-medium border transition-colors"
           style={{
             borderColor: c.border,
@@ -373,8 +373,8 @@ export function PlanPricingCards({
   onOpenPortal,
   showPaidCheckout = false,
   showSignupOnFree = false,
-  showEnterprisePilot = false,
-  onPilotCta,
+  showEnterprisePricing = false,
+  onEnterpriseCta,
 }: PlanPricingCardsProps) {
   return (
     <div className="space-y-4">
@@ -402,7 +402,7 @@ export function PlanPricingCards({
           "grid gap-6 items-stretch",
           variant === "settings"
             ? "md:grid-cols-3"
-            : showEnterprisePilot
+            : showEnterprisePricing
               ? "md:grid-cols-2 xl:grid-cols-4 max-w-6xl mx-auto"
               : "md:grid-cols-3 max-w-5xl mx-auto",
         )}
@@ -577,8 +577,8 @@ export function PlanPricingCards({
             </div>
           );
         })}
-        {variant === "landing" && showEnterprisePilot && c ? (
-          <EnterprisePilotCard landingColors={c} onPilotCta={onPilotCta} />
+        {variant === "landing" && showEnterprisePricing && c ? (
+          <EnterprisePricingCard landingColors={c} onEnterpriseCta={onEnterpriseCta} />
         ) : null}
       </div>
     </div>

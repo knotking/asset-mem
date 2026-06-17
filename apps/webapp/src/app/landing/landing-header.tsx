@@ -18,6 +18,7 @@ const NAV_LINKS = [
   { href: '#', targetId: '#', label: 'Home', sectionId: '' },
   { href: '#how-it-works', targetId: '#how-it-works', label: 'How It Works', sectionId: 'how-it-works' },
   { href: '#use-cases', targetId: '#use-cases', label: 'Use Cases', sectionId: 'use-cases' },
+  { href: '#enterprise', targetId: '#enterprise', label: 'Enterprise', sectionId: 'enterprise' },
   { href: '#pricing', targetId: '#pricing', label: 'Pricing', sectionId: 'pricing' },
 ] as const;
 
@@ -25,7 +26,7 @@ interface LandingHeaderProps {
   activeSection: string;
   onNavClick: (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => void;
   onButtonClick: (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => void;
-  onPilotNavClick?: (e: React.MouseEvent<HTMLAnchorElement>, label: string) => void;
+  onEnterpriseNavClick?: (e: React.MouseEvent<HTMLAnchorElement>, label: string) => void;
 }
 
 function DesktopNavLink({
@@ -84,13 +85,13 @@ function LandingCta({
   user,
   loading,
   onButtonClick,
-  onPilotNavClick,
+  onEnterpriseNavClick,
   className = '',
 }: {
   user: ReturnType<typeof useAuth>['user'];
   loading: boolean;
   onButtonClick: (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => void;
-  onPilotNavClick?: (e: React.MouseEvent<HTMLAnchorElement>, label: string) => void;
+  onEnterpriseNavClick?: (e: React.MouseEvent<HTMLAnchorElement>, label: string) => void;
   className?: string;
 }) {
   if (loading) {
@@ -147,7 +148,7 @@ export function LandingHeader({
   activeSection,
   onNavClick,
   onButtonClick,
-  onPilotNavClick,
+  onEnterpriseNavClick,
 }: LandingHeaderProps) {
   const { user, loading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -157,8 +158,8 @@ export function LandingHeader({
     setMobileMenuOpen(false);
   };
 
-  const handleMobilePilotClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    onPilotNavClick?.(e, 'team_cta_nav');
+  const handleMobileEnterpriseClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    onEnterpriseNavClick?.(e, 'team_cta_nav');
     setMobileMenuOpen(false);
   };
 
@@ -202,21 +203,16 @@ export function LandingHeader({
             ))}
             <Link
               href="/solutions"
-              className="text-sm font-medium whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-lg border"
-              style={{
-                borderColor: LANDING_COLORS.borderOverlay,
-                color: LANDING_COLORS.foreground,
-              }}
+              className="text-sm font-medium whitespace-nowrap transition-all duration-300"
+              style={{ color: LANDING_COLORS.foreground70 }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = LANDING_COLORS.muted30;
-                e.currentTarget.style.borderColor = LANDING_COLORS.primary;
+                e.currentTarget.style.color = LANDING_COLORS.primary;
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.borderColor = LANDING_COLORS.borderOverlay;
+                e.currentTarget.style.color = LANDING_COLORS.foreground70;
               }}
             >
-              Enterprise
+              Solutions
             </Link>
           </nav>
 
@@ -268,13 +264,10 @@ export function LandingHeader({
                   <Link
                     href="/solutions"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="rounded-lg px-3 py-3 text-base font-medium transition-colors mt-2 border"
-                    style={{ 
-                      color: LANDING_COLORS.foreground70,
-                      borderColor: LANDING_COLORS.borderOverlay,
-                    }}
+                    className="rounded-lg px-3 py-3 text-base font-medium transition-colors"
+                    style={{ color: LANDING_COLORS.foreground70 }}
                   >
-                    Enterprise Solutions
+                    Solutions
                   </Link>
                 </nav>
                 <div className="mt-8 border-t pt-6 space-y-3" style={{ borderColor: LANDING_COLORS.borderOverlay }}>
@@ -296,7 +289,7 @@ export function LandingHeader({
                 user={user}
                 loading={loading}
                 onButtonClick={onButtonClick}
-                onPilotNavClick={onPilotNavClick}
+                onEnterpriseNavClick={onEnterpriseNavClick}
               />
             </div>
           </div>

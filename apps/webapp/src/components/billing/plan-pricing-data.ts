@@ -9,14 +9,14 @@ import {
 
 export type PlanTierKey = 'free' | 'plus' | 'pro';
 
-export type EnterprisePilotCard = {
+export type EnterprisePricingCard = {
   name: string;
   priceLabel: string;
   blurb: string;
   bullets: string[];
 };
 
-export const ENTERPRISE_PILOT_CARD: EnterprisePilotCard = {
+export const ENTERPRISE_PRICING_CARD: EnterprisePricingCard = {
   name: 'Enterprise',
   priceLabel: 'Custom',
   blurb: 'For portfolios, claims workflows, and field operations at scale.',

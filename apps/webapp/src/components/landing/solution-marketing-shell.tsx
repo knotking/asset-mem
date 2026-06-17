@@ -1,49 +1,50 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
 import {
-  getPilotConfigFromEnv,
-  getPilotMailtoHref,
-  type PilotConfig,
-} from '@/lib/pilot-config';
+  getEnterpriseConfigFromEnv,
+  getEnterpriseMailtoHref,
+  type EnterpriseConfig,
+} from '@/lib/enterprise-config';
 import { fetchLandingRemoteConfig } from '@/lib/landing-remote-config';
-import { trackPilotCta } from '@/lib/analytics';
+import { trackEnterpriseCta } from '@/lib/analytics';
 import { LANDING_COLORS } from '@/lib/landing-theme';
 
 type SolutionMarketingShellProps = {
   children: React.ReactNode;
+  compactHub?: boolean;
 };
 
-export function SolutionMarketingShell({ children }: SolutionMarketingShellProps) {
-  const [pilot, setPilot] = useState<PilotConfig>(() => getPilotConfigFromEnv());
-  const [isDetailPage, setIsDetailPage] = useState(false);
-
-  useEffect(() => {
-    // Check if we're on a detail page (e.g. /solutions/property-managers)
-    if (typeof window !== 'undefined') {
-      const path = window.location.pathname;
-      setIsDetailPage(path !== '/solutions' && path.startsWith('/solutions/'));
-    }
-  }, []);
+export function SolutionMarketingShell({
+  children,
+  compactHub = false,
+}: SolutionMarketingShellProps) {
+  const pathname = usePathname();
+  const isDetailPage =
+    pathname !== '/solutions' && pathname.startsWith('/solutions/');
+  const [enterprise, setEnterprise] = useState<EnterpriseConfig>(() =>
+    getEnterpriseConfigFromEnv(),
+  );
 
   useEffect(() => {
     let cancelled = false;
     void fetchLandingRemoteConfig().then((remote) => {
-      if (!cancelled) setPilot(remote.pilot);
+      if (!cancelled) setEnterprise(remote.enterprise);
     });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const pilotHref = pilot.formUrl ?? getPilotMailtoHref(pilot.pilotsEmail);
-  const pilotExternal = Boolean(pilot.formUrl);
+  const enterpriseHref = enterprise.formUrl ?? getEnterpriseMailtoHref(enterprise.enterpriseEmail);
+  const enterpriseExternal = Boolean(enterprise.formUrl);
 
   return (
     <div
-      className="min-h-screen w-full"
+      className={`min-h-screen w-full ${compactHub ? 'flex flex-col' : ''}`}
       style={{ backgroundColor: LANDING_COLORS.background, color: LANDING_COLORS.foreground }}
     >
       <header
@@ -63,12 +64,40 @@ export function SolutionMarketingShell({ children }: SolutionMarketingShellProps
               AssetMem <span className="font-bold">AI</span>
             </span>
           </Link>
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+            <Link
+              href="/"
+              className="text-sm font-medium transition-colors"
+              style={{ color: LANDING_COLORS.foreground70 }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = LANDING_COLORS.primary;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = LANDING_COLORS.foreground70;
+              }}
+            >
+              Home
+            </Link>
+            {isDetailPage ? (
+              <Link
+                href="/solutions"
+                className="text-sm font-medium transition-colors"
+                style={{ color: LANDING_COLORS.foreground70 }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = LANDING_COLORS.primary;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = LANDING_COLORS.foreground70;
+                }}
+              >
+                Solutions
+              </Link>
+            ) : null}
             <a
-              href={pilotHref}
-              target={pilotExternal ? '_blank' : undefined}
-              rel={pilotExternal ? 'noopener noreferrer' : undefined}
-              onClick={() => trackPilotCta('team_cta_solutions_header')}
+              href={enterpriseHref}
+              target={enterpriseExternal ? '_blank' : undefined}
+              rel={enterpriseExternal ? 'noopener noreferrer' : undefined}
+              onClick={() => trackEnterpriseCta('team_cta_solutions_header')}
               className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium"
               style={{ backgroundColor: LANDING_COLORS.primary, color: '#0a0a0f' }}
             >
@@ -78,18 +107,25 @@ export function SolutionMarketingShell({ children }: SolutionMarketingShellProps
         </div>
       </header>
 
-      <main>{children}</main>
+      <main className={compactHub ? 'flex-1 flex flex-col min-h-0' : undefined}>
+        {children}
+      </main>
 
       <footer
-        className="border-t py-10"
+        className={compactHub ? 'border-t py-4 shrink-0' : 'border-t py-10'}
         style={{ borderColor: LANDING_COLORS.borderOverlay }}
       >
         <div
-          className="container mx-auto px-4 flex items-center justify-center text-sm"
+          className="container mx-auto px-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm"
           style={{ maxWidth: '1200px', color: LANDING_COLORS.mutedForeground }}
         >
-          <Link href={isDetailPage ? '/solutions' : '/'} className="hover:underline">
-            ← Back to {isDetailPage ? 'solutions' : 'homepage'}
+          {isDetailPage ? (
+            <Link href="/solutions" className="hover:underline">
+              ← All solutions
+            </Link>
+          ) : null}
+          <Link href="/" className="hover:underline">
+            ← Back to homepage
           </Link>
         </div>
       </footer>

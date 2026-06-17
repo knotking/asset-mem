@@ -7,6 +7,6 @@ export {
 export {
   fetchLandingDemoVideoUrlsFromRemoteConfig,
   fetchLandingRemoteConfig,
-  fetchPilotConfigFromRemoteConfig,
+  fetchEnterpriseConfigFromRemoteConfig,
   type LandingRemoteConfig,
 } from "@/lib/landing-remote-config";

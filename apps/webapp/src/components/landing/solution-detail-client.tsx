@@ -4,37 +4,42 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { SolutionMarketingShell } from '@/components/landing/solution-marketing-shell';
 import {
-  getPilotConfigFromEnv,
-  getPilotMailtoHref,
-  type PilotConfig,
-} from '@/lib/pilot-config';
+  getEnterpriseConfigFromEnv,
+  getEnterpriseMailtoHref,
+  type EnterpriseConfig,
+} from '@/lib/enterprise-config';
 import { fetchLandingRemoteConfig } from '@/lib/landing-remote-config';
-import { trackPilotCta } from '@/lib/analytics';
+import { trackEnterpriseCta } from '@/lib/analytics';
 import { LANDING_COLORS } from '@/lib/landing-theme';
-import type { SolutionPageData } from '@/lib/solutions-data';
+import {
+  SOLUTION_PRODUCT_TERM_NOTE,
+  type SolutionPageData,
+} from '@/lib/solutions-data';
 
 type SolutionDetailClientProps = {
   page: SolutionPageData;
 };
 
 export function SolutionDetailClient({ page }: SolutionDetailClientProps) {
-  const [pilot, setPilot] = useState<PilotConfig>(() => getPilotConfigFromEnv());
+  const [enterprise, setEnterprise] = useState<EnterpriseConfig>(() =>
+    getEnterpriseConfigFromEnv(),
+  );
 
   useEffect(() => {
     let cancelled = false;
     void fetchLandingRemoteConfig().then((remote) => {
-      if (!cancelled) setPilot(remote.pilot);
+      if (!cancelled) setEnterprise(remote.enterprise);
     });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const pilotHref = pilot.formUrl ?? getPilotMailtoHref(pilot.pilotsEmail);
-  const pilotExternal = Boolean(pilot.formUrl);
+  const enterpriseHref = enterprise.formUrl ?? getEnterpriseMailtoHref(enterprise.enterpriseEmail);
+  const enterpriseExternal = Boolean(enterprise.formUrl);
 
-  const handlePilotCta = () => {
-    trackPilotCta(page.analyticsLabel);
+  const handleEnterpriseCta = () => {
+    trackEnterpriseCta(page.analyticsLabel);
   };
 
   return (
@@ -58,10 +63,20 @@ export function SolutionDetailClient({ page }: SolutionDetailClientProps) {
             </span>
           </h1>
           <p
-            className="text-lg font-light leading-relaxed mb-10"
+            className="text-lg font-light leading-relaxed mb-6"
             style={{ color: LANDING_COLORS.mutedForeground }}
           >
             {page.problem}
+          </p>
+          <p
+            className="text-sm font-light leading-relaxed mb-10 rounded-xl border px-4 py-3"
+            style={{
+              color: LANDING_COLORS.mutedForeground,
+              borderColor: LANDING_COLORS.border,
+              backgroundColor: 'rgba(20,20,28,0.35)',
+            }}
+          >
+            {SOLUTION_PRODUCT_TERM_NOTE}
           </p>
 
           <div
@@ -99,10 +114,9 @@ export function SolutionDetailClient({ page }: SolutionDetailClientProps) {
               className="text-sm font-light mb-10"
               style={{ color: LANDING_COLORS.mutedForeground }}
             >
-              Sample insurance-purpose PDFs are available on request during a pilot
-              conversation. See also our{' '}
-              <Link href="/#reports" className="underline underline-offset-4">
-                reports overview
+              Sample insurance-purpose reports are available on request. See also our{' '}
+              <Link href="/#use-cases" className="underline underline-offset-4">
+                use cases
               </Link>{' '}
               on the homepage.
             </p>
@@ -176,10 +190,10 @@ export function SolutionDetailClient({ page }: SolutionDetailClientProps) {
 
           <div className="mt-8">
             <a
-              href={pilotHref}
-              target={pilotExternal ? '_blank' : undefined}
-              rel={pilotExternal ? 'noopener noreferrer' : undefined}
-              onClick={handlePilotCta}
+              href={enterpriseHref}
+              target={enterpriseExternal ? '_blank' : undefined}
+              rel={enterpriseExternal ? 'noopener noreferrer' : undefined}
+              onClick={handleEnterpriseCta}
               className="inline-flex items-center rounded-lg px-8 py-3.5 text-base font-medium"
               style={{ backgroundColor: LANDING_COLORS.primary, color: '#0a0a0f' }}
             >

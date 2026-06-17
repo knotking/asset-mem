@@ -11,15 +11,15 @@ import {
   type LandingDemoVideoUrls,
 } from "@/lib/landing-demo-video-constants";
 import {
-  PILOT_FORM_URL_PARAM,
-  PILOTS_EMAIL_PARAM,
-  getPilotConfigFromEnv,
-  type PilotConfig,
-} from "@/lib/pilot-config";
+  ENTERPRISE_EMAIL_REMOTE_PARAM,
+  ENTERPRISE_FORM_URL_REMOTE_PARAM,
+  getEnterpriseConfigFromEnv,
+  type EnterpriseConfig,
+} from "@/lib/enterprise-config";
 
 export type LandingRemoteConfig = {
   demoVideos: LandingDemoVideoUrls;
-  pilot: PilotConfig;
+  enterprise: EnterpriseConfig;
 };
 
 const isNonEmptyString = (value: unknown): value is string =>
@@ -32,11 +32,11 @@ const getMinimumFetchIntervalMillis = (): number => {
 
 let inflightFetch: Promise<LandingRemoteConfig> | null = null;
 
-/** Demo video URLs + B2B pilot form/email from Firebase Remote Config (env fallbacks). */
+/** Demo video URLs + B2B enterprise form/email from Firebase Remote Config (env fallbacks). */
 export async function fetchLandingRemoteConfig(): Promise<LandingRemoteConfig> {
   if (!inflightFetch) {
     inflightFetch = (async () => {
-      const envPilot = getPilotConfigFromEnv();
+      const envEnterprise = getEnterpriseConfigFromEnv();
       const remoteConfig = getRemoteConfig(app);
 
       remoteConfig.settings = {
@@ -46,8 +46,8 @@ export async function fetchLandingRemoteConfig(): Promise<LandingRemoteConfig> {
       remoteConfig.defaultConfig = {
         [LANDING_DEMO_MOBILE_URL_PARAM]: DEFAULT_LANDING_DEMO_VIDEO_URLS.mobile,
         [LANDING_DEMO_DESKTOP_URL_PARAM]: DEFAULT_LANDING_DEMO_VIDEO_URLS.desktop,
-        [PILOT_FORM_URL_PARAM]: envPilot.formUrl ?? "",
-        [PILOTS_EMAIL_PARAM]: envPilot.pilotsEmail,
+        [ENTERPRISE_FORM_URL_REMOTE_PARAM]: envEnterprise.formUrl ?? "",
+        [ENTERPRISE_EMAIL_REMOTE_PARAM]: envEnterprise.enterpriseEmail,
       };
 
       try {
@@ -64,11 +64,14 @@ export async function fetchLandingRemoteConfig(): Promise<LandingRemoteConfig> {
         remoteConfig,
         LANDING_DEMO_DESKTOP_URL_PARAM,
       ).asString();
-      const pilotFormUrl = getValue(
+      const enterpriseFormUrl = getValue(
         remoteConfig,
-        PILOT_FORM_URL_PARAM,
+        ENTERPRISE_FORM_URL_REMOTE_PARAM,
       ).asString();
-      const pilotsEmail = getValue(remoteConfig, PILOTS_EMAIL_PARAM).asString();
+      const enterpriseEmail = getValue(
+        remoteConfig,
+        ENTERPRISE_EMAIL_REMOTE_PARAM,
+      ).asString();
 
       return {
         demoVideos: {
@@ -79,13 +82,13 @@ export async function fetchLandingRemoteConfig(): Promise<LandingRemoteConfig> {
             ? desktop
             : DEFAULT_LANDING_DEMO_VIDEO_URLS.desktop,
         },
-        pilot: {
-          formUrl: isNonEmptyString(pilotFormUrl)
-            ? pilotFormUrl.trim()
-            : envPilot.formUrl,
-          pilotsEmail: isNonEmptyString(pilotsEmail)
-            ? pilotsEmail.trim()
-            : envPilot.pilotsEmail,
+        enterprise: {
+          formUrl: isNonEmptyString(enterpriseFormUrl)
+            ? enterpriseFormUrl.trim()
+            : envEnterprise.formUrl,
+          enterpriseEmail: isNonEmptyString(enterpriseEmail)
+            ? enterpriseEmail.trim()
+            : envEnterprise.enterpriseEmail,
         },
       };
     })().finally(() => {
@@ -101,7 +104,7 @@ export async function fetchLandingDemoVideoUrlsFromRemoteConfig(): Promise<Landi
   return demoVideos;
 }
 
-export async function fetchPilotConfigFromRemoteConfig(): Promise<PilotConfig> {
-  const { pilot } = await fetchLandingRemoteConfig();
-  return pilot;
+export async function fetchEnterpriseConfigFromRemoteConfig(): Promise<EnterpriseConfig> {
+  const { enterprise } = await fetchLandingRemoteConfig();
+  return enterprise;
 }

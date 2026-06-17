@@ -25,6 +25,10 @@ export type SolutionPageData = {
   keywords: readonly string[];
 };
 
+/** Shown on segment detail pages only — introduces the in-product term once. */
+export const SOLUTION_PRODUCT_TERM_NOTE =
+  'In AssetMem, each walkthrough or inspection is saved as a checkpoint—a timestamped condition capture with AI scoring on your property timeline.';
+
 export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
   'property-managers': {
     slug: 'property-managers',
@@ -35,8 +39,8 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
     problem:
       'Rental companies, Airbnb hosts, hotel chains, and property managers need consistent photo evidence for turnovers, routine walkthroughs, and maintenance triage—without adding headcount.',
     bullets: [
-      'Capture checkpoints per unit with AI condition scores',
-      'Move-in / move-out PDFs with before/after comparisons',
+      'Standardized walkthroughs per unit with AI condition scores',
+      'Move-in / move-out reports with before/after comparisons',
       'Document Q&A on leases, inspections, and vendor notes',
       'Share read-only report links with owners and contractors',
     ],
@@ -55,7 +59,7 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
         title: 'Quarterly maintenance checks',
         description: 'Track condition changes across your portfolio over time',
         steps: [
-          'Schedule quarterly walkthrough, capture checkpoints per unit',
+          'Schedule quarterly walkthroughs with structured photo capture per unit',
           'Platform compares new photos to previous visits automatically',
           'Review flagged issues (moisture trends, wear patterns, damage)',
           'Prioritize maintenance tasks based on AI condition scores',
@@ -65,8 +69,8 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
         title: 'Move-out comparison',
         description: 'Document damage and justify deposit deductions with proof',
         steps: [
-          'Capture move-out photos using same checkpoint structure',
-          'Generate before/after comparison PDF showing what changed',
+          'Capture move-out photos using the same room-by-room structure',
+          'Generate before/after comparison report showing what changed',
           'Review side-by-side photos with tenant to resolve disputes',
           'Keep timestamped evidence for your records and owner reporting',
         ],
@@ -86,10 +90,10 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
     headline: 'Claims evidence',
     accent: 'that holds up in review',
     problem:
-      'Adjusters and policyholders need timestamped photos, structured condition metrics, and formal PDFs—not camera rolls scattered across email.',
+      'Adjusters and policyholders need timestamped photos, structured condition metrics, and formal reports—not camera rolls scattered across email.',
     bullets: [
-      'Insurance-purpose PDF reports with photos and change highlights',
-      'Timeline of checkpoint evidence across a property',
+      'Insurance-purpose reports with photos and change highlights',
+      'Timeline of condition evidence across a property',
       'AI summaries grounded in captured media and documents',
       'Shareable links for carriers, adjusters, or counsel',
     ],
@@ -99,16 +103,16 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
         description: 'Capture before/after evidence for weather-related claims',
         steps: [
           'Policyholder captures pre-storm baseline photos (roof, exterior, yard)',
-          'After event, capture damage photos using same checkpoint structure',
+          'After event, capture damage photos using the same area-by-area structure',
           'AI detects changes: missing shingles, water intrusion, structural damage',
-          'Generate formal PDF with before/after comparisons and share with adjuster',
+          'Generate formal report with before/after comparisons and share with adjuster',
         ],
       },
       {
         title: 'Claims intake for adjusters',
         description: 'Review policyholder evidence and validate damage claims',
         steps: [
-          'Policyholder shares read-only report link or PDF',
+          'Policyholder shares read-only report link',
           'Review timestamped photos, AI condition scores, and change highlights',
           'Ask follow-up questions via chat on specific damage areas',
           'Accept or request additional photos without back-and-forth emails',
@@ -118,7 +122,7 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
         title: 'Ongoing property monitoring',
         description: 'Track insured properties over time to catch risks early',
         steps: [
-          'Policyholder captures routine checkpoints (quarterly, seasonal, annual)',
+          'Policyholder captures routine inspections (quarterly, seasonal, annual)',
           'Platform flags condition score drops and emerging issues',
           'Review trends: moisture patterns, roof deterioration, HVAC aging',
           'Proactive outreach before small issues become major claims',
@@ -141,8 +145,8 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
     problem:
       'Technicians and inspectors in the field need fast capture, on-site AI feedback, and a clean handoff to coordinators—without retyping notes.',
     bullets: [
-      'Mobile checkpoint capture with instant AI analysis',
-      'Formal PDFs for job completion and customer sign-off',
+      'Mobile field capture with instant AI analysis',
+      'Formal reports for job completion and customer sign-off',
       'Shareable chat and report links for dispatchers',
       'Multiple properties under one technician account today',
     ],
@@ -153,7 +157,7 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
         steps: [
           'Technician walks site with mobile app, captures photos per area',
           'AI analyzes photos and flags existing damage or concerns',
-          'Generate timestamped PDF showing pre-work condition',
+          'Generate timestamped report showing pre-work condition',
           'Share report with customer and office for job file records',
         ],
       },
@@ -163,7 +167,7 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
         steps: [
           'Capture post-work photos showing completed repairs',
           'Compare before/after automatically to highlight improvements',
-          'Generate PDF with photos, work notes, and customer sign-off',
+          'Generate report with photos, work notes, and customer sign-off',
           'Share report link with dispatcher and customer instantly',
         ],
       },
@@ -172,7 +176,7 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
         description: 'Efficiently document multiple properties in one day',
         steps: [
           'Technician manages multiple properties in one account',
-          'Capture checkpoints at each site during inspection route',
+          'Document each stop on the route with structured photo capture',
           'AI provides instant feedback on issues detected at each location',
           'Office receives all reports and can prioritize follow-up work',
         ],
@@ -194,7 +198,7 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
     problem:
       'Platforms serving owners, renters, or insurers need a credible AI layer for condition evidence and document Q&A—co-designed before you commit engineering.',
     bullets: [
-      'Checkpoint AI, PDF reports, and document retrieval today',
+      'AI condition analysis, reports, and document retrieval today',
       'Shareable evidence links embeddable in your workflows',
       'Pilot program to map integrations and portfolio rollups',
       'Built on Google Cloud infrastructure',
@@ -214,9 +218,9 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
         title: 'Embedded evidence capture',
         description: 'Add property inspection to your existing workflows',
         steps: [
-          'Users capture checkpoints within your platform experience',
+          'Users capture inspections within your platform experience',
           'AI analysis, scoring, and comparisons happen in background',
-          'Evidence links and PDFs surface in your UI where needed',
+          'Evidence links and reports surface in your UI where needed',
           'Data exports feed your reporting, analytics, or compliance systems',
         ],
       },
@@ -224,7 +228,7 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
         title: 'Portfolio rollup and reporting',
         description: 'Aggregate condition intelligence across properties',
         steps: [
-          'Properties managed by your platform get consistent AI checkpoints',
+          'Properties on your platform get consistent structured condition captures',
           'Condition scores, trends, and flagged issues roll up per portfolio',
           'Your users see property health metrics in your dashboards',
           'Export data for your analytics, risk models, or investor reporting',
@@ -243,4 +247,4 @@ export const SOLUTION_PAGES: Record<SolutionSlug, SolutionPageData> = {
 export const SOLUTION_SLUGS = Object.keys(SOLUTION_PAGES) as SolutionSlug[];
 
 export const SOLUTION_HUB_INTRO =
-  'AssetMem AI helps individuals and teams capture property evidence, generate formal PDFs, and answer document questions—from one platform. Pick your segment to see how it applies today.';
+  'Built for property operations at scale—unified evidence capture, audit-ready reports, and document intelligence across portfolios. Choose your segment to see what teams use today and what we co-design with you.';

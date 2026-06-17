@@ -18,7 +18,6 @@ type LandingHeroProps = {
   isMobile: boolean;
   demoVideoUrls: LandingDemoVideoUrls;
   onPrimaryCta: (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>, label?: string) => void;
-  onNavClick: (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => void;
 };
 
 export function LandingHero({
@@ -28,7 +27,6 @@ export function LandingHero({
   isMobile,
   demoVideoUrls,
   onPrimaryCta,
-  onNavClick,
 }: LandingHeroProps) {
   const headlinePrimary = SITE_HERO_HEADLINE_PRIMARY;
   const headlineAccent = SITE_HERO_HEADLINE_ACCENT;
@@ -80,7 +78,7 @@ export function LandingHero({
         style={{ maxWidth: '1400px' }}
       >
         <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-          <div className="space-y-10">
+          <div className="space-y-10 text-center lg:text-left">
             <div className="space-y-6">
               <h1
                 className="text-6xl lg:text-8xl font-light tracking-tight leading-none"
@@ -111,14 +109,13 @@ export function LandingHero({
             </div>
 
             <p
-              className="text-xl leading-relaxed max-w-xl font-light"
+              className="text-xl leading-relaxed max-w-xl font-light mx-auto lg:mx-0"
               style={{ color: c.foreground60 }}
             >
               {description}
             </p>
 
-            <div className="space-y-3">
-              <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 {user ? (
                   <Link
                     href="/home"
@@ -190,49 +187,12 @@ export function LandingHero({
                     />
                   </>
                 )}
-              </div>
-
-              {!user ? (
-                <div className="pt-2">
-                  <Link
-                    href="/solutions"
-                    className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border text-sm font-medium transition-all"
-                    style={{
-                      borderColor: c.borderOverlay,
-                      color: c.foreground,
-                      backgroundColor: 'transparent',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = c.muted30;
-                      e.currentTarget.style.borderColor = c.primary;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.borderColor = c.borderOverlay;
-                    }}
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      aria-hidden
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                      />
-                    </svg>
-                    Enterprise solutions →
-                  </Link>
-                </div>
-              ) : null}
             </div>
           </div>
 
-          <AIGraphic variant="homeowner" />
+          <div className="mx-auto lg:mx-0 w-full max-w-xl lg:max-w-none">
+            <AIGraphic variant="homeowner" />
+          </div>
         </div>
       </div>
     </section>

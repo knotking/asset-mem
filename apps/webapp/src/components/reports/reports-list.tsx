@@ -532,7 +532,7 @@ export function ReportsList({ onRegenerate }: ReportsListProps) {
             <DialogTitle>Share Report</DialogTitle>
             <DialogDescription>
               {shareState === 'done' || shareState === 'refreshing'
-                ? `Anyone with this link can view this report PDF. Links expire after ${SHARED_REPORT_TTL_DAYS} days (extended when you refresh the link).`
+                ? `Anyone with this link can view this report. Links expire after ${SHARED_REPORT_TTL_DAYS} days (extended when you refresh the link).`
                 : `Create a public link for "${reportToShare?.title}"?`}
             </DialogDescription>
           </DialogHeader>

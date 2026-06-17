@@ -59,8 +59,8 @@ Landing page values are loaded from Firebase Remote Config at runtime (with env 
 - Parameters:
   - `landing_demo_mobile_url` (string)
   - `landing_demo_desktop_url` (string)
-  - `pilot_form_url` (string) — Tally, Typeform, Calendly, etc.
-  - `pilots_email` (string) — B2B pilot contact inbox
+  - `pilot_form_url` (string) — Tally, Typeform, Calendly, etc. (Remote Config key; legacy name)
+  - `pilots_email` (string) — B2B enterprise contact inbox (Remote Config key; legacy name)
 
 Local dev fallbacks: `NEXT_PUBLIC_PILOT_FORM_URL`, `NEXT_PUBLIC_PILOTS_EMAIL` in `.env`.
 
@@ -70,8 +70,8 @@ Publish new Remote Config values and the webapp will pick them up on the next fe
 
 One homepage (`/`) is B2C-primary (homeowner hero, **Get Started** + Watch Demo) with a parallel B2B path layered in:
 
-- B2B section `#pilot` (Talk to us / pilot CTA)
+- B2B section `#enterprise` (Talk to us / enterprise CTA)
 - Enterprise card in the pricing section
 - Segment detail pages under `/solutions/*` (property managers, insurance, field teams, prop-tech)
 
-Section order: hero → how-it-works → AI engine → use cases → pilot → pricing → CTA → contact.
+Section order: hero → how-it-works → AI engine → use cases → enterprise → pricing → footer.
