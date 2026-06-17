@@ -213,13 +213,6 @@ export function PilotSection({ colors: c, pilot }: PilotSectionProps) {
                 </li>
               ))}
             </ul>
-            <p
-              className="text-xs mt-4 font-light"
-              style={{ color: c.mutedForeground }}
-            >
-              Typical shape: 10–50 properties, 3–5 users, 8–12 weeks with weekly
-              feedback.
-            </p>
           </div>
         </div>
 

@@ -12,27 +12,14 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-
-// Dark theme - landing page only
-const LANDING_COLORS = {
-  primary: '#22d3ee',
-  primaryHover: 'rgba(34, 211, 238, 0.9)',
-  foreground: '#fafafa',
-  foreground70: 'rgba(250, 250, 250, 0.7)',
-  background: '#0a0a0f',
-  backgroundOverlay: 'rgba(10, 10, 15, 0.85)',
-  borderOverlay: 'rgba(255, 255, 255, 0.1)',
-};
+import { LANDING_COLORS } from '@/lib/landing-theme';
 
 const NAV_LINKS = [
   { href: '#', targetId: '#', label: 'Home', sectionId: '' },
   { href: '#use-cases', targetId: '#use-cases', label: 'Use Cases', sectionId: 'use-cases' },
   { href: '#features', targetId: '#features', label: 'Features', sectionId: 'features' },
   { href: '#reports', targetId: '#reports', label: 'Reports', sectionId: 'reports' },
-  { href: '#ai-agents', targetId: '#ai-agents', label: 'AI Agents', sectionId: 'ai-agents' },
-  { href: '#timeline-feature', targetId: '#timeline-feature', label: 'Timeline', sectionId: 'timeline-feature' },
   { href: '#how-it-works', targetId: '#how-it-works', label: 'How It Works', sectionId: 'how-it-works' },
-  { href: '#pilot', targetId: '#pilot', label: 'For teams', sectionId: 'pilot' },
   { href: '#pricing', targetId: '#pricing', label: 'Pricing', sectionId: 'pricing' },
 ] as const;
 
@@ -40,6 +27,7 @@ interface LandingHeaderProps {
   activeSection: string;
   onNavClick: (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => void;
   onButtonClick: (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => void;
+  onPilotNavClick?: (e: React.MouseEvent<HTMLAnchorElement>, label: string) => void;
 }
 
 function DesktopNavLink({
@@ -93,15 +81,18 @@ function DesktopNavLink({
   );
 }
 
+
 function LandingCta({
   user,
   loading,
   onButtonClick,
+  onPilotNavClick,
   className = '',
 }: {
   user: ReturnType<typeof useAuth>['user'];
   loading: boolean;
   onButtonClick: (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => void;
+  onPilotNavClick?: (e: React.MouseEvent<HTMLAnchorElement>, label: string) => void;
   className?: string;
 }) {
   if (loading) {
@@ -154,12 +145,22 @@ function LandingCta({
   );
 }
 
-export function LandingHeader({ activeSection, onNavClick, onButtonClick }: LandingHeaderProps) {
+export function LandingHeader({
+  activeSection,
+  onNavClick,
+  onButtonClick,
+  onPilotNavClick,
+}: LandingHeaderProps) {
   const { user, loading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleMobileNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     onNavClick(e, targetId);
+    setMobileMenuOpen(false);
+  };
+
+  const handleMobilePilotClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    onPilotNavClick?.(e, 'team_cta_nav');
     setMobileMenuOpen(false);
   };
 
@@ -192,7 +193,7 @@ export function LandingHeader({ activeSection, onNavClick, onButtonClick }: Land
             </span>
           </Link>
 
-          <nav className="hidden xl:flex items-center gap-6 2xl:gap-8">
+          <nav className="hidden xl:flex items-center gap-5 2xl:gap-6">
             {NAV_LINKS.map((link) => (
               <DesktopNavLink
                 key={link.sectionId || 'home'}
@@ -201,6 +202,24 @@ export function LandingHeader({ activeSection, onNavClick, onButtonClick }: Land
                 onNavClick={onNavClick}
               />
             ))}
+            <Link
+              href="/solutions"
+              className="text-sm font-medium whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-lg border"
+              style={{
+                borderColor: LANDING_COLORS.borderOverlay,
+                color: LANDING_COLORS.foreground,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = LANDING_COLORS.muted30;
+                e.currentTarget.style.borderColor = LANDING_COLORS.primary;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = LANDING_COLORS.borderOverlay;
+              }}
+            >
+              Enterprise
+            </Link>
           </nav>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -248,8 +267,19 @@ export function LandingHeader({ activeSection, onNavClick, onButtonClick }: Land
                       </a>
                     );
                   })}
+                  <Link
+                    href="/solutions"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-lg px-3 py-3 text-base font-medium transition-colors mt-2 border"
+                    style={{ 
+                      color: LANDING_COLORS.foreground70,
+                      borderColor: LANDING_COLORS.borderOverlay,
+                    }}
+                  >
+                    Enterprise Solutions
+                  </Link>
                 </nav>
-                <div className="mt-8 border-t pt-6" style={{ borderColor: LANDING_COLORS.borderOverlay }}>
+                <div className="mt-8 border-t pt-6 space-y-3" style={{ borderColor: LANDING_COLORS.borderOverlay }}>
                   <LandingCta
                     user={user}
                     loading={loading}
@@ -264,7 +294,12 @@ export function LandingHeader({ activeSection, onNavClick, onButtonClick }: Land
             </Sheet>
 
             <div className="hidden sm:block">
-              <LandingCta user={user} loading={loading} onButtonClick={onButtonClick} />
+              <LandingCta
+                user={user}
+                loading={loading}
+                onButtonClick={onButtonClick}
+                onPilotNavClick={onPilotNavClick}
+              />
             </div>
           </div>
         </div>

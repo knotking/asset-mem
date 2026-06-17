@@ -3,63 +3,24 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
-import AIGraphic from "./ai-graphic";
 import { LandingHeader } from "./landing-header";
 import { LandingPricingSection } from "./landing-pricing-section";
-import { YouTubeModal } from "@/components/landing/youtube-modal";
 import { trackLandingCta, trackPilotCta } from "@/lib/analytics";
-import {
-  getSupportEmail,
-  SITE_HERO_DESCRIPTION_B2B,
-  SITE_HERO_HEADLINE_ACCENT_B2B,
-  SITE_HERO_HEADLINE_PRIMARY_B2B,
-} from "@/lib/site";
+import { getSupportEmail } from "@/lib/site";
 import {
   getPilotConfigFromEnv,
   getPilotMailtoHref,
   type PilotConfig,
 } from "@/lib/pilot-config";
 import { PilotSection } from "@/components/landing/pilot-section";
+import { LandingHero } from "@/components/landing/landing-hero";
+import { LANDING_COLORS, LANDING_HEADER_OFFSET } from "@/lib/landing-theme";
 import {
   DEFAULT_LANDING_DEMO_VIDEO_URLS,
   fetchLandingRemoteConfig,
   type LandingDemoVideoUrls,
 } from "@/lib/landing-demo-video";
 import "./landing-animations.css";
-
-// Dark theme - landing page only
-const LANDING_COLORS = {
-  primary: "#22d3ee",
-  primaryHover: "rgba(34, 211, 238, 0.9)",
-  primaryLight: "rgba(34, 211, 238, 0.1)",
-  primaryBorder: "rgba(34, 211, 238, 0.2)",
-  primary20: "rgba(34, 211, 238, 0.2)",
-  primary10: "rgba(34, 211, 238, 0.1)",
-  background: "#0a0a0f",
-  backgroundOverlay: "rgba(10, 10, 15, 0.85)",
-  background95: "rgba(10, 10, 15, 0.95)",
-  foreground: "#fafafa",
-  foreground90: "rgba(250, 250, 250, 0.9)",
-  foreground70: "rgba(250, 250, 250, 0.7)",
-  foreground60: "rgba(250, 250, 250, 0.6)",
-  card: "#14141c",
-  cardOverlay: "rgba(20, 20, 28, 0.5)",
-  muted: "#14141c",
-  muted30: "rgba(255, 255, 255, 0.08)",
-  mutedForeground: "rgba(255, 255, 255, 0.65)",
-  border: "rgba(255, 255, 255, 0.08)",
-  borderOverlay: "rgba(255, 255, 255, 0.1)",
-  border50: "rgba(255, 255, 255, 0.12)",
-  secondary: "#22d3ee",
-  secondaryLight: "rgba(34, 211, 238, 0.1)",
-  secondaryBorder: "rgba(34, 211, 238, 0.2)",
-  accent: "#f97316",
-  accentLight: "rgba(249, 115, 22, 0.1)",
-  accent10: "rgba(249, 115, 22, 0.1)",
-  white: "rgb(255, 255, 255)",
-};
-
-const LANDING_HEADER_OFFSET = 80;
 
 function scrollToLandingSection(
   targetId: string,
@@ -152,6 +113,7 @@ export default function LandingPageClient() {
           el: document.querySelector("#timeline-feature"),
         },
         { id: "how-it-works", el: document.querySelector("#how-it-works") },
+        { id: "trust", el: document.querySelector("#trust") },
         { id: "pilot", el: document.querySelector("#pilot") },
         { id: "pricing", el: document.querySelector("#pricing") },
       ];
@@ -282,260 +244,18 @@ export default function LandingPageClient() {
           handleNavClick(e, targetId);
         }}
         onButtonClick={handleButtonClick}
+        onPilotNavClick={handlePilotNavClick}
       />
 
-      {/* Hero Section - dark gradient and radial glows */}
-      <section className="relative overflow-hidden w-full">
-        <div
-          className="absolute inset-0 w-full"
-          style={{
-            background:
-              "linear-gradient(to bottom right, #0a0a0f, #0f172a, #0a0a0f)",
-          }}
-        />
-        <div
-          className="absolute inset-0 w-full"
-          style={{
-            background:
-              "radial-gradient(circle at 30% 20%, rgba(34,211,238,0.12), transparent 50%)",
-          }}
-        />
-        <div
-          className="absolute inset-0 w-full"
-          style={{
-            background:
-              "radial-gradient(circle at 70% 80%, rgba(249,115,22,0.08), transparent 50%)",
-          }}
-        />
-
-        <div
-          className="container relative mx-auto px-4 py-24 lg:py-40"
-          style={{ maxWidth: "1400px" }}
-        >
-          <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-            {/* Left: Text Content */}
-            <div className="space-y-10">
-              <div
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm hover:shadow-md transition-shadow"
-                style={{
-                  backgroundColor: LANDING_COLORS.primaryLight,
-                  borderColor: LANDING_COLORS.primaryBorder,
-                }}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4 animate-pulse"
-                  style={{ color: LANDING_COLORS.primary }}
-                >
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                </svg>
-                <span
-                  className="text-sm font-semibold tracking-wide"
-                  style={{ color: LANDING_COLORS.primary }}
-                >
-                  FOR PROPERTY TEAMS
-                </span>
-              </div>
-
-              <div className="space-y-6">
-                <h1
-                  className="text-6xl lg:text-8xl font-light tracking-tight leading-none"
-                  style={{ color: LANDING_COLORS.foreground }}
-                >
-                  AssetMem
-                  <br />
-                  <span
-                    className="font-bold"
-                    style={{
-                      background: `linear-gradient(to right, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                    }}
-                  >
-                    AI
-                  </span>
-                </h1>
-                <h2
-                  className="text-3xl lg:text-4xl font-light leading-tight"
-                  style={{ color: LANDING_COLORS.foreground90 }}
-                >
-                  {SITE_HERO_HEADLINE_PRIMARY_B2B}
-                  <br />
-                  <span className="font-medium">
-                    {SITE_HERO_HEADLINE_ACCENT_B2B}
-                  </span>
-                </h2>
-              </div>
-
-              <p
-                className="text-xl leading-relaxed max-w-xl font-light"
-                style={{ color: LANDING_COLORS.foreground60 }}
-              >
-                {SITE_HERO_DESCRIPTION_B2B}
-              </p>
-
-              <div className="space-y-3">
-                <div className="flex flex-col sm:flex-row gap-4">
-                {user ? (
-                  <Link
-                    href="/home"
-                    onClick={(e) => handleButtonClick(e, "primary_cta")}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor =
-                        LANDING_COLORS.primaryHover;
-                      e.currentTarget.style.transform = "translateX(2px)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor =
-                        LANDING_COLORS.primary;
-                      e.currentTarget.style.transform = "translateX(0)";
-                    }}
-                    className="inline-flex items-center justify-center text-base px-10 py-7 rounded-lg font-medium shadow-xl hover:shadow-2xl transition-all group"
-                    style={{
-                      backgroundColor: LANDING_COLORS.primary,
-                      color: "#0a0a0f",
-                    }}
-                  >
-                    Dashboard
-                    <svg
-                      className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 7l5 5m0 0l-5 5m5-5H6"
-                      />
-                    </svg>
-                  </Link>
-                ) : (
-                  <>
-                    <a
-                      href="#pilot"
-                      onClick={(e) => handlePilotNavClick(e, "team_cta_hero")}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor =
-                          LANDING_COLORS.primaryHover;
-                        e.currentTarget.style.transform = "translateX(2px)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor =
-                          LANDING_COLORS.primary;
-                        e.currentTarget.style.transform = "translateX(0)";
-                      }}
-                      className="inline-flex items-center justify-center text-base px-10 py-7 rounded-lg font-medium shadow-xl hover:shadow-2xl transition-all group"
-                      style={{
-                        backgroundColor: LANDING_COLORS.primary,
-                        color: "#0a0a0f",
-                      }}
-                    >
-                      Talk to us
-                      <svg
-                        className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 7l5 5m0 0l-5 5m5-5H6"
-                        />
-                      </svg>
-                    </a>
-                    <YouTubeModal
-                      url={
-                        isMobile
-                          ? demoVideoUrls.mobile
-                          : demoVideoUrls.desktop
-                      }
-                      trigger={
-                        <button
-                          className="inline-flex items-center justify-center text-base rounded-lg font-medium border-2 transition-all cursor-pointer"
-                          style={{
-                            backgroundColor: "transparent",
-                            borderColor: LANDING_COLORS.border,
-                            color: LANDING_COLORS.foreground,
-                            padding: "1.75rem 2.5rem",
-                            height: "auto",
-                          }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.backgroundColor =
-                              LANDING_COLORS.muted30)
-                          }
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.backgroundColor =
-                              "transparent")
-                          }
-                        >
-                          Watch Demo
-                        </button>
-                      }
-                    />
-                  </>
-                )}
-                </div>
-                {!user ? (
-                  <div className="flex flex-col gap-1.5">
-                    <a
-                      href="#pricing"
-                      onClick={(e) => handleNavClick(e, "#pricing")}
-                      className="inline-block text-sm font-light transition-colors"
-                      style={{ color: LANDING_COLORS.mutedForeground }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.color = LANDING_COLORS.primary)
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.color =
-                          LANDING_COLORS.mutedForeground)
-                      }
-                    >
-                      For homeowners —{" "}
-                      <span className="underline underline-offset-4">
-                        see plans
-                      </span>
-                    </a>
-                    <a
-                      href="#pilot"
-                      onClick={(e) =>
-                        handlePilotNavClick(e, "team_cta_hero_scroll")
-                      }
-                      className="inline-block text-sm font-light transition-colors"
-                      style={{ color: LANDING_COLORS.mutedForeground }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.color = LANDING_COLORS.primary)
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.color =
-                          LANDING_COLORS.mutedForeground)
-                      }
-                    >
-                      For teams — learn more{" "}
-                      <span aria-hidden>↓</span>
-                    </a>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
-            {/* Right: Hero Visual */}
-            <AIGraphic />
-          </div>
-        </div>
-      </section>
+      <LandingHero
+        colors={LANDING_COLORS}
+        user={user}
+        loading={loading}
+        isMobile={isMobile}
+        demoVideoUrls={demoVideoUrls}
+        onPrimaryCta={handleButtonClick}
+        onNavClick={handleNavClick}
+      />
 
       {/* AI Intelligence Engine Section */}
       <section
@@ -1209,6 +929,20 @@ export default function LandingPageClient() {
               Generate branded PDFs from your timeline—frozen at generation time
               so what you share stays accurate. Pick a purpose, preview sections,
               then download or send a link.
+            </p>
+            <p
+              className="text-sm max-w-2xl mx-auto font-light mt-6"
+              style={{ color: LANDING_COLORS.mutedForeground }}
+            >
+              Insurance teams can request a redacted sample during a pilot — see{" "}
+              <Link
+                href="/solutions/insurance"
+                className="underline underline-offset-4"
+                style={{ color: LANDING_COLORS.primary }}
+              >
+                insurance solutions
+              </Link>
+              .
             </p>
           </div>
 
@@ -2195,7 +1929,7 @@ export default function LandingPageClient() {
         }}
       >
         <div className="container mx-auto px-4" style={{ maxWidth: "1400px" }}>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8">
             <div className="space-y-4">
               <Link
                 href="/"
@@ -2255,21 +1989,6 @@ export default function LandingPageClient() {
                 </li>
                 <li>
                   <Link
-                    href="#pilot"
-                    className="transition-colors hover:text-foreground"
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.color = LANDING_COLORS.foreground)
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.color =
-                        LANDING_COLORS.mutedForeground)
-                    }
-                  >
-                    For teams
-                  </Link>
-                </li>
-                <li>
-                  <Link
                     href="#pricing"
                     className="transition-colors hover:text-foreground"
                     onMouseEnter={(e) =>
@@ -2315,6 +2034,50 @@ export default function LandingPageClient() {
                       Sign In
                     </Link>
                   )}
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3
+                className="font-semibold mb-4"
+                style={{ color: LANDING_COLORS.foreground }}
+              >
+                Enterprise
+              </h3>
+              <ul
+                className="space-y-2 text-sm"
+                style={{ color: LANDING_COLORS.mutedForeground }}
+              >
+                <li>
+                  <Link
+                    href="/solutions"
+                    className="transition-colors hover:text-foreground"
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.color = LANDING_COLORS.foreground)
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.color =
+                        LANDING_COLORS.mutedForeground)
+                    }
+                  >
+                    Solutions
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="#pilot"
+                    className="transition-colors hover:text-foreground"
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.color = LANDING_COLORS.foreground)
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.color =
+                        LANDING_COLORS.mutedForeground)
+                    }
+                  >
+                    Contact Sales
+                  </Link>
                 </li>
               </ul>
             </div>
