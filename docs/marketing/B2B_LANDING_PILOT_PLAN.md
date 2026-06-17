@@ -1,6 +1,6 @@
 # B2B landing pilot plan
 
-**Status:** Tier A implemented (2026-06-17)  
+**Status:** Tier A + Tier B implemented (2026-06-17)  
 **Branch:** `plan/b2b-landing-pilot`  
 **Last updated:** 2026-06-17  
 **Goal:** Explore the B2B market and convert inbound interest into **qualified pilot conversations** — without building org/team billing or multi-tenant product features yet.
@@ -19,9 +19,7 @@ AssetMem AI is a B2C product today (individual Firebase users, Stripe Free/Plus/
 | Shareable report + chat links | Shipped | `apps/common/src/lib/shared-report.ts`, `shared-chat.ts` |
 | Org accounts, SSO, API keys | **Not built** | Do not promise on landing |
 
-The landing page (`apps/webapp/src/app/landing/`) is homeowner-first: hero → `Get Started` → `/login`, B2C pricing, and a weak `#contact` mailto.
-
-This plan adds a **parallel B2B conversion path** while keeping the self-serve B2C funnel.
+The landing page (`apps/webapp/src/app/landing/`) uses a **dual-path** model on one URL: B2C-primary by default (`Get Started` → `/login`, `#pricing`), with a parallel B2B path (`#pilot`, Talk to us). Outbound B2B campaigns can use `?audience=b2b` for a team-first hero. Segment detail pages live under `/solutions/*`.
 
 ---
 

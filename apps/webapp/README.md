@@ -65,3 +65,14 @@ Landing page values are loaded from Firebase Remote Config at runtime (with env 
 Local dev fallbacks: `NEXT_PUBLIC_PILOT_FORM_URL`, `NEXT_PUBLIC_PILOTS_EMAIL` in `.env`.
 
 Publish new Remote Config values and the webapp will pick them up on the next fetch interval (short in non-prod, longer in prod).
+
+## Landing dual path (B2C + B2B)
+
+One homepage (`/`) serves both audiences:
+
+| Audience | URL | Hero |
+|----------|-----|------|
+| Default (homeowners) | `/` | B2C headline, **Get Started** + Watch Demo |
+| B2B campaigns | `/?audience=b2b` | Team headline, **Talk to us** + banner to switch back |
+
+B2B sections: `#pilot`, Enterprise pricing card, `/solutions/*` (property managers, insurance, field teams, prop-tech). Trust block at `#trust`.
