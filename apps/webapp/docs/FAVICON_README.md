@@ -9,7 +9,7 @@ The favicon has been updated to match the AssetMem AI branding.
 
 ## Branding Details
 
-- **Primary Color**: `rgb(8, 142, 175)` (teal/cyan blue)
+- **Primary gradient**: `#22d3ee` → `rgba(34, 211, 238, 0.6)` (matches landing AI wordmark / `LANDING_CYAN_GRADIENT`)
 - **Design**: House icon with AI sparkle element
 - **Style**: Modern, clean, rounded square background
 
