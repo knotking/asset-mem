@@ -5,8 +5,16 @@ export function getExpoExtra(): Record<string, unknown> {
   return Constants.expoConfig?.extra ?? {};
 }
 
+const DEFAULT_WEB_APP_ORIGIN = 'https://asset-mem.com';
+
 export function getWebAppUrl(): string {
   return String(getExpoExtra().webAppUrl ?? '').trim();
+}
+
+/** Canonical web app origin for marketing/deep links (no trailing slash). */
+export function getWebAppOrigin(): string {
+  const url = getWebAppUrl();
+  return url ? url.replace(/\/$/, '') : DEFAULT_WEB_APP_ORIGIN;
 }
 
 export function getMobileWebHandoffUrl(): string {

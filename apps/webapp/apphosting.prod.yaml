@@ -25,7 +25,7 @@ env:
       - RUNTIME
   # Landing contact section and legal pages
   - variable: NEXT_PUBLIC_SUPPORT_EMAIL
-    value: support@asset-mem.com
+    value: hello@asset-mem.com
     availability:
       - BUILD
       - RUNTIME

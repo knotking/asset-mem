@@ -42,4 +42,4 @@ Privacy policy: [apps/webapp/src/app/privacy/page.tsx](../../webapp/src/app/priv
 
 ## Support email
 
-Production: `support@asset-mem.com` (`NEXT_PUBLIC_SUPPORT_EMAIL` in [apphosting.prod.yaml](../../webapp/apphosting.prod.yaml), `extra.supportEmail` in mapp [app.config.js](../app.config.js)).
+Production: `hello@asset-mem.com` (`NEXT_PUBLIC_SUPPORT_EMAIL` in [apphosting.prod.yaml](../../webapp/apphosting.prod.yaml), `extra.supportEmail` in mapp [app.config.js](../app.config.js)).

@@ -55,12 +55,12 @@ function scrollToLandingSection(
     }, 2000);
   };
 
-  if ("onscrollend" in window) {
-    window.addEventListener("scrollend", runHighlight, { once: true });
+  if (!("onscrollend" in window)) {
+    globalThis.setTimeout(runHighlight, 700);
     return;
   }
 
-  window.setTimeout(runHighlight, 700);
+  window.addEventListener("scrollend", runHighlight, { once: true });
 }
 
 export default function LandingPageClient() {

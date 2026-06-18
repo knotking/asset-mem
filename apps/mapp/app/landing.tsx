@@ -34,6 +34,7 @@ import {
 import { AssetMemBrandIcon } from '@/components/AssetMemBrandIcon';
 import { LandingDemoVideoModal } from '@/components/landing/LandingDemoVideoModal';
 import { openExternalWebUrl } from '@/lib/open-external-url';
+import { getWebAppOrigin } from '@/lib/expo-extra';
 import { getYouTubeVideoId } from '@/lib/youtube-utils';
 import { DEFAULT_LANDING_DEMO_VIDEO_URLS } from '@/lib/landing-demo-video-constants';
 import {
@@ -56,8 +57,6 @@ const SITE_HERO_HEADLINE_PRIMARY = 'Timeline Intelligence';
 const SITE_HERO_DESCRIPTION =
   'Track every asset change over time with AI for maintenance, claims, compliance, and reporting.';
 const SITE_FOOTER_TAGLINE = SITE_HERO_DESCRIPTION;
-
-const WEB_APP_BASE = 'https://asset-mem.com';
 
 /** Show back-to-top when within this many px of the scroll bottom. */
 const SCROLL_TOP_NEAR_BOTTOM_PX = 120;
@@ -207,31 +206,31 @@ const ENTERPRISE_SEGMENTS: ReadonlyArray<{
   title: string;
   desc: string;
   icon: LucideIcon;
-  href: string;
+  path: string;
 }> = [
   {
     title: 'Property managers, rentals & hospitality',
     desc: 'Portfolio-wide turnovers, walkthroughs, and maintenance evidence.',
     icon: Building2,
-    href: `${WEB_APP_BASE}/solutions/property-managers`,
+    path: '/solutions/property-managers',
   },
   {
     title: 'Insurers & adjusters',
     desc: 'Carrier-grade claim packs with timestamped photos, condition metrics, and formal reports.',
     icon: Shield,
-    href: `${WEB_APP_BASE}/solutions/insurance`,
+    path: '/solutions/insurance',
   },
   {
     title: 'Service & field teams',
     desc: 'Dispatch-ready mobile capture, on-site AI analysis, and report handoffs to operations.',
     icon: MapPin,
-    href: `${WEB_APP_BASE}/solutions/field-teams`,
+    path: '/solutions/field-teams',
   },
   {
     title: 'Prop-tech platforms',
     desc: 'Embeddable evidence layer and document intelligence—co-designed with your product team.',
     icon: LayoutGrid,
-    href: `${WEB_APP_BASE}/solutions/platform`,
+    path: '/solutions/platform',
   },
 ];
 
@@ -322,6 +321,7 @@ function ChipGrid({ items, accentIndex }: { items: readonly string[]; accentInde
 export default function LandingPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const webAppOrigin = getWebAppOrigin();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const { height: windowHeight } = useWindowDimensions();
@@ -910,7 +910,7 @@ export default function LandingPage() {
                 See how AssetMem captures evidence, generates audit-ready reports, and answers
                 questions across a portfolio—with room to co-design workflows that fit your team.
               </Text>
-              <TouchableOpacity onPress={() => void openExternalWebUrl(`${WEB_APP_BASE}/solutions`)}>
+              <TouchableOpacity onPress={() => void openExternalWebUrl(`${webAppOrigin}/solutions`)}>
                 <Text
                   style={{
                     fontSize: 14,
@@ -927,7 +927,7 @@ export default function LandingPage() {
               {ENTERPRISE_SEGMENTS.map((segment) => (
                 <TouchableOpacity
                   key={segment.title}
-                  onPress={() => void openExternalWebUrl(segment.href)}
+                  onPress={() => void openExternalWebUrl(`${webAppOrigin}${segment.path}`)}
                   activeOpacity={0.8}
                   style={{
                     borderRadius: 16,
@@ -1099,7 +1099,7 @@ export default function LandingPage() {
                 Enterprise for portfolios and field operations.
               </Text>
               <TouchableOpacity
-                onPress={() => Linking.openURL(`${WEB_APP_BASE}#pricing`)}
+                onPress={() => Linking.openURL(`${webAppOrigin}#pricing`)}
                 style={{
                   paddingVertical: 14,
                   paddingHorizontal: 28,
@@ -1182,11 +1182,11 @@ export default function LandingPage() {
                   marginBottom: 20,
                 }}>
                 {[
-                  { label: 'Solutions', href: `${WEB_APP_BASE}/solutions` },
-                  { label: 'About', href: `${WEB_APP_BASE}/about` },
-                  { label: 'Privacy', href: `${WEB_APP_BASE}/privacy` },
-                  { label: 'Terms', href: `${WEB_APP_BASE}/terms` },
-                  { label: 'Delete account', href: `${WEB_APP_BASE}/account-deletion` },
+                  { label: 'Solutions', href: `${webAppOrigin}/solutions` },
+                  { label: 'About', href: `${webAppOrigin}/about` },
+                  { label: 'Privacy', href: `${webAppOrigin}/privacy` },
+                  { label: 'Terms', href: `${webAppOrigin}/terms` },
+                  { label: 'Delete account', href: `${webAppOrigin}/account-deletion` },
                 ].map((link) => (
                   <TouchableOpacity key={link.label} onPress={() => Linking.openURL(link.href)}>
                     <Text

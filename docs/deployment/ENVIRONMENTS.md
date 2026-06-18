@@ -8,7 +8,7 @@ HomeApp supports three deployment environments:
 
 ### Brand vs infrastructure naming
 
-The product is branded **AssetMem AI** (`asset-mem.com`, `support@asset-mem.com`). GCP and Firebase **project IDs** (`homegeek-staging`, `homegeek-prod`), GCS buckets (`homegeek-user-data`, etc.), and default App Hosting URLs (`staging--homegeek-staging…`) intentionally keep the legacy `homegeek-*` prefix — renaming them would require a full GCP migration. Client code and docs should use AssetMem for user-facing strings only.
+The product is branded **AssetMem AI** (`asset-mem.com`, `hello@asset-mem.com`). GCP and Firebase **project IDs** (`homegeek-staging`, `homegeek-prod`), GCS buckets (`homegeek-user-data`, etc.), and default App Hosting URLs (`staging--homegeek-staging…`) intentionally keep the legacy `homegeek-*` prefix — renaming them would require a full GCP migration. Client code and docs should use AssetMem for user-facing strings only.
 
 - **Development**: Local development and testing
 - **Staging**: Pre-production testing and validation
@@ -322,7 +322,7 @@ runConfig:
 | `NEXT_PUBLIC_API_BASE_URL`      | http://localhost:8080 | staging proxy URL       | prod proxy URL                                                                                         |
 | `NEXT_PUBLIC_ENV`               | development           | staging                 | prod                                                                                                   |
 | `NEXT_PUBLIC_SITE_URL`          | (optional local)      | staging App Hosting URL | `https://asset-mem.com`                                                                                  |
-| `NEXT_PUBLIC_SUPPORT_EMAIL`     | (optional)            | `support@asset-mem.com` | `support@asset-mem.com`                                                                        |
+| `NEXT_PUBLIC_SUPPORT_EMAIL`     | (optional)            | `hello@asset-mem.com` | `hello@asset-mem.com`                                                                        |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | (optional)            | optional                | add before PH — see [PH launch §2.1](./PRODUCT_HUNT_LAUNCH.md#21-environment-variables-production-web) |
 | `GOOGLE_BUILDABLE`              | apps/webapp           | apps/webapp             | apps/webapp                                                                                            |
 
