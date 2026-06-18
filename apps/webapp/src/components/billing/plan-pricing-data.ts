@@ -9,6 +9,25 @@ import {
 
 export type PlanTierKey = 'free' | 'plus' | 'pro';
 
+export type EnterprisePricingCard = {
+  name: string;
+  priceLabel: string;
+  blurb: string;
+  bullets: string[];
+};
+
+export const ENTERPRISE_PRICING_CARD: EnterprisePricingCard = {
+  name: 'Enterprise',
+  priceLabel: 'Custom',
+  blurb: 'For portfolios, claims workflows, and field operations at scale.',
+  bullets: [
+    'Dedicated onboarding and team support',
+    'Custom portfolio limits',
+    'Co-designed workflows and report templates',
+    'Priority feedback channel',
+  ],
+};
+
 export type PlanCard = {
   name: string;
   blurb: string;
@@ -30,7 +49,7 @@ export const PLAN_CARDS: Record<PlanTierKey, PlanCard> = {
   },
   pro: {
     name: 'Pro',
-    blurb: 'Heavy documents, checkpoints, and agent sessions.',
+    blurb: 'For high-volume documents, inspections, and AI guidance.',
     limits: PRO_PLAN_LIMITS,
   },
 };
@@ -78,13 +97,13 @@ export function planLimitBullets(
     bullets.push(tier === 'free' ? freeTierTokenLabel() : '');
   }
   bullets.push(
-    `${formatMonthlyLimit(limits.documentsPerMonth)} document analyses / month`,
-  );
-  bullets.push(
-    `${formatMonthlyLimit(limits.reportsPerMonth)} property report generations / month`,
+    `${formatMonthlyLimit(limits.documentsPerMonth)} document AI analyses / month`,
   );
   bullets.push(
     `${formatMonthlyLimit(limits.checkpointsPerMonth)} checkpoint AI runs / month`,
+  );
+  bullets.push(
+    `${formatMonthlyLimit(limits.reportsPerMonth)} property report generations / month`,
   );
   return bullets.filter(Boolean);
 }

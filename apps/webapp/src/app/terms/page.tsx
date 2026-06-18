@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { LegalPageShell } from '@/components/legal/legal-page-shell';
+import { SupportEmailLink } from '@/components/legal/legal-support-email';
 import { buildPageMetadata } from '@/lib/metadata-shared';
-import { getSupportEmail, SITE_NAME } from '@/lib/site';
+import { SITE_NAME } from '@/lib/site';
 
 export const metadata: Metadata = buildPageMetadata({
   title: `Terms of Service | ${SITE_NAME}`,
@@ -12,8 +13,6 @@ export const metadata: Metadata = buildPageMetadata({
 const LAST_UPDATED = 'May 19, 2026';
 
 export default function TermsPage() {
-  const supportEmail = getSupportEmail();
-
   return (
     <LegalPageShell title="Terms of Service" lastUpdated={LAST_UPDATED}>
       <p>
@@ -89,7 +88,7 @@ export default function TermsPage() {
 
       <h2>Contact</h2>
       <p>
-        <a href={`mailto:${supportEmail}`}>{supportEmail}</a>
+        <SupportEmailLink />
       </p>
     </LegalPageShell>
   );

@@ -17,6 +17,11 @@ import {
   inferPlanTierFromLimits,
   type PlanTierKey,
 } from "@/components/billing/plan-pricing-data";
+import { trackEnterpriseCta } from "@/lib/analytics";
+import {
+  getEnterpriseMailtoHref,
+  type EnterpriseConfig,
+} from "@/lib/enterprise-config";
 
 type BillingSummary = {
   subscriptionStatus?: string | null;
@@ -26,8 +31,10 @@ type BillingSummary = {
 
 export function LandingPricingSection({
   colors: c,
+  enterprise,
 }: {
   colors: LandingPricingPalette;
+  enterprise: EnterpriseConfig;
 }) {
   const { user } = useAuth();
   const [summary, setSummary] = useState<BillingSummary | null>(null);
@@ -132,15 +139,25 @@ export function LandingPricingSection({
             className="text-4xl lg:text-5xl font-light tracking-tight"
             style={{ color: c.foreground }}
           >
-            Plans for homeowners and landlords
+            Choose{" "}
+            <span
+              className="font-bold"
+              style={{
+                background: `linear-gradient(to right, ${c.primary}, rgba(34,211,238,0.6))`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              your plan
+            </span>
           </h2>
           <p
             className="text-lg max-w-2xl mx-auto font-light"
             style={{ color: c.mutedForeground }}
           >
-            Simple monthly billing. Each plan includes a fair amount of AI chat,
-            document uploads, photo analysis, and property report
-            generations—you can always see what you have left in Settings.
+            Free, Plus, and Pro for everyday property care. Enterprise for
+            portfolios and field operations.
           </p>
         </div>
 
@@ -159,6 +176,9 @@ export function LandingPricingSection({
           }
           showPaidCheckout={Boolean(user) && !isPaid}
           showSignupOnFree={!user}
+          showEnterprisePricing
+          enterpriseMailtoHref={getEnterpriseMailtoHref(enterprise.enterpriseEmail)}
+          onEnterpriseCta={() => trackEnterpriseCta("team_cta_pricing_enterprise")}
         />
       </div>
     </section>

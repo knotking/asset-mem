@@ -110,14 +110,16 @@ The Next.js configuration is optimized for Firebase App Hosting:
 
 Minimal configuration for Firestore rules. App Hosting doesn't require hosting configuration in firebase.json.
 
-### Remote Config (Landing Demo URLs)
+### Remote Config (Landing)
 
-Landing demo video URLs are managed in Firebase Remote Config:
+Landing demo video URLs and B2B enterprise contact email are managed in Firebase Remote Config:
 
 - `landing_demo_mobile_url`
 - `landing_demo_desktop_url`
+- `enterprise_email`
+- `support_email`
 
-Publish these values in the target Firebase project (`homegeek-staging` or `homegeek-prod`) to update landing-page video links without redeploying webapp.
+Publish these values in the target Firebase project (`homegeek-staging` or `homegeek-prod`) to update the landing page without redeploying webapp. Env var `NEXT_PUBLIC_ENTERPRISE_EMAIL` is a fallback for local dev and first paint.
 
 ## Backend Information
 

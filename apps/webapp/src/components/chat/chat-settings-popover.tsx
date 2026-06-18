@@ -242,7 +242,7 @@ export function ChatSettingsPopover({
                 <>
                   <div className="flex min-h-[4.5rem] items-center rounded-lg border border-dashed border-border bg-muted/30 px-3 py-3">
                     <p className="text-xs leading-relaxed text-muted-foreground">
-                      Reports mode answers from saved PDF snapshots you attach in chat — not live
+                      Reports mode answers from saved report snapshots you attach in chat — not live
                       checkpoints.
                     </p>
                   </div>

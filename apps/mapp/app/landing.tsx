@@ -1,157 +1,338 @@
-import React, { useEffect, useState } from 'react';
-import { View, ScrollView, Image, Animated, TouchableOpacity, Linking, Text as RNText } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  View,
+  ScrollView,
+  Animated,
+  TouchableOpacity,
+  Linking,
+  useWindowDimensions,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { Text } from '../components/ui/text';
-import { Button } from '../components/ui/button';
 import { Icon } from '../components/ui/icon';
 import {
   Zap,
   CheckCircle,
   TrendingUp,
-  ImageIcon,
   FileText,
   Settings,
   DollarSign,
-  Clock,
   ArrowRight,
-  Users,
   Share2,
-  Home,
-  ClipboardList,
+  Building2,
+  Shield,
+  MapPin,
+  LayoutGrid,
+  ChevronDown,
+  ChevronUp,
+  type LucideIcon,
 } from 'lucide-react-native';
 import { AssetMemBrandIcon } from '@/components/AssetMemBrandIcon';
 import { LandingDemoVideoModal } from '@/components/landing/LandingDemoVideoModal';
 import { openExternalWebUrl } from '@/lib/open-external-url';
+import { getWebAppOrigin } from '@/lib/expo-extra';
 import { getYouTubeVideoId } from '@/lib/youtube-utils';
+import { DEFAULT_LANDING_DEMO_VIDEO_URLS } from '@/lib/landing-demo-video-constants';
+import {
+  getEnterpriseConfigFromEnv,
+  getEnterpriseMailtoHref,
+  type EnterpriseConfig,
+} from '@/lib/enterprise-config';
+import { fetchLandingRemoteConfig } from '@/lib/landing-remote-config';
+import { LANDING_COLORS } from '@/lib/landing-theme';
+import { LandingGradientText } from '@/components/landing/landing-gradient-text';
+import {
+  LandingGradientBadge,
+  LandingHeroBackground,
+  LandingSectionBackground,
+  withHexAlpha,
+} from '@/components/landing/landing-backgrounds';
 
-// Dark theme - landing page only (matching webapp)
-const LANDING_COLORS = {
-  primary: '#22d3ee',
-  primaryHover: 'rgba(34, 211, 238, 0.9)',
-  primaryLight: 'rgba(34, 211, 238, 0.1)',
-  primaryBorder: 'rgba(34, 211, 238, 0.2)',
-  primary20: 'rgba(34, 211, 238, 0.2)',
-  primary10: 'rgba(34, 211, 238, 0.1)',
-  background: '#0a0a0f',
-  backgroundOverlay: 'rgba(10, 10, 15, 0.85)',
-  background95: 'rgba(10, 10, 15, 0.95)',
-  foreground: '#fafafa',
-  foreground90: 'rgba(250, 250, 250, 0.9)',
-  foreground70: 'rgba(250, 250, 250, 0.7)',
-  foreground60: 'rgba(250, 250, 250, 0.6)',
-  card: '#14141c',
-  cardOverlay: 'rgba(20, 20, 28, 0.5)',
-  muted: '#14141c',
-  muted30: 'rgba(255, 255, 255, 0.08)',
-  mutedForeground: 'rgba(255, 255, 255, 0.65)',
-  border: 'rgba(255, 255, 255, 0.08)',
-  borderOverlay: 'rgba(255, 255, 255, 0.1)',
-  border50: 'rgba(255, 255, 255, 0.12)',
-  secondary: '#22d3ee',
-  secondaryLight: 'rgba(34, 211, 238, 0.1)',
-  secondaryBorder: 'rgba(34, 211, 238, 0.2)',
-  accent: '#f97316',
-  accentLight: 'rgba(249, 115, 22, 0.1)',
-  accent10: 'rgba(249, 115, 22, 0.1)',
-  white: 'rgb(255, 255, 255)',
-};
+// Keep in sync with apps/webapp/src/lib/site.ts
+const SITE_HERO_HEADLINE_PRIMARY = 'Timeline Intelligence';
+const SITE_HERO_DESCRIPTION =
+  'Track every asset change over time with AI for maintenance, claims, compliance, and reporting.';
+const SITE_FOOTER_TAGLINE = SITE_HERO_DESCRIPTION;
 
-const features = [
-  {
-    title: 'Timeline',
-    desc: 'Take photos and videos over time and build a visual history for every room and area.',
-    icon: Zap,
-  },
-  {
-    title: 'Property Checkpoints',
-    desc: 'See simple condition scores and trends so you know what needs attention first.',
-    icon: ImageIcon,
-  },
-  {
-    title: 'Two Ways to Chat',
-    desc: 'Ask about your documents, or chat about photos from your timeline. Switch anytime.',
-    icon: FileText,
-  },
-  {
-    title: 'Before & After Comparisons',
-    desc: 'Line up two visits side by side and clearly see what changed.',
-    icon: ImageIcon,
-  },
-  {
-    title: 'My pros',
-    desc: 'Save local pros the AI recommends and find them again on the property Details tab.',
-    icon: Users,
-  },
-  {
-    title: 'Share Your Answers',
-    desc: 'Send a read-only link to a chat so contractors or family can see what the AI found.',
-    icon: Share2,
-  },
-  {
-    title: 'Multiple Properties',
-    desc: 'Manage every home or rental from one account—each with its own timeline, docs, and chats.',
-    icon: Home,
-  },
-  {
-    title: 'Property Reports',
-    desc: 'Turn checkpoint photos into branded PDFs—snapshot for showings, comparison for move-in/out, or insurance documentation. Share or download.',
-    icon: FileText,
-  },
-  {
-    title: 'Repair Guidance',
-    desc: 'Get clear next steps, cost ranges, and product ideas without reading long reports.',
-    icon: DollarSign,
-  },
-];
+/** Show back-to-top when within this many px of the scroll bottom. */
+const SCROLL_TOP_NEAR_BOTTOM_PX = 120;
+/** Ignore back-to-top until the user has scrolled past the hero. */
+const SCROLL_TOP_MIN_OFFSET_PX = 240;
 
-const reportPurposes = [
-  {
-    title: 'Showing / listing',
-    desc: 'Single-date condition snapshot with executive summary, room status, and headline metrics—ideal before or after a showing.',
-  },
-  {
-    title: 'Move-in / move-out',
-    desc: 'Compare two periods with before/after photos, issue tables, and visual-diff callouts—built for security deposits and lease records.',
-  },
-  {
-    title: 'Insurance / claim',
-    desc: 'Document damage with photos, metrics, and change highlights in a formal PDF you can attach to a claim or share with an adjuster.',
-  },
-];
+/** Wordmark AI cap height ≈ lowercase m in AssetMem (18px when brand is 24px). */
+const HERO_BRAND_FONT_SIZE = 24;
+const HERO_BRAND_AI_FONT_SIZE = Math.round(HERO_BRAND_FONT_SIZE * 0.75);
 
-const steps = [
+const WORKFLOW_STEPS = [
   {
     step: 1,
-    title: 'Add Your Property',
-    desc: 'Create a property, upload documents, and take your first photos. Add as many properties as you need.',
+    title: 'Capture the property',
+    desc: 'Structured photos and documents on site—per home or across a portfolio.',
   },
   {
     step: 2,
-    title: 'Ask Questions',
-    desc: 'Chat with your paperwork or your timeline photos. Turn on extra help for coverage, repairs, costs, or local pros.',
+    title: 'See what changed',
+    desc: 'AI condition scoring and answers grounded in your evidence.',
   },
   {
     step: 3,
-    title: 'Get Clear Answers',
-    desc: 'See costs, repair steps, comparisons, and provider ideas in one easy-to-read conversation.',
+    title: 'Know what to do',
+    desc: 'AI-suggested costs, repair paths, and coverage context without tab-hopping.',
   },
   {
     step: 4,
-    title: 'Stay Organized',
-    desc: 'Save providers, generate PDF reports, share chat or report links, and check your timeline whenever you need to follow up.',
+    title: 'Prove it later',
+    desc: 'Formal reports and share links for owners, tenants, or adjusters.',
+  },
+] as const;
+
+const AI_EVIDENCE_IN = [
+  'Field & inspection photos',
+  'Policies & vendor records',
+  'Team questions',
+  'Condition over time',
+] as const;
+
+const AI_FOCUSED_ANALYSIS = [
+  'Coverage & policies',
+  'Repair guidance',
+  'Vendor matches',
+  'Cost outlook',
+  'Change detection',
+] as const;
+
+const AI_CLEAR_OUTPUTS = [
+  'Condition score',
+  'Fix first',
+  'Repair playbook',
+  'Budget outlook',
+  'Trusted vendors',
+  'Shareable reports',
+] as const;
+
+const USE_CASES: ReadonlyArray<{
+  title: string;
+  scenario: string;
+  icon: LucideIcon;
+  color: string;
+  steps: readonly string[];
+  result: string;
+}> = [
+  {
+    title: 'Portfolio inspection cadence',
+    scenario: 'Capture spring and fall walkthroughs for each area',
+    icon: Zap,
+    color: LANDING_COLORS.accent,
+    steps: [
+      'Capture structured walkthrough photos for roof, exterior, basement, and HVAC',
+      'Track AI-scored condition shifts by area across each season',
+      'Highlight recurring moisture and weather-related wear',
+      'Build a clear maintenance backlog before issues escalate',
+    ],
+    result: 'Proactive portfolio plan that prevented in-season surprises',
+  },
+  {
+    title: 'Early risk detection across units',
+    scenario: 'Monitor basement moisture over 6-month winter period',
+    icon: TrendingUp,
+    color: LANDING_COLORS.primary,
+    steps: [
+      'Capture monthly walkthrough photos',
+      'AI detects condition score drop: 78 → 65 (attention needed)',
+      'AI highlights increased moisture and wall staining',
+      'Get preventive maintenance recommendations before major damage',
+    ],
+    result: 'Caught water issue early, prevented $5,000+ damage',
+  },
+  {
+    title: 'Turnover documentation at scale',
+    scenario: 'Document condition at lease start and end for security deposits',
+    icon: FileText,
+    color: LANDING_COLORS.accent,
+    steps: [
+      'Capture move-in walkthroughs room by room',
+      'At move-out, generate a comparison report with before/after photos',
+      'Review issue tables and change callouts automatically',
+      'Share the report with your landlord or tenant',
+    ],
+    result: 'Resolved deposit dispute with dated, AI-verified evidence',
+  },
+  {
+    title: 'Claims evidence for adjusters',
+    scenario: 'Storm damage to roof requires insurance claim proof',
+    icon: FileText,
+    color: LANDING_COLORS.primary,
+    steps: [
+      'Platform compares before/after evidence from prior walkthroughs',
+      'AI detects: missing shingles, damaged flashing, water damage',
+      'Generate a formal report with photos, issue tables, and change highlights',
+      'Share the report and comparisons with your insurance adjuster',
+    ],
+    result: 'Claim approved in 3 days with AI-verified documentation',
+  },
+  {
+    title: 'Vendor handoff',
+    scenario: 'Share AI findings with contractors without granting account access',
+    icon: Share2,
+    color: LANDING_COLORS.primary,
+    steps: [
+      'Run issue analysis on captured evidence',
+      'Generate a formal report or share a secure evidence link',
+      'Contractor reviews evidence without a login',
+      'Everyone works from the same AI-verified source of truth',
+    ],
+    result: 'Faster approvals with less back-and-forth email',
+  },
+  {
+    title: 'Renovation Progress Tracking',
+    scenario: 'Track kitchen and bath updates across contractor visits',
+    icon: Settings,
+    color: LANDING_COLORS.accent,
+    steps: [
+      'Capture before/after walkthroughs for each milestone',
+      'Use AI comparisons to track workmanship and finish quality over time',
+      'Attach invoices, warranties, and notes to each milestone',
+      'Share a secure evidence link with your contractor or family',
+    ],
+    result: 'Kept everyone aligned with one source of truth',
   },
 ];
 
-const WEB_APP_BASE = 'https://asset-mem.com';
-const DEMO_VIDEO_URL = 'https://youtu.be/vh0J8DWupkI';
+const ENTERPRISE_SEGMENTS: ReadonlyArray<{
+  title: string;
+  desc: string;
+  icon: LucideIcon;
+  path: string;
+}> = [
+  {
+    title: 'Property managers, rentals & hospitality',
+    desc: 'Portfolio-wide turnovers, walkthroughs, and maintenance evidence.',
+    icon: Building2,
+    path: '/solutions/property-managers',
+  },
+  {
+    title: 'Insurers & adjusters',
+    desc: 'Carrier-grade claim packs with timestamped photos, condition metrics, and formal reports.',
+    icon: Shield,
+    path: '/solutions/insurance',
+  },
+  {
+    title: 'Service & field teams',
+    desc: 'Dispatch-ready mobile capture, on-site AI analysis, and report handoffs to operations.',
+    icon: MapPin,
+    path: '/solutions/field-teams',
+  },
+  {
+    title: 'Prop-tech platforms',
+    desc: 'Embeddable evidence layer and document intelligence—co-designed with your product team.',
+    icon: LayoutGrid,
+    path: '/solutions/platform',
+  },
+];
+
+const ENTERPRISE_INCLUDED = [
+  'Standardized field capture with AI condition scores across properties',
+  'Audit-ready reports for claims, turnovers, and portfolio reviews',
+  'Document intelligence on inspections, policies, and vendor records',
+  'Secure share links for reports, evidence packs, and stakeholder review',
+] as const;
+
+const ENTERPRISE_CO_DESIGNED = [
+  'Workflow templates for your team',
+  'Portfolio rollups and reporting cadence',
+  'Integrations with your existing tools',
+] as const;
+
+function SectionBadge({ label }: { label: string }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 999,
+        backgroundColor: LANDING_COLORS.primaryLight,
+        borderWidth: 1,
+        borderColor: LANDING_COLORS.primaryBorder,
+        marginBottom: 24,
+      }}>
+      <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+function PipelineConnector() {
+  return (
+    <View style={{ alignItems: 'center', paddingVertical: 10 }}>
+      <View
+        style={{
+          width: 2,
+          height: 20,
+          borderRadius: 1,
+          backgroundColor: 'rgba(34,211,238,0.5)',
+        }}
+      />
+      <ChevronDown size={14} color={LANDING_COLORS.primary} style={{ marginTop: -2 }} />
+    </View>
+  );
+}
+
+function ChipGrid({ items, accentIndex }: { items: readonly string[]; accentIndex?: number }) {
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      {items.map((label, i) => {
+        const isAccent = accentIndex === i;
+        return (
+          <View
+            key={label}
+            style={{
+              width: '47%',
+              flexGrow: 1,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: isAccent ? 'rgba(249,115,22,0.35)' : LANDING_COLORS.border,
+              backgroundColor: isAccent ? 'rgba(249,115,22,0.07)' : 'rgba(20,20,28,0.8)',
+              paddingHorizontal: 10,
+              paddingVertical: 10,
+            }}>
+            <Text
+              style={{
+                fontSize: 11,
+                lineHeight: 15,
+                color: isAccent ? '#fdba74' : LANDING_COLORS.foreground,
+              }}>
+              {label}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 export default function LandingPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const webAppOrigin = getWebAppOrigin();
+  const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
+  const { height: windowHeight } = useWindowDimensions();
+  const heroMinHeight = Math.round(windowHeight * 0.88);
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const [demoVisible, setDemoVisible] = useState(false);
+  const [demoVideoUrl, setDemoVideoUrl] = useState<string>(DEFAULT_LANDING_DEMO_VIDEO_URLS.mobile);
+  const [enterpriseConfig, setEnterpriseConfig] = useState<EnterpriseConfig>(() =>
+    getEnterpriseConfigFromEnv(),
+  );
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -159,6 +340,22 @@ export default function LandingPage() {
       duration: 800,
       useNativeDriver: true,
     }).start();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadLandingRemoteConfig = async () => {
+      const remote = await fetchLandingRemoteConfig();
+      if (!cancelled) {
+        setDemoVideoUrl(remote.demoVideos.mobile);
+        setEnterpriseConfig(remote.enterprise);
+      }
+    };
+
+    void loadLandingRemoteConfig();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (loading) {
@@ -169,9 +366,8 @@ export default function LandingPage() {
           justifyContent: 'center',
           alignItems: 'center',
           backgroundColor: LANDING_COLORS.background,
-        }}>
-        {/* Minimal loading state */}
-      </View>
+        }}
+      />
     );
   }
 
@@ -184,153 +380,124 @@ export default function LandingPage() {
   };
 
   const handleWatchDemo = () => {
-    if (getYouTubeVideoId(DEMO_VIDEO_URL)) {
+    if (getYouTubeVideoId(demoVideoUrl)) {
       setDemoVisible(true);
       return;
     }
-    void openExternalWebUrl(DEMO_VIDEO_URL);
+    void openExternalWebUrl(demoVideoUrl);
+  };
+
+  const openEnterpriseMailto = () => {
+    void Linking.openURL(getEnterpriseMailtoHref(enterpriseConfig.enterpriseEmail));
+  };
+
+  const handleLandingScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+    const distanceFromBottom =
+      contentSize.height - layoutMeasurement.height - contentOffset.y;
+    setShowScrollTop(
+      contentOffset.y > SCROLL_TOP_MIN_OFFSET_PX &&
+        distanceFromBottom <= SCROLL_TOP_NEAR_BOTTOM_PX,
+    );
+  };
+
+  const scrollToTop = () => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: LANDING_COLORS.background }} edges={['top', 'bottom']}>
-    <LandingDemoVideoModal
-      visible={demoVisible}
-      onClose={() => setDemoVisible(false)}
-      videoUrl={DEMO_VIDEO_URL}
-    />
-    <ScrollView
-      style={{ flex: 1, backgroundColor: LANDING_COLORS.background }}
-      contentContainerStyle={{ flexGrow: 1 }}
-      showsVerticalScrollIndicator={false}>
-      <Animated.View style={{ opacity: fadeAnim }}>
-        {/* Hero Section */}
-        <View
-          style={{
-            backgroundColor: LANDING_COLORS.background,
-            paddingTop: 20,
-            paddingBottom: 40,
-            paddingHorizontal: 20,
-          }}>
-          <View style={{ alignItems: 'center' }}>
-            {/* Logo/Brand */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 40 }}>
-              <View style={{ marginRight: 12, flexShrink: 0 }}>
-                <AssetMemBrandIcon variant="mark" size="md" markTheme="landing" />
-              </View>
-              <Text
-                style={{
-                  fontSize: 24,
-                  fontWeight: '300',
-                  color: LANDING_COLORS.foreground,
-                  lineHeight: 32,
-                  flexShrink: 0,
-                  includeFontPadding: false,
-                }}>
-                AssetMem <Text style={{ fontWeight: 'bold' }}>AI</Text>
-              </Text>
-            </View>
-
-            {/* Badge */}
+      <LandingDemoVideoModal
+        visible={demoVisible}
+        onClose={() => setDemoVisible(false)}
+        videoUrl={demoVideoUrl}
+      />
+      <ScrollView
+        ref={scrollRef}
+        onScroll={handleLandingScroll}
+        scrollEventThrottle={16}
+        style={{ flex: 1, backgroundColor: LANDING_COLORS.background }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}>
+        <Animated.View style={{ opacity: fadeAnim }}>
+          {/* Hero — full-viewport first screen */}
+          <LandingHeroBackground
+            style={{ minHeight: heroMinHeight }}
+            contentStyle={{
+              flex: 1,
+              paddingHorizontal: 24,
+              paddingTop: 28,
+              paddingBottom: 36,
+              justifyContent: 'space-between',
+            }}>
             <View
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                paddingHorizontal: 20,
-                paddingVertical: 10,
-                borderRadius: 999,
-                backgroundColor: LANDING_COLORS.primaryLight,
-                borderWidth: 1,
-                borderColor: LANDING_COLORS.primaryBorder,
-                marginBottom: 36,
-                gap: 8,
+                justifyContent: 'center',
               }}>
-              <Icon as={Zap} size={16} style={{ color: LANDING_COLORS.primary }} />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
-                AI-POWERED INNOVATION
+              <View style={{ marginRight: 12, flexShrink: 0 }}>
+                <AssetMemBrandIcon variant="mark" size="md" markTheme="landing" />
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4, flexShrink: 0 }}>
+                <Text
+                  style={{
+                    fontSize: HERO_BRAND_FONT_SIZE,
+                    fontWeight: '300',
+                    color: LANDING_COLORS.foreground,
+                    lineHeight: HERO_BRAND_FONT_SIZE,
+                    includeFontPadding: false,
+                  }}>
+                  AssetMem
+                </Text>
+                <LandingGradientText
+                  inline
+                  style={{
+                    fontSize: HERO_BRAND_AI_FONT_SIZE,
+                    fontWeight: '700',
+                    letterSpacing: 0.4,
+                  }}>
+                  AI
+                </LandingGradientText>
+              </View>
+            </View>
+
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', paddingVertical: 32 }}>
+              <Text
+                style={{
+                  fontSize: 52,
+                  fontWeight: '300',
+                  color: LANDING_COLORS.foreground,
+                  marginBottom: 24,
+                  lineHeight: 58,
+                  textAlign: 'center',
+                }}>
+                Timeline{'\n'}Intelligence
+              </Text>
+
+              <Text
+                style={{
+                  fontSize: 18,
+                  lineHeight: 28,
+                  color: LANDING_COLORS.foreground60,
+                  textAlign: 'center',
+                  maxWidth: 340,
+                }}>
+                {SITE_HERO_DESCRIPTION}
               </Text>
             </View>
 
-            {/* Main Heading */}
-            <Text
-              style={{
-                fontSize: 48,
-                fontWeight: '300',
-                textAlign: 'center',
-                color: LANDING_COLORS.foreground,
-                marginBottom: 24,
-                lineHeight: 56,
-                paddingHorizontal: 10,
-              }}>
-              AssetMem{'\n'}
-              <Text
-                style={{
-                  fontWeight: 'bold',
-                  color: LANDING_COLORS.primary,
-                }}>
-                AI
-              </Text>
-            </Text>
-
-            <Text
-              style={{
-                fontSize: 24,
-                fontWeight: '300',
-                textAlign: 'center',
-                color: LANDING_COLORS.foreground90,
-                marginBottom: 16,
-                paddingHorizontal: 10,
-                lineHeight: 32,
-              }}>
-              Your Complete{'\n'}
-              <Text
-                style={{
-                  fontSize: 24,
-                  fontWeight: '300',
-                  color: LANDING_COLORS.foreground90,
-                }}>
-                Property Care Platform
-              </Text>
-            </Text>
-
-            <Text
-              style={{
-                fontSize: 18,
-                textAlign: 'center',
-                color: LANDING_COLORS.foreground60,
-                marginBottom: 48,
-                paddingHorizontal: 20,
-                lineHeight: 28,
-              }}>
-              AI agents analyze your property photos and documents, rate condition over time, flag
-              issues, generate formal PDF reports, and guide you on repairs and costs while
-              connecting you with local pros.
-            </Text>
-
-            {/* CTA Buttons */}
-            <View
-              style={{
-                flexDirection: 'column',
-                gap: 12,
-                marginBottom: 48,
-                paddingHorizontal: 20,
-                width: '100%',
-              }}>
+            <View style={{ gap: 12, width: '100%' }}>
               <TouchableOpacity
                 onPress={handleGetStarted}
                 style={{
-                  width: '100%',
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  paddingVertical: 20,
+                  paddingVertical: 18,
                   paddingHorizontal: 32,
                   borderRadius: 12,
                   backgroundColor: LANDING_COLORS.primary,
-                  shadowColor: LANDING_COLORS.primary,
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 8,
-                  elevation: 8,
                   gap: 8,
                 }}>
                 <Text style={{ fontSize: 16, fontWeight: '600', color: LANDING_COLORS.background }}>
@@ -341,1062 +508,79 @@ export default function LandingPage() {
               <TouchableOpacity
                 onPress={handleWatchDemo}
                 style={{
-                  width: '100%',
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  paddingVertical: 20,
+                  paddingVertical: 18,
                   paddingHorizontal: 24,
                   borderRadius: 12,
                   borderWidth: 2,
                   borderColor: LANDING_COLORS.border,
-                  gap: 8,
                 }}>
                 <Text style={{ fontSize: 16, fontWeight: '500', color: LANDING_COLORS.foreground }}>
                   Watch Demo
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
+          </LandingHeroBackground>
 
-        {/* Use Cases Section */}
-        <View
-          style={{
-            backgroundColor: LANDING_COLORS.background,
-            paddingTop: 80,
-            paddingBottom: 60,
-            paddingHorizontal: 20,
-          }}>
-          <View style={{ alignItems: 'center', marginBottom: 48 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingHorizontal: 20,
-                paddingVertical: 10,
-                borderRadius: 999,
-                backgroundColor: LANDING_COLORS.primaryLight,
-                borderWidth: 1,
-                borderColor: LANDING_COLORS.primaryBorder,
-                marginBottom: 36,
-              }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
-                REAL-WORLD APPLICATIONS
-              </Text>
-            </View>
-            <Text
-              style={{
-                fontSize: 32,
-                fontWeight: '300',
-                textAlign: 'center',
-                color: LANDING_COLORS.foreground,
-                marginBottom: 20,
-                paddingHorizontal: 10,
-                lineHeight: 40,
-              }}>
-              See How AssetMem{'\n'}
-              <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>
-                Solves Real Problems
-              </Text>
-            </Text>
-            <Text
-              style={{
-                fontSize: 16,
-                textAlign: 'center',
-                color: LANDING_COLORS.mutedForeground,
-                paddingHorizontal: 20,
-                lineHeight: 24,
-                marginBottom: 16,
-              }}>
-              From routine walkthroughs to seasonal planning, see how checkpoint-driven workflows
-              help homeowners and landlords stay ahead
-            </Text>
-          </View>
-
-          <View style={{ gap: 24 }}>
-            {[
-              {
-                title: 'Seasonal Property Walkthrough',
-                scenario: 'Capture spring and fall walkthroughs for each area',
-                icon: Zap,
-                color: LANDING_COLORS.accent,
-                steps: [
-                  'Create checkpoints for roof, exterior, basement, and HVAC',
-                  'Track condition shifts by area across each season',
-                  'Highlight recurring moisture and weather-related wear',
-                  'Build a clear maintenance backlog before issues escalate',
-                ],
-                result: 'Built a proactive plan that prevented in-season surprises',
-              },
-              {
-                title: 'Property Condition Tracking',
-                scenario: 'Monitor basement moisture over 6-month winter period',
-                icon: TrendingUp,
-                color: LANDING_COLORS.primary,
-                steps: [
-                  'Create monthly checkpoints with photos',
-                  'AI detects condition score drop: 78 → 65 (attention needed)',
-                  'Platform identifies increased moisture + wall staining',
-                  'Get preventive maintenance recommendations before major damage',
-                ],
-                result: 'Caught water issue early, prevented $5,000+ damage',
-              },
-              {
-                title: 'Rental Move-In / Move-Out',
-                scenario: 'Document condition at lease start and end for security deposits',
-                icon: FileText,
-                color: LANDING_COLORS.accent,
-                steps: [
-                  'Capture move-in checkpoints room by room',
-                  'At move-out, generate a comparison report with before/after photos',
-                  'Review issue tables and visual-diff callouts automatically',
-                  'Share the PDF with your landlord or tenant',
-                ],
-                result: 'Resolved deposit dispute with dated, AI-verified evidence',
-              },
-              {
-                title: 'Insurance Claim Documentation',
-                scenario: 'Storm damage to roof requires insurance claim proof',
-                icon: FileText,
-                color: LANDING_COLORS.primary,
-                steps: [
-                  'Platform auto-compares before/after checkpoint photos',
-                  'AI detects: missing shingles, damaged flashing, water damage',
-                  'Generate a formal PDF report with photos, issue tables, and change highlights',
-                  'Share the report and comparisons with your insurance adjuster',
-                ],
-                result: 'Claim approved in 3 days with AI-verified documentation',
-              },
-              {
-                title: 'Home Inspection Follow-up',
-                scenario: '50-page inspection report with 15 issues to address',
-                icon: FileText,
-                color: LANDING_COLORS.primary,
-                steps: [
-                  'Upload inspection PDF → AI indexes all issues',
-                  'Ask: "What are the critical issues?" → Get prioritized list',
-                  'Chat: "Cost to fix the roof?" → $4,500-$7,200 estimate',
-                  'Find local roofers, compare quotes, check warranty coverage',
-                ],
-                result: 'Prioritized repairs, negotiated 20% discount with quotes',
-              },
-              {
-                title: 'Renovation Progress Tracking',
-                scenario: 'Track kitchen and bath updates across contractor visits',
-                icon: Settings,
-                color: LANDING_COLORS.accent,
-                steps: [
-                  'Capture before/after checkpoints for each milestone',
-                  'Compare workmanship and finish quality over time',
-                  'Attach invoices, warranties, and notes to each checkpoint',
-                  'Share a read-only chat link with your contractor or family',
-                ],
-                result: 'Kept everyone aligned with one source of truth',
-              },
-            ].map((useCase) => (
-              <View
-                key={useCase.title}
-                style={{
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor: LANDING_COLORS.border,
-                  backgroundColor: 'rgba(20,20,28,0.6)',
-                  padding: 20,
-                }}>
-                {/* Icon and Title */}
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'flex-start',
-                    gap: 12,
-                    marginBottom: 16,
-                  }}>
-                  <View
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 12,
-                      backgroundColor: useCase.color,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      flexShrink: 0,
-                    }}>
-                    <Icon as={useCase.icon} size={24} style={{ color: LANDING_COLORS.white }} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        fontSize: 18,
-                        fontWeight: 'bold',
-                        color: LANDING_COLORS.foreground,
-                        marginBottom: 4,
-                        lineHeight: 24,
-                      }}>
-                      {useCase.title}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: '500',
-                        color: LANDING_COLORS.mutedForeground,
-                        lineHeight: 18,
-                      }}>
-                      {useCase.scenario}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Steps */}
-                <View style={{ gap: 10, marginBottom: 16 }}>
-                  {useCase.steps.map((step, idx) => (
-                    <View
-                      key={idx}
-                      style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-                      <View
-                        style={{
-                          width: 22,
-                          height: 22,
-                          borderRadius: 11,
-                          backgroundColor: LANDING_COLORS.primary20,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          flexShrink: 0,
-                          marginTop: 1,
-                        }}>
-                        <Text
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 'bold',
-                            color: LANDING_COLORS.primary,
-                          }}>
-                          {idx + 1}
-                        </Text>
-                      </View>
-                      <Text
-                        style={{
-                          flex: 1,
-                          fontSize: 13,
-                          lineHeight: 19,
-                          color: LANDING_COLORS.foreground90,
-                        }}>
-                        {step}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-
-                {/* Result */}
-                <View
-                  style={{
-                    paddingTop: 12,
-                    borderTopWidth: 1,
-                    borderTopColor: LANDING_COLORS.border,
-                    flexDirection: 'row',
-                    alignItems: 'flex-start',
-                    gap: 8,
-                  }}>
-                  <Icon as={CheckCircle} size={18} style={{ color: useCase.color, marginTop: 1 }} />
-                  <Text
-                    style={{
-                      flex: 1,
-                      fontSize: 13,
-                      fontWeight: '600',
-                      color: useCase.color,
-                      lineHeight: 18,
-                    }}>
-                    {useCase.result}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Features Section */}
-        <View
-          style={{
-            backgroundColor: '#0f0f14',
-            paddingTop: 80,
-            paddingBottom: 60,
-            paddingHorizontal: 20,
-          }}>
-          <View style={{ alignItems: 'center', marginBottom: 48 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingHorizontal: 20,
-                paddingVertical: 10,
-                borderRadius: 999,
-                backgroundColor: LANDING_COLORS.primaryLight,
-                borderWidth: 1,
-                borderColor: LANDING_COLORS.primaryBorder,
-                marginBottom: 36,
-              }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
-                INTEGRATED PLATFORM SERVICES
-              </Text>
-            </View>
-            <Text
-              style={{
-                fontSize: 36,
-                fontWeight: '300',
-                textAlign: 'center',
-                color: LANDING_COLORS.foreground,
-                marginBottom: 20,
-                paddingHorizontal: 10,
-                lineHeight: 44,
-              }}>
-              Everything You Need{'\n'}
-              <Text style={{ fontWeight: 'bold' }}>In One Platform</Text>
-            </Text>
-            <Text
-              style={{
-                fontSize: 18,
-                textAlign: 'center',
-                color: LANDING_COLORS.mutedForeground,
-                paddingHorizontal: 20,
-                lineHeight: 26,
-              }}>
-              A unified platform where checkpoints, timeline insights, document management, and
-              service planning work together seamlessly
-            </Text>
-          </View>
-
-          <View style={{ gap: 20 }}>
-            {features.map((feature, i) => (
-              <View
-                key={feature.title}
-                style={{
-                  padding: 20,
-                  borderRadius: 12,
-                  backgroundColor: 'rgba(20,20,28,0.6)',
-                  borderWidth: 1,
-                  borderColor: LANDING_COLORS.border,
-                }}>
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 16 }}>
-                  <View
-                    style={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: 12,
-                      backgroundColor: LANDING_COLORS.primary,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      flexShrink: 0,
-                    }}>
-                    <Icon as={feature.icon} size={28} style={{ color: LANDING_COLORS.white }} />
-                  </View>
-                  <View style={{ flex: 1, paddingTop: 2 }}>
-                    <Text
-                      style={{
-                        fontSize: 20,
-                        fontWeight: 'bold',
-                        color: LANDING_COLORS.foreground,
-                        marginBottom: 8,
-                        lineHeight: 26,
-                      }}>
-                      {feature.title}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        lineHeight: 22,
-                        color: LANDING_COLORS.mutedForeground,
-                      }}>
-                      {feature.desc}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Property Reports Section */}
-        <View
-          style={{
-            backgroundColor: LANDING_COLORS.background,
-            paddingTop: 80,
-            paddingBottom: 60,
-            paddingHorizontal: 20,
-          }}>
-          <View style={{ alignItems: 'center', marginBottom: 48 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingHorizontal: 20,
-                paddingVertical: 10,
-                borderRadius: 999,
-                backgroundColor: LANDING_COLORS.primaryLight,
-                borderWidth: 1,
-                borderColor: LANDING_COLORS.primaryBorder,
-                marginBottom: 36,
-              }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
-                FORMAL PDF REPORTS
-              </Text>
-            </View>
-            <Text
-              style={{
-                fontSize: 36,
-                fontWeight: '300',
-                textAlign: 'center',
-                color: LANDING_COLORS.foreground,
-                marginBottom: 20,
-                paddingHorizontal: 10,
-                lineHeight: 44,
-              }}>
-              Turn Checkpoints Into{'\n'}
-              <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>
-                Shareable Reports
-              </Text>
-            </Text>
-            <Text
-              style={{
-                fontSize: 16,
-                textAlign: 'center',
-                color: LANDING_COLORS.mutedForeground,
-                paddingHorizontal: 20,
-                lineHeight: 24,
-              }}>
-              Generate branded PDFs from your timeline—frozen at generation time so what you share
-              stays accurate. Pick a purpose, preview sections, then download or send a link.
-            </Text>
-          </View>
-
-          <View style={{ gap: 20 }}>
-            {reportPurposes.map((item) => (
-              <View
-                key={item.title}
-                style={{
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor: LANDING_COLORS.border,
-                  backgroundColor: 'rgba(20,20,28,0.6)',
-                  padding: 20,
-                }}>
-                <Text
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 'bold',
-                    color: LANDING_COLORS.foreground,
-                    marginBottom: 8,
-                    lineHeight: 24,
-                  }}>
-                  {item.title}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    lineHeight: 22,
-                    color: LANDING_COLORS.mutedForeground,
-                  }}>
-                  {item.desc}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* AI Agents Section */}
-        <View
-          style={{
-            backgroundColor: LANDING_COLORS.background,
-            paddingTop: 80,
-            paddingBottom: 60,
-            paddingHorizontal: 20,
-          }}>
-          <View style={{ alignItems: 'center', marginBottom: 48 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingHorizontal: 20,
-                paddingVertical: 10,
-                borderRadius: 999,
-                backgroundColor: LANDING_COLORS.primaryLight,
-                borderWidth: 1,
-                borderColor: LANDING_COLORS.primaryBorder,
-                marginBottom: 36,
-              }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
-                CHECKPOINT-POWERED INTELLIGENCE
-              </Text>
-            </View>
-            <Text
-              style={{
-                fontSize: 36,
-                fontWeight: '300',
-                textAlign: 'center',
-                color: LANDING_COLORS.foreground,
-                marginBottom: 20,
-                paddingHorizontal: 10,
-                lineHeight: 44,
-              }}>
-              Platform Intelligence{'\n'}
-              <Text style={{ fontWeight: 'bold' }}>Powered by AI Agents</Text>
-            </Text>
-            <Text
-              style={{
-                fontSize: 16,
-                textAlign: 'center',
-                color: LANDING_COLORS.mutedForeground,
-                paddingHorizontal: 20,
-                lineHeight: 24,
-              }}>
-              Specialized agents work together—starting with your timeline photos or saved
-              reports, then pulling in warranty checks, repair steps, local pros, and cost
-              estimates when you need them
-            </Text>
-          </View>
-
-          <View style={{ gap: 20 }}>
-            {[
-              {
-                title: 'Timeline Agent',
-                desc: 'Looks at your photos and past visits first, then brings in other help when you ask a question.',
-                icon: FileText,
-              },
-              {
-                title: 'Coverage Agent',
-                desc: 'Checks warranties, insurance, and service contracts against what your photos and documents show.',
-                icon: CheckCircle,
-              },
-              {
-                title: 'DIY Agent',
-                desc: 'Walks you through fixes step by step, including tools, safety tips, and helpful product ideas.',
-                icon: Settings,
-              },
-              {
-                title: 'Service Agent',
-                desc: 'Suggests nearby pros that fit the issue shown in your photos and notes.',
-                icon: TrendingUp,
-              },
-              {
-                title: 'Cost Agent',
-                desc: 'Gives rough cost ranges and compares doing it yourself versus hiring someone.',
-                icon: DollarSign,
-              },
-              {
-                title: 'Report Agent',
-                desc: 'Answers questions about saved property reports you attach in chat—using the frozen snapshot captured when each PDF was generated.',
-                icon: ClipboardList,
-              },
-              {
-                title: 'Working Together',
-                desc: 'Everything stays connected—your photos, documents, saved reports, saved providers, and past chats feed into one clear answer.',
-                icon: ImageIcon,
-              },
-            ].map((agent, i) => (
-              <View
-                key={agent.title}
-                style={{
-                  padding: 20,
-                  borderRadius: 12,
-                  backgroundColor: 'rgba(20,20,28,0.6)',
-                  borderWidth: 1,
-                  borderColor: LANDING_COLORS.border,
-                }}>
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 16 }}>
-                  <View
-                    style={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: 12,
-                      backgroundColor: LANDING_COLORS.primary,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      flexShrink: 0,
-                    }}>
-                    <Icon as={agent.icon} size={28} style={{ color: LANDING_COLORS.white }} />
-                  </View>
-                  <View style={{ flex: 1, paddingTop: 2 }}>
-                    <Text
-                      style={{
-                        fontSize: 20,
-                        fontWeight: 'bold',
-                        color: LANDING_COLORS.foreground,
-                        marginBottom: 8,
-                        lineHeight: 26,
-                      }}>
-                      {agent.title}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        lineHeight: 22,
-                        color: LANDING_COLORS.mutedForeground,
-                      }}>
-                      {agent.desc}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Timeline Feature Details - Property Checkpoints */}
-        <View
-          style={{
-            backgroundColor: LANDING_COLORS.background,
-            paddingTop: 80,
-            paddingBottom: 60,
-            paddingHorizontal: 20,
-          }}>
-          <View style={{ gap: 40 }}>
-            <View>
+          {/* How It Works */}
+          <LandingSectionBackground
+            backgroundColor={LANDING_COLORS.workflowSection}
+            variant="workflow"
+            style={{ paddingTop: 64, paddingBottom: 64, paddingHorizontal: 20 }}>
+            <View style={{ alignItems: 'center', marginBottom: 40 }}>
+              <SectionBadge label="THE WORKFLOW" />
               <Text
                 style={{
                   fontSize: 32,
                   fontWeight: '300',
+                  textAlign: 'center',
                   color: LANDING_COLORS.foreground,
-                  marginBottom: 16,
+                  marginBottom: 8,
                   lineHeight: 40,
                 }}>
-                Property Checkpoints:{'\n'}
-                <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>
-                  Your Timeline
-                </Text>
+                From site visit to
               </Text>
+              <LandingGradientText
+                style={{
+                  fontSize: 32,
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  lineHeight: 40,
+                  marginBottom: 16,
+                }}>
+                evidence teams trust
+              </LandingGradientText>
               <Text
                 style={{
-                  fontSize: 18,
-                  fontWeight: '300',
+                  fontSize: 16,
+                  textAlign: 'center',
                   color: LANDING_COLORS.mutedForeground,
-                  lineHeight: 26,
+                  lineHeight: 24,
                 }}>
-                Photos, scores, before/after—and health metrics that help you stay ahead.
+                One AI-assisted workflow for a single home or a portfolio—capture, understand, act,
+                and share without losing context.
               </Text>
             </View>
 
-            <View style={{ gap: 20 }}>
-              {[
-                {
-                  title: 'Timeline Capture',
-                  desc: 'Snap photos and videos over time, spot changes with before-and-after views, and let AI summarize what it sees.',
-                  icon: ImageIcon,
-                },
-                {
-                  title: 'AI-Powered Analysis',
-                  desc: 'Get a simple condition score, see what looks damaged, and understand how serious each issue is.',
-                  icon: TrendingUp,
-                },
-                {
-                  title: 'Automatic Comparison',
-                  desc: 'Compare a new visit to an older one and see what changed—with settings you can adjust anytime.',
-                  icon: CheckCircle,
-                },
-                {
-                  title: 'Timeline Comparisons',
-                  desc: 'Scroll through your history and open side-by-side views whenever you need proof of progress or damage.',
-                  icon: Clock,
-                },
-                {
-                  title: 'Property Health Metrics',
-                  desc: 'See how your property is doing overall, which issues matter most, and whether things are getting better or worse.',
-                  icon: TrendingUp,
-                },
-                {
-                  title: 'Always Up to Date',
-                  desc: 'New photos and results show up right away—no need to refresh or wait around.',
-                  icon: Zap,
-                },
-                {
-                  title: 'Property Reports',
-                  desc: 'Generate branded PDF snapshots or before/after comparison reports from your checkpoints—ready to share with insurers, tenants, or buyers.',
-                  icon: FileText,
-                },
-              ].map((block, i) => (
-                <View
-                  key={block.title}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'flex-start',
-                    gap: 16,
-                    padding: 16,
-                    borderRadius: 12,
-                    backgroundColor: 'rgba(20,20,28,0.4)',
-                    borderWidth: 1,
-                    borderColor: LANDING_COLORS.border,
-                  }}>
-                  <View
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 12,
-                      backgroundColor: LANDING_COLORS.primary20,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      flexShrink: 0,
-                    }}>
-                    <Icon as={block.icon} size={24} style={{ color: LANDING_COLORS.primary }} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        fontSize: 18,
-                        fontWeight: 'bold',
-                        color: LANDING_COLORS.foreground,
-                        marginBottom: 4,
-                        lineHeight: 24,
-                      }}>
-                      {block.title}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        lineHeight: 20,
-                        color: LANDING_COLORS.mutedForeground,
-                      }}>
-                      {block.desc}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        </View>
-
-        {/* Document Chat Showcase Section */}
-        <View
-          style={{
-            backgroundColor: '#0f0f14',
-            paddingTop: 80,
-            paddingBottom: 60,
-            paddingHorizontal: 20,
-          }}>
-          <View style={{ alignItems: 'center', marginBottom: 48 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingHorizontal: 20,
-                paddingVertical: 10,
-                borderRadius: 999,
-                backgroundColor: LANDING_COLORS.primaryLight,
-                borderWidth: 1,
-                borderColor: LANDING_COLORS.primaryBorder,
-                marginBottom: 36,
-              }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
-                TWO WAYS TO CHAT
-              </Text>
-            </View>
-            <Text
-              style={{
-                fontSize: 32,
-                fontWeight: '300',
-                textAlign: 'center',
-                color: LANDING_COLORS.foreground,
-                marginBottom: 20,
-                paddingHorizontal: 10,
-                lineHeight: 40,
-              }}>
-              Chat with Your{'\n'}
-              <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>Docs or Photos</Text>
-            </Text>
-            <Text
-              style={{
-                fontSize: 16,
-                textAlign: 'center',
-                color: LANDING_COLORS.mutedForeground,
-                paddingHorizontal: 20,
-                lineHeight: 24,
-                marginBottom: 32,
-              }}>
-              <Text style={{ fontWeight: '600', color: LANDING_COLORS.foreground90 }}>Docs mode</Text>{' '}
-              answers from your inspection reports, warranties, manuals, and policies—with sources
-              cited.{' '}
-              <Text style={{ fontWeight: '600', color: LANDING_COLORS.foreground90 }}>
-                Timeline mode
-              </Text>{' '}
-              uses your photos and optional repair, coverage, cost, and provider help. Pick the mode
-              that fits your question.
-            </Text>
-          </View>
-
-          {/* Chat Example */}
-          <View
-            style={{
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: LANDING_COLORS.border,
-              backgroundColor: 'rgba(20,20,28,0.6)',
-              padding: 20,
-              marginBottom: 32,
-            }}>
-            <View style={{ gap: 16 }}>
-              {/* User message */}
-              <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-                <View
-                  style={{
-                    maxWidth: '85%',
-                    backgroundColor: LANDING_COLORS.primary,
-                    borderRadius: 16,
-                    padding: 12,
-                  }}>
-                  <Text
-                    style={{ fontSize: 14, fontWeight: '500', color: LANDING_COLORS.background }}>
-                    What issues were found in my home inspection report?
-                  </Text>
-                </View>
-              </View>
-
-              {/* AI response */}
-              <View style={{ flexDirection: 'row', justifyContent: 'flex-start' }}>
-                <View
-                  style={{
-                    maxWidth: '90%',
-                    backgroundColor: LANDING_COLORS.card,
-                    borderRadius: 16,
-                    borderWidth: 1,
-                    borderColor: LANDING_COLORS.border50,
-                    padding: 12,
-                  }}>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      lineHeight: 20,
-                      color: LANDING_COLORS.foreground,
-                      marginBottom: 12,
-                    }}>
-                    Based on your home inspection report, here are the key issues:
-                  </Text>
-                  <View style={{ gap: 8, marginBottom: 12 }}>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      <Text style={{ color: LANDING_COLORS.accent, fontSize: 13 }}>•</Text>
-                      <Text
-                        style={{
-                          flex: 1,
-                          fontSize: 13,
-                          lineHeight: 19,
-                          color: LANDING_COLORS.foreground90,
-                        }}>
-                        <Text style={{ fontWeight: 'bold' }}>Roof:</Text> Missing shingles on north
-                        side, 5-7 years remaining life
+            <View style={{ gap: 28 }}>
+              {WORKFLOW_STEPS.map((item) => (
+                <View key={item.step} style={{ alignItems: 'center' }}>
+                  <View style={{ marginBottom: 12 }}>
+                    <LandingGradientBadge>
+                      <Text style={{ fontSize: 20, fontWeight: 'bold', color: LANDING_COLORS.white }}>
+                        {item.step}
                       </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      <Text style={{ color: LANDING_COLORS.accent, fontSize: 13 }}>•</Text>
-                      <Text
-                        style={{
-                          flex: 1,
-                          fontSize: 13,
-                          lineHeight: 19,
-                          color: LANDING_COLORS.foreground90,
-                        }}>
-                        <Text style={{ fontWeight: 'bold' }}>HVAC:</Text> Air handler showing wear,
-                        service within 6 months
-                      </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      <Text style={{ color: LANDING_COLORS.accent, fontSize: 13 }}>•</Text>
-                      <Text
-                        style={{
-                          flex: 1,
-                          fontSize: 13,
-                          lineHeight: 19,
-                          color: LANDING_COLORS.foreground90,
-                        }}>
-                        <Text style={{ fontWeight: 'bold' }}>Plumbing:</Text> Minor leak under
-                        kitchen sink
-                      </Text>
-                    </View>
+                    </LandingGradientBadge>
                   </View>
-                  <View
-                    style={{
-                      paddingTop: 8,
-                      borderTopWidth: 1,
-                      borderTopColor: LANDING_COLORS.border,
-                    }}>
-                    <Text style={{ fontSize: 11, color: LANDING_COLORS.mutedForeground }}>
-                      📄 Citations: Home_Inspection_Report.pdf, Pages 3-7
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Follow-up question */}
-              <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-                <View
-                  style={{
-                    maxWidth: '85%',
-                    backgroundColor: LANDING_COLORS.primary,
-                    borderRadius: 16,
-                    padding: 12,
-                  }}>
-                  <Text
-                    style={{ fontSize: 14, fontWeight: '500', color: LANDING_COLORS.background }}>
-                    What's the estimated cost to fix the roof?
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-
-          {/* Document Types */}
-          <View style={{ gap: 16 }}>
-            {[
-              {
-                title: 'Home Inspection Reports',
-                desc: 'Quickly find issues, recommendations, and cost estimates from lengthy inspection documents.',
-                icon: FileText,
-              },
-              {
-                title: 'Warranty Coverage',
-                desc: "Ask what's covered, expiration dates, and claim procedures without reading pages of fine print.",
-                icon: CheckCircle,
-              },
-              {
-                title: 'Appliance Manuals',
-                desc: 'Get troubleshooting steps, maintenance schedules, and specifications instantly from your manuals.',
-                icon: FileText,
-              },
-              {
-                title: 'Insurance Policies',
-                desc: 'Understand your coverage, deductibles, and exclusions through simple conversational queries.',
-                icon: DollarSign,
-              },
-            ].map((item) => (
-              <View
-                key={item.title}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'flex-start',
-                  gap: 12,
-                  padding: 16,
-                  borderRadius: 12,
-                  backgroundColor: 'rgba(20,20,28,0.4)',
-                  borderWidth: 1,
-                  borderColor: LANDING_COLORS.border,
-                }}>
-                <View
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 10,
-                    backgroundColor: LANDING_COLORS.primary20,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    flexShrink: 0,
-                  }}>
-                  <Icon as={item.icon} size={20} style={{ color: LANDING_COLORS.primary }} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      fontWeight: 'bold',
-                      color: LANDING_COLORS.foreground,
-                      marginBottom: 4,
-                      lineHeight: 22,
-                    }}>
-                    {item.title}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      lineHeight: 19,
-                      color: LANDING_COLORS.mutedForeground,
-                    }}>
-                    {item.desc}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* How It Works Section */}
-        <View
-          style={{
-            backgroundColor: LANDING_COLORS.background,
-            paddingTop: 80,
-            paddingBottom: 60,
-            paddingHorizontal: 20,
-          }}>
-          <View style={{ alignItems: 'center', marginBottom: 48 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingHorizontal: 20,
-                paddingVertical: 10,
-                borderRadius: 999,
-                backgroundColor: LANDING_COLORS.primaryLight,
-                borderWidth: 1,
-                borderColor: LANDING_COLORS.primaryBorder,
-                marginBottom: 36,
-              }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
-                PLATFORM WORKFLOW
-              </Text>
-            </View>
-            <Text
-              style={{
-                fontSize: 32,
-                fontWeight: '300',
-                textAlign: 'center',
-                color: LANDING_COLORS.foreground,
-                marginBottom: 20,
-                paddingHorizontal: 10,
-                lineHeight: 40,
-              }}>
-              How the Platform Works
-            </Text>
-            <Text
-              style={{
-                fontSize: 16,
-                textAlign: 'center',
-                color: LANDING_COLORS.mutedForeground,
-                paddingHorizontal: 20,
-                lineHeight: 24,
-              }}>
-              From your first photo to a clear plan—everything stays in one place
-            </Text>
-          </View>
-
-          <View style={{ gap: 28 }}>
-            {steps.map((item) => (
-              <View
-                key={item.step}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'flex-start',
-                  gap: 20,
-                }}>
-                <View
-                  style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: 16,
-                    backgroundColor: LANDING_COLORS.primary,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    flexShrink: 0,
-                  }}>
-                  <Text style={{ fontSize: 20, fontWeight: 'bold', color: LANDING_COLORS.white }}>
-                    {item.step}
-                  </Text>
-                </View>
-                <View style={{ flex: 1, paddingTop: 6 }}>
                   <Text
                     style={{
                       fontSize: 18,
                       fontWeight: 'bold',
                       color: LANDING_COLORS.foreground,
                       marginBottom: 8,
-                      lineHeight: 24,
+                      textAlign: 'center',
                     }}>
                     {item.title}
                   </Text>
@@ -1405,226 +589,650 @@ export default function LandingPage() {
                       fontSize: 14,
                       lineHeight: 22,
                       color: LANDING_COLORS.mutedForeground,
+                      textAlign: 'center',
                     }}>
                     {item.desc}
                   </Text>
                 </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Pricing Section */}
-        <View
-          style={{
-            backgroundColor: LANDING_COLORS.background,
-            paddingTop: 80,
-            paddingBottom: 60,
-            paddingHorizontal: 20,
-          }}>
-          <View style={{ alignItems: 'center' }}>
-            <View
-              style={{
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 999,
-                backgroundColor: LANDING_COLORS.primaryLight,
-                borderWidth: 1,
-                borderColor: LANDING_COLORS.primaryBorder,
-                marginBottom: 24,
-              }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
-                PRICING
-              </Text>
+              ))}
             </View>
-            <Text
-              style={{
-                fontSize: 32,
-                fontWeight: '300',
-                textAlign: 'center',
-                color: LANDING_COLORS.foreground,
-                marginBottom: 16,
-                lineHeight: 40,
-              }}>
-              Plans for homeowners and landlords
-            </Text>
-            <Text
-              style={{
-                fontSize: 16,
-                textAlign: 'center',
-                color: LANDING_COLORS.mutedForeground,
-                paddingHorizontal: 12,
-                lineHeight: 24,
-                marginBottom: 28,
-              }}>
-              Simple monthly plans with a fair amount of AI chat, document uploads, photo analysis,
-              and property report generations. See what you have left anytime in Settings.
-            </Text>
-            <TouchableOpacity
-              onPress={() => Linking.openURL(`${WEB_APP_BASE}#pricing`)}
-              style={{
-                paddingVertical: 14,
-                paddingHorizontal: 28,
-                borderRadius: 10,
-                borderWidth: 2,
-                borderColor: LANDING_COLORS.border,
-              }}>
-              <Text style={{ fontSize: 16, fontWeight: '500', color: LANDING_COLORS.foreground }}>
-                View plans on the web
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+          </LandingSectionBackground>
 
-        {/* Final CTA Section */}
-        <View
-          style={{
-            backgroundColor: '#0f0f14',
-            paddingTop: 80,
-            paddingBottom: 60,
-            paddingHorizontal: 20,
-          }}>
-          <View style={{ alignItems: 'center' }}>
-            <Text
-              style={{
-                fontSize: 36,
-                fontWeight: '300',
-                textAlign: 'center',
-                color: LANDING_COLORS.foreground,
-                marginBottom: 24,
-                paddingHorizontal: 10,
-                lineHeight: 44,
-              }}>
-              Experience the Complete{'\n'}
-              <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>
-                Property Care Platform
-              </Text>
-            </Text>
-            <Text
-              style={{
-                fontSize: 18,
-                textAlign: 'center',
-                color: LANDING_COLORS.mutedForeground,
-                marginBottom: 48,
-                paddingHorizontal: 20,
-                lineHeight: 26,
-              }}>
-              Join thousands of homeowners, landlords, and property managers using our unified platform for all
-              their property care needs
-            </Text>
-
-            <TouchableOpacity
-              onPress={handleGetStarted}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingVertical: 24,
-                paddingHorizontal: 48,
-                borderRadius: 12,
-                backgroundColor: LANDING_COLORS.primary,
-                shadowColor: LANDING_COLORS.primary,
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.4,
-                shadowRadius: 16,
-                elevation: 12,
-                gap: 8,
-              }}>
-              <Text style={{ fontSize: 18, fontWeight: '600', color: LANDING_COLORS.background }}>
-                {user ? 'Dashboard' : 'Get Started'}
-              </Text>
-              <Icon as={ArrowRight} size={24} style={{ color: LANDING_COLORS.background }} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Footer */}
-        <View
-          style={{
-            borderTopWidth: 1,
-            borderTopColor: LANDING_COLORS.border,
-            backgroundColor: LANDING_COLORS.background,
-            paddingTop: 60,
-            paddingBottom: 40,
-            paddingHorizontal: 20,
-          }}>
-          <View style={{ alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
-              <View style={{ marginRight: 10, flexShrink: 0 }}>
-                <AssetMemBrandIcon variant="mark" size="sm" markTheme="landing" />
-              </View>
+          {/* AI Intelligence Layer */}
+          <LandingSectionBackground
+            backgroundColor={LANDING_COLORS.background}
+            variant="ai-pipeline"
+            style={{ paddingTop: 64, paddingBottom: 64, paddingHorizontal: 20 }}>
+            <View style={{ alignItems: 'center', marginBottom: 32, paddingHorizontal: 4 }}>
+              <SectionBadge label="AI INTELLIGENCE LAYER" />
               <Text
                 style={{
-                  fontSize: 18,
+                  fontSize: 32,
                   fontWeight: '300',
+                  textAlign: 'center',
                   color: LANDING_COLORS.foreground,
-                  lineHeight: 24,
-                  flexShrink: 0,
-                  includeFontPadding: false,
+                  marginBottom: 8,
+                  lineHeight: 40,
                 }}>
-                AssetMem <Text style={{ fontWeight: 'bold' }}>AI</Text>
+                Spot changes early.
               </Text>
-            </View>
-            <Text
-              style={{
-                fontSize: 14,
-                textAlign: 'center',
-                color: LANDING_COLORS.mutedForeground,
-                lineHeight: 22,
-                marginBottom: 20,
-                paddingHorizontal: 8,
-              }}>
-              Photos, documents, and AI guidance for every property you manage.
-            </Text>
-            <TouchableOpacity onPress={() => Linking.openURL('mailto:support@asset-mem.com')}>
+              <LandingGradientText
+                style={{
+                  fontSize: 32,
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  lineHeight: 40,
+                  marginBottom: 16,
+                }}>
+                Move with confidence.
+              </LandingGradientText>
               <Text
                 style={{
-                  fontSize: 14,
-                  color: LANDING_COLORS.primary,
-                  marginBottom: 20,
-                  textDecorationLine: 'underline',
+                  fontSize: 16,
+                  textAlign: 'center',
+                  color: LANDING_COLORS.mutedForeground,
+                  lineHeight: 24,
+                  maxWidth: 340,
                 }}>
-                support@asset-mem.com
+                Photos, documents, and questions feed one coordinated layer—from condition signals
+                to prioritized next steps your team can act on.
               </Text>
-            </TouchableOpacity>
+            </View>
+
             <View
               style={{
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                justifyContent: 'center',
-                gap: 16,
-                marginBottom: 20,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(34,211,238,0.15)',
+                backgroundColor: 'rgba(12,18,32,0.7)',
+                overflow: 'hidden',
               }}>
-              {[
-                { label: 'About', href: `${WEB_APP_BASE}/about` },
-                { label: 'Privacy', href: `${WEB_APP_BASE}/privacy` },
-                { label: 'Terms', href: `${WEB_APP_BASE}/terms` },
-                { label: 'Delete account', href: `${WEB_APP_BASE}/account-deletion` },
-              ].map((link) => (
-                <TouchableOpacity key={link.label} onPress={() => Linking.openURL(link.href)}>
-                  <Text
+              <View
+                style={{
+                  padding: 20,
+                  borderBottomWidth: 1,
+                  borderBottomColor: 'rgba(255,255,255,0.05)',
+                }}>
+                <Text
+                  style={{
+                    fontSize: 10,
+                    fontWeight: '600',
+                    letterSpacing: 1,
+                    textTransform: 'uppercase',
+                    color: LANDING_COLORS.mutedForeground,
+                    marginBottom: 12,
+                  }}>
+                  Evidence in
+                </Text>
+                <ChipGrid items={AI_EVIDENCE_IN} />
+              </View>
+
+              <PipelineConnector />
+
+              <View
+                style={{
+                  marginHorizontal: 16,
+                  marginBottom: 4,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: 'rgba(34,211,238,0.35)',
+                  backgroundColor: 'rgba(34,211,238,0.07)',
+                  padding: 16,
+                }}>
+                <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#a5f3fc', marginBottom: 4 }}>
+                  AI smart coordination
+                </Text>
+                <Text style={{ fontSize: 12, color: 'rgba(165,243,252,0.6)', lineHeight: 18 }}>
+                  Reads context across the property, surfaces what matters, routes to the right
+                  analysis
+                </Text>
+              </View>
+
+              <PipelineConnector />
+
+              <View
+                style={{
+                  padding: 20,
+                  borderBottomWidth: 1,
+                  borderBottomColor: 'rgba(255,255,255,0.05)',
+                }}>
+                <Text
+                  style={{
+                    fontSize: 10,
+                    fontWeight: '600',
+                    letterSpacing: 1,
+                    textTransform: 'uppercase',
+                    color: LANDING_COLORS.mutedForeground,
+                    marginBottom: 12,
+                  }}>
+                  Focused analysis
+                </Text>
+                <ChipGrid items={AI_FOCUSED_ANALYSIS} accentIndex={4} />
+              </View>
+
+              <PipelineConnector />
+
+              <View style={{ padding: 20 }}>
+                <Text
+                  style={{
+                    fontSize: 10,
+                    fontWeight: '600',
+                    letterSpacing: 1,
+                    textTransform: 'uppercase',
+                    color: '#67e8f9',
+                    marginBottom: 12,
+                  }}>
+                  Clear outputs
+                </Text>
+                <ChipGrid items={AI_CLEAR_OUTPUTS} />
+              </View>
+            </View>
+          </LandingSectionBackground>
+
+          {/* Use Cases */}
+          <LandingSectionBackground
+            backgroundColor={LANDING_COLORS.background}
+            variant="use-cases"
+            style={{ paddingTop: 64, paddingBottom: 64, paddingHorizontal: 20 }}>
+            <View style={{ alignItems: 'center', marginBottom: 40 }}>
+              <SectionBadge label="REAL-WORLD APPLICATIONS" />
+              <Text
+                style={{
+                  fontSize: 32,
+                  fontWeight: '300',
+                  textAlign: 'center',
+                  color: LANDING_COLORS.foreground,
+                  marginBottom: 8,
+                  lineHeight: 40,
+                }}>
+                See How AssetMem
+              </Text>
+              <LandingGradientText
+                variant="cyan-white"
+                style={{
+                  fontSize: 32,
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  lineHeight: 40,
+                  marginBottom: 16,
+                }}>
+                Solves Real Problems
+              </LandingGradientText>
+              <Text
+                style={{
+                  fontSize: 16,
+                  textAlign: 'center',
+                  color: LANDING_COLORS.mutedForeground,
+                  lineHeight: 24,
+                }}>
+                From routine walkthroughs to claims documentation, see how one evidence workflow
+                supports single homes and multi-property operations.
+              </Text>
+            </View>
+
+            <View style={{ gap: 24 }}>
+              {USE_CASES.map((useCase) => (
+                <View
+                  key={useCase.title}
+                  style={{
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: LANDING_COLORS.border,
+                    backgroundColor: 'rgba(20,20,28,0.6)',
+                    padding: 20,
+                  }}>
+                  <View
                     style={{
-                      fontSize: 13,
-                      color: LANDING_COLORS.mutedForeground,
-                      textDecorationLine: 'underline',
+                      flexDirection: 'row',
+                      alignItems: 'flex-start',
+                      gap: 12,
+                      marginBottom: 16,
                     }}>
-                    {link.label}
-                  </Text>
+                    <View style={{ flexShrink: 0 }}>
+                      <LandingGradientBadge
+                        size={48}
+                        borderRadius={12}
+                        colors={[useCase.color, withHexAlpha(useCase.color, '99')]}>
+                        <Icon as={useCase.icon} size={24} style={{ color: LANDING_COLORS.white }} />
+                      </LandingGradientBadge>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={{
+                          fontSize: 18,
+                          fontWeight: 'bold',
+                          color: LANDING_COLORS.foreground,
+                          marginBottom: 4,
+                        }}>
+                        {useCase.title}
+                      </Text>
+                      <Text
+                        style={{ fontSize: 13, fontWeight: '500', color: LANDING_COLORS.mutedForeground }}>
+                        {useCase.scenario}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={{ gap: 10, marginBottom: 16 }}>
+                    {useCase.steps.map((step, idx) => (
+                      <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+                        <View
+                          style={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: 11,
+                            backgroundColor: LANDING_COLORS.primary20,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            flexShrink: 0,
+                            marginTop: 1,
+                          }}>
+                          <Text style={{ fontSize: 11, fontWeight: 'bold', color: LANDING_COLORS.primary }}>
+                            {idx + 1}
+                          </Text>
+                        </View>
+                        <Text
+                          style={{
+                            flex: 1,
+                            fontSize: 13,
+                            lineHeight: 19,
+                            color: LANDING_COLORS.foreground90,
+                          }}>
+                          {step}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  <View
+                    style={{
+                      paddingTop: 12,
+                      borderTopWidth: 1,
+                      borderTopColor: LANDING_COLORS.border,
+                      flexDirection: 'row',
+                      alignItems: 'flex-start',
+                      gap: 8,
+                    }}>
+                    <Icon as={CheckCircle} size={18} style={{ color: useCase.color, marginTop: 1 }} />
+                    <Text
+                      style={{
+                        flex: 1,
+                        fontSize: 13,
+                        fontWeight: '600',
+                        color: useCase.color,
+                        lineHeight: 18,
+                      }}>
+                      {useCase.result}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </LandingSectionBackground>
+
+          {/* Enterprise */}
+          <LandingSectionBackground
+            backgroundColor={LANDING_COLORS.workflowSection}
+            variant="enterprise"
+            style={{ paddingTop: 64, paddingBottom: 64, paddingHorizontal: 20 }}>
+            <View style={{ alignItems: 'center', marginBottom: 32, paddingHorizontal: 4 }}>
+              <SectionBadge label="FOR ENTERPRISE" />
+              <Text
+                style={{
+                  fontSize: 32,
+                  fontWeight: '300',
+                  textAlign: 'center',
+                  color: LANDING_COLORS.foreground,
+                  marginBottom: 8,
+                  lineHeight: 40,
+                }}>
+                Built for
+              </Text>
+              <LandingGradientText
+                style={{
+                  fontSize: 32,
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  lineHeight: 40,
+                  marginBottom: 16,
+                }}>
+                property operations{'\u00A0'}teams
+              </LandingGradientText>
+              <Text
+                style={{
+                  fontSize: 16,
+                  textAlign: 'center',
+                  color: LANDING_COLORS.mutedForeground,
+                  lineHeight: 24,
+                  marginBottom: 12,
+                  maxWidth: 340,
+                }}>
+                See how AssetMem captures evidence, generates audit-ready reports, and answers
+                questions across a portfolio—with room to co-design workflows that fit your team.
+              </Text>
+              <TouchableOpacity onPress={() => void openExternalWebUrl(`${webAppOrigin}/solutions`)}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '500',
+                    color: LANDING_COLORS.primary,
+                    textDecorationLine: 'underline',
+                  }}>
+                  Explore solutions by segment →
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ gap: 24, marginBottom: 24 }}>
+              {ENTERPRISE_SEGMENTS.map((segment) => (
+                <TouchableOpacity
+                  key={segment.title}
+                  onPress={() => void openExternalWebUrl(`${webAppOrigin}${segment.path}`)}
+                  activeOpacity={0.8}
+                  style={{
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: LANDING_COLORS.border,
+                    backgroundColor: 'rgba(20,20,28,0.6)',
+                    padding: 20,
+                  }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'flex-start',
+                      gap: 12,
+                    }}>
+                    <View style={{ flexShrink: 0 }}>
+                      <LandingGradientBadge size={48} borderRadius={12}>
+                        <Icon as={segment.icon} size={24} style={{ color: LANDING_COLORS.white }} />
+                      </LandingGradientBadge>
+                    </View>
+                    <View style={{ flex: 1, paddingTop: 2 }}>
+                      <Text
+                        style={{
+                          fontSize: 18,
+                          fontWeight: 'bold',
+                          color: LANDING_COLORS.foreground,
+                          marginBottom: 4,
+                          lineHeight: 24,
+                        }}>
+                        {segment.title}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          lineHeight: 19,
+                          color: LANDING_COLORS.mutedForeground,
+                        }}>
+                        {segment.desc}
+                      </Text>
+                    </View>
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
-            <Text
-              style={{
-                fontSize: 12,
-                textAlign: 'center',
-                color: LANDING_COLORS.mutedForeground,
-              }}>
-              © {new Date().getFullYear()} AssetMem AI. All rights reserved.
-            </Text>
+
+            <View style={{ gap: 16, marginBottom: 32 }}>
+              <View
+                style={{
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: LANDING_COLORS.border,
+                  backgroundColor: 'rgba(20,20,28,0.5)',
+                  padding: 16,
+                }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: '600',
+                    letterSpacing: 1,
+                    textTransform: 'uppercase',
+                    color: LANDING_COLORS.primary,
+                    marginBottom: 12,
+                  }}>
+                  Included today
+                </Text>
+                {ENTERPRISE_INCLUDED.map((item) => (
+                  <View key={item} style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                    <Text style={{ color: LANDING_COLORS.primary }}>✓</Text>
+                    <Text style={{ flex: 1, fontSize: 13, color: LANDING_COLORS.foreground, lineHeight: 18 }}>
+                      {item}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              <View
+                style={{
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: LANDING_COLORS.border,
+                  backgroundColor: 'rgba(20,20,28,0.5)',
+                  padding: 16,
+                }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: '600',
+                    letterSpacing: 1,
+                    textTransform: 'uppercase',
+                    color: LANDING_COLORS.mutedForeground,
+                    marginBottom: 12,
+                  }}>
+                  Co-designed with you
+                </Text>
+                {ENTERPRISE_CO_DESIGNED.map((item) => (
+                  <View key={item} style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                    <Text style={{ color: LANDING_COLORS.mutedForeground }}>→</Text>
+                    <Text
+                      style={{ flex: 1, fontSize: 13, color: LANDING_COLORS.mutedForeground, lineHeight: 18 }}>
+                      {item}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            <View style={{ alignItems: 'center', gap: 16, paddingHorizontal: 12 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: LANDING_COLORS.mutedForeground,
+                  textAlign: 'center',
+                  lineHeight: 22,
+                  maxWidth: 300,
+                }}>
+                Share a bit about your team
+              </Text>
+              <TouchableOpacity
+                onPress={openEnterpriseMailto}
+                style={{
+                  paddingVertical: 14,
+                  paddingHorizontal: 32,
+                  borderRadius: 10,
+                  backgroundColor: LANDING_COLORS.primary,
+                }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: LANDING_COLORS.background }}>
+                  Get in touch
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </LandingSectionBackground>
+
+          {/* Pricing */}
+          <LandingSectionBackground
+            backgroundColor={LANDING_COLORS.background}
+            variant="pricing"
+            style={{ paddingTop: 64, paddingBottom: 64, paddingHorizontal: 20 }}>
+            <View style={{ alignItems: 'center' }}>
+              <SectionBadge label="PRICING" />
+              <Text
+                style={{
+                  fontSize: 32,
+                  fontWeight: '300',
+                  textAlign: 'center',
+                  color: LANDING_COLORS.foreground,
+                  marginBottom: 8,
+                  lineHeight: 40,
+                }}>
+                Choose
+              </Text>
+              <LandingGradientText
+                style={{
+                  fontSize: 32,
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  lineHeight: 40,
+                  marginBottom: 16,
+                }}>
+                your plan
+              </LandingGradientText>
+              <Text
+                style={{
+                  fontSize: 16,
+                  textAlign: 'center',
+                  color: LANDING_COLORS.mutedForeground,
+                  lineHeight: 24,
+                  marginBottom: 28,
+                  maxWidth: 340,
+                }}>
+                Free, Plus, and Pro for everyday property care.{'\n'}
+                Enterprise for portfolios and field operations.
+              </Text>
+              <TouchableOpacity
+                onPress={() => Linking.openURL(`${webAppOrigin}#pricing`)}
+                style={{
+                  paddingVertical: 14,
+                  paddingHorizontal: 28,
+                  borderRadius: 10,
+                  borderWidth: 2,
+                  borderColor: LANDING_COLORS.border,
+                }}>
+                <Text style={{ fontSize: 16, fontWeight: '500', color: LANDING_COLORS.foreground }}>
+                  View plans on the web
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </LandingSectionBackground>
+
+          {/* Footer */}
+          <View
+            style={{
+              borderTopWidth: 1,
+              borderTopColor: LANDING_COLORS.border,
+              backgroundColor: LANDING_COLORS.background,
+              paddingTop: 48,
+              paddingBottom: 40,
+              paddingHorizontal: 20,
+            }}>
+            <View style={{ alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                <View style={{ marginRight: 10, flexShrink: 0 }}>
+                  <AssetMemBrandIcon variant="mark" size="sm" markTheme="landing" />
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      fontWeight: '300',
+                      lineHeight: 18,
+                      includeFontPadding: false,
+                      color: LANDING_COLORS.foreground,
+                    }}>
+                    AssetMem
+                  </Text>
+                  <LandingGradientText
+                    inline
+                    style={{
+                      fontSize: Math.round(18 * 0.75),
+                      fontWeight: 'bold',
+                      letterSpacing: 0.4,
+                    }}>
+                    AI
+                  </LandingGradientText>
+                </View>
+              </View>
+              <Text
+                style={{
+                  fontSize: 14,
+                  textAlign: 'center',
+                  color: LANDING_COLORS.mutedForeground,
+                  lineHeight: 22,
+                  marginBottom: 20,
+                }}>
+                {SITE_FOOTER_TAGLINE}
+              </Text>
+              <TouchableOpacity
+                onPress={() => Linking.openURL(`mailto:${enterpriseConfig.supportEmail}`)}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: LANDING_COLORS.primary,
+                    marginBottom: 20,
+                    textDecorationLine: 'underline',
+                  }}>
+                  {enterpriseConfig.supportEmail}
+                </Text>
+              </TouchableOpacity>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                  gap: 16,
+                  marginBottom: 20,
+                }}>
+                {[
+                  { label: 'Solutions', href: `${webAppOrigin}/solutions` },
+                  { label: 'About', href: `${webAppOrigin}/about` },
+                  { label: 'Privacy', href: `${webAppOrigin}/privacy` },
+                  { label: 'Terms', href: `${webAppOrigin}/terms` },
+                  { label: 'Delete account', href: `${webAppOrigin}/account-deletion` },
+                ].map((link) => (
+                  <TouchableOpacity key={link.label} onPress={() => Linking.openURL(link.href)}>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        color: LANDING_COLORS.mutedForeground,
+                        textDecorationLine: 'underline',
+                      }}>
+                      {link.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={{ fontSize: 12, textAlign: 'center', color: LANDING_COLORS.mutedForeground }}>
+                © {new Date().getFullYear()} AssetMem AI. All rights reserved.
+              </Text>
+            </View>
           </View>
-        </View>
-      </Animated.View>
-    </ScrollView>
+        </Animated.View>
+      </ScrollView>
+      {showScrollTop ? (
+        <TouchableOpacity
+          onPress={scrollToTop}
+          accessibilityRole="button"
+          accessibilityLabel="Scroll to top"
+          style={{
+            position: 'absolute',
+            right: 20,
+            bottom: insets.bottom + 16,
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            backgroundColor: LANDING_COLORS.primary,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: LANDING_COLORS.primaryBorder,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.3,
+            shadowRadius: 4,
+            elevation: 6,
+          }}>
+          <Icon as={ChevronUp} size={22} style={{ color: LANDING_COLORS.background }} />
+        </TouchableOpacity>
+      ) : null}
     </SafeAreaView>
   );
 }

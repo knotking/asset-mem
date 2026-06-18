@@ -35,7 +35,7 @@ const accountLog = createLogger('account');
 
 function getSupportEmail(): string {
   const fromExtra = Constants.expoConfig?.extra?.supportEmail as string | undefined;
-  return fromExtra?.trim() || 'support@asset-mem.com';
+  return fromExtra?.trim() || 'hello@asset-mem.com';
 }
 
 export function AccountDeletionSettings() {

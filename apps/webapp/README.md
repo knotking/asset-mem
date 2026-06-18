@@ -52,12 +52,26 @@ Copy `.env.example` to `.env` and set values. For **Settings → AI usage**, lim
 - `src/lib/`: Utility functions and types.
 - `src/scripts/`: Migration and utility scripts.
 
-## Landing Demo Video URLs (No Redeploy)
+## Landing Remote Config (No Redeploy)
 
-Landing page demo links are loaded from Firebase Remote Config at runtime (with safe defaults).
+Landing page values are loaded from Firebase Remote Config at runtime (with env / built-in fallbacks).
 
 - Parameters:
   - `landing_demo_mobile_url` (string)
   - `landing_demo_desktop_url` (string)
+  - `enterprise_email` (string) — B2B enterprise contact inbox
+  - `support_email` (string) — Landing enterprise section support inbox override
+
+Local dev fallback: `NEXT_PUBLIC_ENTERPRISE_EMAIL` in `.env`.
 
 Publish new Remote Config values and the webapp will pick them up on the next fetch interval (short in non-prod, longer in prod).
+
+## Landing dual path (B2C + B2B)
+
+One homepage (`/`) is B2C-primary (homeowner hero, **Get Started** + Watch Demo) with a parallel B2B path layered in:
+
+- B2B section `#enterprise` (Talk to us / enterprise CTA)
+- Enterprise card in the pricing section
+- Segment detail pages under `/solutions/*` (property managers, insurance, field teams, prop-tech)
+
+Section order: hero → how-it-works → AI engine → use cases → enterprise → pricing → footer.

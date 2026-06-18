@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Menu } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
+import { AssetMemWordmark } from '@/components/brand/asset-mem-wordmark';
 import {
   Sheet,
   SheetContent,
@@ -12,26 +13,13 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-
-// Dark theme - landing page only
-const LANDING_COLORS = {
-  primary: '#22d3ee',
-  primaryHover: 'rgba(34, 211, 238, 0.9)',
-  foreground: '#fafafa',
-  foreground70: 'rgba(250, 250, 250, 0.7)',
-  background: '#0a0a0f',
-  backgroundOverlay: 'rgba(10, 10, 15, 0.85)',
-  borderOverlay: 'rgba(255, 255, 255, 0.1)',
-};
+import { LANDING_COLORS } from '@/lib/landing-theme';
 
 const NAV_LINKS = [
   { href: '#', targetId: '#', label: 'Home', sectionId: '' },
-  { href: '#use-cases', targetId: '#use-cases', label: 'Use Cases', sectionId: 'use-cases' },
-  { href: '#features', targetId: '#features', label: 'Features', sectionId: 'features' },
-  { href: '#reports', targetId: '#reports', label: 'Reports', sectionId: 'reports' },
-  { href: '#ai-agents', targetId: '#ai-agents', label: 'AI Agents', sectionId: 'ai-agents' },
-  { href: '#timeline-feature', targetId: '#timeline-feature', label: 'Timeline', sectionId: 'timeline-feature' },
   { href: '#how-it-works', targetId: '#how-it-works', label: 'How It Works', sectionId: 'how-it-works' },
+  { href: '#use-cases', targetId: '#use-cases', label: 'Use Cases', sectionId: 'use-cases' },
+  { href: '#enterprise', targetId: '#enterprise', label: 'Enterprise', sectionId: 'enterprise' },
   { href: '#pricing', targetId: '#pricing', label: 'Pricing', sectionId: 'pricing' },
 ] as const;
 
@@ -39,6 +27,7 @@ interface LandingHeaderProps {
   activeSection: string;
   onNavClick: (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => void;
   onButtonClick: (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => void;
+  onEnterpriseNavClick?: (e: React.MouseEvent<HTMLAnchorElement>, label: string) => void;
 }
 
 function DesktopNavLink({
@@ -92,15 +81,18 @@ function DesktopNavLink({
   );
 }
 
+
 function LandingCta({
   user,
   loading,
   onButtonClick,
+  onEnterpriseNavClick,
   className = '',
 }: {
   user: ReturnType<typeof useAuth>['user'];
   loading: boolean;
   onButtonClick: (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => void;
+  onEnterpriseNavClick?: (e: React.MouseEvent<HTMLAnchorElement>, label: string) => void;
   className?: string;
 }) {
   if (loading) {
@@ -153,12 +145,22 @@ function LandingCta({
   );
 }
 
-export function LandingHeader({ activeSection, onNavClick, onButtonClick }: LandingHeaderProps) {
+export function LandingHeader({
+  activeSection,
+  onNavClick,
+  onButtonClick,
+  onEnterpriseNavClick,
+}: LandingHeaderProps) {
   const { user, loading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleMobileNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     onNavClick(e, targetId);
+    setMobileMenuOpen(false);
+  };
+
+  const handleMobileEnterpriseClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    onEnterpriseNavClick?.(e, 'team_cta_nav');
     setMobileMenuOpen(false);
   };
 
@@ -183,15 +185,10 @@ export function LandingHeader({ activeSection, onNavClick, onButtonClick }: Land
               markTheme="landing"
               className="shrink-0 group-hover:scale-105 transition-transform"
             />
-            <span
-              className="truncate text-xl lg:text-2xl font-light tracking-tight"
-              style={{ color: LANDING_COLORS.foreground }}
-            >
-              AssetMem <span className="font-bold">AI</span>
-            </span>
+            <AssetMemWordmark size="header" className="truncate" />
           </Link>
 
-          <nav className="hidden xl:flex items-center gap-6 2xl:gap-8">
+          <nav className="hidden xl:flex items-center gap-5 2xl:gap-6">
             {NAV_LINKS.map((link) => (
               <DesktopNavLink
                 key={link.sectionId || 'home'}
@@ -200,6 +197,19 @@ export function LandingHeader({ activeSection, onNavClick, onButtonClick }: Land
                 onNavClick={onNavClick}
               />
             ))}
+            <Link
+              href="/solutions"
+              className="text-sm font-medium whitespace-nowrap transition-all duration-300"
+              style={{ color: LANDING_COLORS.foreground70 }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = LANDING_COLORS.primary;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = LANDING_COLORS.foreground70;
+              }}
+            >
+              Solutions
+            </Link>
           </nav>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -247,8 +257,16 @@ export function LandingHeader({ activeSection, onNavClick, onButtonClick }: Land
                       </a>
                     );
                   })}
+                  <Link
+                    href="/solutions"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-lg px-3 py-3 text-base font-medium transition-colors"
+                    style={{ color: LANDING_COLORS.foreground70 }}
+                  >
+                    Solutions
+                  </Link>
                 </nav>
-                <div className="mt-8 border-t pt-6" style={{ borderColor: LANDING_COLORS.borderOverlay }}>
+                <div className="mt-8 border-t pt-6 space-y-3" style={{ borderColor: LANDING_COLORS.borderOverlay }}>
                   <LandingCta
                     user={user}
                     loading={loading}
@@ -263,7 +281,12 @@ export function LandingHeader({ activeSection, onNavClick, onButtonClick }: Land
             </Sheet>
 
             <div className="hidden sm:block">
-              <LandingCta user={user} loading={loading} onButtonClick={onButtonClick} />
+              <LandingCta
+                user={user}
+                loading={loading}
+                onButtonClick={onButtonClick}
+                onEnterpriseNavClick={onEnterpriseNavClick}
+              />
             </div>
           </div>
         </div>

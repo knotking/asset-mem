@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { LegalPageShell } from '@/components/legal/legal-page-shell';
+import { SupportEmailLink } from '@/components/legal/legal-support-email';
 import { buildPageMetadata } from '@/lib/metadata-shared';
-import { getSupportEmail, SITE_NAME } from '@/lib/site';
+import { SITE_NAME } from '@/lib/site';
 
 export const metadata: Metadata = buildPageMetadata({
   title: `Privacy Policy | ${SITE_NAME}`,
@@ -12,8 +13,6 @@ export const metadata: Metadata = buildPageMetadata({
 const LAST_UPDATED = 'May 25, 2026';
 
 export default function PrivacyPage() {
-  const supportEmail = getSupportEmail();
-
   return (
     <LegalPageShell title="Privacy Policy" lastUpdated={LAST_UPDATED}>
       <p>
@@ -76,7 +75,7 @@ export default function PrivacyPage() {
         compliance, and operational reasons. Paid subscriptions are managed separately through
         Stripe — cancel in Plan &amp; billing before deleting if applicable. For complete erasure of
         stored property data, contact{' '}
-        <a href={`mailto:${supportEmail}`}>{supportEmail}</a>. See also our{' '}
+        <SupportEmailLink />. See also our{' '}
         <a href="/account-deletion">account deletion help page</a>.
       </p>
 
@@ -97,7 +96,7 @@ export default function PrivacyPage() {
       <p>
         Depending on your location, you may have rights to access, correct, delete, or export your
         personal data. Contact us at{' '}
-        <a href={`mailto:${supportEmail}`}>{supportEmail}</a> to exercise these rights.
+        <SupportEmailLink /> to exercise these rights.
       </p>
 
       <h2>Children</h2>
@@ -108,7 +107,7 @@ export default function PrivacyPage() {
 
       <h2>Contact</h2>
       <p>
-        Questions: <a href={`mailto:${supportEmail}`}>{supportEmail}</a>
+        Questions: <SupportEmailLink />
       </p>
     </LegalPageShell>
   );

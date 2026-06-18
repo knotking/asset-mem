@@ -1,17 +1,35 @@
-/** Public marketing site constants (AssetMem AI). */
+import { DEFAULT_SUPPORT_EMAIL, getEnterpriseConfigFromEnv } from '@/lib/enterprise-config';
 
 export const SITE_NAME = 'AssetMem AI';
 
 /** Hero headline lines — keep in sync with landing page and Open Graph metadata. */
-export const SITE_HERO_HEADLINE_PRIMARY = 'Your Complete';
-export const SITE_HERO_HEADLINE_ACCENT = 'Property Care Platform';
-export const SITE_TAGLINE = `${SITE_HERO_HEADLINE_PRIMARY} ${SITE_HERO_HEADLINE_ACCENT}`;
+export const SITE_HERO_HEADLINE_PRIMARY = 'Timeline Intelligence';
+export const SITE_HERO_HEADLINE_ACCENT = '';
+export const SITE_TAGLINE = SITE_HERO_HEADLINE_PRIMARY;
+
+export const SITE_HERO_HEADLINE_PRIMARY_B2B = 'AI property intelligence';
+export const SITE_HERO_HEADLINE_ACCENT_B2B =
+  'for portfolios, claims, and field teams';
 
 export const SITE_HERO_DESCRIPTION =
-  'AI agents analyze your property photos and documents, rate condition over time, flag issues, generate formal PDF reports, and guide you on repairs and costs while connecting you with local pros.';
+  'Track every asset change over time with AI for maintenance, claims, compliance, and reporting.';
+
+/** Footer blurb — keep aligned with hero value proposition. */
+export const SITE_FOOTER_TAGLINE = SITE_HERO_DESCRIPTION;
+
+export const SITE_HERO_DESCRIPTION_B2B =
+  'Capture evidence, generate audit-ready reports, and answer questions across properties—from one platform.';
 
 /** Default meta description for marketing pages and OG fallbacks. */
 export const SITE_DESCRIPTION = SITE_HERO_DESCRIPTION;
+
+export const SITE_B2B_KEYWORDS = [
+  'property inspection software',
+  'insurance claims documentation',
+  'AI property condition',
+  'portfolio maintenance',
+  'property management AI',
+];
 
 export const SITE_KEYWORDS = [
   'home care',
@@ -20,6 +38,7 @@ export const SITE_KEYWORDS = [
   'smart home',
   'property management',
   'home inspection',
+  ...SITE_B2B_KEYWORDS,
 ];
 
 /** Canonical origin for metadata and OG URLs (no trailing slash). */
@@ -35,5 +54,5 @@ export function getSiteUrl(): string {
 }
 
 export function getSupportEmail(): string {
-  return process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@asset-mem.com';
+  return getEnterpriseConfigFromEnv().supportEmail || DEFAULT_SUPPORT_EMAIL;
 }

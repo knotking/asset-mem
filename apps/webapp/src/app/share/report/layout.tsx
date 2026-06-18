@@ -3,7 +3,7 @@ import { buildPageMetadata } from '@/lib/metadata-shared';
 
 export const metadata: Metadata = buildPageMetadata({
   title: 'Shared property report — AssetMem AI',
-  description: 'View a shared property report PDF.',
+  description: 'View a shared property report.',
   path: '/share/report',
   noIndex: true,
 });
