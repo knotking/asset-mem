@@ -46,6 +46,8 @@ Optional env fallbacks in `.env` / EAS (baked into `expo.extra` at build time):
 
 Implementation: [lib/landing-remote-config.ts](../lib/landing-remote-config.ts). Publish values in the Firebase console for `homegeek-staging` / `homegeek-prod` — no app redeploy required for copy/email/demo URL changes.
 
+**Native note:** The Firebase JS Remote Config SDK needs IndexedDB (not available in React Native by default). [lib/firebase-remote-config-setup.ts](../lib/firebase-remote-config-setup.ts) polyfills IndexedDB + `navigator.onLine` at app startup. In dev/staging, fetch interval is `0` so reload picks up publishes immediately.
+
 ### API Endpoints
 
 The following endpoints are constructed from the proxy base URL:

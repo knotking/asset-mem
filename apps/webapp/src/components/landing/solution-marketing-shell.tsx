@@ -13,6 +13,7 @@ import {
 import { fetchLandingRemoteConfig } from '@/lib/landing-remote-config';
 import { trackEnterpriseCta } from '@/lib/analytics';
 import { LANDING_COLORS } from '@/lib/landing-theme';
+import '@/app/landing/landing-animations.css';
 
 type SolutionMarketingShellProps = {
   children: React.ReactNode;
@@ -101,7 +102,8 @@ export function SolutionMarketingShell({
         </div>
       </header>
 
-      <main className={compactHub ? 'flex-1 flex flex-col min-h-0' : undefined}>
+      <main
+        className={`fade-in-up ${compactHub ? 'flex-1 flex flex-col min-h-0' : ''}`}>
         {children}
       </main>
 

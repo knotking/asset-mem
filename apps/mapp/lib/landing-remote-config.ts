@@ -1,5 +1,6 @@
 /** Keep fetch keys and fallbacks aligned with apps/webapp/src/lib/landing-remote-config.ts */
 
+import { ensureFirebaseRemoteConfigEnvironment } from './firebase-remote-config-setup';
 import { fetchAndActivate, getRemoteConfig, getValue } from 'firebase/remote-config';
 import { app } from '@homeapp/common/firebase';
 import Constants from 'expo-constants';
@@ -16,18 +17,26 @@ import {
   getEnterpriseConfigFromEnv,
   type EnterpriseConfig,
 } from '@/lib/enterprise-config';
+import { createLogger } from '@/lib/logger';
 
 export type LandingRemoteConfig = {
   demoVideos: LandingDemoVideoUrls;
   enterprise: EnterpriseConfig;
 };
 
+const log = createLogger('LandingRemoteConfig');
+
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === 'string' && value.trim().length > 0;
 
 const getMinimumFetchIntervalMillis = (): number => {
   const env = Constants.expoConfig?.extra?.appEnv as string | undefined;
-  return env === 'prod' ? 60 * 60 * 1000 : 60 * 1000;
+  const isDev =
+    typeof __DEV__ !== 'undefined' && __DEV__ ? true : env !== 'prod';
+  if (isDev) {
+    return 0;
+  }
+  return 60 * 60 * 1000;
 };
 
 let inflightFetch: Promise<LandingRemoteConfig> | null = null;
@@ -35,6 +44,7 @@ let inflightFetch: Promise<LandingRemoteConfig> | null = null;
 export async function fetchLandingRemoteConfig(): Promise<LandingRemoteConfig> {
   if (!inflightFetch) {
     inflightFetch = (async () => {
+      ensureFirebaseRemoteConfigEnvironment();
       const envEnterprise = getEnterpriseConfigFromEnv();
       const remoteConfig = getRemoteConfig(app);
 
@@ -51,8 +61,10 @@ export async function fetchLandingRemoteConfig(): Promise<LandingRemoteConfig> {
 
       try {
         await fetchAndActivate(remoteConfig);
-      } catch {
-        // Fall through to defaults and last cached values.
+      } catch (err) {
+        log.warn('fetchAndActivate failed; using defaults/cache', {
+          cause: err instanceof Error ? err.message : String(err),
+        });
       }
 
       const mobile = getValue(remoteConfig, LANDING_DEMO_MOBILE_URL_PARAM).asString();

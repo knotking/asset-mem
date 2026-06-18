@@ -1,3 +1,4 @@
+import { ensureFirebaseRemoteConfigEnvironment } from '@/lib/firebase-remote-config-setup';
 import '@/global.css';
 
 import { NAV_THEME } from '@/lib/theme';
@@ -30,6 +31,12 @@ import {
 } from '@/hooks/useAndroidImmersiveMode';
 
 const routesLog = createLogger('routes');
+
+try {
+  ensureFirebaseRemoteConfigEnvironment();
+} catch {
+  // ensureFirebaseRemoteConfigEnvironment logs internally
+}
 
 void SplashScreen.preventAutoHideAsync().catch(() => {
   /* dev reload or splash already hidden */

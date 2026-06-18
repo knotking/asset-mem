@@ -1,6 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { View, ScrollView, Animated, TouchableOpacity, Linking, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  View,
+  ScrollView,
+  Animated,
+  TouchableOpacity,
+  Linking,
+  useWindowDimensions,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { Text } from '../components/ui/text';
@@ -19,6 +28,7 @@ import {
   MapPin,
   LayoutGrid,
   ChevronDown,
+  ChevronUp,
   type LucideIcon,
 } from 'lucide-react-native';
 import { AssetMemBrandIcon } from '@/components/AssetMemBrandIcon';
@@ -44,10 +54,15 @@ import {
 // Keep in sync with apps/webapp/src/lib/site.ts
 const SITE_HERO_HEADLINE_PRIMARY = 'Timeline Intelligence';
 const SITE_HERO_DESCRIPTION =
-  'Track every change over time with AI for maintenance, claims, compliance, and reporting.';
+  'Track every asset change over time with AI for maintenance, claims, compliance, and reporting.';
 const SITE_FOOTER_TAGLINE = SITE_HERO_DESCRIPTION;
 
 const WEB_APP_BASE = 'https://asset-mem.com';
+
+/** Show back-to-top when within this many px of the scroll bottom. */
+const SCROLL_TOP_NEAR_BOTTOM_PX = 120;
+/** Ignore back-to-top until the user has scrolled past the hero. */
+const SCROLL_TOP_MIN_OFFSET_PX = 240;
 
 /** Wordmark AI cap height ≈ lowercase m in AssetMem (18px when brand is 24px). */
 const HERO_BRAND_FONT_SIZE = 24;
@@ -307,9 +322,12 @@ function ChipGrid({ items, accentIndex }: { items: readonly string[]; accentInde
 export default function LandingPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
   const { height: windowHeight } = useWindowDimensions();
   const heroMinHeight = Math.round(windowHeight * 0.88);
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const [demoVisible, setDemoVisible] = useState(false);
   const [demoVideoUrl, setDemoVideoUrl] = useState<string>(DEFAULT_LANDING_DEMO_VIDEO_URLS.mobile);
   const [enterpriseConfig, setEnterpriseConfig] = useState<EnterpriseConfig>(() =>
@@ -373,6 +391,20 @@ export default function LandingPage() {
     void Linking.openURL(getEnterpriseMailtoHref(enterpriseConfig.enterpriseEmail));
   };
 
+  const handleLandingScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+    const distanceFromBottom =
+      contentSize.height - layoutMeasurement.height - contentOffset.y;
+    setShowScrollTop(
+      contentOffset.y > SCROLL_TOP_MIN_OFFSET_PX &&
+        distanceFromBottom <= SCROLL_TOP_NEAR_BOTTOM_PX,
+    );
+  };
+
+  const scrollToTop = () => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: LANDING_COLORS.background }} edges={['top', 'bottom']}>
       <LandingDemoVideoModal
@@ -381,6 +413,9 @@ export default function LandingPage() {
         videoUrl={demoVideoUrl}
       />
       <ScrollView
+        ref={scrollRef}
+        onScroll={handleLandingScroll}
+        scrollEventThrottle={16}
         style={{ flex: 1, backgroundColor: LANDING_COLORS.background }}
         contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}>
@@ -1172,6 +1207,32 @@ export default function LandingPage() {
           </View>
         </Animated.View>
       </ScrollView>
+      {showScrollTop ? (
+        <TouchableOpacity
+          onPress={scrollToTop}
+          accessibilityRole="button"
+          accessibilityLabel="Scroll to top"
+          style={{
+            position: 'absolute',
+            right: 20,
+            bottom: insets.bottom + 16,
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            backgroundColor: LANDING_COLORS.primary,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: LANDING_COLORS.primaryBorder,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.3,
+            shadowRadius: 4,
+            elevation: 6,
+          }}>
+          <Icon as={ChevronUp} size={22} style={{ color: LANDING_COLORS.background }} />
+        </TouchableOpacity>
+      ) : null}
     </SafeAreaView>
   );
 }

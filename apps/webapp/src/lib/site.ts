@@ -12,7 +12,7 @@ export const SITE_HERO_HEADLINE_ACCENT_B2B =
   'for portfolios, claims, and field teams';
 
 export const SITE_HERO_DESCRIPTION =
-  'Track every change over time with AI for maintenance, claims, compliance, and reporting.';
+  'Track every asset change over time with AI for maintenance, claims, compliance, and reporting.';
 
 /** Footer blurb — keep aligned with hero value proposition. */
 export const SITE_FOOTER_TAGLINE = SITE_HERO_DESCRIPTION;

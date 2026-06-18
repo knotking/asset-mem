@@ -41,16 +41,26 @@ function scrollToLandingSection(
 
   window.scrollTo({ top: offsetPosition, behavior });
 
-  if (animate && behavior === "smooth") {
-    setTimeout(() => {
-      element.classList.add("fade-in-up");
-      element.classList.add("animate-highlight");
-      setTimeout(() => {
-        element.classList.remove("animate-highlight");
-        element.classList.remove("fade-in-up");
-      }, 2000);
-    }, 300);
+  if (!animate || behavior !== "smooth") {
+    return;
   }
+
+  const runHighlight = () => {
+    element.classList.remove("animate-highlight");
+    // Force reflow so re-triggering the same section restarts the pulse.
+    void element.offsetWidth;
+    element.classList.add("animate-highlight");
+    window.setTimeout(() => {
+      element.classList.remove("animate-highlight");
+    }, 2000);
+  };
+
+  if ("onscrollend" in window) {
+    window.addEventListener("scrollend", runHighlight, { once: true });
+    return;
+  }
+
+  window.setTimeout(runHighlight, 700);
 }
 
 export default function LandingPageClient() {
@@ -225,6 +235,7 @@ export default function LandingPageClient() {
         onEnterpriseNavClick={handleEnterpriseNavClick}
       />
 
+      <div className="fade-in-up flex flex-col flex-1 w-full">
       <LandingHero
         colors={LANDING_COLORS}
         user={user}
@@ -1064,6 +1075,7 @@ export default function LandingPageClient() {
           </div>
         </div>
       </footer>
+      </div>
     </div>
   );
 }

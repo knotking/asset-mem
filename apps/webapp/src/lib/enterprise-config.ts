@@ -3,7 +3,7 @@
 /** Firebase Remote Config keys. */
 export const ENTERPRISE_EMAIL_REMOTE_PARAM = "enterprise_email";
 export const SUPPORT_EMAIL_REMOTE_PARAM = "support_email";
-export const DEFAULT_SUPPORT_EMAIL = "support@asset-mem.com";
+export const DEFAULT_SUPPORT_EMAIL = "hello@asset-mem.com";
 
 export type EnterpriseConfig = {
   enterpriseEmail: string;
