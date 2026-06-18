@@ -3,6 +3,7 @@ import { Platform, Text, View, type TextStyle, type ViewStyle } from 'react-nati
 import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
+  LANDING_COLORS,
   LANDING_CYAN_GRADIENT,
   LANDING_CYAN_WHITE_GRADIENT,
 } from '@/lib/landing-theme';
@@ -30,6 +31,12 @@ const GRADIENT_CONFIG: Record<
   },
 };
 
+const ANDROID_SOLID_COLOR: Record<GradientVariant, string> = {
+  cyan: LANDING_COLORS.primary,
+  'cyan-white': LANDING_COLORS.foreground70,
+  'cyan-diagonal': LANDING_COLORS.primary,
+};
+
 type LandingGradientTextProps = {
   children: string;
   style?: TextStyle;
@@ -39,14 +46,10 @@ type LandingGradientTextProps = {
   inline?: boolean;
 };
 
-function LandingGradientTextComponent({
-  children,
-  style,
-  variant = 'cyan',
-  align = 'center',
-  inline = false,
-}: LandingGradientTextProps) {
-  const gradient = GRADIENT_CONFIG[variant];
+function buildTextStyle(
+  style: TextStyle | undefined,
+  inline: boolean,
+): TextStyle[] {
   const fontSize = typeof style?.fontSize === 'number' ? style.fontSize : undefined;
   const lineHeight =
     typeof style?.lineHeight === 'number'
@@ -54,12 +57,34 @@ function LandingGradientTextComponent({
       : fontSize != null
         ? fontSize
         : undefined;
-  const textStyle: TextStyle[] = [
+
+  return [
     style ?? {},
     { includeFontPadding: false },
     lineHeight != null ? { lineHeight } : {},
+    inline ? { alignSelf: 'baseline' as const } : {},
   ];
+}
 
+function LandingGradientTextComponent({
+  children,
+  style,
+  variant = 'cyan',
+  align = 'center',
+  inline = false,
+}: LandingGradientTextProps) {
+  const textStyle = buildTextStyle(style, inline);
+
+  // MaskedView gradient text flickers on physical Android during scroll; iOS is fine.
+  if (Platform.OS === 'android') {
+    return (
+      <Text style={[...textStyle, { color: ANDROID_SOLID_COLOR[variant] }]}>
+        {children}
+      </Text>
+    );
+  }
+
+  const gradient = GRADIENT_CONFIG[variant];
   const wrapperStyle: ViewStyle = inline
     ? { alignSelf: 'baseline', flexShrink: 0 }
     : { alignSelf: align === 'center' ? 'center' : 'flex-start', maxWidth: '100%' };
@@ -68,8 +93,7 @@ function LandingGradientTextComponent({
     <View
       collapsable={false}
       style={wrapperStyle}
-      {...(Platform.OS === 'android' ? { renderToHardwareTextureAndroid: true } : null)}
-      {...(Platform.OS === 'ios' ? { needsOffscreenAlphaCompositing: true } : null)}>
+      needsOffscreenAlphaCompositing>
       <MaskedView
         style={inline ? { flexShrink: 0 } : { alignSelf: 'stretch' }}
         maskElement={
@@ -86,5 +110,4 @@ function LandingGradientTextComponent({
   );
 }
 
-/** Gradient headlines — rasterized wrapper reduces MaskedView flicker while scrolling. */
 export const LandingGradientText = memo(LandingGradientTextComponent);
