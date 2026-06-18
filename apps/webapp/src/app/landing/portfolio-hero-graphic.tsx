@@ -202,13 +202,13 @@ export function PortfolioHeroGraphic({
               </span>
               {showConceptPreview ? (
                 <span
-                  className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide shrink-0"
+                  className="rounded-full px-1.5 py-0.5 text-[8px] font-semibold tracking-wide shrink-0"
                   style={{
                     backgroundColor: 'rgba(148,163,184,0.14)',
                     color: 'rgba(203,213,225,0.72)',
                   }}
                 >
-                  Preview
+                  Illustrative Preview
                 </span>
               ) : null}
             </span>
