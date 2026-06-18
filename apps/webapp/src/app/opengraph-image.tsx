@@ -1,5 +1,16 @@
 import { ImageResponse } from 'next/og';
+import { LANDING_BRAND_AI_SIZE_EM } from '@/components/brand/asset-mem-wordmark';
+import { LANDING_COLORS } from '@/lib/landing-theme';
 import { SITE_NAME, SITE_TAGLINE } from '@/lib/site';
+
+const WORDMARK_FONT_SIZE_PX = 56;
+/** Scales with wordmark size — same proportion as Tailwind `gap-1` on the landing hero eyebrow. */
+const WORDMARK_GAP_EM = 0.25;
+/** Satori transform requires absolute px, not em. Nudges AI up vs baseline. */
+const AI_TRANSLATE_Y_PX = Math.round(
+  WORDMARK_FONT_SIZE_PX * LANDING_BRAND_AI_SIZE_EM * 0.06,
+);
+const AI_GRADIENT = `linear-gradient(to right, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`;
 
 export const runtime = 'edge';
 export const alt = SITE_NAME;
@@ -58,9 +69,31 @@ export default function OpenGraphImage() {
               <path d="M5 18H3" />
             </svg>
           </div>
-          <span style={{ fontSize: 56, fontWeight: 300, letterSpacing: '-0.02em' }}>
-            AssetMem <span style={{ fontWeight: 700 }}>AI</span>
-          </span>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              fontSize: WORDMARK_FONT_SIZE_PX,
+              fontWeight: 300,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            <span style={{ display: 'flex' }}>AssetMem</span>
+            <div style={{ display: 'flex', width: `${WORDMARK_GAP_EM}em`, flexShrink: 0 }} />
+            <span
+              style={{
+                display: 'flex',
+                fontSize: `${LANDING_BRAND_AI_SIZE_EM}em`,
+                fontWeight: 700,
+                transform: `translateY(-${AI_TRANSLATE_Y_PX}px)`,
+                background: AI_GRADIENT,
+                backgroundClip: 'text',
+                color: 'transparent',
+              }}
+            >
+              AI
+            </span>
+          </div>
         </div>
         <p
           style={{
@@ -80,7 +113,7 @@ export default function OpenGraphImage() {
             color: 'rgba(34,211,238,0.9)',
           }}
         >
-          Checkpoints · Documents · AI agents
+          Evidence · Change detection · AI Agents
         </p>
       </div>
     ),
