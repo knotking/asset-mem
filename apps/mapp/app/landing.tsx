@@ -324,6 +324,7 @@ export default function LandingPage() {
   const webAppOrigin = getWebAppOrigin();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
+  const showScrollTopRef = useRef(false);
   const { height: windowHeight } = useWindowDimensions();
   const heroMinHeight = Math.round(windowHeight * 0.88);
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -395,10 +396,14 @@ export default function LandingPage() {
     const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
     const distanceFromBottom =
       contentSize.height - layoutMeasurement.height - contentOffset.y;
-    setShowScrollTop(
+    const nextVisible =
       contentOffset.y > SCROLL_TOP_MIN_OFFSET_PX &&
-        distanceFromBottom <= SCROLL_TOP_NEAR_BOTTOM_PX,
-    );
+      distanceFromBottom <= SCROLL_TOP_NEAR_BOTTOM_PX;
+    if (nextVisible === showScrollTopRef.current) {
+      return;
+    }
+    showScrollTopRef.current = nextVisible;
+    setShowScrollTop(nextVisible);
   };
 
   const scrollToTop = () => {
@@ -416,11 +421,12 @@ export default function LandingPage() {
         ref={scrollRef}
         onScroll={handleLandingScroll}
         scrollEventThrottle={16}
+        removeClippedSubviews={false}
         style={{ flex: 1, backgroundColor: LANDING_COLORS.background }}
         contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}>
         <Animated.View style={{ opacity: fadeAnim }}>
-          {/* Hero — full-viewport first screen */}
+          {/* Hero — full-viewport first screen; fade-in only applies here */}
           <LandingHeroBackground
             style={{ minHeight: heroMinHeight }}
             contentStyle={{
@@ -523,6 +529,7 @@ export default function LandingPage() {
               </TouchableOpacity>
             </View>
           </LandingHeroBackground>
+        </Animated.View>
 
           {/* How It Works */}
           <LandingSectionBackground
@@ -1205,7 +1212,6 @@ export default function LandingPage() {
               </Text>
             </View>
           </View>
-        </Animated.View>
       </ScrollView>
       {showScrollTop ? (
         <TouchableOpacity
