@@ -3,6 +3,14 @@ import * as fs from "fs";
 import * as path from "path";
 import { config } from "./config";
 
+export interface NarrationSectionTiming {
+  id: string;
+  label: string;
+  narration: string;
+  startOffsetMs: number;
+  endOffsetMs: number;
+}
+
 export interface SceneResult {
   success: boolean;
   duration: number;
@@ -11,6 +19,8 @@ export interface SceneResult {
   waitCut?: { startOffsetMs: number; endOffsetMs: number };
   /** Optional multiple wait segments to cut from video (offsets in ms from scene start). */
   waitCuts?: Array<{ startOffsetMs: number; endOffsetMs: number }>;
+  /** Per-section avatar narration aligned to on-screen moments (e.g. landing page). */
+  narrationSections?: NarrationSectionTiming[];
 }
 
 /**

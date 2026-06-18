@@ -46,7 +46,7 @@ The script reloads the app before each scene, navigates to the right screen, rec
 
 | Screen / action | Label or text |
 |-----------------|---------------|
-| Landing | `Watch Demo`, `Get Started` / `Dashboard` |
+| Landing | `Timeline Intelligence`, `Watch Demo`, `Get Started` / `Dashboard` |
 | Login | `Welcome Back`, `Enter your email`, `Enter your password`, `Sign In` |
 | Dashboard | `Property AI Agent`, `Add New Property`, property row below add card |
 | Property tabs (icons) | Tap points: chat `17%,93%`, timeline `50%,93%`, details `83%,93%` |
@@ -63,8 +63,8 @@ The script reloads the app before each scene, navigates to the right screen, rec
 
 | # | Scene |
 |---|--------|
-| 1 | Landing Page Static |
-| 2 | Landing Page |
+| 1 | Landing Page Static — hero hold (hero section narration) |
+| 2 | Landing Page — scroll through workflow, AI, use cases, enterprise, pricing, footer (per-section narration in JSON) |
 | 3 | Login |
 | 4 | Property Onboarding |
 | 5 | Dashboard |

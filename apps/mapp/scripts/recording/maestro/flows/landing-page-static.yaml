@@ -3,8 +3,12 @@ appId: ${APP_ID}
 # Hold on landing hero (~10s, no interaction)
 - extendedWaitUntil:
     visible:
-      text: "Watch Demo"
+      text: "Timeline"
     timeout: 15000
+- extendedWaitUntil:
+    visible:
+      text: "Watch Demo"
+    timeout: 5000
 - repeat:
     times: 10
     commands:

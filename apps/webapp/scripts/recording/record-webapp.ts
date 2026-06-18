@@ -23,33 +23,35 @@ import {
 import * as path from "path";
 import * as readline from "readline";
 import * as fs from "fs";
+import {
+  getFullLandingNarration,
+  getLandingHeroNarration,
+} from "./landing-narration";
 
-// Narration text for each scene (max 500 characters)
+// Narration text for each scene (spoken by avatar — favor natural sentences over marketing fragments)
 const narrationTexts: Record<string, string> = {
-  "Landing Page":
-    "Welcome to AssetMem AI. Explore use cases, an integrated platform with timeline checkpoints, document chat, and My pros. Generate shareable PDF reports for showings, move-in/out, and insurance claims. Meet specialized AI agents, see timeline tracking, docs chat for inspection reports, and transparent pricing — all in one home care platform.",
-  "Landing Page Static":
-    "Welcome to AssetMem AI — your AI-powered home care platform. Track property condition with timeline checkpoints, chat with your documents, get repair guidance, and generate professional reports. Visit asset-mem.com to get started.",
+  "Landing Page": getFullLandingNarration(),
+  "Landing Page Static": getLandingHeroNarration(),
   Login:
-    "Access your personalized AssetMem AI dashboard with secure authentication. Once logged in, you'll unlock a world of intelligent home maintenance tools, from AI-powered diagnostics to comprehensive property tracking. Your journey to smarter home management begins here.",
+    "Sign in to access your AssetMem AI dashboard. Once you're logged in, you'll have intelligent tools for home maintenance—from AI-powered diagnostics to full property tracking. Your journey to smarter home management starts here.",
   "Property Onboarding":
-    "Watch how easy it is to add a new property to your account! Simply click 'Add New Property', select your property type, and upload documents like inspection reports, insurance papers, or property photos. Our AI instantly analyzes your documents, extracts key information like property address, and creates your property profile automatically. Within seconds, your property is ready for AI-powered maintenance assistance.",
+    "Adding a property is easy. Tap Add New Property, choose your property type, and upload documents like inspection reports, insurance papers, or photos. Our AI reads those files, pulls out key details like the address, and builds your property profile automatically. In seconds, you're ready for AI-powered maintenance help.",
   Dashboard:
-    "Your command center awaits! The dashboard provides a comprehensive overview of all your properties.",
+    "Here's your command center—a clear overview of every property you manage.",
   "Timeline Checkpoint":
-    "Create a comprehensive checkpoint to document your property's current condition. Capture detailed photos, add descriptions, and record specific locations. This powerful feature enables you to track changes over time, identify maintenance needs, and build a complete history of your property's condition. Perfect for inspections, before-and-after comparisons, and long-term maintenance planning.",
+    "Create a checkpoint to document your property's condition right now. Capture photos, add notes, and tag locations. Over time, you'll track changes, spot maintenance needs, and build a complete history—great for inspections, before-and-after comparisons, and long-term planning.",
   "Timeline Compare":
-    "Witness the power of side-by-side comparison! Select multiple checkpoints and watch our AI analyze the differences between them. The system highlights changes, detects deterioration, and provides intelligent insights about what's improved or needs attention. This visual comparison tool helps you make informed decisions about maintenance priorities and track property condition evolution over time.",
+    "Compare checkpoints side by side and let AI highlight what changed. Select two or more visits and the system surfaces deterioration, improvements, and what needs attention—so you can prioritize maintenance with confidence.",
   "Timeline Insights":
-    "Explore the insights dashboard, where data transforms into actionable intelligence. View comprehensive metrics, trends, and analytics about your property's condition. See patterns emerge, identify areas requiring attention, and gain predictive insights.",
+    "Open the insights dashboard to turn your data into action. Review metrics, trends, and condition analytics, spot patterns, and see where your property needs attention next.",
   "Timeline Reports":
-    "Turn checkpoint photos into branded PDF reports. Pick a purpose — showing snapshot, move-in/move-out comparison, or insurance documentation — preview sections and layout, then download or share a frozen-in-time report your contractors and adjusters can trust.",
+    "Turn checkpoint photos into branded PDF reports. Choose a purpose—a showing snapshot, move-in or move-out comparison, or insurance documentation—preview the layout, then download or share a report contractors and adjusters can trust.",
   "Checkpoint Chat":
-    "Engage with our AI assistant to get instant answers about your checkpoints. Simply ask questions like 'What checkpoints do I have?' or 'What's their current status?' and watch as the AI provides detailed, contextual responses. The assistant understands your property's history, analyzes checkpoint data, and delivers intelligent insights tailored to your specific situation.",
+    "Ask the AI about your checkpoints and get instant, contextual answers. Try questions like what checkpoints you have or their current status—the assistant knows your property history and delivers insights tailored to you.",
   "Save Provider & My Pros":
-    "Ask the AI to find local service pros, then bookmark your top picks from the chat report sheet. Save several contractors with one tap, open the Details tab, and they're waiting for you under My pros — ready the next time you need a repair.",
+    "Ask the AI to find local service pros, then save your favorites from the chat report sheet. With one tap, they're stored under My Pros on the Details tab—ready the next time you need a repair.",
   Details:
-    "Navigate to the property details section, your comprehensive information hub. Manage files, review history, and access everything you need to maintain complete control over your property's documentation and records. Ready to transform how you manage your home? Get started at asset-mem.com. Thank you for watching!",
+    "The Details tab is your information hub—manage files, review history, and keep documentation organized. Ready to transform how you manage your home? Visit asset-mem.com. Thanks for watching!",
 };
 
 /**
@@ -515,6 +517,15 @@ async function main() {
       startTime: number;
       duration: number;
       narration: string;
+      sections?: Array<{
+        id: string;
+        label: string;
+        narration: string;
+        startTime: number;
+        endTime: number;
+        startOffsetMs: number;
+        endOffsetMs: number;
+      }>;
     }> = [];
 
     const recordingStartTime = Date.now();
@@ -531,6 +542,19 @@ async function main() {
         startTime: sceneStartTime,
         duration: sceneDuration,
         narration: narrationTexts[scene.name] || "",
+        ...(result.narrationSections?.length
+          ? {
+              sections: result.narrationSections.map((section) => ({
+                id: section.id,
+                label: section.label,
+                narration: section.narration,
+                startOffsetMs: section.startOffsetMs,
+                endOffsetMs: section.endOffsetMs,
+                startTime: sceneStartTime + section.startOffsetMs / 1000,
+                endTime: sceneStartTime + section.endOffsetMs / 1000,
+              })),
+            }
+          : {}),
       });
 
       results.push({ name: scene.name, result });
@@ -758,6 +782,9 @@ async function main() {
     console.log(`\n📝 Narration data saved: ${narrationPath}`);
     console.log(
       `   This file contains scene timings and narration text for each scene.`,
+    );
+    console.log(
+      `   Landing scenes include a "sections" array for per-screen avatar narration.`,
     );
     console.log(
       `   You can use this with Google Vids or other avatar platforms.`,

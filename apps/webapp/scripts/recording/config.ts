@@ -45,9 +45,10 @@ export interface RecordingConfig {
       watchDemoButton: string;
       getStartedButton: string;
       loginButton: string;
-      featuresSection: string;
-      reportsSection: string;
-      docsChatSection: string;
+      howItWorksSection: string;
+      aiPipelineSection: string;
+      useCasesSection: string;
+      enterpriseSection: string;
       pricingSection: string;
     };
     login: {
@@ -103,7 +104,7 @@ export const config: RecordingConfig = {
     minGapBetweenZoomsSec: 3.0,
   },
   timing: {
-    landingPage: 15000, // 15 seconds
+    landingPage: 20000, // ~20 seconds
     login: 15000, // 15 seconds
     dashboard: 20000, // 20 seconds
     propertyDetails: 15000, // 15 seconds
@@ -124,9 +125,10 @@ export const config: RecordingConfig = {
       watchDemoButton: 'text="Watch Demo"',
       getStartedButton: 'text="Get Started"',
       loginButton: 'text="Login"',
-      featuresSection: '#features',
-      reportsSection: '#reports',
-      docsChatSection: '#docs-chat',
+      howItWorksSection: '#how-it-works',
+      aiPipelineSection: '#ai-pipeline',
+      useCasesSection: '#use-cases',
+      enterpriseSection: '#enterprise',
       pricingSection: '#pricing',
     },
     login: {

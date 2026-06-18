@@ -1,14 +1,75 @@
 appId: ${APP_ID}
 ---
+# ~20s landing tour — short holds per section (sync with landing-narration.ts)
 - extendedWaitUntil:
     visible:
       text: "Watch Demo"
     timeout: 15000
-
-- runFlow: prep/scroll-to-end.yaml
-
-# Hold on footer
 - repeat:
-    times: 5
+    times: 2
+    commands:
+      - waitForAnimationToEnd
+
+- scrollUntilVisible:
+    element:
+      text: "THE WORKFLOW"
+    direction: DOWN
+    timeout: 30000
+- repeat:
+    times: 2
+    commands:
+      - waitForAnimationToEnd
+
+- scrollUntilVisible:
+    element:
+      text: "AI INTELLIGENCE LAYER"
+    direction: DOWN
+    timeout: 30000
+- repeat:
+    times: 2
+    commands:
+      - waitForAnimationToEnd
+
+- scrollUntilVisible:
+    element:
+      text: "REAL-WORLD APPLICATIONS"
+    direction: DOWN
+    timeout: 30000
+- repeat:
+    times: 4
+    commands:
+      - swipe:
+          start: 50%, 78%
+          end: 50%, 22%
+          duration: 220
+      - waitForAnimationToEnd
+
+- scrollUntilVisible:
+    element:
+      text: "FOR ENTERPRISE"
+    direction: DOWN
+    timeout: 30000
+- repeat:
+    times: 2
+    commands:
+      - waitForAnimationToEnd
+
+- scrollUntilVisible:
+    element:
+      text: "PRICING"
+    direction: DOWN
+    timeout: 30000
+- repeat:
+    times: 2
+    commands:
+      - waitForAnimationToEnd
+
+- scrollUntilVisible:
+    element:
+      text: "All rights reserved"
+    direction: DOWN
+    timeout: 30000
+- repeat:
+    times: 2
     commands:
       - waitForAnimationToEnd

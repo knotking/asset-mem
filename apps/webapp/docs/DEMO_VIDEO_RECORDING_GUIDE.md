@@ -52,21 +52,19 @@ This guide provides detailed scripts and instructions for recording a comprehens
 
 ## Webapp Flow Script
 
-### Scene 1: Landing Page (0:00 - 0:15)
+### Scene 1: Landing Page (0:00 - ~0:20)
 
 **Visual Actions:**
-1. Start recording on the landing page
-2. Scroll through hero section highlighting key value propositions
-3. Show "Watch Demo" button (will be functional after integration)
-4. Scroll to features section
-5. Highlight "Get Started" or "Login" button
+1. Start on hero (`Timeline Intelligence`, Watch Demo)
+2. Quick scroll: **How It Works** → **AI Intelligence** → **Use Cases** → **Enterprise** → **Pricing** → footer
 
-**Narration (Optional):**
-> "Welcome to HomeApp - your intelligent property management platform. Let's explore how it works."
+**Narration (Optional)** — ~25s, read as natural sentences:
+
+> Welcome to AssetMem AI, timeline intelligence for property care. Capture, see what changed, know what to do, and prove it—discover AI-assisted workflow where photos and questions feed a single intelligence layer that spots changes early and tells you what to do next. See visual checkpoint timelines, shareable reports, and questions grounded in your property's evidence. At the AI intelligence layer, field photos, policies, and team questions route through coordinated analysis on coverage, repairs, vendors, costs, and change detection—turning condition signals into clear next steps. Explore use cases from routine walkthroughs to contractor handoffs and renovation tracking. Whether you manage one home or a whole portfolio, AssetMem helps you capture, understand, act, and prove.
 
 **Key Points:**
-- Clean, modern landing page design
-- Clear call-to-action buttons
+- Restructured landing: workflow → AI pipeline → use cases → enterprise → pricing
+- Clear call-to-action buttons (Get Started / Watch Demo)
 - Professional branding
 
 ---

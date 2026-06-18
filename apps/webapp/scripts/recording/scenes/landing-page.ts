@@ -2,17 +2,13 @@ import { Page } from "playwright";
 import { config } from "../config";
 import { SceneResult } from "../helpers";
 import { scrollSmoothly, scrollPage, delay } from "../helpers";
+import { createLandingSectionTracker } from "../landing-narration";
 
-/** Time between each nav / CTA click in the landing scene (and zoom trigger spacing). */
-const GAP_BETWEEN_CLICKS_MS =
-  (config.zoomEffects?.minGapBetweenZoomsSec ?? 3) * 1000;
-
-/** Extra pause while each section is on screen (from Use Cases onward). */
-const SECTION_VIEW_DELAY_MS = 4000;
-const FEATURES_VIEW_DELAY_MS = SECTION_VIEW_DELAY_MS - 2000;
-const REPORTS_VIEW_DELAY_MS = 1000;
-const AI_AGENTS_EXTRA_DELAY_MS = 2000;
-const TIMELINE_EXTRA_DELAY_MS = 1000;
+/** ~20s landing scene — tight gaps and short holds per section. */
+const GAP_BETWEEN_CLICKS_MS = 600;
+const SECTION_VIEW_DELAY_MS = 1200;
+const AI_PIPELINE_VIEW_DELAY_MS = 1200;
+const ENTERPRISE_VIEW_DELAY_MS = 1200;
 
 async function panUseCaseCards(page: Page): Promise<void> {
   const cards = page.locator("#use-cases .grid > div");
@@ -24,25 +20,26 @@ async function panUseCaseCards(page: Page): Promise<void> {
 
   console.log(`  📜 Panning through ${count} use case cards...`);
 
-  // 2-col grid: index 2 = row 2, then mid/bottom rows so all cards appear in recording
-  const scrollTargets = [2, Math.min(4, count - 1), count - 1].filter(
+  // 2-col grid: show a mid-row card so the section reads in a short clip
+  const scrollTargets = [Math.min(2, count - 1)].filter(
     (index, i, arr) => arr.indexOf(index) === i,
   );
-  await delay(500);
+  await delay(200);
   for (const index of scrollTargets) {
     try {
       console.log(`  📜 Scrolling to use case card ${index + 1}/${count}...`);
       await cards.nth(index).scrollIntoViewIfNeeded({ timeout: 3000 });
-      await delay(500);
+      await delay(300);
     } catch {
-      await scrollPage(page, "down", 350);
-      await delay(1000);
+      await scrollPage(page, "down", 280);
+      await delay(400);
     }
   }
 }
 
 export async function recordLandingPage(page: Page): Promise<SceneResult> {
   const startTime = Date.now();
+  const tracker = createLandingSectionTracker(startTime);
   let lastClickAt = 0;
 
   async function waitForClickGap(): Promise<void> {
@@ -96,57 +93,85 @@ export async function recordLandingPage(page: Page): Promise<SceneResult> {
     }
   }
 
+  async function showSectionByScroll(
+    sectionId: string,
+    label: string,
+    viewDelayMs = SECTION_VIEW_DELAY_MS,
+  ): Promise<void> {
+    await waitForClickGap();
+    console.log(`  📜 Scrolling to ${label} section...`);
+    await scrollSmoothly(page, sectionId);
+    await delay(800);
+    console.log(`  ⏸️  Showing ${label} section...`);
+    await delay(viewDelayMs);
+    lastClickAt = Date.now();
+    await waitForClickGap();
+  }
+
   try {
     console.log("🎬 Scene 1: Landing Page");
     console.log(`  ⏱️  ${GAP_BETWEEN_CLICKS_MS / 1000}s gap between clicks`);
 
+    tracker.start("hero");
     await page.goto(config.baseUrl, { waitUntil: "networkidle" });
-    await delay(1000);
-
+    await delay(600);
     console.log("  📜 Showing hero section...");
-    await delay(2000);
+    await delay(1400);
+    tracker.end();
 
+    // Page order: hero → how-it-works → ai-pipeline → use-cases → enterprise → pricing → footer
+    tracker.start("how-it-works");
+    await clickNavAnchor("#how-it-works", "#how-it-works", "How It Works");
+    tracker.end();
+
+    tracker.start("ai-pipeline");
+    await showSectionByScroll(
+      "#ai-pipeline",
+      "AI Intelligence",
+      AI_PIPELINE_VIEW_DELAY_MS,
+    );
+    tracker.end();
+
+    tracker.start("use-cases");
     await clickNavAnchor("#use-cases", "#use-cases", "Use Cases", {
       afterShow: panUseCaseCards,
     });
-    await clickNavAnchor("#features", "#features", "Features", {
-      viewDelayMs: FEATURES_VIEW_DELAY_MS,
-    });
-    await clickNavAnchor("#reports", "#reports", "Reports", {
-      viewDelayMs: REPORTS_VIEW_DELAY_MS,
-    });
-    await clickNavAnchor("#ai-agents", "#ai-agents", "AI Agents", {
-      viewDelayMs: SECTION_VIEW_DELAY_MS + AI_AGENTS_EXTRA_DELAY_MS,
-    });
-    await clickNavAnchor("#timeline-feature", "#timeline-feature", "Timeline", {
-      viewDelayMs: SECTION_VIEW_DELAY_MS + TIMELINE_EXTRA_DELAY_MS,
-    });
+    tracker.end();
 
-    console.log("  📜 Scrolling to Docs Chat showcase...");
-    await scrollSmoothly(page, "#docs-chat");
-    await delay(800);
-    console.log("  ⏸️  Showing Docs Chat section...");
-    await delay(SECTION_VIEW_DELAY_MS);
-    await waitForClickGap();
+    tracker.start("enterprise");
+    await clickNavAnchor("#enterprise", "#enterprise", "Enterprise", {
+      viewDelayMs: ENTERPRISE_VIEW_DELAY_MS,
+    });
+    tracker.end();
 
-    await clickNavAnchor("#how-it-works", "#how-it-works", "How It Works");
+    tracker.start("pricing");
     await clickNavAnchor("#pricing", "#pricing", "Pricing", {
-      viewDelayMs: SECTION_VIEW_DELAY_MS + 1000,
+      viewDelayMs: SECTION_VIEW_DELAY_MS,
     });
+    tracker.end();
 
-    console.log("  📜 Scrolling to CTA section...");
-    await scrollPage(page, "down", 600);
-    await delay(1000);
-    console.log("  ⏸️  Showing CTA section...");
+    tracker.start("footer");
+    console.log("  📜 Scrolling to footer...");
+    await scrollPage(page, "down", 500);
+    await delay(500);
+    console.log("  ⏸️  Showing footer...");
     await delay(SECTION_VIEW_DELAY_MS);
     await waitForClickGap();
+    tracker.end();
 
     const duration = Date.now() - startTime;
+    const narrationSections = tracker.finalize();
     console.log(`✅ Scene 1 completed in ${(duration / 1000).toFixed(1)}s`);
+    for (const section of narrationSections) {
+      console.log(
+        `  🎙️  ${section.label}: ${(section.startOffsetMs / 1000).toFixed(1)}s–${(section.endOffsetMs / 1000).toFixed(1)}s`,
+      );
+    }
 
     return {
       success: true,
       duration,
+      narrationSections,
     };
   } catch (error) {
     const duration = Date.now() - startTime;
@@ -155,6 +180,7 @@ export async function recordLandingPage(page: Page): Promise<SceneResult> {
       success: false,
       duration,
       error: error instanceof Error ? error.message : String(error),
+      narrationSections: tracker.finalize(),
     };
   }
 }

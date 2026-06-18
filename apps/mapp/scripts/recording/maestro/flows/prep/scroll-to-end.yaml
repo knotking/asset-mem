@@ -1,8 +1,8 @@
 appId: ${APP_ID}
 ---
-# Swipe through the full landing page — no element detection
+# Swipe through the full landing page — fallback when section labels are unavailable
 - repeat:
-    times: 36
+    times: 48
     commands:
       - swipe:
           start: 50%, 78%

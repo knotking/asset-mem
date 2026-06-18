@@ -14,35 +14,63 @@ import {
   type MaestroFlowResult,
 } from './maestro-helpers';
 import * as readline from 'readline';
+import {
+  buildEstimatedLandingSectionTimings,
+  getFullLandingNarration,
+  getLandingHeroNarration,
+} from './landing-narration';
 
 const narrationTexts: Record<string, string> = {
-  'Landing Page Static':
-    'Welcome to AssetMem AI — your AI-powered home care platform. Track property condition with timeline checkpoints, chat with your documents, get repair guidance, and generate professional reports.',
-  'Landing Page':
-    'Welcome to AssetMem AI. Explore use cases, timeline checkpoints, document chat, and My pros. Generate shareable PDF reports and meet specialized AI agents — all in one home care platform.',
+  'Landing Page Static': getLandingHeroNarration(),
+  'Landing Page': getFullLandingNarration(),
   Login:
-    'Access your personalized AssetMem AI dashboard with secure authentication. Once logged in, unlock intelligent home maintenance tools from checkpoint analysis to document chat.',
+    "Sign in to access your AssetMem AI dashboard. Once you're logged in, you'll have intelligent tools for home maintenance—from checkpoint analysis to document chat.",
   'Property Onboarding':
-    'Add a new property in seconds — upload inspection reports, insurance papers, or photos. AI extracts key details and creates your property profile automatically.',
+    'Adding a property is easy. Tap Add New Property and upload inspection reports, insurance papers, or photos. AI extracts key details and builds your property profile automatically.',
   Dashboard:
-    'Your command center: view all properties, open a home, and jump into chat, timeline, or details.',
+    "Here's your command center—view all your properties and jump into chat, timeline, or details.",
   'Timeline Checkpoint':
-    'Document property condition with visual checkpoints — photos, AI scores, and a searchable timeline for every area of your home.',
+    'Create a checkpoint to document condition with photos, AI scores, and a searchable timeline for every area of your home.',
   'Timeline Compare':
-    'Compare two checkpoints side by side to see visual and semantic changes between visits.',
+    'Compare two checkpoints side by side and let AI surface visual and semantic changes between visits.',
   'Timeline Insights':
-    'Explore metrics and trends — condition scores, issue severity, and health index for your property.',
+    'Open insights to review metrics and trends—condition scores, issue severity, and your property health index.',
   'Timeline Reports':
-    'Generate branded PDF reports from checkpoint photos — showings, move-in/out, or insurance documentation.',
+    'Generate branded PDF reports from checkpoint photos—for showings, move-in or move-out, or insurance documentation.',
   'Checkpoint Chat':
-    'Ask the AI about your checkpoints with optional coverage and service agents enabled, then review the full structured report.',
+    'Ask the AI about your checkpoints with coverage and service agents enabled, then review the full structured report.',
   'Save Provider & My Pros':
-    'Ask for local service pros, save your favorites from the chat report sheet, then find them again under My pros on the Details tab.',
+    'Ask for local service pros, save your favorites from the chat report sheet, then find them again under My Pros on the Details tab.',
   Details:
-    'Manage property documents, open My pros, and access everything you need in the property Details hub.',
+    'The Details tab is your hub—manage documents, open My Pros, and access everything for the property.',
 };
 
 type SceneDef = { name: string; flowFile: string };
+
+function buildSceneNarrationPayload(
+  sceneName: string,
+  durationMs: number,
+): { narration: string; sections?: ReturnType<typeof buildEstimatedLandingSectionTimings> } {
+  const narration = narrationTexts[sceneName] || '';
+  if (sceneName === 'Landing Page') {
+    return { narration, sections: buildEstimatedLandingSectionTimings(durationMs) };
+  }
+  if (sceneName === 'Landing Page Static') {
+    return {
+      narration,
+      sections: [
+        {
+          id: 'hero',
+          label: 'Hero',
+          narration: getLandingHeroNarration(),
+          startOffsetMs: 0,
+          endOffsetMs: durationMs,
+        },
+      ],
+    };
+  }
+  return { narration };
+}
 
 const ALL_SCENES: SceneDef[] = [
   { name: 'Landing Page Static', flowFile: 'landing-page-static.yaml' },
@@ -225,7 +253,12 @@ async function main() {
   };
 
   let screenRecording: { process: unknown; stop: () => Promise<void> } | null = null;
-  const sceneResults: Array<{ name: string; result: MaestroFlowResult; narration?: string }> = [];
+  const sceneResults: Array<{
+    name: string;
+    result: MaestroFlowResult;
+    narration: string;
+    sections?: ReturnType<typeof buildEstimatedLandingSectionTimings>;
+  }> = [];
 
   try {
     console.log(`\n📹 Starting screen recording: ${videoFileName}`);
@@ -297,13 +330,14 @@ async function main() {
         sceneResults.push({
           name: scene.name,
           result: { success: false, duration: 0, error: 'Prep failed' },
-          narration: narrationTexts[scene.name] || '',
+          ...buildSceneNarrationPayload(scene.name, 0),
         });
         continue;
       }
 
       const result = await runMaestroFlow(flowPath, maestroConfig);
-      sceneResults.push({ name: scene.name, result, narration: narrationTexts[scene.name] || '' });
+      const narrationPayload = buildSceneNarrationPayload(scene.name, result.duration);
+      sceneResults.push({ name: scene.name, result, ...narrationPayload });
 
       if (!result.success) {
         console.warn(`  ⚠️  Scene "${scene.name}": ${result.error ?? 'issues'}`);
@@ -327,10 +361,11 @@ async function main() {
           platform,
           appId,
           timestamp: new Date().toISOString(),
-          scenes: sceneResults.map(({ name, result, narration }) => ({
+          scenes: sceneResults.map(({ name, result, narration, sections }) => ({
             name,
             duration: result.duration,
             narration,
+            ...(sections?.length ? { sections } : {}),
           })),
         },
         null,
