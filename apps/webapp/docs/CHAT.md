@@ -117,7 +117,7 @@ Uses contentJson/contentMarkdown — not raw `message.content` alone.
 
 `PropertyChatWithContext` uses `ComposerMetaSection` (via `ChatInput` when `onOpenAddContext` is set):
 
-- **Expanded:** context chip strip, `CompactSettingsBar` (agent/location pills; location truncates on narrow widths), separate settings + collapse chevron buttons (avoids overlap when checkpoint shows `+N` optional agents).
+- **Expanded:** context chip strip, `CompactSettingsBar` (agent → Agent tab, location → Location tab; icon-only below `sm`), settings gear from `sm` up (agent icon covers it on mobile), collapse chevron.
 - **Collapsed:** single summary pill (`Checkpoint +4 · 2 context`, etc.); tap pill opens chat settings popover; chevron expands chips/settings again.
 - Send-block hints remain visible when collapsed.
 

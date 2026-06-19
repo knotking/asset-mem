@@ -304,7 +304,7 @@ export function CheckpointList({
           type="button"
           variant="outline"
           size="icon"
-          className="relative h-10 w-10 shrink-0"
+          className="relative h-11 w-11 shrink-0"
           aria-label={
             activeFilterCount > 0
               ? `Filters, ${activeFilterCount} active`
@@ -350,7 +350,7 @@ export function CheckpointList({
             type="button"
             variant="outline"
             size="icon"
-            className="h-10 w-10 shrink-0"
+            className="h-11 w-11 shrink-0"
             aria-label="Compare checkpoints"
             onClick={() => setSelectionMode(true)}
           >

@@ -62,7 +62,7 @@ function PropertyTabs() {
                                 key={tab.name}
                                 disabled
                                 className={cn(
-                                    'flex flex-1 cursor-not-allowed items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 py-1.5 text-muted-foreground/50 sm:gap-2 sm:px-4 sm:py-2',
+                                    'flex flex-1 cursor-not-allowed items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 py-2.5 text-muted-foreground/50 md:gap-2 md:px-4 md:py-2',
                                     APP_NAV_TAB_CLASS,
                                 )}
                                 aria-label={tab.name}
@@ -80,7 +80,7 @@ function PropertyTabs() {
                             aria-label={tab.name}
                             title={tab.name}
                             className={cn(
-                                'flex flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 py-1.5 transition-colors sm:gap-2 sm:px-4 sm:py-2',
+                                'flex flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 py-2.5 transition-colors md:gap-2 md:px-4 md:py-2',
                                 APP_NAV_TAB_CLASS,
                                 isActive
                                 ? 'bg-background text-foreground shadow-sm'
@@ -170,7 +170,7 @@ function PropertyHeader({ compact, onOpenSessions }: PropertyHeaderProps) {
             <Button
               variant="outline"
               size="icon"
-              className="h-9 w-9 shrink-0 md:hidden"
+              className="h-10 w-10 shrink-0 md:hidden"
               onClick={onOpenSessions}
               aria-label="Open chat sessions"
             >

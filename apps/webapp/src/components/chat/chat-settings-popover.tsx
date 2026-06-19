@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import {
   Popover,
   PopoverAnchor,
@@ -26,8 +26,42 @@ import type {
 import { cn } from "@/lib/utils";
 import { createLogger } from "@/lib/logger";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const chatLog = createLogger("chat");
+
+const TAB_PANEL_HEIGHT =
+  "h-[min(18.75rem,calc(100dvh-12rem))]";
+
+function SelectableChipButton({
+  selected,
+  onClick,
+  className,
+  children,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={onClick}
+      className={cn(
+        "border",
+        selected
+          ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+          : "border-input bg-background",
+        className,
+      )}
+    >
+      {children}
+    </Button>
+  );
+}
 
 interface ChatSettingsPopoverProps {
   children?: React.ReactNode;
@@ -84,6 +118,7 @@ export function ChatSettingsPopover({
   initialTab = 'agent',
 }: ChatSettingsPopoverProps) {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<'agent' | 'location'>(initialTab);
   const [locationSource, setLocationSource] = useState<SearchLocationSource>(
     searchLocation?.source || 'property_address'
@@ -184,49 +219,60 @@ export function ChatSettingsPopover({
     <Popover open={open} onOpenChange={onOpenChange}>
       {anchor ? <PopoverAnchor asChild>{anchor}</PopoverAnchor> : null}
       {children ? <PopoverTrigger asChild>{children}</PopoverTrigger> : null}
-      <PopoverContent className="w-[28rem] p-0" align="start">
+      <PopoverContent
+        className="w-[min(28rem,calc(100vw-1.5rem))] overflow-hidden p-0"
+        align="start"
+        side={isMobile ? "top" : "bottom"}
+        sideOffset={8}
+        collisionPadding={12}
+      >
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'agent' | 'location')}>
-          <div className="border-b px-4 pt-4">
-            <h3 className="text-base font-semibold mb-3">Chat Settings</h3>
-            <TabsList className="w-full">
-              <TabsTrigger value="agent" className="flex-1">
+          <div className="shrink-0 border-b px-4 pb-3 pt-4">
+            <h3 className="mb-3 text-base font-semibold">Chat Settings</h3>
+            <TabsList
+              className={cn(
+                "grid h-10 w-full p-1",
+                onSearchLocationChange ? "grid-cols-2" : "grid-cols-1",
+              )}
+            >
+              <TabsTrigger value="agent" className="h-8 flex-1">
                 Agent
               </TabsTrigger>
               {onSearchLocationChange && (
-                <TabsTrigger value="location" className="flex-1">
+                <TabsTrigger value="location" className="h-8 flex-1">
                   Location
                 </TabsTrigger>
               )}
             </TabsList>
           </div>
 
-          <TabsContent value="agent" className="p-4 space-y-4 m-0">
+          <div className={cn(TAB_PANEL_HEIGHT, "overflow-y-auto overscroll-contain")}>
+          <TabsContent value="agent" className="m-0 space-y-4 p-4">
             {/* Primary Agent Selection */}
             <div>
-              <label className="text-sm font-semibold mb-3 block">Primary Agent</label>
-              <div className="grid grid-cols-3 gap-2">
+              <label className="mb-3 block text-sm font-semibold">Primary Agent</label>
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                 {PRIMARY_AGENT_OPTIONS.map((option) => {
                   const Icon = getPrimaryAgentIcon(option.id);
+                  const selected = primaryAgent === option.id;
                   return (
-                    <Button
+                    <SelectableChipButton
                       key={option.id}
-                      type="button"
-                      size="sm"
-                      variant={primaryAgent === option.id ? "default" : "outline"}
-                      className="min-w-0 gap-1.5 px-2"
+                      selected={selected}
                       onClick={() => onPrimaryAgentChange(option.id)}
+                      className="h-9 min-w-0 gap-1 px-1.5 text-xs sm:gap-1.5 sm:px-2 sm:text-sm"
                     >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span className="truncate">{option.label}</span>
-                    </Button>
+                      <Icon className="h-3.5 w-3.5 shrink-0" />
+                      <span className="min-w-0 truncate">{option.label}</span>
+                    </SelectableChipButton>
                   );
                 })}
               </div>
             </div>
 
-            {/* Optional Agents — fixed footprint so switching to Docs does not collapse the popover */}
-            <div className="min-h-[8.75rem]">
-              <label className="text-sm font-semibold mb-3 block">Optional Agents</label>
+            {/* Optional Agents — fixed footprint so switching primary agent does not resize the popover */}
+            <div className="min-h-[9rem]">
+              <label className="mb-3 block text-sm font-semibold">Optional Agents</label>
               {primaryAgent === 'docs' ? (
                 <>
                   <div className="flex min-h-[4.5rem] items-center rounded-lg border border-dashed border-border bg-muted/30 px-3 py-3">
@@ -236,7 +282,7 @@ export function ChatSettingsPopover({
                       recommendations.
                     </p>
                   </div>
-                  <div className="mt-2 min-h-[2.5rem]" aria-hidden />
+                  <div className="mt-2 min-h-[3rem]" aria-hidden />
                 </>
               ) : primaryAgent === 'report' ? (
                 <>
@@ -246,7 +292,7 @@ export function ChatSettingsPopover({
                       checkpoints.
                     </p>
                   </div>
-                  <div className="mt-2 min-h-[2.5rem]" aria-hidden />
+                  <div className="mt-2 min-h-[3rem]" aria-hidden />
                 </>
               ) : (
                 <>
@@ -258,26 +304,23 @@ export function ChatSettingsPopover({
                           : selectedOptionalAgents.includes(option.id);
                       const Icon = option.icon;
                       return (
-                        <Button
+                        <SelectableChipButton
                           key={option.id}
-                          type="button"
-                          variant={isSelected ? 'default' : 'outline'}
-                          size="sm"
+                          selected={isSelected}
                           onClick={() =>
                             primaryAgent === 'checkpoint'
-                              ? onToggleCheckpointOptionalAgent(
-                                  option.id
-                                )
+                              ? onToggleCheckpointOptionalAgent(option.id)
                               : onToggleOptionalAgent(option.id)
                           }
-                          className="gap-1.5">
+                          className="gap-1.5"
+                        >
                           <Icon className="h-3.5 w-3.5" />
                           <span>{option.label}</span>
-                        </Button>
+                        </SelectableChipButton>
                       );
                     })}
                   </div>
-                  <p className="mt-2 min-h-[2.5rem] text-xs text-muted-foreground">
+                  <p className="mt-2 min-h-[3rem] text-xs text-muted-foreground">
                     {primaryAgent === 'checkpoint' ? (
                       selectedCheckpointOptionalAgents.length === 0 ? (
                         <>
@@ -300,30 +343,31 @@ export function ChatSettingsPopover({
           </TabsContent>
 
           {onSearchLocationChange && (
-            <TabsContent value="location" className="p-4 space-y-4 m-0">
+            <TabsContent value="location" className="m-0 space-y-4 p-4">
               {/* Location Type */}
               <div>
-                <label className="text-sm font-semibold mb-3 block">Search near</label>
+                <label className="mb-3 block text-sm font-semibold">Search near</label>
                 <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant={locationSource === 'property_address' ? 'default' : 'outline'}
-                    className="flex-1 gap-2"
-                    onClick={() => handleLocationSourceChange('property_address')}>
+                  <SelectableChipButton
+                    selected={locationSource === 'property_address'}
+                    onClick={() => handleLocationSourceChange('property_address')}
+                    className="h-9 flex-1 gap-2"
+                  >
                     <MapPin className="h-4 w-4" />
                     <span>Property</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={locationSource === 'device_gps' ? 'default' : 'outline'}
-                    className="flex-1 gap-2"
-                    onClick={() => handleLocationSourceChange('device_gps')}>
+                  </SelectableChipButton>
+                  <SelectableChipButton
+                    selected={locationSource === 'device_gps'}
+                    onClick={() => handleLocationSourceChange('device_gps')}
+                    className="h-9 flex-1 gap-2"
+                  >
                     <Navigation className="h-4 w-4" />
                     <span>Current</span>
-                  </Button>
+                  </SelectableChipButton>
                 </div>
               </div>
 
+              <div className="min-h-[5.5rem] space-y-3">
               {/* Address Mode Info */}
               {locationSource === 'property_address' && propertyAddress && (
                 <div className="rounded-lg bg-muted/50 p-3">
@@ -373,15 +417,16 @@ export function ChatSettingsPopover({
                   )}
                 </div>
               )}
+              </div>
 
               {/* Radius Selector */}
               {(locationSource === 'device_gps' || locationSource === 'property_address') && (
                 <div>
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="mb-2 flex items-center justify-between">
                     <label className="text-sm font-semibold">Search Radius</label>
                     <span className="text-sm font-bold text-primary">{locationRadius} miles</span>
                   </div>
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="mb-2 flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">5</span>
                     <input
                       type="range"
@@ -394,23 +439,23 @@ export function ChatSettingsPopover({
                     />
                     <span className="text-xs text-muted-foreground">100</span>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-5 gap-1.5 sm:flex sm:gap-2">
                     {[5, 10, 25, 50, 100].map((radius) => (
-                      <Button
+                      <SelectableChipButton
                         key={radius}
-                        type="button"
-                        variant={locationRadius === radius ? 'default' : 'outline'}
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => handleRadiusChange(radius)}>
+                        selected={locationRadius === radius}
+                        onClick={() => handleRadiusChange(radius)}
+                        className="h-9 min-w-0 px-1 sm:flex-1 sm:px-3"
+                      >
                         {radius}
-                      </Button>
+                      </SelectableChipButton>
                     ))}
                   </div>
                 </div>
               )}
             </TabsContent>
           )}
+          </div>
         </Tabs>
       </PopoverContent>
     </Popover>

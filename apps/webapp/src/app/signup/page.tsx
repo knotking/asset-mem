@@ -57,7 +57,7 @@ function SignupPageContent() {
   const formDisabled = isLoading;
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background w-full">
+    <div className="flex min-h-dvh w-full items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Sign Up</CardTitle>

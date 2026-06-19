@@ -90,7 +90,7 @@ export function ComposerMetaSection({
       {sendBlockHint ? (
         <p className="text-xs text-muted-foreground">{sendBlockHint}</p>
       ) : null}
-      <div className="flex min-w-0 items-center gap-1.5 sm:w-auto">
+      <div className="flex min-w-0 max-w-full items-center gap-1 overflow-hidden">
         <CompactSettingsBar
           primaryAgent={primaryAgent}
           selectedOptionalAgents={selectedOptionalAgents}
@@ -101,13 +101,13 @@ export function ComposerMetaSection({
           onAgentPress={() => openSettings("agent")}
           onLocationPress={() => openSettings("location")}
           showSettingsButton={false}
-          className="mb-0 min-w-0 flex-1 sm:flex-none"
+          className="mb-0"
         />
         <Button
           type="button"
           variant="outline"
           size="icon"
-          className="size-8 shrink-0"
+          className="hidden size-8 shrink-0 sm:inline-flex"
           onClick={() => openSettings("agent")}
           aria-label="Open chat settings"
         >
@@ -117,7 +117,7 @@ export function ComposerMetaSection({
           type="button"
           variant="outline"
           size="icon"
-          className="size-8 shrink-0"
+          className="size-10 shrink-0 sm:size-8"
           onClick={() => setComposerMetaExpanded(false)}
           aria-label="Collapse chat settings and context"
         >
@@ -143,7 +143,7 @@ export function ComposerMetaSection({
           type="button"
           variant="outline"
           size="icon"
-          className="h-8 w-8 shrink-0"
+          className="h-10 w-10 shrink-0 sm:h-8 sm:w-8"
           onClick={() => setComposerMetaExpanded(true)}
           aria-label="Expand chat settings and context"
         >

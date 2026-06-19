@@ -94,7 +94,7 @@ export function ChatContextChipStrip({
         </div>
       ) : null}
 
-      <div className="flex min-w-0 max-w-full items-center gap-2 overflow-x-auto pb-1">
+      <div className="flex min-w-0 max-w-full items-center gap-2 overflow-x-auto overscroll-x-contain scrollbar-hidden pb-1 pr-0.5">
         {pendingContext.map((item) => (
           <div
             key={item.id}
@@ -122,8 +122,13 @@ export function ChatContextChipStrip({
             <span className="max-w-28 truncate text-xs text-muted-foreground">
               {item.label || pendingLabel(item)}
             </span>
-            <button type="button" onClick={() => onRemovePending(item.id)}>
-              <X className="h-3 w-3 text-muted-foreground" />
+            <button
+              type="button"
+              onClick={() => onRemovePending(item.id)}
+              className="rounded-md p-1.5"
+              aria-label={`Remove ${item.label || pendingLabel(item)}`}
+            >
+              <X className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
           </div>
         ))}
