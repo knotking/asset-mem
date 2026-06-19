@@ -146,7 +146,19 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
     const handleTextareaFocus = () => {
       if (!isMobile) return;
       requestAnimationFrame(() => {
-        textareaRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        const el = textareaRef.current;
+        if (!el) return;
+        el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        const viewport = window.visualViewport;
+        if (viewport) {
+          const keyboardInset = Math.max(
+            0,
+            window.innerHeight - viewport.height - viewport.offsetTop,
+          );
+          if (keyboardInset > 48) {
+            el.scrollIntoView({ block: "end", behavior: "smooth" });
+          }
+        }
       });
     };
 

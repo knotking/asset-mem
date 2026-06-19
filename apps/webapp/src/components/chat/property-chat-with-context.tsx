@@ -57,6 +57,8 @@ import { useToast } from "@/hooks/use-toast";
 import { createLogger } from "@/lib/logger";
 import { pickFromNativeCamera, supportsInBrowserCamera } from "@/lib/camera-capability";
 import { trackFirstChatMessage } from "@/lib/analytics";
+import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
+import { cn } from "@/lib/utils";
 import {
   clientMessageTimestampAfter,
   clientStartedAtTimestamp,
@@ -111,6 +113,7 @@ function PropertyChatComposerInner(
     isLoadingEarlier,
   } = useCheckpoint();
   const { documents, property } = useProperty();
+  const keyboardInset = useKeyboardInset();
   const {
     readySelectedCheckpoints,
     readySelectedDocuments,
@@ -634,7 +637,13 @@ function PropertyChatComposerInner(
 
   return (
     <>
-      <footer className="relative z-10 flex w-full min-w-0 items-center border-t bg-card px-3 py-2 sm:px-4 sm:py-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <footer
+        className={cn(
+          'relative z-10 flex w-full min-w-0 items-center border-t bg-card px-3 py-2 sm:px-4 sm:py-2.5',
+          keyboardInset === 0 && 'pb-[max(0.5rem,env(safe-area-inset-bottom))]',
+        )}
+        style={keyboardInset > 0 ? { paddingBottom: keyboardInset } : undefined}
+      >
         <ChatInput
           onSend={(text) => void runSend(text)}
           isLoading={props.isLoading}

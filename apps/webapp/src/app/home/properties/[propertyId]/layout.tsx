@@ -35,6 +35,7 @@ import { PropertyDocumentsProvider } from '@/contexts/property-documents-context
 import { AddressConfirmationProvider } from '@/contexts/address-confirmation-context';
 import { MyProsSheetProvider } from '@/contexts/my-pros-sheet-context';
 import { HeaderToolbarActions } from '@/components/layout/header-toolbar-actions';
+import { displayPropertyName } from '@/lib/display-property-name';
 
 
 function PropertyTabs() {
@@ -67,7 +68,7 @@ function PropertyTabs() {
                                 aria-label={tab.name}
                             >
                                 {Icon && <Icon className="h-4 w-4" />}
-                                <span className="hidden sm:inline">{tab.name}</span>
+                                <span className="hidden md:inline">{tab.name}</span>
                             </button>
                         )
                     }
@@ -87,7 +88,7 @@ function PropertyTabs() {
                             )}
                         >
                             {Icon && <Icon className="h-4 w-4" />}
-                            <span className="hidden sm:inline">{tab.name}</span>
+                                <span className="hidden md:inline">{tab.name}</span>
                         </Link>
                     )
                 })}
@@ -142,7 +143,14 @@ function PropertyHeader({ compact, onOpenSessions }: PropertyHeaderProps) {
                       title={property?.name}
                     >
                         {isNewPropertyFlow && <PlusCircle className="h-4 w-4 text-primary inline-block mr-2" />}
-                        {property?.name || 'New Property'}
+                        <span className="sm:hidden">
+                          {displayPropertyName(
+                            isNewPropertyFlow ? 'New Property' : property?.name,
+                          )}
+                        </span>
+                        <span className="hidden sm:inline">
+                          {property?.name || 'New Property'}
+                        </span>
                     </h1>
                     <p
                       className={cn(
@@ -162,14 +170,14 @@ function PropertyHeader({ compact, onOpenSessions }: PropertyHeaderProps) {
             <Button
               variant="outline"
               size="icon"
-              className="h-9 w-9 shrink-0 lg:hidden"
+              className="h-9 w-9 shrink-0 md:hidden"
               onClick={onOpenSessions}
               aria-label="Open chat sessions"
             >
               <PanelLeft className="h-4 w-4" />
             </Button>
           ) : null}
-          <HeaderToolbarActions className="lg:hidden" compactAccount />
+          <HeaderToolbarActions className="md:hidden" compactAccount />
         </div>
       </header>
   );
@@ -202,8 +210,8 @@ function PropertyChatLayoutContent({
       <div className="flex h-full w-full">
         <aside
           className={cn(
-            'relative z-20 hidden flex-col border-r bg-sidebar transition-all duration-300 lg:flex',
-            isSessionSidebarCollapsed ? 'lg:w-14' : 'lg:w-80',
+            'relative z-20 hidden flex-col border-r bg-sidebar transition-all duration-300 md:flex',
+            isSessionSidebarCollapsed ? 'md:w-14' : 'md:w-80',
           )}
         >
             <SessionNavBar
@@ -290,7 +298,7 @@ function LayoutWithDialog({ children }: { children: React.ReactNode }) {
                 <SheetContent
                   side="left"
                   showCloseButton={false}
-                  className="flex w-full max-w-sm flex-col p-0 lg:hidden"
+                  className="flex w-full max-w-sm flex-col p-0 md:hidden"
                 >
                   <SheetTitle className="sr-only">Chat sessions</SheetTitle>
                   <SessionNavBar
