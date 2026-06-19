@@ -79,18 +79,18 @@ function DocumentListItem({
     const failureSummary = getFailedDocumentSummary(doc);
 
     return (
-        <Card className={cn('group relative transition-shadow hover:shadow-lg', isDeleting && 'opacity-90')}>
+        <Card className={cn('group relative min-w-0 transition-shadow hover:shadow-lg', isDeleting && 'opacity-90')}>
             <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4">
-                        <Icon className="h-6 w-6 text-red-500 mt-1 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-foreground">{doc.name}</p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                <div className="flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
+                        <Icon className="mt-1 h-6 w-6 shrink-0 text-red-500" />
+                        <div className="min-w-0 flex-1">
+                            <p className="break-words font-semibold text-foreground">{doc.name}</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                                 <Badge variant="outline">{getFileExtension(doc.contentType)}</Badge>
                                 {doc.createdAt && (
                                     <div className="flex items-center gap-1.5">
-                                        <Calendar className="h-3 w-3" />
+                                        <Calendar className="h-3 w-3 shrink-0" />
                                         <span>{format(doc.createdAt.toDate(), 'M/d/yyyy')}</span>
                                     </div>
                                 )}
@@ -120,20 +120,20 @@ function DocumentListItem({
                                 <div className="mt-2 space-y-1 text-sm">
                                     {doc.keyEntities && doc.keyEntities.length > 0 ? (
                                         doc.keyEntities.map((entity, index) => (
-                                            <div key={index} className="flex justify-between items-center text-muted-foreground">
-                                                <span className="font-medium text-foreground/80">{entity.name}:</span>
-                                                <span className="text-right">{entity.value}</span>
+                                            <div key={index} className="flex flex-col gap-0.5 text-muted-foreground sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                                                <span className="shrink-0 font-medium text-foreground/80">{entity.name}:</span>
+                                                <span className="min-w-0 break-words sm:text-right">{entity.value}</span>
                                             </div>
                                         ))
                                     ) : (
-                                        <p className="text-muted-foreground">{doc.summary || 'No details available.'}</p>
+                                        <p className="break-words text-muted-foreground">{doc.summary || 'No details available.'}</p>
                                     )}
                                 </div>
                             )}
                         </div>
                     </div>
                     {!isDeleting ? (
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex shrink-0 items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" asChild>
                               <a href={doc.url} target="_blank" rel="noopener noreferrer" download={doc.name}>
                                   <Download className="h-4 w-4" />
@@ -279,7 +279,7 @@ function PropertyDetailsContent() {
 
     if (authPending || !user || isPropertyLoading) {
         return (
-            <div className="p-6 md:p-10 space-y-8 max-w-5xl mx-auto">
+            <div className="mx-auto w-full min-w-0 max-w-5xl space-y-8 p-4 sm:p-6 md:p-10">
                 <Skeleton className="h-48 w-full" />
                 <Skeleton className="h-64 w-full" />
             </div>
@@ -287,7 +287,7 @@ function PropertyDetailsContent() {
     }
     
     return (
-        <div className="p-6 md:p-10 space-y-8 max-w-5xl mx-auto min-h-full">
+        <div className="mx-auto min-h-full w-full min-w-0 max-w-5xl space-y-6 p-4 sm:space-y-8 sm:p-6 md:p-10">
             {documents.length > 0 && shouldShowFeatureTip(preferences, 'docs_linked_to_chat') ? (
               <FeatureTipBanner
                 tipId="docs_linked_to_chat"
@@ -298,35 +298,35 @@ function PropertyDetailsContent() {
                 onAction={() => property && router.push(`/home/properties/${property.id}/chat`)}
               />
             ) : null}
-            <Card className="transition-shadow hover:shadow-lg">
-                <CardHeader>
-                    <div className="flex justify-between items-start">
-                        <div>
+            <Card className="min-w-0 transition-shadow hover:shadow-lg">
+                <CardHeader className="p-4 sm:p-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <Building className="h-5 w-5" /> Basic Information
+                                <Building className="h-5 w-5 shrink-0" /> Basic Information
                             </CardTitle>
                         </div>
                         {isEditing ? (
-                            <div className="flex items-center gap-2">
-                                <Button variant="outline" size="sm" onClick={handleCancelClick} disabled={isSaving}>
+                            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+                                <Button variant="outline" size="sm" onClick={handleCancelClick} disabled={isSaving} className="flex-1 sm:flex-none">
                                     <CancelIcon className="h-3 w-3 mr-2" />
                                     Cancel
                                 </Button>
-                                <Button variant="default" size="sm" onClick={handleSaveClick} disabled={isSaving}>
+                                <Button variant="default" size="sm" onClick={handleSaveClick} disabled={isSaving} className="flex-1 sm:flex-none">
                                     <Check className="h-3 w-3 mr-2" />
                                     {isSaving ? 'Saving...' : 'Save'}
                                 </Button>
                             </div>
                         ) : (
-                            <Button variant="outline" size="sm" onClick={handleEditClick}>
+                            <Button variant="outline" size="sm" onClick={handleEditClick} className="w-full shrink-0 sm:w-auto">
                                 <Pencil className="h-3 w-3 mr-2" />
                                 Edit Details
                             </Button>
                         )}
                     </div>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-1">
+                <CardContent className="grid grid-cols-1 gap-4 p-4 pt-0 sm:gap-6 sm:p-6 sm:pt-0 md:grid-cols-2">
+                    <div className="min-w-0 space-y-1">
                         <label className="text-sm font-medium text-muted-foreground">Property Name</label>
                         {isEditing ? (
                             <Input 
@@ -337,10 +337,10 @@ function PropertyDetailsContent() {
                                 disabled={isSaving}
                             />
                         ) : (
-                            <p className="text-foreground p-3 bg-muted/50 rounded-md min-h-[40px] flex items-center">{property?.name}</p>
+                            <p className="min-w-0 break-words text-foreground p-3 bg-muted/50 rounded-md min-h-[40px]">{property?.name}</p>
                         )}
                     </div>
-                     <div className="space-y-1">
+                     <div className="min-w-0 space-y-1">
                         <label className="text-sm font-medium text-muted-foreground">Property Type</label>
                          {isEditing ? (
                             <Select 
@@ -354,7 +354,7 @@ function PropertyDetailsContent() {
                                     }
                                 }} 
                                 disabled={isSaving}>
-                                <SelectTrigger className="text-base">
+                                <SelectTrigger className="w-full text-base">
                                     <SelectValue placeholder="Select property type (optional)" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -366,7 +366,7 @@ function PropertyDetailsContent() {
                                 </SelectContent>
                             </Select>
                          ) : (
-                            <p className="text-foreground p-3 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                            <p className="min-w-0 break-words text-foreground p-3 bg-muted/50 rounded-md min-h-[40px]">
                                 {property?.propertyType 
                                     ? PROPERTY_TYPES.find(t => t.value === property.propertyType)?.label || property.propertyType 
                                     : 'Not set'}
@@ -374,7 +374,7 @@ function PropertyDetailsContent() {
                          )}
                     </div>
                     {isEditing && editedPropertyType && getSubTypesForType(editedPropertyType).length > 0 && (
-                        <div className="space-y-1">
+                        <div className="min-w-0 space-y-1">
                             <label className="text-sm font-medium text-muted-foreground">Sub-Type (Optional)</label>
                             <Select 
                                 value={editedPropertySubType || ''} 
@@ -386,7 +386,7 @@ function PropertyDetailsContent() {
                                     }
                                 }} 
                                 disabled={isSaving}>
-                                <SelectTrigger className="text-base">
+                                <SelectTrigger className="w-full text-base">
                                     <SelectValue placeholder="Select sub-type (optional)" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -400,14 +400,14 @@ function PropertyDetailsContent() {
                         </div>
                     )}
                     {!isEditing && property?.propertySubType && (
-                        <div className="space-y-1">
+                        <div className="min-w-0 space-y-1">
                             <label className="text-sm font-medium text-muted-foreground">Sub-Type</label>
-                            <p className="text-foreground p-3 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                            <p className="min-w-0 break-words text-foreground p-3 bg-muted/50 rounded-md min-h-[40px]">
                                 {getSubTypesForType(property?.propertyType as PropertyType).find(st => st.value === property.propertySubType)?.label || property.propertySubType}
                             </p>
                         </div>
                     )}
-                    <div className="space-y-1 md:col-span-2">
+                    <div className="min-w-0 space-y-1 md:col-span-2">
                         <label className="text-sm font-medium text-muted-foreground">Address</label>
                          {isEditing ? (
                             <Input 
@@ -418,9 +418,9 @@ function PropertyDetailsContent() {
                                 disabled={isSaving}
                             />
                          ) : (
-                             <p className="text-foreground p-3 bg-muted/50 rounded-md flex items-center gap-2 min-h-[40px]">
-                                <MapPin className="h-4 w-4" />
-                                {property?.address}
+                             <p className="min-w-0 break-words text-foreground p-3 bg-muted/50 rounded-md flex items-start gap-2 min-h-[40px]">
+                                <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                                <span className="min-w-0 break-words">{property?.address}</span>
                             </p>
                          )}
                     </div>
@@ -428,7 +428,7 @@ function PropertyDetailsContent() {
             </Card>
 
             <Card
-              className="transition-shadow hover:shadow-lg cursor-pointer"
+              className="min-w-0 transition-shadow hover:shadow-lg cursor-pointer"
               onClick={openMyPros}
               role="button"
               tabIndex={0}
@@ -439,7 +439,7 @@ function PropertyDetailsContent() {
                 }
               }}
             >
-              <CardContent className="flex items-center gap-4 p-6">
+              <CardContent className="flex items-center gap-3 p-4 sm:gap-4 sm:p-6">
                 <div className="rounded-full bg-muted p-3">
                   <Heart className="h-5 w-5 text-foreground" />
                 </div>
@@ -455,19 +455,21 @@ function PropertyDetailsContent() {
               </CardContent>
             </Card>
 
-            <Card className="transition-shadow hover:shadow-lg">
-                <CardHeader>
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <CardTitle className="text-lg flex items-center gap-2"><FileText className="h-5 w-5" /> Property Documents</CardTitle>
+            <Card className="min-w-0 transition-shadow hover:shadow-lg">
+                <CardHeader className="p-4 sm:p-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                              <FileText className="h-5 w-5 shrink-0" /> Property Documents
+                            </CardTitle>
                         </div>
-                        <Button variant="default" size="sm" onClick={openUploadDialog}>
+                        <Button variant="default" size="sm" onClick={openUploadDialog} className="w-full shrink-0 sm:w-auto">
                             <Upload className="h-4 w-4 mr-2" />
                             Upload Documents
                         </Button>
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                      {documents.length > 0 ? (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4 border-t">
                             {documents.map(doc => (

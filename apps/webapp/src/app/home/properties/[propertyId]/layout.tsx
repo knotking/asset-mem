@@ -55,7 +55,7 @@ function PropertyTabs() {
                                 key={tab.name}
                                 disabled
                                 className={cn(
-                                    'flex-1 text-center whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm text-muted-foreground/50 cursor-not-allowed flex items-center justify-center gap-2'
+                                    'flex flex-1 cursor-not-allowed items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 py-2 text-xs font-medium text-muted-foreground/50 sm:gap-2 sm:px-4 sm:text-sm'
                                 )}
                             >
                                 {Icon && <Icon className="h-4 w-4" />}
@@ -69,7 +69,7 @@ function PropertyTabs() {
                             key={tab.name}
                             href={tab.href}
                             className={cn(
-                                'flex-1 text-center whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm transition-colors flex items-center justify-center gap-2',
+                                'flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 py-2 text-xs font-medium transition-colors sm:gap-2 sm:px-4 sm:text-sm',
                                 isActive
                                 ? 'bg-background text-foreground shadow-sm'
                                 : 'text-muted-foreground hover:text-foreground'
@@ -92,14 +92,20 @@ function PropertyHeader() {
   const isNewPropertyFlow = params.propertyId === 'new-property';
 
   return (
-      <header className="p-4 border-b flex justify-between items-center gap-4 bg-background">
-        <div className="flex items-center gap-3 min-w-0">
-          <Button variant="ghost" size="sm" onClick={() => router.push('/home')} className="shrink-0">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Properties
+      <header className="border-b bg-background p-3 sm:p-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push('/home')}
+            className="shrink-0 px-2 sm:px-3"
+            aria-label="Back to properties"
+          >
+              <ArrowLeft className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Back to Properties</span>
           </Button>
-          <div className="h-8 w-px bg-border" />
-          <div className='min-w-0 flex-1 group'>
+          <div className="hidden h-8 w-px bg-border sm:block" />
+          <div className='min-w-0 flex-1'>
             {isPropertyLoading ? (
                 <div className="flex flex-col gap-2">
                     <Skeleton className="h-5 w-40" />

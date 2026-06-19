@@ -147,18 +147,18 @@ export function PropertyCard({ property }: { property: Property }) {
             <Card
               onClick={handleCardClick}
               className={cn(
-                'relative flex flex-col transition-shadow group',
+                'relative flex min-w-0 flex-col transition-shadow group',
                 isRemoving ? 'cursor-default opacity-90' : 'cursor-pointer hover:shadow-lg'
               )}
             >
                 <CardContent className="p-4 flex-1 flex flex-col gap-4">
-                     <div className="flex flex-col">
-                        <div className="flex items-start justify-between ">
-                            <div className="flex items-center gap-3 ">
+                     <div className="flex flex-col min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="flex min-w-0 flex-1 items-start gap-3">
                                 <div className="flex items-center justify-center h-10 w-10 bg-muted rounded-lg shrink-0">
                                     <Icon className="h-5 w-5 text-muted-foreground" />
                                 </div>
-                                <h3 className="font-medium leading-tight text-foreground" title={property.name}>
+                                <h3 className="min-w-0 break-words font-medium leading-tight text-foreground" title={property.name}>
                                     {property.name}
                                 </h3>
                             </div>
