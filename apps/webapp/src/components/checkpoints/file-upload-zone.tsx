@@ -137,7 +137,7 @@ export function FileUploadZone({
                 type="button"
                 size="icon"
                 variant="destructive"
-                className="absolute right-1 top-1 h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100"
+                className="absolute right-1 top-1 h-6 w-6 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                 onClick={() => removeFile(index)}
               >
                 <X className="h-4 w-4" />

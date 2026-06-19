@@ -728,7 +728,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                                             <div className="absolute right-0 top-1/2 -translate-y-1/2">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-100 sm:opacity-0 sm:group-hover:opacity-100" onClick={e => e.stopPropagation()}>
                                                             <MoreHorizontal className="h-4 w-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
