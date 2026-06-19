@@ -52,7 +52,7 @@ import {
 import type { Checkpoint } from "@/lib/types";
 import { CompactSettingsBar } from "./compact-settings-bar";
 import { ChatSettingsPopover } from "./chat-settings-popover";
-import { ComposerMetaSection, type ChatSetupControl } from "./composer-meta-section";
+import { ComposerMetaSection } from "./composer-meta-section";
 
 type Props = {
   onSend: (message: string) => void;
@@ -63,8 +63,6 @@ type Props = {
   onFileRemove?: () => void;
   onOpenAddContext?: () => void;
   contextChipStrip?: React.ReactNode;
-  contextPicker?: React.ReactNode;
-  chatSetupControl?: ChatSetupControl;
   sendBlockHint?: string | null;
   // Property context props (for property hub)
   properties?: Property[];
@@ -109,8 +107,6 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
       onFileRemove,
       onOpenAddContext,
       contextChipStrip,
-      contextPicker,
-      chatSetupControl,
       sendBlockHint,
       properties = [],
       selectedProperty,
@@ -364,8 +360,6 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
             {useContextMode ? (
               <ComposerMetaSection
                 contextChipStrip={contextChipStrip}
-                contextPicker={contextPicker}
-                chatSetupControl={chatSetupControl}
                 sendBlockHint={sendBlockHint}
                 primaryAgent={primaryAgent}
                 onPrimaryAgentChange={onPrimaryAgentChange}
@@ -489,14 +483,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
                 variant="default"
                 size="icon"
                 className="size-11 shrink-0 rounded-full sm:size-10"
-                onClick={() => {
-                  if (chatSetupControl) {
-                    chatSetupControl.onTabChange("context");
-                    chatSetupControl.onOpenChange(true);
-                  } else {
-                    onOpenAddContext?.();
-                  }
-                }}
+                onClick={onOpenAddContext}
                 disabled={isLoading}
                 type="button"
                 aria-label="Add context"

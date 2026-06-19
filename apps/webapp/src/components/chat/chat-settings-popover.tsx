@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import {
   Popover,
   PopoverAnchor,
@@ -84,8 +84,6 @@ interface ChatSettingsPopoverProps {
   /** Mobile sheet: attached checkpoints, documents, reports. */
   contextSection?: ReactNode;
   hasContextContent?: boolean;
-  /** Mobile: embed add-context picker in Context tab. */
-  contextPicker?: ReactNode;
 }
 
 const PRIMARY_AGENT_OPTIONS: ReadonlyArray<{
@@ -110,10 +108,6 @@ const OPTIONAL_AGENT_OPTIONS: ReadonlyArray<{
 
 export type ChatSettingsTab = 'context' | 'agent' | 'location';
 
-const TAB_PANEL_CLASS =
-  "m-0 mt-0 absolute inset-0 data-[state=inactive]:hidden";
-const TAB_PANEL_SCROLL = "h-full overflow-y-auto overscroll-contain";
-
 type ChatSettingsPanelProps = {
   activeTab: ChatSettingsTab;
   onActiveTabChange: (tab: ChatSettingsTab) => void;
@@ -121,8 +115,7 @@ type ChatSettingsPanelProps = {
   useSheetTitle?: boolean;
   showContextTab?: boolean;
   contextSection?: ReactNode;
-  hasContextContent?: boolean;
-  contextPicker?: ReactNode;
+  contextEmptyHint?: ReactNode;
   primaryAgent: PrimaryAgent;
   onPrimaryAgentChange: (agent: PrimaryAgent) => void;
   selectedOptionalAgents: AnalysisOptionalAgent[];
@@ -139,7 +132,6 @@ type ChatSettingsPanelProps = {
   isGettingLocation: boolean;
   onGetCurrentLocation: () => void;
   bodyClassName?: string;
-  panelClassName?: string;
 };
 
 function ChatSettingsPanel({
@@ -148,10 +140,8 @@ function ChatSettingsPanel({
   useSheetTitle = false,
   showContextTab = false,
   contextSection,
-  hasContextContent = false,
-  contextPicker,
+  contextEmptyHint,
   bodyClassName,
-  panelClassName,
   primaryAgent,
   onPrimaryAgentChange,
   selectedOptionalAgents,
@@ -171,31 +161,12 @@ function ChatSettingsPanel({
   const titleClassName = "mb-3 text-left text-base font-semibold";
   const tabCount =
     (showContextTab ? 1 : 0) + 1 + (onSearchLocationChange ? 1 : 0);
-  const contextPanelRef = useRef<HTMLDivElement>(null);
-  const agentPanelRef = useRef<HTMLDivElement>(null);
-  const locationPanelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const panelRef =
-      activeTab === "context"
-        ? contextPanelRef
-        : activeTab === "location"
-          ? locationPanelRef
-          : agentPanelRef;
-    panelRef.current?.scrollTo({ top: 0 });
-  }, [activeTab]);
 
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={(v) => onActiveTabChange(v as ChatSettingsTab)}
-      className={cn("flex min-h-0 flex-col", panelClassName)}
-    >
+    <Tabs value={activeTab} onValueChange={(v) => onActiveTabChange(v as ChatSettingsTab)}>
       <div className="shrink-0 border-b px-4 pb-3 pt-4">
         {useSheetTitle ? (
-          <SheetTitle className={titleClassName}>
-            {contextPicker ? "Chat setup" : "Chat Settings"}
-          </SheetTitle>
+          <SheetTitle className={titleClassName}>Chat Settings</SheetTitle>
         ) : (
           <h3 className={titleClassName}>Chat Settings</h3>
         )}
@@ -221,39 +192,14 @@ function ChatSettingsPanel({
         </TabsList>
       </div>
 
-      <div className={cn("relative min-h-0 flex-1", bodyClassName)}>
+      <div className={cn("overflow-y-auto overscroll-contain", bodyClassName)}>
         {showContextTab && (
-          <TabsContent value="context" forceMount className={cn(TAB_PANEL_CLASS)}>
-            {contextPicker ? (
-              <div className="flex h-full min-h-0 flex-col overflow-hidden">
-                {hasContextContent ? (
-                  <div className="shrink-0 space-y-2 border-b px-4 py-3">
-                    <p className="text-sm font-semibold">Attached</p>
-                    {contextSection}
-                  </div>
-                ) : null}
-                <div className="min-h-0 flex-1 overflow-hidden">{contextPicker}</div>
-              </div>
-            ) : (
-              <div ref={contextPanelRef} className={cn(TAB_PANEL_SCROLL, "p-4")}>
-                {hasContextContent ? (
-                  <div className="space-y-3">{contextSection}</div>
-                ) : (
-                  <div className="flex min-h-full flex-col items-center justify-center gap-3 py-8 text-center">
-                    <p className="max-w-[15rem] text-xs leading-relaxed text-muted-foreground">
-                      Attach checkpoints, documents, or reports to include with your next message.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+          <TabsContent value="context" className="m-0 space-y-3 p-4">
+            {contextSection}
+            {contextEmptyHint}
           </TabsContent>
         )}
-        <TabsContent value="agent" forceMount className={cn(TAB_PANEL_CLASS)}>
-          <div
-            ref={agentPanelRef}
-            className={cn(TAB_PANEL_SCROLL, "space-y-4 p-4")}
-          >
+        <TabsContent value="agent" className="m-0 space-y-4 p-4">
           <div>
             <label className="mb-3 block text-sm font-semibold">Primary Agent</label>
             <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
@@ -344,15 +290,10 @@ function ChatSettingsPanel({
               </>
             )}
           </div>
-          </div>
         </TabsContent>
 
         {onSearchLocationChange && (
-          <TabsContent value="location" forceMount className={cn(TAB_PANEL_CLASS)}>
-            <div
-              ref={locationPanelRef}
-              className={cn(TAB_PANEL_SCROLL, "space-y-4 p-4")}
-            >
+          <TabsContent value="location" className="m-0 space-y-4 p-4">
             <div>
               <label className="mb-3 block text-sm font-semibold">Search near</label>
               <div className="flex gap-2">
@@ -458,7 +399,6 @@ function ChatSettingsPanel({
                 </div>
               </div>
             )}
-            </div>
           </TabsContent>
         )}
       </div>
@@ -483,7 +423,6 @@ export function ChatSettingsPopover({
   initialTab = 'agent',
   contextSection,
   hasContextContent = false,
-  contextPicker,
 }: ChatSettingsPopoverProps) {
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -583,15 +522,21 @@ export function ChatSettingsPopover({
     }
   };
 
-  const showContextTab = isMobile && (contextSection != null || contextPicker != null);
+  const showContextTab = isMobile && contextSection != null;
+  const contextEmptyHint =
+    showContextTab && !hasContextContent ? (
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        No attachments yet. Use + below the message field to add checkpoints, documents, or
+        reports.
+      </p>
+    ) : null;
 
   const panelProps: ChatSettingsPanelProps = {
     activeTab,
     onActiveTabChange: setActiveTab,
     showContextTab,
     contextSection,
-    hasContextContent,
-    contextPicker,
+    contextEmptyHint,
     primaryAgent,
     onPrimaryAgentChange,
     selectedOptionalAgents,
@@ -617,13 +562,12 @@ export function ChatSettingsPopover({
         <Sheet open={open} onOpenChange={onOpenChange}>
           <SheetContent
             side="bottom"
-            className="flex h-[min(90dvh,40rem)] flex-col gap-0 overflow-hidden rounded-t-xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+            className="flex max-h-[min(90dvh,36rem)] flex-col gap-0 overflow-hidden rounded-t-xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
           >
             <ChatSettingsPanel
               {...panelProps}
               useSheetTitle
-              panelClassName="h-full"
-              bodyClassName="min-h-0"
+              bodyClassName="min-h-0 flex-1"
             />
           </SheetContent>
         </Sheet>

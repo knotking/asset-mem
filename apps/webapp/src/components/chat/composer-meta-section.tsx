@@ -15,17 +15,8 @@ import { cn } from "@/lib/utils";
 import { CompactSettingsBar } from "./compact-settings-bar";
 import { ChatSettingsPopover, type ChatSettingsTab } from "./chat-settings-popover";
 
-export type ChatSetupControl = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  tab: ChatSettingsTab;
-  onTabChange: (tab: ChatSettingsTab) => void;
-};
-
 type ComposerMetaSectionProps = {
   contextChipStrip?: React.ReactNode;
-  contextPicker?: React.ReactNode;
-  chatSetupControl?: ChatSetupControl;
   sendBlockHint?: string | null;
   primaryAgent: PrimaryAgent;
   onPrimaryAgentChange: (agent: PrimaryAgent) => void;
@@ -50,8 +41,6 @@ function withWrapChipLayout(strip: React.ReactNode): React.ReactNode {
 
 export function ComposerMetaSection({
   contextChipStrip,
-  contextPicker,
-  chatSetupControl,
   sendBlockHint,
   primaryAgent,
   onPrimaryAgentChange,
@@ -67,14 +56,9 @@ export function ComposerMetaSection({
   hasQueuedSend = false,
 }: ComposerMetaSectionProps) {
   const isMobile = useIsMobile();
-  const [internalOpen, setInternalOpen] = React.useState(false);
-  const [internalTab, setInternalTab] = React.useState<ChatSettingsTab>("agent");
+  const [settingsPopoverOpen, setSettingsPopoverOpen] = React.useState(false);
+  const [settingsPopoverTab, setSettingsPopoverTab] = React.useState<ChatSettingsTab>("agent");
   const [composerMetaExpanded, setComposerMetaExpanded] = React.useState(false);
-
-  const settingsOpen = chatSetupControl?.open ?? internalOpen;
-  const setSettingsOpen = chatSetupControl?.onOpenChange ?? setInternalOpen;
-  const settingsTab = chatSetupControl?.tab ?? internalTab;
-  const setSettingsTab = chatSetupControl?.onTabChange ?? setInternalTab;
 
   const hasContextContent =
     readyContextCount + pendingContextCount > 0 || hasQueuedSend;
@@ -84,18 +68,18 @@ export function ComposerMetaSection({
   }, [isMobile]);
 
   const defaultSettingsTab = React.useCallback((): ChatSettingsTab => {
-    if (isMobile && (contextChipStrip != null || contextPicker != null) && hasContextContent) {
+    if (isMobile && contextChipStrip != null && hasContextContent) {
       return "context";
     }
     return "agent";
-  }, [contextChipStrip, contextPicker, hasContextContent, isMobile]);
+  }, [contextChipStrip, hasContextContent, isMobile]);
 
   const openSettings = React.useCallback(
     (tab?: ChatSettingsTab) => {
-      setSettingsTab(tab ?? defaultSettingsTab());
-      setSettingsOpen(true);
+      setSettingsPopoverTab(tab ?? defaultSettingsTab());
+      setSettingsPopoverOpen(true);
     },
-    [defaultSettingsTab, setSettingsOpen, setSettingsTab],
+    [defaultSettingsTab],
   );
 
   const collapsedSummary = React.useMemo(
@@ -124,13 +108,12 @@ export function ComposerMetaSection({
         type="button"
         onClick={() => openSettings()}
         className={cn(
-          "flex w-full min-w-0 items-center gap-1.5 rounded-full border border-border bg-background px-3 py-2",
-          "text-left text-xs font-medium text-foreground",
+          "w-full min-w-0 rounded-full border border-border bg-background px-3 py-2",
+          "text-left text-xs font-medium text-foreground truncate",
         )}
-        aria-label={`Chat setup: ${collapsedSummary}`}
+        aria-label={`Chat settings: ${collapsedSummary}`}
       >
-        <span className="min-w-0 flex-1 truncate">{collapsedSummary}</span>
-        <ChevronUp className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+        {collapsedSummary}
       </button>
       {sendBlockHint ? (
         <p className="text-xs text-muted-foreground">{sendBlockHint}</p>
@@ -214,8 +197,8 @@ export function ComposerMetaSection({
 
   return (
     <ChatSettingsPopover
-      open={settingsOpen}
-      onOpenChange={setSettingsOpen}
+      open={settingsPopoverOpen}
+      onOpenChange={setSettingsPopoverOpen}
       primaryAgent={primaryAgent}
       onPrimaryAgentChange={onPrimaryAgentChange}
       selectedOptionalAgents={selectedOptionalAgents}
@@ -225,9 +208,8 @@ export function ComposerMetaSection({
       searchLocation={searchLocation}
       onSearchLocationChange={onSearchLocationChange}
       propertyAddress={propertyAddress}
-      initialTab={settingsTab}
+      initialTab={settingsPopoverTab}
       contextSection={isMobile ? withWrapChipLayout(contextChipStrip) : undefined}
-      contextPicker={isMobile ? contextPicker : undefined}
       hasContextContent={hasContextContent}
       anchor={<div className="w-full min-w-0 max-w-full">{metaRow}</div>}
     />

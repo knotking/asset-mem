@@ -7,7 +7,6 @@ import { useProperty } from "@/contexts/property-context";
 import { useReports } from "@/contexts/reports-context";
 import { ChatContextProvider, useChatContext } from "@/contexts/chat-context-context";
 import { AddContextSheet } from "@/components/chat/add-context-sheet";
-import type { ChatSettingsTab } from "@/components/chat/chat-settings-popover";
 import { ChatContextChipStrip } from "@/components/chat/chat-context-chip-strip";
 import { ChatInput } from "@/components/chat/chat-input";
 import { CameraCaptureDialog } from "@/components/chat/camera-capture-dialog";
@@ -59,7 +58,6 @@ import { createLogger } from "@/lib/logger";
 import { pickFromNativeCamera, supportsInBrowserCamera } from "@/lib/camera-capability";
 import { trackFirstChatMessage } from "@/lib/analytics";
 import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import {
   clientMessageTimestampAfter,
@@ -132,9 +130,6 @@ function PropertyChatComposerInner(
   } = useChatContext();
 
   const [addContextOpen, setAddContextOpen] = React.useState(false);
-  const [chatSetupOpen, setChatSetupOpen] = React.useState(false);
-  const [chatSetupTab, setChatSetupTab] = React.useState<ChatSettingsTab>("agent");
-  const isMobile = useIsMobile();
   const [cameraOpen, setCameraOpen] = React.useState(false);
   const [cameraInitialMode, setCameraInitialMode] = React.useState<"photo" | "video">("photo");
   const cameraFlowResolveRef = React.useRef<((success: boolean) => void) | null>(null);
@@ -640,37 +635,6 @@ function PropertyChatComposerInner(
     [property, user, addPendingContext, removePendingContext, toast, limitsLoading, documentsLimit]
   );
 
-  const addContextSheetProps = {
-    open: isMobile ? chatSetupOpen : addContextOpen,
-    onOpenChange: isMobile ? setChatSetupOpen : setAddContextOpen,
-    primaryAgent: props.primaryAgent,
-    checkpoints: checkpoints ?? [],
-    documents,
-    pendingContext,
-    selectedCheckpointIds,
-    selectedDocumentIds,
-    selectedCheckpointCount: readySelectedCheckpoints.length,
-    selectedDocumentCount: readySelectedDocuments.length,
-    onToggleCheckpoint: toggleCheckpoint,
-    onToggleDocument: toggleDocument,
-    onClearSelection: clearReadySelection,
-    onCapturePhoto: () => handleOpenCamera("photo"),
-    onCaptureVideo: () => handleOpenCamera("video"),
-    onPickGallery: handleGalleryPick,
-    onUploadDocument: handleUploadDocument,
-    hasMoreCheckpoints,
-    isLoadingMoreCheckpoints: isLoadingEarlier,
-    onLoadMoreCheckpoints: () => void loadMoreCheckpoints(),
-    reports,
-    selectedReportIds,
-    selectedReportCount: readySelectedReports.length,
-    onToggleReport: toggleReport,
-    monthlyCheckpointPlanHint: checkpointPlanHint,
-    monthlyDocumentPlanHint: documentPlanHint,
-    checkpointCaptureBlocked,
-    documentUploadBlocked,
-  };
-
   return (
     <>
       <footer
@@ -695,21 +659,6 @@ function PropertyChatComposerInner(
           onSearchLocationChange={props.onSearchLocationChange}
           propertyAddress={props.propertyAddress}
           onOpenAddContext={() => setAddContextOpen(true)}
-          chatSetupControl={
-            isMobile
-              ? {
-                  open: chatSetupOpen,
-                  onOpenChange: setChatSetupOpen,
-                  tab: chatSetupTab,
-                  onTabChange: setChatSetupTab,
-                }
-              : undefined
-          }
-          contextPicker={
-            isMobile ? (
-              <AddContextSheet embedded {...addContextSheetProps} />
-            ) : undefined
-          }
           contextChipStrip={
             <ChatContextChipStrip
               pendingContext={pendingContext}
@@ -736,7 +685,36 @@ function PropertyChatComposerInner(
         />
       </footer>
 
-      {!isMobile ? <AddContextSheet {...addContextSheetProps} /> : null}
+      <AddContextSheet
+        open={addContextOpen}
+        onOpenChange={setAddContextOpen}
+        primaryAgent={props.primaryAgent}
+        checkpoints={checkpoints ?? []}
+        documents={documents}
+        pendingContext={pendingContext}
+        selectedCheckpointIds={selectedCheckpointIds}
+        selectedDocumentIds={selectedDocumentIds}
+        selectedCheckpointCount={readySelectedCheckpoints.length}
+        selectedDocumentCount={readySelectedDocuments.length}
+        onToggleCheckpoint={toggleCheckpoint}
+        onToggleDocument={toggleDocument}
+        onClearSelection={clearReadySelection}
+        onCapturePhoto={() => handleOpenCamera("photo")}
+        onCaptureVideo={() => handleOpenCamera("video")}
+        onPickGallery={handleGalleryPick}
+        onUploadDocument={handleUploadDocument}
+        hasMoreCheckpoints={hasMoreCheckpoints}
+        isLoadingMoreCheckpoints={isLoadingEarlier}
+        onLoadMoreCheckpoints={() => void loadMoreCheckpoints()}
+        reports={reports}
+        selectedReportIds={selectedReportIds}
+        selectedReportCount={readySelectedReports.length}
+        onToggleReport={toggleReport}
+        monthlyCheckpointPlanHint={checkpointPlanHint}
+        monthlyDocumentPlanHint={documentPlanHint}
+        checkpointCaptureBlocked={checkpointCaptureBlocked}
+        documentUploadBlocked={documentUploadBlocked}
+      />
 
       <CameraCaptureDialog
         open={cameraOpen}
