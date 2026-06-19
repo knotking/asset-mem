@@ -491,7 +491,7 @@ export default function LandingPageClient() {
             </div>
 
             {/* Stage 4: Output */}
-            <div className="mx-6 mb-6 rounded-xl border px-5 py-4" style={{ borderColor: 'rgba(34,211,238,0.25)', backgroundColor: 'rgba(34,211,238,0.04)' }}>
+            <div className="mx-4 mb-6 rounded-xl border px-4 py-4 sm:mx-6 sm:px-5" style={{ borderColor: 'rgba(34,211,238,0.25)', backgroundColor: 'rgba(34,211,238,0.04)' }}>
               <div className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: '#67e8f9' }}>Clear outputs</div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                 {[
