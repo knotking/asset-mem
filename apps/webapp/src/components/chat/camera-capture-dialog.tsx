@@ -56,7 +56,6 @@ export function CameraCaptureDialog({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const shouldSaveRecordingRef = useRef(false);
-  const [cameraRevision, setCameraRevision] = useState(0);
   const wasOpenRef = useRef(false);
 
   const [mode, setMode] = useState<"photo" | "video">("photo");
@@ -75,12 +74,25 @@ export function CameraCaptureDialog({
   const canRecordVideo =
     typeof window !== "undefined" && typeof window.MediaRecorder !== "undefined";
 
-  const getVideoConstraints = useCallback((): MediaTrackConstraints => {
-    if (selectedDeviceId) {
-      return { deviceId: { exact: selectedDeviceId } };
+  type CameraSelection = {
+    deviceId: string | null;
+    facingMode: "user" | "environment";
+  };
+
+  const buildVideoConstraints = useCallback((selection: CameraSelection): MediaTrackConstraints => {
+    if (selection.deviceId) {
+      return { deviceId: { exact: selection.deviceId } };
     }
-    return { facingMode: { ideal: selectedFacingMode } };
-  }, [selectedDeviceId, selectedFacingMode]);
+    return { facingMode: { ideal: selection.facingMode } };
+  }, []);
+
+  const getCurrentSelection = useCallback(
+    (): CameraSelection => ({
+      deviceId: selectedDeviceId,
+      facingMode: selectedFacingMode,
+    }),
+    [selectedDeviceId, selectedFacingMode],
+  );
 
   const stopRecording = useCallback(
     (shouldSave: boolean) => {
@@ -131,12 +143,14 @@ export function CameraCaptureDialog({
   );
 
   const initStream = useCallback(
-    async (captureMode: "photo" | "video") => {
+    async (captureMode: "photo" | "video", selectionOverride?: CameraSelection) => {
       if (!supportsInBrowserCamera()) {
         setHasCameraAccess(false);
         setError(getCameraUnsupportedMessage());
         return;
       }
+
+      const selection = selectionOverride ?? getCurrentSelection();
 
       stopStream();
       setIsStreamLoading(true);
@@ -144,7 +158,7 @@ export function CameraCaptureDialog({
 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: getVideoConstraints(),
+          video: buildVideoConstraints(selection),
           audio: captureMode === "video" && canRecordVideo,
         });
 
@@ -154,7 +168,10 @@ export function CameraCaptureDialog({
         const activeDeviceId = stream.getVideoTracks()[0]?.getSettings().deviceId;
         if (activeDeviceId) {
           setSelectedDeviceId(activeDeviceId);
+        } else {
+          setSelectedDeviceId(selection.deviceId);
         }
+        setSelectedFacingMode(selection.facingMode);
         await refreshDevices();
         setHasCameraAccess(true);
       } catch (err) {
@@ -165,12 +182,15 @@ export function CameraCaptureDialog({
         setIsStreamLoading(false);
       }
     },
-    [attachStreamToVideo, canRecordVideo, getVideoConstraints, refreshDevices, stopStream]
+    [
+      attachStreamToVideo,
+      buildVideoConstraints,
+      canRecordVideo,
+      getCurrentSelection,
+      refreshDevices,
+      stopStream,
+    ],
   );
-
-  const requestCameraRefresh = useCallback(() => {
-    setCameraRevision((revision) => revision + 1);
-  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -181,7 +201,6 @@ export function CameraCaptureDialog({
       setHasCameraAccess(true);
       setSelectedFacingMode("environment");
       setSelectedDeviceId(null);
-      setCameraRevision(0);
       if (mode !== "photo") {
         setMode("photo");
       }
@@ -215,7 +234,7 @@ export function CameraCaptureDialog({
       cancelAnimationFrame(frameId);
       stopStream();
     };
-  }, [open, mode, initialMode, canRecordVideo, cameraRevision, initStream, stopStream]);
+  }, [open, mode, initialMode, canRecordVideo, initStream, stopStream]);
 
   useEffect(() => {
     if (!canRecordVideo && mode === "video") {
@@ -360,17 +379,25 @@ export function CameraCaptureDialog({
     !isStreamLoading && hasCameraAccess && mediaStreamRef.current !== null;
 
   const handleSwitchCamera = () => {
+    if (isStreamLoading || isRecording) return;
+
+    let nextSelection: CameraSelection;
+
     if (videoDevices.length > 1) {
       const currentIndex = videoDevices.findIndex((device) => device.deviceId === selectedDeviceId);
       const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % videoDevices.length : 0;
-      setSelectedDeviceId(videoDevices[nextIndex]?.deviceId ?? null);
-      requestCameraRefresh();
-      return;
+      nextSelection = {
+        deviceId: videoDevices[nextIndex]?.deviceId ?? null,
+        facingMode: selectedFacingMode,
+      };
+    } else {
+      nextSelection = {
+        deviceId: null,
+        facingMode: selectedFacingMode === "user" ? "environment" : "user",
+      };
     }
 
-    setSelectedDeviceId(null);
-    setSelectedFacingMode((prev) => (prev === "user" ? "environment" : "user"));
-    requestCameraRefresh();
+    void initStream(mode, nextSelection);
   };
 
   const currentCameraLabel =
@@ -431,8 +458,7 @@ export function CameraCaptureDialog({
                   <Select
                     value={selectedDeviceId ?? undefined}
                     onValueChange={(deviceId) => {
-                      setSelectedDeviceId(deviceId);
-                      requestCameraRefresh();
+                      void initStream(mode, { deviceId, facingMode: selectedFacingMode });
                     }}
                     disabled={isStreamLoading || isRecording}
                   >
