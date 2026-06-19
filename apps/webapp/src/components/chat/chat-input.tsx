@@ -272,7 +272,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
     };
 
     return (
-      <div className="w-full relative">
+      <div className="relative w-full min-w-0">
         {hasFileAttached && (
           <div className="absolute bottom-full mb-2 w-full max-w-md">
             <div className="relative p-2 border rounded-lg bg-card shadow-lg">
@@ -323,9 +323,9 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
 
         <form
           onSubmit={handleSubmit}
-          className="relative flex w-full items-end gap-2"
+          className="relative flex w-full min-w-0 items-end gap-1.5 sm:gap-2"
         >
-          <div className="flex flex-1 flex-col gap-3">
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
             {useContextMode ? (
               <ComposerMetaSection
                 contextChipStrip={contextChipStrip}
@@ -440,14 +440,14 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
                 </button>
               )}
 
-            <div className="relative flex w-full items-center rounded-lg bg-muted">
+            <div className="relative flex w-full min-w-0 items-center overflow-hidden rounded-lg bg-muted">
               <Textarea
                 ref={textareaRef}
                 value={content}
                 onInput={handleInput}
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
-                className="flex-1 resize-none max-h-48 overflow-y-auto bg-transparent border-0 shadow-none focus-visible:ring-0 pl-4 py-2.5 pr-24"
+                className="min-w-0 flex-1 resize-none max-h-48 overflow-y-auto bg-transparent border-0 shadow-none focus-visible:ring-0 pl-3 py-2.5 pr-12 sm:pl-4 sm:pr-24"
                 rows={1}
                 disabled={isLoading}
                 aria-label="Chat input"

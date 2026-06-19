@@ -168,7 +168,7 @@ function PropertyChatLayoutContent({ children }: { children: React.ReactNode; })
                         <PanelLeft className="h-4 w-4" />
                     </Button>
                 </div>
-                <div className="h-full pt-12 lg:pt-0">
+                <div className="h-full min-w-0 overflow-x-hidden pt-12 lg:pt-0">
                   {children}
                 </div>
             </main>

@@ -175,7 +175,7 @@ export default function PropertyChatSessionPage() {
   }
 
   return (
-    <div className="flex h-full flex-1 flex-col">
+    <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
       <main className="flex-1 overflow-hidden">
         <ChatList
           messages={messages}
