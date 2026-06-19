@@ -383,9 +383,9 @@ export function ReportsList({ onRegenerate }: ReportsListProps) {
               className={cn('relative', isDeleting && 'opacity-90')}
             >
               <CardHeader className="pb-2">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <CardTitle className="truncate text-base">{report.title}</CardTitle>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <CardTitle className="break-words text-base sm:truncate">{report.title}</CardTitle>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {dateRangeForReport(report)}
                     </p>
@@ -405,7 +405,7 @@ export function ReportsList({ onRegenerate }: ReportsListProps) {
                       {reportStatusLabel(report.status)}
                     </p>
                     {report.status === 'failed' && report.failureReason ? (
-                      <p className="text-sm text-destructive mt-1">{report.failureReason}</p>
+                      <p className="mt-1 break-words text-sm text-destructive">{report.failureReason}</p>
                     ) : null}
                     {REPORT_DOCS_CHAT_RAG_ENABLED && report.status === 'ready' ? (
                       <div className="mt-2 flex items-center gap-2">
@@ -427,11 +427,11 @@ export function ReportsList({ onRegenerate }: ReportsListProps) {
                     ) : null}
                   </div>
                   {!isDeleting ? (
-                    <div className="flex shrink-0 gap-2">
+                    <div className="flex w-full shrink-0 flex-wrap gap-2 sm:w-auto sm:justify-end">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-border bg-muted/50 hover:bg-muted/70 dark:bg-muted/25 dark:hover:bg-muted/40"
+                        className="flex-1 border-border bg-muted/50 hover:bg-muted/70 dark:bg-muted/25 dark:hover:bg-muted/40 sm:flex-none"
                         disabled={report.status !== 'ready' || openingId === report.id}
                         onClick={() => handleOpen(report)}
                       >

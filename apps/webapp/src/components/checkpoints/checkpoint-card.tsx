@@ -96,7 +96,7 @@ export function CheckpointCard({
   return (
     <Card
       className={cn(
-        'relative cursor-pointer transition-all hover:shadow-md',
+        'relative min-w-0 cursor-pointer transition-all hover:shadow-md',
         selected && 'ring-2 ring-primary',
         selectionMode && 'hover:ring-2 hover:ring-muted-foreground',
         isDeleting && 'opacity-90'
@@ -144,13 +144,13 @@ export function CheckpointCard({
           </div>
 
           {/* Content */}
-          <div className="flex flex-1 flex-col justify-between">
+          <div className="flex min-w-0 flex-1 flex-col justify-between">
             <div>
-              <div className="flex items-start justify-between">
-                <h3 className="font-semibold text-foreground line-clamp-1">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <h3 className="min-w-0 flex-1 break-words font-semibold text-foreground line-clamp-2 sm:line-clamp-1">
                   {checkpoint.name || (isAnalyzing ? 'Analyzing...' : 'Untitled Checkpoint')}
                 </h3>
-                {getConditionBadge()}
+                <div className="shrink-0">{getConditionBadge()}</div>
               </div>
               {checkpoint.description && (
                 <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{checkpoint.description}</p>

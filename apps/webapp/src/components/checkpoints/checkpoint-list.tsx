@@ -288,22 +288,23 @@ export function CheckpointList({
 
       {/* Selection Mode Banner */}
       {selectionMode && (
-        <div className="flex items-center justify-between rounded-lg border bg-muted p-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-3 rounded-lg border bg-muted p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             <Badge variant="secondary">
               {selectedCheckpoints.size} selected
             </Badge>
-            <span className="text-sm text-muted-foreground">
+            <span className="min-w-0 text-sm text-muted-foreground">
               {selectedCheckpoints.size === 2
                 ? 'Select 2 checkpoints to compare'
                 : 'Select checkpoints to delete or compare'}
             </span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
               onClick={handleCompare}
               disabled={selectedCheckpoints.size !== 2}
+              className="flex-1 sm:flex-none"
             >
               Compare Selected
             </Button>
@@ -312,11 +313,12 @@ export function CheckpointList({
               variant="destructive"
               onClick={handleDeleteClick}
               disabled={selectedCheckpoints.size === 0}
+              className="flex-1 sm:flex-none"
             >
               <Trash2 className="mr-2 h-4 w-4" />
               Delete
             </Button>
-            <Button size="sm" variant="ghost" onClick={handleCancelSelection}>
+            <Button size="sm" variant="ghost" onClick={handleCancelSelection} className="shrink-0">
               <X className="h-4 w-4" />
             </Button>
           </div>
