@@ -35,6 +35,7 @@ export function Header() {
   const pathname = usePathname();
   const { toast } = useToast();
   const [supportOpen, setSupportOpen] = React.useState(false);
+  const headerActionsRef = React.useRef<HTMLDivElement>(null);
   const returnContext = resolveHeaderReturnContext(pathname);
 
   const handleLogout = useCallback(async () => {
@@ -55,13 +56,16 @@ export function Header() {
         <AssetMemBrandIcon size="sm" />
         <h1 className="truncate text-lg font-bold text-foreground sm:text-xl">AssetMem AI</h1>
       </div>
-      <div className="flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2">
+      <div
+        ref={headerActionsRef}
+        className="relative flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2"
+      >
          {loading || signingOut ? (
             <Skeleton className='h-8 w-32' />
          ) : user ? (
             <TooltipProvider delayDuration={300}>
                 <ThemeToggle />
-                <NotificationsBell />
+                <NotificationsBell anchorRef={headerActionsRef} />
                 <TokenUsageToolbar settingsReturnContext={returnContext} />
                 <HeaderIconTooltip label="FAQ & guides">
                   <Button

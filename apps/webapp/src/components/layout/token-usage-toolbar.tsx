@@ -1,7 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Activity } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { useLlmTokenUsage } from '@/contexts/llm-token-usage-context';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,67 @@ import {
 } from '@/lib/settings-navigation';
 import { usePrefersFinePointer } from '@/hooks/use-prefers-fine-pointer';
 
+const RING_SIZE = 24;
+const STROKE = 2;
+
+/** Ring + Sparkles tint: green (healthy) → amber (warning) → red (critical). */
+function ringColors(pct: number, isDark: boolean) {
+  const track = isDark ? 'hsl(0, 0%, 22%)' : 'hsl(0, 0%, 96.1%)';
+  let progress: string;
+  if (pct >= 100) progress = isDark ? 'hsl(0, 70.9%, 59.4%)' : 'hsl(0, 84.2%, 60.2%)';
+  else if (pct >= 90) progress = isDark ? 'hsl(38, 92%, 50%)' : 'hsl(38, 92%, 45%)';
+  else progress = isDark ? 'hsl(142, 71%, 48%)' : 'hsl(142, 71%, 40%)';
+  return { track, progress };
+}
+
+function sparklesClass(pct: number) {
+  if (pct >= 100) return 'text-destructive';
+  if (pct >= 90) return 'text-amber-500 dark:text-amber-400';
+  return 'text-emerald-600 dark:text-emerald-400';
+}
+
+/** Tier-colored Sparkles + circular quota ring (no numeric label in the header). */
+function AiQuotaRing({ pct, size = RING_SIZE }: { pct: number; size?: number }) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  const { track, progress } = ringColors(pct, isDark);
+  const r = (size - STROKE) / 2 - 0.5;
+  const circumference = 2 * Math.PI * r;
+  const offset = circumference * (1 - pct / 100);
+  const cx = size / 2;
+  const cy = size / 2;
+
+  return (
+    <span
+      className="relative inline-flex items-center justify-center"
+      style={{ width: size, height: size }}
+      aria-hidden
+    >
+      <svg
+        width={size}
+        height={size}
+        className="absolute inset-0"
+        viewBox={`0 0 ${size} ${size}`}
+      >
+        <circle cx={cx} cy={cy} r={r} stroke={track} strokeWidth={STROKE} fill="none" />
+        <circle
+          cx={cx}
+          cy={cy}
+          r={r}
+          stroke={progress}
+          strokeWidth={STROKE}
+          fill="none"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          transform={`rotate(-90 ${cx} ${cy})`}
+        />
+      </svg>
+      <Sparkles className={cn('h-3 w-3', sparklesClass(pct))} />
+    </span>
+  );
+}
+
 export type TokenUsageToolbarProps = {
   settingsReturnContext?: SettingsReturnContext;
 };
@@ -37,8 +99,8 @@ export function TokenUsageToolbar({ settingsReturnContext }: TokenUsageToolbarPr
 
   if (loading || limitsLoading) {
     return (
-      <div className="h-9 w-9 shrink-0 sm:w-24" aria-hidden>
-        <Skeleton className="h-9 w-9 rounded-md sm:h-7 sm:w-full" />
+      <div className="h-9 w-9 shrink-0" aria-hidden>
+        <Skeleton className="mx-auto h-6 w-6 rounded-full" />
       </div>
     );
   }
@@ -55,76 +117,29 @@ export function TokenUsageToolbar({ settingsReturnContext }: TokenUsageToolbarPr
     router.push('/home/settings?tab=usage');
   };
 
-  if (effectiveMonthlyLimit == null || effectiveMonthlyLimit <= 0) {
-    const button = (
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="h-9 w-9 shrink-0 px-0 text-muted-foreground sm:h-8 sm:w-auto sm:gap-1.5 sm:px-2"
-        onClick={goSettings}
-        aria-label={`${formatTokensCompact(periodTotalTokens)} tokens used this month`}
-      >
-        <Activity className="h-4 w-4 shrink-0" />
-        <span className="hidden max-w-[8rem] truncate text-xs tabular-nums sm:inline">
-          {formatTokensCompact(periodTotalTokens)}
-        </span>
-      </Button>
-    );
-
-    if (!showTooltip) {
-      return button;
-    }
-
-    return (
-      <TooltipProvider delayDuration={300}>
-        <Tooltip>
-          <TooltipTrigger asChild>{button}</TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-xs">
-            <p className="text-xs">
-              {formatTokensCompact(periodTotalTokens)} tokens used this month. Open Settings for
-              plan limits.
-            </p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  }
-
-  const pct = Math.min(100, Math.round((100 * periodTotalTokens) / effectiveMonthlyLimit));
+  const hasMonthlyCap = effectiveMonthlyLimit != null && effectiveMonthlyLimit > 0;
+  const pct = hasMonthlyCap
+    ? Math.min(100, Math.round((100 * periodTotalTokens) / effectiveMonthlyLimit))
+    : null;
 
   const button = (
     <Button
       type="button"
       variant="ghost"
-      size="sm"
-      className="h-9 w-9 shrink-0 px-0 sm:h-8 sm:max-w-[11rem] sm:gap-2 sm:px-2"
+      size="icon"
+      className="h-9 w-9 shrink-0"
       onClick={goSettings}
-      aria-label={`${pct}% of monthly AI token limit used`}
+      aria-label={
+        pct != null
+          ? `AI token usage ${pct} percent, open settings`
+          : `${formatTokensCompact(periodTotalTokens)} tokens used this month, open settings`
+      }
     >
-      <Activity className="h-4 w-4 shrink-0 text-muted-foreground" />
-      <div className="hidden min-w-0 flex-1 flex-col gap-0.5 sm:flex">
-        <span
-          className={cn(
-            'text-left text-xs font-medium tabular-nums leading-none',
-            pct >= 100 && 'text-destructive',
-            pct >= 90 && pct < 100 && 'text-amber-600 dark:text-amber-400',
-          )}
-        >
-          {pct}%
-        </span>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-          <div
-            className={cn(
-              'h-full rounded-full transition-[width]',
-              pct >= 100 && 'bg-destructive',
-              pct >= 90 && pct < 100 && 'bg-amber-500',
-              pct < 90 && 'bg-primary',
-            )}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-      </div>
+      {pct != null ? (
+        <AiQuotaRing pct={pct} />
+      ) : (
+        <Sparkles className="h-4 w-4 text-muted-foreground opacity-60" />
+      )}
     </Button>
   );
 
@@ -132,15 +147,17 @@ export function TokenUsageToolbar({ settingsReturnContext }: TokenUsageToolbarPr
     return button;
   }
 
+  const tooltipText =
+    pct != null
+      ? `${formatTokensCompact(periodTotalTokens)} / ${formatTokensCompact(effectiveMonthlyLimit!)} tokens this month (${pct}%)`
+      : `${formatTokensCompact(periodTotalTokens)} tokens used this month. Open Settings for plan limits.`;
+
   return (
     <TooltipProvider delayDuration={300}>
       <Tooltip>
         <TooltipTrigger asChild>{button}</TooltipTrigger>
         <TooltipContent side="bottom" className="max-w-xs">
-          <p className="text-xs">
-            {formatTokensCompact(periodTotalTokens)} / {formatTokensCompact(effectiveMonthlyLimit)}{' '}
-            tokens this month (Settings for exact figures)
-          </p>
+          <p className="text-xs">{tooltipText}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
