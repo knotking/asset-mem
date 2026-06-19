@@ -22,7 +22,9 @@ export default function HomeLayoutClient({
     <div className="flex h-dvh max-h-dvh w-full flex-col overflow-hidden bg-background">
       <LlmTokenUsageProvider>
         <PropertiesDashboardProvider>
+    <div className={cn(propertyShellRoute && 'hidden lg:block')}>
           <Header />
+        </div>
           <main
             className={cn(
               'min-h-0 flex-1 overscroll-y-contain',

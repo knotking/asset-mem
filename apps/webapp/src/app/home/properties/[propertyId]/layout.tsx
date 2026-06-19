@@ -34,6 +34,7 @@ import { UploadDialogProvider, useUploadDialog } from '@/contexts/upload-dialog-
 import { PropertyDocumentsProvider } from '@/contexts/property-documents-context';
 import { AddressConfirmationProvider } from '@/contexts/address-confirmation-context';
 import { MyProsSheetProvider } from '@/contexts/my-pros-sheet-context';
+import { HeaderToolbarActions } from '@/components/layout/header-toolbar-actions';
 
 
 function PropertyTabs() {
@@ -49,7 +50,7 @@ function PropertyTabs() {
 
     return (
         <div className="">
-             <nav className="flex space-x-0 p-1  bg-muted" aria-label="Tabs">
+             <nav className="flex space-x-0 bg-muted p-0.5 sm:p-1" aria-label="Tabs">
                 {tabs.map((tab) => {
                     const isActive = pathname.includes(`/${tab.segment}`);
                     const Icon = tab.icon;
@@ -60,12 +61,13 @@ function PropertyTabs() {
                                 key={tab.name}
                                 disabled
                                 className={cn(
-                                    'flex flex-1 cursor-not-allowed items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 py-2 text-muted-foreground/50 sm:gap-2 sm:px-4',
+                                    'flex flex-1 cursor-not-allowed items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 py-1.5 text-muted-foreground/50 sm:gap-2 sm:px-4 sm:py-2',
                                     APP_NAV_TAB_CLASS,
                                 )}
+                                aria-label={tab.name}
                             >
                                 {Icon && <Icon className="h-4 w-4" />}
-                                {tab.name}
+                                <span className="hidden sm:inline">{tab.name}</span>
                             </button>
                         )
                     }
@@ -74,8 +76,10 @@ function PropertyTabs() {
                         <Link
                             key={tab.name}
                             href={tab.href}
+                            aria-label={tab.name}
+                            title={tab.name}
                             className={cn(
-                                'flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 py-2 transition-colors sm:gap-2 sm:px-4',
+                                'flex flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 py-1.5 transition-colors sm:gap-2 sm:px-4 sm:py-2',
                                 APP_NAV_TAB_CLASS,
                                 isActive
                                 ? 'bg-background text-foreground shadow-sm'
@@ -83,7 +87,7 @@ function PropertyTabs() {
                             )}
                         >
                             {Icon && <Icon className="h-4 w-4" />}
-                            {tab.name}
+                            <span className="hidden sm:inline">{tab.name}</span>
                         </Link>
                     )
                 })}
@@ -93,7 +97,7 @@ function PropertyTabs() {
 }
 
 type PropertyHeaderProps = {
-  /** Chat route: tighter mobile header — hide address below sm, sessions toggle on the right. */
+  /** Tighter mobile header — property name only below sm; address from sm up. */
   compact?: boolean;
   onOpenSessions?: () => void;
 };
@@ -165,6 +169,7 @@ function PropertyHeader({ compact, onOpenSessions }: PropertyHeaderProps) {
               <PanelLeft className="h-4 w-4" />
             </Button>
           ) : null}
+          <HeaderToolbarActions className="lg:hidden" compactAccount />
         </div>
       </header>
   );
@@ -262,7 +267,7 @@ function LayoutWithDialog({ children }: { children: React.ReactNode }) {
         <>
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
                 <PropertyHeader
-                  compact={isChatActive}
+                  compact
                   onOpenSessions={
                     isChatActive ? () => setIsMobileSessionOpen(true) : undefined
                   }
