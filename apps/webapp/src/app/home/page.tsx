@@ -18,7 +18,7 @@ import { ProductHuntWelcomeBanner } from '@/components/onboarding/product-hunt-w
 
 function PropertiesDashboardSkeleton() {
   return (
-    <div className="p-6 md:p-10">
+    <div className="p-4 sm:p-6 md:p-10">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
           <Skeleton className="h-8 w-1/3 mb-2" />
@@ -97,7 +97,7 @@ function PropertiesDashboardContent() {
   }
 
   return (
-    <div className="p-6 md:p-10">
+    <div className="p-4 sm:p-6 md:p-10">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
           <h1 className="text-2xl font-bold text-foreground">Property AI Agent</h1>

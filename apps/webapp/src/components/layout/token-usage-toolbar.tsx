@@ -35,8 +35,8 @@ export function TokenUsageToolbar({ settingsReturnContext }: TokenUsageToolbarPr
 
   if (loading || limitsLoading) {
     return (
-      <div className="w-20 shrink-0 sm:w-24" aria-hidden>
-        <Skeleton className="h-7 w-full" />
+      <div className="h-9 w-9 shrink-0 sm:w-24" aria-hidden>
+        <Skeleton className="h-9 w-9 rounded-md sm:h-7 sm:w-full" />
       </div>
     );
   }
@@ -62,11 +62,12 @@ export function TokenUsageToolbar({ settingsReturnContext }: TokenUsageToolbarPr
               type="button"
               variant="ghost"
               size="sm"
-              className="h-8 gap-1.5 px-2 text-muted-foreground"
+              className="h-9 w-9 shrink-0 px-0 sm:h-8 sm:w-auto sm:gap-1.5 sm:px-2 text-muted-foreground"
               onClick={goSettings}
+              aria-label={`${formatTokensCompact(periodTotalTokens)} tokens used this month`}
             >
               <Activity className="h-4 w-4 shrink-0" />
-              <span className="max-w-[8rem] truncate text-xs tabular-nums">
+              <span className="hidden max-w-[8rem] truncate text-xs tabular-nums sm:inline">
                 {formatTokensCompact(periodTotalTokens)}
               </span>
             </Button>
@@ -92,11 +93,12 @@ export function TokenUsageToolbar({ settingsReturnContext }: TokenUsageToolbarPr
             type="button"
             variant="ghost"
             size="sm"
-            className="h-8 max-w-[9rem] gap-2 px-2 sm:max-w-[11rem]"
+            className="h-9 w-9 shrink-0 px-0 sm:h-8 sm:max-w-[11rem] sm:gap-2 sm:px-2"
             onClick={goSettings}
+            aria-label={`${pct}% of monthly AI token limit used`}
           >
             <Activity className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <div className="hidden min-w-0 flex-1 flex-col gap-0.5 sm:flex">
               <span
                 className={cn(
                   'text-left text-xs font-medium tabular-nums leading-none',

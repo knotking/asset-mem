@@ -75,7 +75,7 @@ export default function PropertyCheckpointsPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto p-6 md:p-8">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
         <div className="mx-auto max-w-5xl">
           <header className="mb-6">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -104,8 +104,8 @@ export default function PropertyCheckpointsPage() {
             </div>
           </header>
 
-          <div className="mb-6 border-b">
-            <nav className="flex gap-6" aria-label="Timeline tabs">
+          <div className="mb-6 overflow-x-auto border-b">
+            <nav className="flex min-w-max gap-4 sm:min-w-0 sm:gap-6" aria-label="Timeline tabs">
               <button
                 type="button"
                 onClick={() => selectTab('checkpoints')}
