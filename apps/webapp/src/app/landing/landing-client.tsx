@@ -347,7 +347,7 @@ export default function LandingPageClient() {
                   {item.title}
                 </h3>
                 <p
-                  className="text-sm font-light leading-relaxed"
+                  className="mx-auto max-w-[17rem] text-sm font-light leading-relaxed [text-wrap:pretty] sm:max-w-[14.5rem] lg:max-w-none"
                   style={{ color: LANDING_COLORS.mutedForeground }}
                 >
                   {item.desc}
