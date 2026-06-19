@@ -13,7 +13,7 @@ import type { Service } from '@/lib/types';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { APP_PAGE_SUBTITLE_CLASS, APP_PAGE_TITLE_CLASS } from '@/lib/app-typography';
+import { APP_SR_ONLY_PAGE_TITLE_CLASS } from '@/lib/app-typography';
 
 const placeholderServicesData: Omit<Service, 'scheduledDate' | 'createdAt'>[] = [
   {
@@ -113,17 +113,12 @@ function PropertyServicesContent() {
 
     return (
         <div className="p-6 md:p-10 max-w-7xl mx-auto w-full">
-            <header className="mb-8">
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                    <div>
-                        <h1 className={APP_PAGE_TITLE_CLASS}>Property Services</h1>
-                        <p className={APP_PAGE_SUBTITLE_CLASS}>Manage maintenance and services for {property?.name || 'this property'}.</p>
-                    </div>
-                    <Button>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Schedule Service
-                    </Button>
-                </div>
+            <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
+                <h1 className={APP_SR_ONLY_PAGE_TITLE_CLASS}>Property services</h1>
+                <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Schedule Service
+                </Button>
             </header>
 
             <div className="mb-6 p-4 rounded-lg border bg-card flex flex-col sm:flex-row gap-4">

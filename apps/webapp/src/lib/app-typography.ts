@@ -18,3 +18,13 @@ export const APP_NAV_TAB_CLASS = 'text-sm font-medium';
 
 /** Sheet / dialog section title */
 export const APP_SHEET_TITLE_CLASS = 'text-lg font-semibold';
+
+/** Dialog title (matches shadcn DialogTitle) */
+export const APP_DIALOG_TITLE_CLASS =
+  'text-lg font-semibold leading-none tracking-tight';
+
+/** Caption, chart labels, and other secondary microcopy */
+export const APP_CAPTION_CLASS = 'text-xs text-muted-foreground';
+
+/** Screen-reader-only page title inside the property shell (visible header already names the property). */
+export const APP_SR_ONLY_PAGE_TITLE_CLASS = 'sr-only';

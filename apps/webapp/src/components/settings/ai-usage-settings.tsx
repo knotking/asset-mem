@@ -24,7 +24,7 @@ import {
 import { formatTokensCompact, formatTokensFull } from "@/lib/format-tokens";
 import { FREE_PLAN_LIMITS } from "@/lib/plan-limits-public";
 import { cn } from "@/lib/utils";
-import { APP_SECTION_TITLE_CLASS } from "@/lib/app-typography";
+import { APP_CAPTION_CLASS, APP_SECTION_TITLE_CLASS } from "@/lib/app-typography";
 
 const nf = new Intl.NumberFormat("en-US");
 
@@ -69,7 +69,7 @@ function SectionHeading({
         {title}
       </span>
       {subtitle ? (
-        <span className="text-[10px] text-muted-foreground">{subtitle}</span>
+        <span className={APP_CAPTION_CLASS}>{subtitle}</span>
       ) : null}
     </div>
   );
@@ -78,7 +78,7 @@ function SectionHeading({
 function GroupHeading({ title }: { title: string }) {
   return (
     <div className="sm:col-span-2">
-      <span className="text-[11px] font-medium text-muted-foreground">{title}</span>
+      <span className={cn(APP_CAPTION_CLASS, 'font-medium')}>{title}</span>
     </div>
   );
 }

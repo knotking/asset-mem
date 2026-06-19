@@ -16,9 +16,74 @@ import { useRequireAuth } from '@/hooks/use-require-auth';
 import { usePreferences } from '@/contexts/preferences-context';
 import { Checkpoint, PropertyReport } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { APP_NAV_TAB_CLASS, APP_PAGE_SUBTITLE_CLASS, APP_PAGE_TITLE_CLASS, APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
+import { APP_NAV_TAB_CLASS, APP_PAGE_SUBTITLE_CLASS, APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
 
 type TimelineTab = 'checkpoints' | 'insights' | 'reports';
+
+const TIMELINE_TAB_LABELS: Record<TimelineTab, string> = {
+  checkpoints: 'Checkpoints',
+  insights: 'Insights',
+  reports: 'Reports',
+};
+
+const TIMELINE_TAB_DESCRIPTIONS: Record<TimelineTab, string> = {
+  checkpoints: 'Checkpoint history and comparisons',
+  insights: 'Condition trends and severity over time',
+  reports: 'Generated property reports',
+};
+
+function TimelineHeader({
+  activeTab,
+  onAddCheckpoint,
+  onCreateReport,
+}: {
+  activeTab: TimelineTab;
+  onAddCheckpoint: () => void;
+  onCreateReport: () => void;
+}) {
+  const label = TIMELINE_TAB_LABELS[activeTab];
+  const description = TIMELINE_TAB_DESCRIPTIONS[activeTab];
+
+  return (
+    <header className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 sm:flex sm:items-start sm:justify-between">
+      <div className="min-w-0">
+        <h1 className={cn(APP_SECTION_TITLE_CLASS, 'hidden sm:block')}>{label}</h1>
+        <p
+          className={cn(
+            APP_PAGE_SUBTITLE_CLASS,
+            'min-h-10 line-clamp-2 sm:mt-0 sm:min-h-0 sm:line-clamp-none',
+          )}
+        >
+          <span className="sr-only sm:hidden">{label}. </span>
+          {description}
+        </p>
+      </div>
+      <div className="flex min-h-8 w-[9.5rem] shrink-0 items-center justify-end sm:min-h-0 sm:w-auto sm:pt-0.5">
+        {activeTab === 'checkpoints' ? (
+          <Button
+            size="sm"
+            className="h-8 max-w-[9.5rem] shrink-0 px-2.5 text-xs whitespace-nowrap sm:h-10 sm:max-w-none sm:px-4 sm:text-sm"
+            onClick={onAddCheckpoint}
+          >
+            <Plus className="mr-1 h-4 w-4 sm:mr-2" />
+            Add Checkpoint
+          </Button>
+        ) : activeTab === 'reports' ? (
+          <Button
+            size="sm"
+            className="h-8 shrink-0 px-2.5 text-xs whitespace-nowrap sm:h-10 sm:px-4 sm:text-sm"
+            onClick={onCreateReport}
+          >
+            <Plus className="mr-1 h-4 w-4 sm:mr-2" />
+            Create Report
+          </Button>
+        ) : (
+          <span className="block w-full sm:hidden" aria-hidden />
+        )}
+      </div>
+    </header>
+  );
+}
 
 function parseTimelineTab(value: string | null): TimelineTab {
   if (value === 'reports') return 'reports';
@@ -77,32 +142,14 @@ export default function PropertyCheckpointsPage() {
   return (
     <>
       <div className="mx-auto max-w-5xl p-4 sm:p-6 md:p-8">
-          <header className="mb-6">
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-              <div>
-                <h1 className={APP_PAGE_TITLE_CLASS}>Property Timeline</h1>
-                <p className={APP_PAGE_SUBTITLE_CLASS}>
-                  Checkpoint history, insights, and reports
-                </p>
-              </div>
-              {activeTab === 'checkpoints' ? (
-                <Button onClick={() => setIsCreateDialogOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Checkpoint
-                </Button>
-              ) : activeTab === 'reports' ? (
-                <Button
-                  onClick={() => {
-                    setRegenerateFrom(null);
-                    setGenerateOpen(true);
-                  }}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Report
-                </Button>
-              ) : null}
-            </div>
-          </header>
+          <TimelineHeader
+            activeTab={activeTab}
+            onAddCheckpoint={() => setIsCreateDialogOpen(true)}
+            onCreateReport={() => {
+              setRegenerateFrom(null);
+              setGenerateOpen(true);
+            }}
+          />
 
           <div className="mb-6 overflow-x-auto border-b">
             <nav className="flex min-w-max gap-4 sm:min-w-0 sm:gap-6" aria-label="Timeline tabs">
@@ -171,7 +218,7 @@ export default function PropertyCheckpointsPage() {
             <>
               <MetricsDashboard />
               <div className="mt-6">
-                <h2 className={cn(APP_SECTION_TITLE_CLASS, 'mb-4')}>Timeline</h2>
+                <h2 className={cn(APP_SECTION_TITLE_CLASS, 'mb-4')}>Checkpoint history</h2>
                 <CheckpointList
                   checkpoints={checkpoints}
                   loading={loading}

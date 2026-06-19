@@ -139,7 +139,7 @@ export function CheckpointComparisonDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl">Compare Checkpoints</DialogTitle>
+          <DialogTitle>Compare Checkpoints</DialogTitle>
           <DialogDescription>
             Visual comparison and analysis of changes between two checkpoints
           </DialogDescription>
