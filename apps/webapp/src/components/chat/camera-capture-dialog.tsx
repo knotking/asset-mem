@@ -4,7 +4,21 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Camera as CameraIcon, Circle, RefreshCw, StopCircle, Video } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createLogger } from "@/lib/logger";
+import { getCameraLabel, useCameraDevices } from "@/hooks/use-camera-devices";
+import {
+  getCameraUnsupportedMessage,
+  pickFromNativeCamera,
+  supportsInBrowserCamera,
+  type CameraFacingMode,
+} from "@/lib/camera-capability";
 
 const cameraLog = createLogger("camera");
 
@@ -42,16 +56,31 @@ export function CameraCaptureDialog({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const shouldSaveRecordingRef = useRef(false);
+  const [cameraRevision, setCameraRevision] = useState(0);
+  const wasOpenRef = useRef(false);
 
   const [mode, setMode] = useState<"photo" | "video">("photo");
   const [selectedFacingMode, setSelectedFacingMode] = useState<"user" | "environment">("environment");
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isStreamLoading, setIsStreamLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasCameraAccess, setHasCameraAccess] = useState(true);
 
+  const { devices: videoDevices, refreshDevices } = useCameraDevices(open);
+
+  const inBrowserCameraSupported = supportsInBrowserCamera();
+  const useNativeCameraFallback = open && !inBrowserCameraSupported;
+
   const canRecordVideo =
     typeof window !== "undefined" && typeof window.MediaRecorder !== "undefined";
+
+  const getVideoConstraints = useCallback((): MediaTrackConstraints => {
+    if (selectedDeviceId) {
+      return { deviceId: { exact: selectedDeviceId } };
+    }
+    return { facingMode: { ideal: selectedFacingMode } };
+  }, [selectedDeviceId, selectedFacingMode]);
 
   const stopRecording = useCallback(
     (shouldSave: boolean) => {
@@ -81,11 +110,31 @@ export function CameraCaptureDialog({
     }
   }, [stopRecording]);
 
+  const attachStreamToVideo = useCallback(() => {
+    const video = videoRef.current;
+    const stream = mediaStreamRef.current;
+    if (!video || !stream) return;
+    if (video.srcObject !== stream) {
+      video.srcObject = stream;
+      void video.play().catch(() => {
+        // Some browsers require explicit user interaction; ignore play errors.
+      });
+    }
+  }, []);
+
+  const setVideoElement = useCallback(
+    (node: HTMLVideoElement | null) => {
+      videoRef.current = node;
+      if (node) attachStreamToVideo();
+    },
+    [attachStreamToVideo]
+  );
+
   const initStream = useCallback(
     async (captureMode: "photo" | "video") => {
-      if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      if (!supportsInBrowserCamera()) {
         setHasCameraAccess(false);
-        setError("Camera access is not supported in this browser.");
+        setError(getCameraUnsupportedMessage());
         return;
       }
 
@@ -95,20 +144,18 @@ export function CameraCaptureDialog({
 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: selectedFacingMode } },
+          video: getVideoConstraints(),
           audio: captureMode === "video" && canRecordVideo,
         });
 
         mediaStreamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          try {
-            await videoRef.current.play();
-          } catch {
-            // Some browsers require explicit user interaction; ignore play errors.
-          }
-        }
+        attachStreamToVideo();
 
+        const activeDeviceId = stream.getVideoTracks()[0]?.getSettings().deviceId;
+        if (activeDeviceId) {
+          setSelectedDeviceId(activeDeviceId);
+        }
+        await refreshDevices();
         setHasCameraAccess(true);
       } catch (err) {
         cameraLog.error("access.failed", undefined, err);
@@ -118,33 +165,57 @@ export function CameraCaptureDialog({
         setIsStreamLoading(false);
       }
     },
-    [canRecordVideo, selectedFacingMode, stopStream]
+    [attachStreamToVideo, canRecordVideo, getVideoConstraints, refreshDevices, stopStream]
   );
 
-  useEffect(() => {
-    if (!open) return;
-    setMode(initialMode === "video" && canRecordVideo ? "video" : "photo");
-  }, [open, initialMode, canRecordVideo]);
+  const requestCameraRefresh = useCallback(() => {
+    setCameraRevision((revision) => revision + 1);
+  }, []);
 
   useEffect(() => {
     if (!open) {
+      wasOpenRef.current = false;
       stopStream();
       setError(null);
       setIsStreamLoading(false);
       setHasCameraAccess(true);
       setSelectedFacingMode("environment");
+      setSelectedDeviceId(null);
+      setCameraRevision(0);
       if (mode !== "photo") {
         setMode("photo");
       }
       return;
     }
 
-    initStream(mode);
+    if (!supportsInBrowserCamera()) {
+      stopStream();
+      setIsStreamLoading(false);
+      setHasCameraAccess(false);
+      setError(getCameraUnsupportedMessage());
+      return;
+    }
+
+    const justOpened = !wasOpenRef.current;
+    wasOpenRef.current = true;
+    const resolvedInitialMode =
+      initialMode === "video" && canRecordVideo ? "video" : "photo";
+    const streamMode = justOpened ? resolvedInitialMode : mode;
+
+    if (justOpened && streamMode !== mode) {
+      setMode(streamMode);
+    }
+
+    // Defer until the dialog video element is mounted (Radix portal/animation).
+    const frameId = requestAnimationFrame(() => {
+      void initStream(streamMode);
+    });
 
     return () => {
+      cancelAnimationFrame(frameId);
       stopStream();
     };
-  }, [open, mode, initStream, stopStream]);
+  }, [open, mode, initialMode, canRecordVideo, cameraRevision, initStream, stopStream]);
 
   useEffect(() => {
     if (!canRecordVideo && mode === "video") {
@@ -288,6 +359,38 @@ export function CameraCaptureDialog({
   const isReadyForCapture =
     !isStreamLoading && hasCameraAccess && mediaStreamRef.current !== null;
 
+  const handleSwitchCamera = () => {
+    if (videoDevices.length > 1) {
+      const currentIndex = videoDevices.findIndex((device) => device.deviceId === selectedDeviceId);
+      const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % videoDevices.length : 0;
+      setSelectedDeviceId(videoDevices[nextIndex]?.deviceId ?? null);
+      requestCameraRefresh();
+      return;
+    }
+
+    setSelectedDeviceId(null);
+    setSelectedFacingMode((prev) => (prev === "user" ? "environment" : "user"));
+    requestCameraRefresh();
+  };
+
+  const currentCameraLabel =
+    selectedDeviceId && videoDevices.length > 0
+      ? getCameraLabel(
+          videoDevices.find((device) => device.deviceId === selectedDeviceId) ?? videoDevices[0],
+          Math.max(videoDevices.findIndex((device) => device.deviceId === selectedDeviceId), 0)
+        )
+      : selectedFacingMode === "user"
+        ? "Front camera"
+        : "Rear camera";
+
+  const handleOpenNativeCamera = useCallback(async () => {
+    const facing: CameraFacingMode = selectedFacingMode;
+    const file = await pickFromNativeCamera(mode, facing);
+    if (!file) return;
+    onCapture(file);
+    onOpenChange(false);
+  }, [mode, onCapture, onOpenChange, selectedFacingMode]);
+
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="sm:max-w-2xl">
@@ -299,12 +402,13 @@ export function CameraCaptureDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex shrink-0 gap-1 sm:gap-2">
               <Button
                 type="button"
                 variant={mode === "photo" ? "secondary" : "outline"}
                 size="sm"
+                className="h-8 px-2.5 sm:px-3"
                 onClick={() => setMode("photo")}
                 disabled={isRecording}
               >
@@ -314,40 +418,65 @@ export function CameraCaptureDialog({
                 type="button"
                 variant={mode === "video" ? "secondary" : "outline"}
                 size="sm"
+                className="h-8 px-2.5 sm:px-3"
                 onClick={() => setMode("video")}
-                disabled={!canRecordVideo || isRecording}
+                disabled={(!useNativeCameraFallback && !canRecordVideo) || isRecording}
               >
                 Video
               </Button>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {selectedFacingMode === "user" ? "Front camera" : "Rear camera"}
-              </span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setSelectedFacingMode((prev) => (prev === "user" ? "environment" : "user"))
-                }
-                disabled={isStreamLoading || isRecording}
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Switch camera
-              </Button>
-              {isRecording && (
-                <div className="flex items-center gap-1 text-sm font-medium text-destructive">
-                  <Circle className="h-3 w-3 fill-destructive stroke-destructive" />
-                  Recording…
-                </div>
-              )}
-            </div>
+            {!useNativeCameraFallback && (
+              <div className="ml-auto flex min-w-0 shrink items-center gap-1 sm:gap-2">
+                {videoDevices.length > 1 ? (
+                  <Select
+                    value={selectedDeviceId ?? undefined}
+                    onValueChange={(deviceId) => {
+                      setSelectedDeviceId(deviceId);
+                      requestCameraRefresh();
+                    }}
+                    disabled={isStreamLoading || isRecording}
+                  >
+                    <SelectTrigger className="hidden h-8 w-[min(100%,10rem)] text-xs sm:flex">
+                      <SelectValue placeholder="Select camera" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {videoDevices.map((device, index) => (
+                        <SelectItem key={device.deviceId} value={device.deviceId}>
+                          {getCameraLabel(device, index)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <span className="hidden text-sm text-muted-foreground sm:inline">
+                    {currentCameraLabel}
+                  </span>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 shrink-0 px-2 sm:px-3"
+                  onClick={handleSwitchCamera}
+                  disabled={isStreamLoading || isRecording}
+                  aria-label="Switch camera"
+                >
+                  <RefreshCw className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Switch camera</span>
+                </Button>
+                {isRecording && (
+                  <div className="flex shrink-0 items-center gap-1 text-xs font-medium text-destructive sm:text-sm">
+                    <Circle className="h-3 w-3 fill-destructive stroke-destructive" />
+                    <span className="hidden sm:inline">Recording…</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
             <video
-              ref={videoRef}
+              ref={setVideoElement}
               autoPlay
               playsInline
               muted={mode === "photo"}
@@ -361,9 +490,15 @@ export function CameraCaptureDialog({
             )}
 
             {!hasCameraAccess && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80 px-6 text-center text-sm text-white">
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80 px-6 text-center text-sm text-white">
                 <AlertCircle className="h-5 w-5 text-destructive" />
                 <p>{error ?? "Camera access was denied. Please allow access in your browser settings."}</p>
+                {useNativeCameraFallback && (
+                  <Button type="button" size="sm" onClick={() => void handleOpenNativeCamera()}>
+                    <CameraIcon className="mr-2 h-4 w-4" />
+                    Open device camera
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -390,6 +525,12 @@ export function CameraCaptureDialog({
               Cancel
             </Button>
             {mode === "photo" ? (
+              useNativeCameraFallback ? (
+                <Button type="button" onClick={() => void handleOpenNativeCamera()}>
+                  <CameraIcon className="mr-2 h-4 w-4" />
+                  Open device camera
+                </Button>
+              ) : (
               <Button
                 type="button"
                 onClick={handleCapturePhoto}
@@ -398,6 +539,7 @@ export function CameraCaptureDialog({
                 <CameraIcon className="mr-2 h-4 w-4" />
                 Take photo
               </Button>
+              )
             ) : isRecording ? (
               <Button
                 type="button"
@@ -406,6 +548,11 @@ export function CameraCaptureDialog({
               >
                 <StopCircle className="mr-2 h-4 w-4" />
                 Stop recording
+              </Button>
+            ) : useNativeCameraFallback ? (
+              <Button type="button" onClick={() => void handleOpenNativeCamera()}>
+                <Video className="mr-2 h-4 w-4" />
+                Record with device camera
               </Button>
             ) : (
               <Button

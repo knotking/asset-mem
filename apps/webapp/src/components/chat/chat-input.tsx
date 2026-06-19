@@ -41,6 +41,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { CameraCaptureDialog } from "./camera-capture-dialog";
+import { pickFromNativeCamera, supportsInBrowserCamera } from "@/lib/camera-capability";
 import {
   ANALYSIS_OPTIONAL_AGENTS,
   CHECKPOINT_OPTIONAL_AGENTS,
@@ -269,6 +270,15 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
     const handleCameraCapture = (file: File) => {
       onFileChange?.(file);
       setCameraDialogOpen(false);
+    };
+
+    const handleOpenCamera = async () => {
+      if (!supportsInBrowserCamera()) {
+        const file = await pickFromNativeCamera("photo");
+        if (file) handleCameraCapture(file);
+        return;
+      }
+      setCameraDialogOpen(true);
     };
 
     return (
@@ -603,7 +613,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
                     variant="ghost"
                     size="icon"
                     className="flex-shrink-0"
-                    onClick={() => setCameraDialogOpen(true)}
+                    onClick={() => void handleOpenCamera()}
                     disabled={isLoading || hasFileAttached}
                     type="button"
                     aria-label="Open camera"
