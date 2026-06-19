@@ -92,14 +92,25 @@ function PropertyTabs() {
     )
 }
 
-function PropertyHeader() {
+type PropertyHeaderProps = {
+  /** Chat route: tighter mobile header — hide address below sm, sessions toggle on the right. */
+  compact?: boolean;
+  onOpenSessions?: () => void;
+};
+
+function PropertyHeader({ compact, onOpenSessions }: PropertyHeaderProps) {
   const params = useParams();
   const router = useRouter();
   const { property, isLoading: isPropertyLoading } = useProperty();
   const isNewPropertyFlow = params.propertyId === 'new-property';
 
   return (
-      <header className="border-b bg-background p-3 sm:p-4">
+      <header
+        className={cn(
+          'border-b bg-background',
+          compact ? 'px-2 py-2 sm:p-4' : 'p-3 sm:p-4',
+        )}
+      >
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Button
             variant="ghost"
@@ -112,35 +123,66 @@ function PropertyHeader() {
               <span className="hidden sm:inline">Back to Properties</span>
           </Button>
           <div className="hidden h-8 w-px bg-border sm:block" />
-          <div className='min-w-0 flex-1'>
+          <div className="min-w-0 flex-1 overflow-hidden">
             {isPropertyLoading ? (
                 <div className="flex flex-col gap-2">
                     <Skeleton className="h-5 w-40" />
-                    <Skeleton className="h-4 w-60" />
+                    <Skeleton
+                      className={cn('h-4 w-60', compact && 'hidden sm:block')}
+                    />
                 </div>
             ) : (
-              <div className="flex items-start gap-2">
-                <div className='flex-1 min-w-0'>
-                    <h1 className={APP_PROPERTY_TITLE_CLASS} title={property?.name}>
+              <div className="min-w-0 overflow-hidden">
+                    <h1
+                      className={cn(APP_PROPERTY_TITLE_CLASS, 'block w-full')}
+                      title={property?.name}
+                    >
                         {isNewPropertyFlow && <PlusCircle className="h-4 w-4 text-primary inline-block mr-2" />}
                         {property?.name || 'New Property'}
                     </h1>
-                    <p className="text-sm text-muted-foreground truncate" title={property?.address}>{isNewPropertyFlow ? "Upload documents to get started" : property?.address || '...'}</p>
-                </div>
+                    <p
+                      className={cn(
+                        'text-sm text-muted-foreground truncate',
+                        compact && 'hidden sm:block',
+                      )}
+                      title={property?.address}
+                    >
+                      {isNewPropertyFlow
+                        ? 'Upload documents to get started'
+                        : property?.address || '...'}
+                    </p>
               </div>
             )}
           </div>
+          {onOpenSessions ? (
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 shrink-0 lg:hidden"
+              onClick={onOpenSessions}
+              aria-label="Open chat sessions"
+            >
+              <PanelLeft className="h-4 w-4" />
+            </Button>
+          ) : null}
         </div>
       </header>
   );
 }
 
-function PropertyChatLayoutContent({ children }: { children: React.ReactNode; }) {
-  const pathname = usePathname();
-  const isChatActive = pathname.includes('/chat');
-  const [isSessionSidebarCollapsed, setIsSessionSidebarCollapsed] = useState(false);
-  const [isMobileSessionOpen, setIsMobileSessionOpen] = useState(false);
+type PropertyChatLayoutContentProps = {
+  children: React.ReactNode;
+  isChatActive: boolean;
+  isSessionSidebarCollapsed: boolean;
+  onToggleSessionSidebarCollapse: () => void;
+};
 
+function PropertyChatLayoutContent({
+  children,
+  isChatActive,
+  isSessionSidebarCollapsed,
+  onToggleSessionSidebarCollapse,
+}: PropertyChatLayoutContentProps) {
   if (!isChatActive) {
     return (
       <div className="flex min-h-0 flex-1 flex-col">
@@ -152,36 +194,28 @@ function PropertyChatLayoutContent({ children }: { children: React.ReactNode; })
   }
 
   return (
-      <div className="flex h-full w-full relative">
-        <aside className={cn(
-            "lg:relative border-r bg-sidebar transition-all duration-300 z-20",
-            "lg:w-64",
+      <div className="flex h-full w-full">
+        <aside
+          className={cn(
+            'relative z-20 hidden flex-col border-r bg-sidebar transition-all duration-300 lg:flex',
             isSessionSidebarCollapsed ? 'lg:w-14' : 'lg:w-80',
-            !isMobileSessionOpen && "hidden lg:flex flex-col",
-            isMobileSessionOpen && "absolute inset-0 w-full max-w-sm flex flex-col"
-            )}>
-            <SessionNavBar 
+          )}
+        >
+            <SessionNavBar
                 isCollapsed={isSessionSidebarCollapsed}
-                onToggleCollapse={() => setIsSessionSidebarCollapsed(!isSessionSidebarCollapsed)}
-                isMobileOpen={isMobileSessionOpen}
-                onMobileClose={() => setIsMobileSessionOpen(false)}
+                onToggleCollapse={onToggleSessionSidebarCollapse}
+                isMobileOpen={false}
+                onMobileClose={() => {}}
             />
         </aside>
 
-        <div className="flex flex-1 flex-col overflow-hidden">
-            <main className="relative flex-1 overflow-hidden">
-                 <div className="absolute top-2 left-2 z-10 lg:hidden">
-                    <Button variant="outline" size="icon" onClick={() => setIsMobileSessionOpen(true)}>
-                        <PanelLeft className="h-4 w-4" />
-                    </Button>
-                </div>
-                <div className="h-full min-w-0 overflow-x-hidden pt-12 lg:pt-0">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            <main className="relative min-h-0 flex-1 overflow-hidden">
+                <div className="h-full min-w-0 overflow-x-hidden">
                   {children}
                 </div>
             </main>
         </div>
-        
-        {/* Context is managed in the chat composer (Add context), not the sidebar panel. */}
       </div>
   );
 }
@@ -212,7 +246,11 @@ function MobileSheet({ children, side, triggerIcon, title, contentClassName }: {
 function LayoutWithDialog({ children }: { children: React.ReactNode }) {
     const { isOpen, onClose, onOpen } = useUploadDialog();
     const params = useParams();
+    const pathname = usePathname();
     const isNewPropertyFlow = params.propertyId === 'new-property';
+    const isChatActive = pathname.includes('/chat');
+    const [isSessionSidebarCollapsed, setIsSessionSidebarCollapsed] = useState(false);
+    const [isMobileSessionOpen, setIsMobileSessionOpen] = useState(false);
 
     useEffect(() => {
         if (isNewPropertyFlow) {
@@ -223,14 +261,42 @@ function LayoutWithDialog({ children }: { children: React.ReactNode }) {
     return (
         <>
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
-                <PropertyHeader />
+                <PropertyHeader
+                  compact={isChatActive}
+                  onOpenSessions={
+                    isChatActive ? () => setIsMobileSessionOpen(true) : undefined
+                  }
+                />
                 <PropertyTabs />
                 <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                    <PropertyChatLayoutContent>
+                    <PropertyChatLayoutContent
+                      isChatActive={isChatActive}
+                      isSessionSidebarCollapsed={isSessionSidebarCollapsed}
+                      onToggleSessionSidebarCollapse={() =>
+                        setIsSessionSidebarCollapsed((v) => !v)
+                      }
+                    >
                         {children}
                     </PropertyChatLayoutContent>
                 </main>
             </div>
+            {isChatActive ? (
+              <Sheet open={isMobileSessionOpen} onOpenChange={setIsMobileSessionOpen}>
+                <SheetContent
+                  side="left"
+                  showCloseButton={false}
+                  className="flex w-full max-w-sm flex-col p-0 lg:hidden"
+                >
+                  <SheetTitle className="sr-only">Chat sessions</SheetTitle>
+                  <SessionNavBar
+                    isCollapsed={false}
+                    onToggleCollapse={() => {}}
+                    isMobileOpen={isMobileSessionOpen}
+                    onMobileClose={() => setIsMobileSessionOpen(false)}
+                  />
+                </SheetContent>
+              </Sheet>
+            ) : null}
             <UploadDocumentsDialog open={isOpen} onOpenChange={onClose} />
         </>
     );

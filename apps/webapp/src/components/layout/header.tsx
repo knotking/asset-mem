@@ -66,7 +66,9 @@ export function Header() {
             <TooltipProvider delayDuration={300}>
                 <ThemeToggle />
                 <NotificationsBell anchorRef={headerActionsRef} />
-                <TokenUsageToolbar settingsReturnContext={returnContext} />
+                <span className="hidden sm:contents">
+                  <TokenUsageToolbar settingsReturnContext={returnContext} />
+                </span>
                 <HeaderIconTooltip label="FAQ & guides">
                   <Button
                     variant="ghost"

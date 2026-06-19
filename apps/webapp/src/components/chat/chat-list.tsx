@@ -120,7 +120,7 @@ export function ChatList({
       {isEmpty ? (
         <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6">
           <div className="flex flex-col items-center text-center p-4 rounded-lg bg-card/80 max-w-md">
-            <AssetMemBrandIcon size="lg" className="mb-4 text-muted-foreground" />
+            <AssetMemBrandIcon size="md" className="mb-3 text-muted-foreground" />
             <h3 className="text-lg font-semibold mb-2">{CHAT_SESSION_EMPTY_INTRO.title}</h3>
             <p className="text-sm text-muted-foreground max-w-sm mb-4">
               {CHAT_SESSION_EMPTY_INTRO.subtitle}
@@ -133,7 +133,7 @@ export function ChatList({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-auto whitespace-normal px-3 py-2 text-left text-sm"
+                    className="h-auto whitespace-normal px-3 py-2 text-center text-sm"
                     disabled={isSendDisabled}
                     onClick={() => onSelectSuggestedPrompt(prompt)}
                   >

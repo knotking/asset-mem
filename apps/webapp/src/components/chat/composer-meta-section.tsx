@@ -9,6 +9,7 @@ import type {
   SearchLocationInput,
 } from "@/lib/types";
 import { buildCollapsedComposerSummary } from "@/lib/composer-collapse";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CompactSettingsBar } from "./compact-settings-bar";
@@ -47,11 +48,16 @@ export function ComposerMetaSection({
   pendingContextCount = 0,
   hasQueuedSend = false,
 }: ComposerMetaSectionProps) {
+  const isMobile = useIsMobile();
   const [settingsPopoverOpen, setSettingsPopoverOpen] = React.useState(false);
   const [settingsPopoverTab, setSettingsPopoverTab] = React.useState<"agent" | "location">(
     "agent",
   );
-  const [composerMetaExpanded, setComposerMetaExpanded] = React.useState(true);
+  const [composerMetaExpanded, setComposerMetaExpanded] = React.useState(false);
+
+  React.useEffect(() => {
+    setComposerMetaExpanded(!isMobile);
+  }, [isMobile]);
 
   const openSettings = React.useCallback((tab: "agent" | "location") => {
     setSettingsPopoverTab(tab);

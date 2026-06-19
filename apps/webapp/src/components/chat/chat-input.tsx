@@ -39,6 +39,7 @@ import {
   CommandList,
 } from "../ui/command";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "../ui/badge";
 import { CameraCaptureDialog } from "./camera-capture-dialog";
 import { pickFromNativeCamera, supportsInBrowserCamera } from "@/lib/camera-capability";
@@ -140,6 +141,14 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
     const [settingsPopoverTab, setSettingsPopoverTab] = useState<
       "agent" | "location"
     >("agent");
+    const isMobile = useIsMobile();
+
+    const handleTextareaFocus = () => {
+      if (!isMobile) return;
+      requestAnimationFrame(() => {
+        textareaRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      });
+    };
 
     useImperativeHandle(ref, () => internalFileInputRef.current!);
 
@@ -333,7 +342,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
 
         <form
           onSubmit={handleSubmit}
-          className="flex w-full min-w-0 max-w-full flex-col gap-2.5"
+          className="flex w-full min-w-0 max-w-full flex-col gap-2 sm:gap-2.5"
         >
           <div className="min-w-0 max-w-full space-y-2">
             {useContextMode ? (
@@ -477,6 +486,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
                 value={content}
                 onInput={handleInput}
                 onKeyDown={handleKeyDown}
+                onFocus={handleTextareaFocus}
                 placeholder={placeholder}
                 className="min-h-10 min-w-0 flex-1 resize-none max-h-48 overflow-y-auto bg-transparent border-0 shadow-none focus-visible:ring-0 px-3 py-2 leading-5"
                 rows={1}
