@@ -22,6 +22,11 @@ import {
 
 const cameraLog = createLogger("camera");
 
+type CameraSelection = {
+  deviceId: string | null;
+  facingMode: "user" | "environment";
+};
+
 type CameraCaptureDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -57,6 +62,10 @@ export function CameraCaptureDialog({
   const recordedChunksRef = useRef<Blob[]>([]);
   const shouldSaveRecordingRef = useRef(false);
   const wasOpenRef = useRef(false);
+  const initStreamRef = useRef<
+    (captureMode: "photo" | "video", selectionOverride?: CameraSelection) => Promise<void>
+  >(async () => {});
+  const initGenerationRef = useRef(0);
 
   const [mode, setMode] = useState<"photo" | "video">("photo");
   const [selectedFacingMode, setSelectedFacingMode] = useState<"user" | "environment">("environment");
@@ -74,16 +83,11 @@ export function CameraCaptureDialog({
   const canRecordVideo =
     typeof window !== "undefined" && typeof window.MediaRecorder !== "undefined";
 
-  type CameraSelection = {
-    deviceId: string | null;
-    facingMode: "user" | "environment";
-  };
-
   const buildVideoConstraints = useCallback((selection: CameraSelection): MediaTrackConstraints => {
     if (selection.deviceId) {
       return { deviceId: { exact: selection.deviceId } };
     }
-    return { facingMode: { ideal: selection.facingMode } };
+    return { facingMode: { exact: selection.facingMode } };
   }, []);
 
   const getCurrentSelection = useCallback(
@@ -151,6 +155,7 @@ export function CameraCaptureDialog({
       }
 
       const selection = selectionOverride ?? getCurrentSelection();
+      const generation = ++initGenerationRef.current;
 
       stopStream();
       setIsStreamLoading(true);
@@ -162,24 +167,35 @@ export function CameraCaptureDialog({
           audio: captureMode === "video" && canRecordVideo,
         });
 
+        if (generation !== initGenerationRef.current) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
         mediaStreamRef.current = stream;
         attachStreamToVideo();
 
         const activeDeviceId = stream.getVideoTracks()[0]?.getSettings().deviceId;
-        if (activeDeviceId) {
-          setSelectedDeviceId(activeDeviceId);
+        if (selection.deviceId) {
+          setSelectedDeviceId(activeDeviceId ?? selection.deviceId);
         } else {
-          setSelectedDeviceId(selection.deviceId);
+          // Keep facingMode-only selection; binding deviceId would pin the old camera on re-init.
+          setSelectedDeviceId(null);
         }
         setSelectedFacingMode(selection.facingMode);
         await refreshDevices();
         setHasCameraAccess(true);
       } catch (err) {
+        if (generation !== initGenerationRef.current) {
+          return;
+        }
         cameraLog.error("access.failed", undefined, err);
         setHasCameraAccess(false);
         setError("Unable to access camera. Please check your browser permissions.");
       } finally {
-        setIsStreamLoading(false);
+        if (generation === initGenerationRef.current) {
+          setIsStreamLoading(false);
+        }
       }
     },
     [
@@ -192,9 +208,12 @@ export function CameraCaptureDialog({
     ],
   );
 
+  initStreamRef.current = initStream;
+
   useEffect(() => {
     if (!open) {
       wasOpenRef.current = false;
+      initGenerationRef.current += 1;
       stopStream();
       setError(null);
       setIsStreamLoading(false);
@@ -227,14 +246,14 @@ export function CameraCaptureDialog({
 
     // Defer until the dialog video element is mounted (Radix portal/animation).
     const frameId = requestAnimationFrame(() => {
-      void initStream(streamMode);
+      void initStreamRef.current(streamMode);
     });
 
     return () => {
       cancelAnimationFrame(frameId);
       stopStream();
     };
-  }, [open, mode, initialMode, canRecordVideo, initStream, stopStream]);
+  }, [open, mode, initialMode, canRecordVideo, stopStream]);
 
   useEffect(() => {
     if (!canRecordVideo && mode === "video") {
@@ -384,16 +403,21 @@ export function CameraCaptureDialog({
     let nextSelection: CameraSelection;
 
     if (videoDevices.length > 1) {
-      const currentIndex = videoDevices.findIndex((device) => device.deviceId === selectedDeviceId);
+      const activeDeviceId =
+        selectedDeviceId ??
+        mediaStreamRef.current?.getVideoTracks()[0]?.getSettings().deviceId ??
+        null;
+      const currentIndex = videoDevices.findIndex((device) => device.deviceId === activeDeviceId);
       const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % videoDevices.length : 0;
       nextSelection = {
         deviceId: videoDevices[nextIndex]?.deviceId ?? null,
         facingMode: selectedFacingMode,
       };
     } else {
+      const nextFacingMode = selectedFacingMode === "user" ? "environment" : "user";
       nextSelection = {
         deviceId: null,
-        facingMode: selectedFacingMode === "user" ? "environment" : "user",
+        facingMode: nextFacingMode,
       };
     }
 
