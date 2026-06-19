@@ -43,7 +43,7 @@ import { usePreferences } from '@/contexts/preferences-context';
 import { useDismissFeatureTip } from '@/hooks/use-dismiss-feature-tip';
 import { shouldShowFeatureTip } from '@/lib/feature-discovery';
 import { cn } from '@/lib/utils';
-import { APP_LIST_ITEM_TITLE_CLASS, APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
+import { APP_FIELD_VALUE_BOX_CLASS, APP_FIELD_VALUE_CLASS, APP_LIST_ITEM_TITLE_CLASS, APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
 
 const propertyLog = createLogger('property');
 
@@ -334,11 +334,11 @@ function PropertyDetailsContent() {
                                 value={editedName}
                                 onChange={(e) => setEditedName(e.target.value)}
                                 placeholder="Enter property name"
-                                className="text-base"
+                                className="text-sm sm:text-base"
                                 disabled={isSaving}
                             />
                         ) : (
-                            <p className="min-w-0 break-words text-foreground p-3 bg-muted/50 rounded-md min-h-[40px]">{property?.name}</p>
+                            <p className={cn(APP_FIELD_VALUE_BOX_CLASS, APP_FIELD_VALUE_CLASS)}>{property?.name}</p>
                         )}
                     </div>
                      <div className="min-w-0 space-y-1">
@@ -355,7 +355,7 @@ function PropertyDetailsContent() {
                                     }
                                 }} 
                                 disabled={isSaving}>
-                                <SelectTrigger className="w-full text-base">
+                                <SelectTrigger className="w-full text-sm sm:text-base">
                                     <SelectValue placeholder="Select property type (optional)" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -367,7 +367,7 @@ function PropertyDetailsContent() {
                                 </SelectContent>
                             </Select>
                          ) : (
-                            <p className="min-w-0 break-words text-foreground p-3 bg-muted/50 rounded-md min-h-[40px]">
+                            <p className={cn(APP_FIELD_VALUE_BOX_CLASS, APP_FIELD_VALUE_CLASS)}>
                                 {property?.propertyType 
                                     ? PROPERTY_TYPES.find(t => t.value === property.propertyType)?.label || property.propertyType 
                                     : 'Not set'}
@@ -387,7 +387,7 @@ function PropertyDetailsContent() {
                                     }
                                 }} 
                                 disabled={isSaving}>
-                                <SelectTrigger className="w-full text-base">
+                                <SelectTrigger className="w-full text-sm sm:text-base">
                                     <SelectValue placeholder="Select sub-type (optional)" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -403,7 +403,7 @@ function PropertyDetailsContent() {
                     {!isEditing && property?.propertySubType && (
                         <div className="min-w-0 space-y-1">
                             <label className="text-sm font-medium text-muted-foreground">Sub-Type</label>
-                            <p className="min-w-0 break-words text-foreground p-3 bg-muted/50 rounded-md min-h-[40px]">
+                            <p className={cn(APP_FIELD_VALUE_BOX_CLASS, APP_FIELD_VALUE_CLASS)}>
                                 {getSubTypesForType(property?.propertyType as PropertyType).find(st => st.value === property.propertySubType)?.label || property.propertySubType}
                             </p>
                         </div>
@@ -415,11 +415,11 @@ function PropertyDetailsContent() {
                                 value={editedAddress}
                                 onChange={(e) => setEditedAddress(e.target.value)}
                                 placeholder="Enter full property address"
-                                className="text-base"
+                                className="text-sm sm:text-base"
                                 disabled={isSaving}
                             />
                          ) : (
-                             <p className="min-w-0 break-words text-foreground p-3 bg-muted/50 rounded-md flex items-start gap-2 min-h-[40px]">
+                             <p className={cn(APP_FIELD_VALUE_BOX_CLASS, APP_FIELD_VALUE_CLASS, 'flex items-start gap-2')}>
                                 <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
                                 <span className="min-w-0 break-words">{property?.address}</span>
                             </p>

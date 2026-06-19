@@ -10,7 +10,7 @@ import { UserProfileAvatar } from '@/components/user-profile-avatar';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
-import { APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
+import { APP_PROFILE_NAME_CLASS, APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
 import {
   DISPLAY_NAME_MAX_LENGTH,
   displayNameFromEmail,
@@ -101,7 +101,7 @@ export function ProfileSettings() {
           <UserProfileAvatar
             user={user}
             className="h-16 w-16 shrink-0"
-            fallbackClassName="text-lg"
+            fallbackClassName="text-base sm:text-lg"
           />
           <div className="min-w-0 flex-1 space-y-1">
             {isEditing ? (
@@ -113,7 +113,7 @@ export function ProfileSettings() {
                   disabled={saving}
                   autoFocus
                   maxLength={DISPLAY_NAME_MAX_LENGTH}
-                  className="h-9 text-lg font-medium"
+                  className={cn('h-9', APP_PROFILE_NAME_CLASS)}
                   aria-label="Display name"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -154,10 +154,7 @@ export function ProfileSettings() {
             ) : (
               <div className="flex items-center gap-1">
                 <p
-                  className={cn(
-                    'truncate text-lg font-medium',
-                    profileDisplay.isUnset && 'text-muted-foreground',
-                  )}
+                  className={cn('truncate', APP_PROFILE_NAME_CLASS, profileDisplay.isUnset && 'text-muted-foreground')}
                 >
                   {profileDisplay.label}
                 </p>

@@ -103,8 +103,8 @@ function PropertiesDashboardContent() {
         <header className="mb-8">
           <h1 className={APP_PAGE_TITLE_CLASS}>Property AI Agent</h1>
           <p className={APP_PAGE_SUBTITLE_CLASS}>
-            Upload property documents and chat with AI to get insights or diagnostics of your
-            properties and assets
+            Build visual property checkpoints, compare condition over time, and chat with your
+            documents to plan maintenance with confidence
           </p>
         </header>
 

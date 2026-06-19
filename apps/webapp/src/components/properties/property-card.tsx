@@ -28,6 +28,7 @@ import {
 } from '@/lib/deletion';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { APP_LIST_ITEM_TITLE_CLASS } from '@/lib/app-typography';
 import { createLogger } from '@/lib/logger';
 import { getWebDeletionApiUrls } from '@/lib/api-deletion';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
@@ -158,7 +159,13 @@ export function PropertyCard({ property }: { property: Property }) {
                                 <div className="flex items-center justify-center h-10 w-10 bg-muted rounded-lg shrink-0">
                                     <Icon className="h-5 w-5 text-muted-foreground" />
                                 </div>
-                                <h3 className="min-w-0 break-words text-base font-semibold leading-tight text-foreground" title={property.name}>
+                                <h3
+                                  className={cn(
+                                    APP_LIST_ITEM_TITLE_CLASS,
+                                    'min-w-0 break-words leading-tight',
+                                  )}
+                                  title={property.name}
+                                >
                                     {property.name}
                                 </h3>
                             </div>

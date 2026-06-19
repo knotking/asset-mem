@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { isBillingCheckoutTier } from '@/lib/pending-checkout';
-import { APP_PAGE_SUBTITLE_CLASS, APP_PAGE_TITLE_CLASS } from '@/lib/app-typography';
+import { APP_NAV_TAB_CLASS, APP_PAGE_SUBTITLE_CLASS, APP_PAGE_TITLE_CLASS } from '@/lib/app-typography';
 import {
   isSettingsHubReturn,
   resolveSettingsReturnContext,
@@ -161,7 +161,7 @@ function SettingsPageContent() {
             <TabsTrigger
               key={id}
               value={id}
-              className="justify-start gap-2 px-3 py-2 data-[state=active]:shadow-sm lg:w-full"
+              className={cn(APP_NAV_TAB_CLASS, 'justify-start gap-2 px-3 py-2 data-[state=active]:shadow-sm lg:w-full')}
             >
               <Icon className="h-4 w-4 shrink-0" />
               {label}

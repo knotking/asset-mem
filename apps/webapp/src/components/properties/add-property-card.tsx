@@ -6,6 +6,8 @@ import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/contexts/session-context";
 import { useToast } from "@/hooks/use-toast";
+import { APP_LIST_ITEM_TITLE_CLASS } from '@/lib/app-typography';
+import { cn } from '@/lib/utils';
 
 export function AddPropertyCard() {
     const router = useRouter();
@@ -26,7 +28,7 @@ export function AddPropertyCard() {
                         <Plus className="h-6 w-6 text-muted-foreground group-hover:text-muted-foreground transition-colors" />
                     </div>
                     <div className="text-center">
-                        <h3 className="font-medium text-foreground">Add New Property</h3>
+                        <h3 className={cn(APP_LIST_ITEM_TITLE_CLASS, 'font-medium')}>Add New Property</h3>
                         <p className="text-sm text-muted-foreground max-w-40">Upload documents for a new property</p>
                     </div>
                 </CardContent>
