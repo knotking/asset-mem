@@ -237,7 +237,7 @@ export function LandingHero({
             className={`flex flex-col justify-between px-6 pb-9 pt-5 ${MOBILE_HERO_SCREEN_FALLBACK}`}
             style={
               mobileHeroMinHeight != null
-                ? { minHeight: mobileHeroMinHeight, maxHeight: mobileHeroMinHeight }
+                ? { minHeight: mobileHeroMinHeight }
                 : undefined
             }
           >
@@ -263,13 +263,9 @@ export function LandingHero({
                 <span className="inline-flex items-baseline gap-1">
                   <span>AssetMem</span>
                   <span
-                    className="font-bold tracking-normal"
+                    className="font-bold tracking-normal landing-gradient-text"
                     style={{
                       fontSize: `${LANDING_BRAND_AI_SIZE_EM}em`,
-                      background: `linear-gradient(to right, ${c.primary}, rgba(34,211,238,0.6))`,
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      backgroundClip: 'text',
                     }}
                   >
                     AI

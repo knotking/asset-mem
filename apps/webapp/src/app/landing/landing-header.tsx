@@ -166,9 +166,8 @@ export function LandingHeader({
 
   return (
     <header
-      className="sticky top-0 z-50 backdrop-blur-md border-b w-full"
+      className="sticky top-0 z-50 landing-sticky-header border-b w-full"
       style={{
-        backgroundColor: LANDING_COLORS.backgroundOverlay,
         borderColor: LANDING_COLORS.borderOverlay,
       }}
     >

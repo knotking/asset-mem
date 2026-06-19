@@ -142,13 +142,7 @@ export function LandingPricingSection({
           >
             Choose{" "}
             <span
-              className="font-bold"
-              style={{
-                background: `linear-gradient(to right, ${c.primary}, rgba(34,211,238,0.6))`,
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
+              className="font-bold landing-gradient-text"
             >
               your plan
             </span>

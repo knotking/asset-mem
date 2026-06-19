@@ -93,3 +93,116 @@
 .ai-node-float {
   animation: aiNodeFloat 4s ease-in-out infinite;
 }
+
+/* --- Mobile / touch scroll performance (Android Chrome) --- */
+
+/** Solid accent on touch; gradient clip on lg+ (avoids text repaint jank). */
+.landing-gradient-text {
+  color: #22d3ee;
+}
+
+.landing-gradient-text-muted {
+  color: #22d3ee;
+}
+
+@media (min-width: 1024px) {
+  .landing-gradient-text {
+    color: transparent;
+    background-image: linear-gradient(to right, #22d3ee, rgba(34, 211, 238, 0.6));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .landing-gradient-text-muted {
+    color: transparent;
+    background-image: linear-gradient(to right, #22d3ee, rgba(250, 250, 250, 0.7));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+/** Opaque sticky header on touch; blur only on desktop. */
+.landing-sticky-header {
+  background-color: rgba(10, 10, 15, 0.97);
+}
+
+@media (min-width: 1024px) {
+  .landing-sticky-header {
+    background-color: rgba(10, 10, 15, 0.85);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+}
+
+/** Card panels — skip backdrop-filter on touch. */
+.landing-glass-panel {
+  background-color: rgba(15, 23, 42, 0.95);
+}
+
+.landing-glass-card {
+  background-color: rgba(20, 20, 28, 0.92);
+}
+
+.landing-glass-strong {
+  background-color: rgba(12, 18, 32, 0.95);
+}
+
+@media (min-width: 1024px) {
+  .landing-glass-panel {
+    background-color: rgba(15, 23, 42, 0.7);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+
+  .landing-glass-card {
+    background-color: rgba(20, 20, 28, 0.6);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+
+  .landing-glass-strong {
+    background-color: rgba(12, 18, 32, 0.7);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+}
+
+/** Hero mockup glow orbs — expensive blur+animation on mobile scroll. */
+.landing-hero-glow {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .landing-hero-glow {
+    display: block;
+  }
+}
+
+@media (max-width: 1023px) {
+  .animate-stagger-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .landing-subtle-pulse,
+  .ai-node,
+  .ai-node-float {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-stagger-in,
+  .landing-subtle-pulse,
+  .landing-hero-glow {
+    animation: none;
+  }
+
+  .animate-stagger-in {
+    opacity: 1;
+    transform: none;
+  }
+}

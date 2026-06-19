@@ -43,12 +43,11 @@ const UPCOMING_ITEMS = [
 ] as const;
 
 function panelSurfaceClassName() {
-  return 'rounded-xl border p-2.5 sm:p-3 backdrop-blur-sm';
+  return 'landing-glass-panel rounded-xl border p-2.5 sm:p-3';
 }
 
 function panelSurfaceStyle() {
   return {
-    backgroundColor: LANDING_COLORS.surface,
     borderColor: LANDING_COLORS.surfaceBorder,
   } as const;
 }
@@ -156,11 +155,11 @@ export function PortfolioHeroGraphic({
       }
     >
       <div
-        className="absolute -top-4 -right-4 w-72 h-72 rounded-full blur-3xl animate-pulse"
+        className="landing-hero-glow absolute -top-4 -right-4 w-72 h-72 rounded-full blur-3xl animate-pulse"
         style={{ backgroundColor: LANDING_COLORS.primarySoft }}
       />
       <div
-        className="absolute -bottom-4 -left-4 w-72 h-72 rounded-full blur-3xl animate-pulse"
+        className="landing-hero-glow absolute -bottom-4 -left-4 w-72 h-72 rounded-full blur-3xl animate-pulse"
         style={{ backgroundColor: 'rgba(59, 130, 246, 0.16)', animationDelay: '1s' }}
       />
 
@@ -189,9 +188,8 @@ export function PortfolioHeroGraphic({
           className={`relative z-10 flex flex-col ${contentGap} ${contentPadding} ${layout === 'sidebar' ? 'xl:h-full' : ''}`}
         >
           <div
-            className="flex items-center justify-between rounded-xl border px-4 py-2 text-xs backdrop-blur-sm"
+            className="landing-glass-panel flex items-center justify-between rounded-xl border px-4 py-2 text-xs"
             style={{
-              backgroundColor: LANDING_COLORS.surface,
               borderColor: LANDING_COLORS.surfaceBorder,
               color: LANDING_COLORS.textMuted,
             }}
@@ -275,7 +273,7 @@ export function PortfolioHeroGraphic({
             className={
               layout === 'sidebar'
                 ? 'flex flex-col gap-2 shrink-0'
-                : 'flex-1 min-h-0 rounded-xl border p-2.5 sm:p-3 backdrop-blur-sm space-y-2 overflow-hidden'
+                : 'landing-glass-panel flex-1 min-h-0 rounded-xl border p-2.5 sm:p-3 space-y-2 overflow-hidden'
             }
             style={layout === 'sidebar' ? undefined : panelSurfaceStyle()}
           >
@@ -360,9 +358,8 @@ export function PortfolioHeroGraphic({
           </div>
 
           <div
-            className={`rounded-xl border backdrop-blur-sm ${layout === 'sidebar' ? 'p-2.5' : 'p-3'}`}
+            className={`landing-glass-panel rounded-xl border ${layout === 'sidebar' ? 'p-2.5' : 'p-3'}`}
             style={{
-              backgroundColor: LANDING_COLORS.surface,
               borderColor: LANDING_COLORS.surfaceBorder,
             }}
           >

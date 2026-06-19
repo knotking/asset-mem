@@ -18,11 +18,11 @@ export function HomeownerHeroGraphic() {
       aria-label="Example workflow showing AI property timeline with risk detection and repair guidance"
     >
       <div
-        className="absolute -top-4 -right-4 w-72 h-72 rounded-full blur-3xl animate-pulse"
+        className="landing-hero-glow absolute -top-4 -right-4 w-72 h-72 rounded-full blur-3xl animate-pulse"
         style={{ backgroundColor: LANDING_COLORS.primarySoft }}
       />
       <div
-        className="absolute -bottom-4 -left-4 w-72 h-72 rounded-full blur-3xl animate-pulse"
+        className="landing-hero-glow absolute -bottom-4 -left-4 w-72 h-72 rounded-full blur-3xl animate-pulse"
         style={{ backgroundColor: 'rgba(59, 130, 246, 0.16)', animationDelay: '1s' }}
       />
 
@@ -48,8 +48,8 @@ export function HomeownerHeroGraphic() {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.06)_1px,transparent_1px)] bg-[size:36px_36px] opacity-35" />
 
         <div className="relative z-10 flex min-h-[600px] flex-col gap-3 p-4 pb-5 sm:min-h-[640px] sm:p-6 sm:pb-6 lg:min-h-[650px]">
-          <div className="flex items-center rounded-xl border px-4 py-2 text-xs backdrop-blur-sm"
-            style={{ backgroundColor: LANDING_COLORS.surface, borderColor: LANDING_COLORS.surfaceBorder, color: LANDING_COLORS.textMuted }}>
+          <div className="landing-glass-panel flex items-center rounded-xl border px-4 py-2 text-xs"
+            style={{ borderColor: LANDING_COLORS.surfaceBorder, color: LANDING_COLORS.textMuted }}>
             <span className="flex items-center gap-2 min-w-0">
               <span style={{ color: 'rgba(226,232,240,0.92)' }}>AI Property Timeline</span>
               <span
@@ -67,7 +67,7 @@ export function HomeownerHeroGraphic() {
 
           <div className="relative grid grid-cols-2 gap-2 sm:gap-3">
             {/* Before */}
-            <div className="rounded-xl border p-2.5 sm:p-3 backdrop-blur-sm" style={{ backgroundColor: LANDING_COLORS.surface, borderColor: LANDING_COLORS.surfaceBorder }}>
+            <div className="landing-glass-panel rounded-xl border p-2.5 sm:p-3" style={{ borderColor: LANDING_COLORS.surfaceBorder }}>
               <div className="mb-2 flex items-center justify-between text-[11px]">
                 <span style={{ color: LANDING_COLORS.textMuted }}>Wet zone • Feb 2026</span>
                 <span className="rounded px-1.5 py-0.5 text-[9px] font-semibold" style={{ backgroundColor: 'rgba(148,163,184,0.12)', color: 'rgba(148,163,184,0.8)' }}>BEFORE</span>
@@ -80,14 +80,14 @@ export function HomeownerHeroGraphic() {
             </div>
 
             {/* After */}
-            <div className="rounded-xl border p-2.5 sm:p-3 backdrop-blur-sm" style={{ backgroundColor: LANDING_COLORS.surface, borderColor: 'rgba(34,211,238,0.4)' }}>
+            <div className="landing-glass-panel rounded-xl border p-2.5 sm:p-3" style={{ borderColor: 'rgba(34,211,238,0.4)' }}>
               <div className="mb-2 flex items-center justify-between text-[11px]">
                 <span style={{ color: LANDING_COLORS.textMuted }}>Wet zone • Jun 2026</span>
                 <span className="rounded px-1.5 py-0.5 text-[9px] font-semibold" style={{ backgroundColor: 'rgba(34,211,238,0.15)', color: '#67e8f9' }}>AFTER</span>
               </div>
               <div className="relative h-16 sm:h-20 rounded-md overflow-hidden" style={{ background: 'linear-gradient(135deg, #0c2233 0%, #0a1628 50%, #0d1f35 100%)' }}>
                 <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(34,211,238,0.06) 8px, rgba(34,211,238,0.06) 9px), repeating-linear-gradient(90deg, transparent, transparent 12px, rgba(34,211,238,0.04) 12px, rgba(34,211,238,0.04) 13px)' }} />
-                <div className="absolute top-2 right-2 h-2 w-2 rounded-full animate-pulse" style={{ backgroundColor: 'rgba(239,68,68,0.7)' }} />
+                <div className="landing-subtle-pulse absolute top-2 right-2 h-2 w-2 rounded-full animate-pulse max-lg:animate-none" style={{ backgroundColor: 'rgba(239,68,68,0.7)' }} />
                 <div className="absolute bottom-2 left-2 right-8 h-1.5 rounded-full opacity-30" style={{ backgroundColor: 'rgba(34,211,238,0.6)' }} />
               </div>
               <div className="mt-2 text-[11px] font-medium" style={{ color: '#a5f3fc' }}>Moisture risk increased</div>
@@ -99,7 +99,7 @@ export function HomeownerHeroGraphic() {
             </div>
           </div>
 
-          <div className="mt-3 rounded-xl border p-3 backdrop-blur-sm" style={{ backgroundColor: LANDING_COLORS.surface, borderColor: LANDING_COLORS.surfaceBorder }}>
+          <div className="landing-glass-panel mt-3 rounded-xl border p-3" style={{ borderColor: LANDING_COLORS.surfaceBorder }}>
             <div className="mb-3 flex items-center justify-between text-[11px]" style={{ color: 'rgba(226,232,240,0.84)' }}>
               <span>AI condition trend score</span>
               <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: 'rgba(239,68,68,0.12)', color: '#fca5a5' }}>↑ +18% risk</span>
