@@ -16,6 +16,7 @@ import { useRequireAuth } from '@/hooks/use-require-auth';
 import { usePreferences } from '@/contexts/preferences-context';
 import { Checkpoint, PropertyReport } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { APP_NAV_TAB_CLASS, APP_PAGE_SUBTITLE_CLASS, APP_PAGE_TITLE_CLASS, APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
 
 type TimelineTab = 'checkpoints' | 'insights' | 'reports';
 
@@ -79,8 +80,8 @@ export default function PropertyCheckpointsPage() {
           <header className="mb-6">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Property Timeline</h1>
-                <p className="text-muted-foreground">
+                <h1 className={APP_PAGE_TITLE_CLASS}>Property Timeline</h1>
+                <p className={APP_PAGE_SUBTITLE_CLASS}>
                   Checkpoint history, insights, and reports
                 </p>
               </div>
@@ -109,7 +110,8 @@ export default function PropertyCheckpointsPage() {
                 type="button"
                 onClick={() => selectTab('checkpoints')}
                 className={cn(
-                  'relative pb-3 text-sm font-medium transition-colors hover:text-foreground',
+                  'relative pb-3 transition-colors hover:text-foreground',
+                  APP_NAV_TAB_CLASS,
                   activeTab === 'checkpoints' ? 'text-foreground' : 'text-muted-foreground'
                 )}
               >
@@ -125,7 +127,8 @@ export default function PropertyCheckpointsPage() {
                 type="button"
                 onClick={() => selectTab('insights')}
                 className={cn(
-                  'relative pb-3 text-sm font-medium transition-colors hover:text-foreground',
+                  'relative pb-3 transition-colors hover:text-foreground',
+                  APP_NAV_TAB_CLASS,
                   activeTab === 'insights' ? 'text-foreground' : 'text-muted-foreground'
                 )}
               >
@@ -141,7 +144,8 @@ export default function PropertyCheckpointsPage() {
                 type="button"
                 onClick={() => selectTab('reports')}
                 className={cn(
-                  'relative pb-3 text-sm font-medium transition-colors hover:text-foreground',
+                  'relative pb-3 transition-colors hover:text-foreground',
+                  APP_NAV_TAB_CLASS,
                   activeTab === 'reports' ? 'text-foreground' : 'text-muted-foreground'
                 )}
               >
@@ -167,7 +171,7 @@ export default function PropertyCheckpointsPage() {
             <>
               <MetricsDashboard />
               <div className="mt-6">
-                <h2 className="mb-4 text-lg font-semibold">Timeline</h2>
+                <h2 className={cn(APP_SECTION_TITLE_CLASS, 'mb-4')}>Timeline</h2>
                 <CheckpointList
                   checkpoints={checkpoints}
                   loading={loading}

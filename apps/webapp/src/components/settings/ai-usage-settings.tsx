@@ -24,6 +24,7 @@ import {
 import { formatTokensCompact, formatTokensFull } from "@/lib/format-tokens";
 import { FREE_PLAN_LIMITS } from "@/lib/plan-limits-public";
 import { cn } from "@/lib/utils";
+import { APP_SECTION_TITLE_CLASS } from "@/lib/app-typography";
 
 const nf = new Intl.NumberFormat("en-US");
 
@@ -158,7 +159,7 @@ export function AiUsageSettings() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className={cn(APP_SECTION_TITLE_CLASS, "flex items-center gap-2")}>
             <Activity className="h-5 w-5" />
             AI usage
           </CardTitle>
@@ -177,7 +178,7 @@ export function AiUsageSettings() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className={cn(APP_SECTION_TITLE_CLASS, "flex items-center gap-2")}>
             <Activity className="h-5 w-5" />
             AI usage
           </CardTitle>
@@ -195,7 +196,7 @@ export function AiUsageSettings() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className={cn(APP_SECTION_TITLE_CLASS, "flex items-center gap-2")}>
           <Activity className="h-5 w-5" />
           AI usage
         </CardTitle>

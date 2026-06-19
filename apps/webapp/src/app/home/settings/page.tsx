@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { isBillingCheckoutTier } from '@/lib/pending-checkout';
+import { APP_PAGE_SUBTITLE_CLASS, APP_PAGE_TITLE_CLASS } from '@/lib/app-typography';
 import {
   isSettingsHubReturn,
   resolveSettingsReturnContext,
@@ -137,9 +138,9 @@ function SettingsPageContent() {
             <ArrowLeft className="h-4 w-4" />
             <span className="sr-only">{settingsBackAccessibilityLabel(returnContext)}</span>
           </Button>
-          <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
+          <h1 className={APP_PAGE_TITLE_CLASS}>Settings</h1>
         </div>
-        <p className="text-muted-foreground pl-10">
+        <p className={cn(APP_PAGE_SUBTITLE_CLASS, 'pl-10')}>
           Manage your account, subscription, usage, and preferences
         </p>
       </div>

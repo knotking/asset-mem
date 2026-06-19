@@ -2072,7 +2072,7 @@ const ChatMessageComponent = ({
       {renderFilePreview()}
       {messageMarkdown ? (
         <div className="w-fit max-w-full rounded-lg bg-secondary px-4 py-2.5 text-secondary-foreground shadow-sm">
-          <div className="prose prose-sm dark:prose-invert max-w-none break-words">
+          <div className="prose prose-sm dark:prose-invert max-w-none break-words text-sm">
             <p className="m-0 whitespace-pre-wrap break-words text-secondary-foreground">
               {messageMarkdown}
             </p>

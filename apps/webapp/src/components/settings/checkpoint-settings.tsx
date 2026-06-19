@@ -8,6 +8,8 @@ import { usePreferences } from '@/contexts/preferences-context';
 import { Separator } from '@/components/ui/separator';
 import { Info, Camera } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
+import { cn } from '@/lib/utils';
 
 export function CheckpointSettings() {
   const { preferences, loading, updatePreferences } = usePreferences();
@@ -49,7 +51,7 @@ export function CheckpointSettings() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className={cn(APP_SECTION_TITLE_CLASS, 'flex items-center gap-2')}>
             <Camera className="h-5 w-5" />
             Checkpoint Comparison
           </CardTitle>
@@ -67,7 +69,7 @@ export function CheckpointSettings() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className={cn(APP_SECTION_TITLE_CLASS, 'flex items-center gap-2')}>
           <Camera className="h-5 w-5" />
           Checkpoint Comparison
         </CardTitle>

@@ -43,6 +43,7 @@ import { usePreferences } from '@/contexts/preferences-context';
 import { useDismissFeatureTip } from '@/hooks/use-dismiss-feature-tip';
 import { shouldShowFeatureTip } from '@/lib/feature-discovery';
 import { cn } from '@/lib/utils';
+import { APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
 
 const propertyLog = createLogger('property');
 
@@ -302,7 +303,7 @@ function PropertyDetailsContent() {
                 <CardHeader className="p-4 sm:p-6">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
-                            <CardTitle className="text-lg flex items-center gap-2">
+                            <CardTitle className={cn(APP_SECTION_TITLE_CLASS, 'flex items-center gap-2')}>
                                 <Building className="h-5 w-5 shrink-0" /> Basic Information
                             </CardTitle>
                         </div>
@@ -459,7 +460,7 @@ function PropertyDetailsContent() {
                 <CardHeader className="p-4 sm:p-6">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0">
-                            <CardTitle className="text-lg flex items-center gap-2">
+                            <CardTitle className={cn(APP_SECTION_TITLE_CLASS, 'flex items-center gap-2')}>
                               <FileText className="h-5 w-5 shrink-0" /> Property Documents
                             </CardTitle>
                         </div>

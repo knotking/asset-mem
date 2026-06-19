@@ -65,12 +65,12 @@ export function CompactSettingsBar({
         <AgentIcon className="h-3.5 w-3.5 shrink-0" />
         <span className="min-w-0 truncate">{getPrimaryAgentLabel(primaryAgent)}</span>
         {primaryAgent === "analysis" && selectedOptionalAgents.length > 0 && (
-          <span className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
+          <span className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5 text-xs font-bold text-primary-foreground">
             +{selectedOptionalAgents.length}
           </span>
         )}
         {primaryAgent === "checkpoint" && selectedCheckpointOptionalAgents.length > 0 && (
-          <span className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
+          <span className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5 text-xs font-bold text-primary-foreground">
             +{selectedCheckpointOptionalAgents.length}
           </span>
         )}

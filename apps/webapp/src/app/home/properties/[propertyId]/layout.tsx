@@ -15,6 +15,11 @@ import { CheckpointProvider } from '@/contexts/checkpoint-context';
 import { ReportsProvider } from '@/contexts/reports-context';
 import { SavedServiceProvidersProvider } from '@/contexts/saved-service-providers-context';
 import { cn } from '@/lib/utils';
+import {
+  APP_NAV_TAB_CLASS,
+  APP_PROPERTY_TITLE_CLASS,
+  APP_SHEET_TITLE_CLASS,
+} from '@/lib/app-typography';
 import { SessionNavBar } from '@/components/chat/session-sidebar';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -55,7 +60,8 @@ function PropertyTabs() {
                                 key={tab.name}
                                 disabled
                                 className={cn(
-                                    'flex flex-1 cursor-not-allowed items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 py-2 text-xs font-medium text-muted-foreground/50 sm:gap-2 sm:px-4 sm:text-sm'
+                                    'flex flex-1 cursor-not-allowed items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 py-2 text-muted-foreground/50 sm:gap-2 sm:px-4',
+                                    APP_NAV_TAB_CLASS,
                                 )}
                             >
                                 {Icon && <Icon className="h-4 w-4" />}
@@ -69,7 +75,8 @@ function PropertyTabs() {
                             key={tab.name}
                             href={tab.href}
                             className={cn(
-                                'flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 py-2 text-xs font-medium transition-colors sm:gap-2 sm:px-4 sm:text-sm',
+                                'flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 py-2 transition-colors sm:gap-2 sm:px-4',
+                                APP_NAV_TAB_CLASS,
                                 isActive
                                 ? 'bg-background text-foreground shadow-sm'
                                 : 'text-muted-foreground hover:text-foreground'
@@ -114,7 +121,7 @@ function PropertyHeader() {
             ) : (
               <div className="flex items-start gap-2">
                 <div className='flex-1 min-w-0'>
-                    <h1 className="text-base font-semibold text-foreground truncate" title={property?.name}>
+                    <h1 className={APP_PROPERTY_TITLE_CLASS} title={property?.name}>
                         {isNewPropertyFlow && <PlusCircle className="h-4 w-4 text-primary inline-block mr-2" />}
                         {property?.name || 'New Property'}
                     </h1>
@@ -191,7 +198,7 @@ function MobileSheet({ children, side, triggerIcon, title, contentClassName }: {
             <SheetContent side={side} className={cn("p-0 flex flex-col", contentClassName)}>
                 <header className="p-4 border-b">
                     <SheetTitle asChild>
-                        <h2 className="font-semibold text-lg">{title}</h2>
+                        <h2 className={APP_SHEET_TITLE_CLASS}>{title}</h2>
                     </SheetTitle>
                 </header>
                 <ScrollArea className="flex-1">

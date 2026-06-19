@@ -13,6 +13,8 @@ import {
 import { useAuth } from '@/contexts/auth-context';
 import { getSupportEmail } from '@/lib/site';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -74,7 +76,7 @@ export function AccountDeletionSettings() {
   return (
     <Card className="border-destructive/40">
       <CardHeader>
-        <CardTitle className="text-destructive">Delete account</CardTitle>
+        <CardTitle className={cn(APP_SECTION_TITLE_CLASS, 'text-destructive')}>Delete account</CardTitle>
         <CardDescription>{ACCOUNT_DELETION_CARD_DESCRIPTION}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

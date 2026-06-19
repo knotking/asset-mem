@@ -158,7 +158,7 @@ export function PropertyCard({ property }: { property: Property }) {
                                 <div className="flex items-center justify-center h-10 w-10 bg-muted rounded-lg shrink-0">
                                     <Icon className="h-5 w-5 text-muted-foreground" />
                                 </div>
-                                <h3 className="min-w-0 break-words font-medium leading-tight text-foreground" title={property.name}>
+                                <h3 className="min-w-0 break-words text-base font-semibold leading-tight text-foreground" title={property.name}>
                                     {property.name}
                                 </h3>
                             </div>

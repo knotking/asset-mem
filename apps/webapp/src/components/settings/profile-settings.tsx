@@ -10,6 +10,7 @@ import { UserProfileAvatar } from '@/components/user-profile-avatar';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
+import { APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
 import {
   DISPLAY_NAME_MAX_LENGTH,
   displayNameFromEmail,
@@ -92,7 +93,7 @@ export function ProfileSettings() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Profile</CardTitle>
+        <CardTitle className={APP_SECTION_TITLE_CLASS}>Profile</CardTitle>
         <CardDescription>Your account information</CardDescription>
       </CardHeader>
       <CardContent>
