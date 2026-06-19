@@ -17,6 +17,7 @@ import { Checkpoint } from '@/lib/types';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { APP_LIST_ITEM_TITLE_CLASS } from '@/lib/app-typography';
 
 interface CheckpointCardProps {
   checkpoint: Checkpoint;
@@ -148,7 +149,10 @@ export function CheckpointCard({
             <div className="min-w-0 space-y-1.5">
               <div className="sm:flex sm:items-start sm:justify-between sm:gap-2">
                 <h3
-                  className="min-w-0 break-words text-balance font-semibold leading-snug text-foreground sm:flex-1 sm:line-clamp-2 lg:line-clamp-1"
+                  className={cn(
+                    APP_LIST_ITEM_TITLE_CLASS,
+                    'min-w-0 break-words text-balance sm:flex-1 sm:line-clamp-2 lg:line-clamp-1',
+                  )}
                   title={checkpoint.name || undefined}
                 >
                   {checkpoint.name || (isAnalyzing ? 'Analyzing...' : 'Untitled Checkpoint')}

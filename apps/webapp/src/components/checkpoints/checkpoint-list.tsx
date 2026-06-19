@@ -208,7 +208,7 @@ export function CheckpointList({
         <div className="mb-4 rounded-full bg-muted p-6">
           <Search className="h-12 w-12 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-semibold">No Checkpoints Yet</h3>
+        <h3 className="text-base sm:text-lg font-semibold">No Checkpoints Yet</h3>
         <p className="mt-2 text-sm text-muted-foreground max-w-md">
           Capture photos or videos of rooms, systems, or problem areas. AI scores condition over
           time — then attach checkpoints to chat for analysis and cost estimates.

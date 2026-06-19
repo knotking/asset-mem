@@ -43,7 +43,7 @@ import { usePreferences } from '@/contexts/preferences-context';
 import { useDismissFeatureTip } from '@/hooks/use-dismiss-feature-tip';
 import { shouldShowFeatureTip } from '@/lib/feature-discovery';
 import { cn } from '@/lib/utils';
-import { APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
+import { APP_LIST_ITEM_TITLE_CLASS, APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
 
 const propertyLog = createLogger('property');
 
@@ -86,7 +86,7 @@ function DocumentListItem({
                     <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
                         <Icon className="mt-1 h-6 w-6 shrink-0 text-red-500" />
                         <div className="min-w-0 flex-1">
-                            <p className="break-words font-semibold text-foreground">{doc.name}</p>
+                            <p className={cn(APP_LIST_ITEM_TITLE_CLASS, 'break-words')}>{doc.name}</p>
                             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                                 <Badge variant="outline">{getFileExtension(doc.contentType)}</Badge>
                                 {doc.createdAt && (
@@ -445,7 +445,7 @@ function PropertyDetailsContent() {
                   <Heart className="h-5 w-5 text-foreground" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-foreground">My pros</p>
+                  <p className={APP_LIST_ITEM_TITLE_CLASS}>My pros</p>
                   <p className="text-sm text-muted-foreground">
                     {savedProviders.length > 0
                       ? `${savedProviders.length} saved service pro${savedProviders.length === 1 ? '' : 's'}`

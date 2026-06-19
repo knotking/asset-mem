@@ -42,6 +42,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { APP_LIST_ITEM_TITLE_CLASS } from '@/lib/app-typography';
 import { useAuth } from '@/contexts/auth-context';
 import { useProperty } from '@/contexts/property-context';
 import { useDeletionConfig } from '@/contexts/deletion-config-context';
@@ -385,7 +386,7 @@ export function ReportsList({ onRegenerate }: ReportsListProps) {
               <CardHeader className="pb-2">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
-                    <CardTitle className="break-words text-base sm:truncate">{report.title}</CardTitle>
+                    <CardTitle className={cn(APP_LIST_ITEM_TITLE_CLASS, 'break-words sm:truncate')}>{report.title}</CardTitle>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {dateRangeForReport(report)}
                     </p>

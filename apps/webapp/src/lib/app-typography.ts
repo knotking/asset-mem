@@ -13,6 +13,14 @@ export const APP_PROPERTY_TITLE_CLASS =
 /** Section / card heading inside a page */
 export const APP_SECTION_TITLE_CLASS = 'text-lg font-semibold text-foreground';
 
+/** Primary label on a list/card row (checkpoint name, document name, etc.) */
+export const APP_LIST_ITEM_TITLE_CLASS =
+  'text-sm sm:text-base font-semibold leading-snug text-foreground';
+
+/** In-page subsection heading (below tab header, above a list) */
+export const APP_SUBSECTION_TITLE_CLASS =
+  'text-base sm:text-lg font-semibold text-foreground';
+
 /** Primary nav tabs (property shell, timeline sub-tabs) */
 export const APP_NAV_TAB_CLASS = 'text-sm font-medium';
 

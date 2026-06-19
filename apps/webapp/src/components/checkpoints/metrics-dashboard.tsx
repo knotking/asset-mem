@@ -15,6 +15,7 @@ import {
 } from '@/lib/checkpoint-metrics-display';
 import { format } from 'date-fns';
 import type { PropertyCheckpointMetrics } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 function toDate(value: PropertyCheckpointMetrics['updatedAt']): Date {
   if (value && typeof (value as { toDate?: () => Date }).toDate === 'function') {
@@ -35,7 +36,7 @@ export function MetricsDashboard() {
     return (
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className={cn('flex items-center gap-2 text-lg font-semibold sm:text-2xl sm:leading-none sm:tracking-tight')}>
             <Activity className="h-5 w-5" />
             Property Health Insights
           </CardTitle>
@@ -111,7 +112,7 @@ export function MetricsDashboard() {
   return (
     <Card className="mb-6">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className={cn('flex items-center gap-2 text-lg font-semibold sm:text-2xl sm:leading-none sm:tracking-tight')}>
           <Activity className="h-5 w-5" />
           Property Health Insights
           {status === 'partial' && (

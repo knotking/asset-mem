@@ -16,7 +16,7 @@ import { useRequireAuth } from '@/hooks/use-require-auth';
 import { usePreferences } from '@/contexts/preferences-context';
 import { Checkpoint, PropertyReport } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { APP_NAV_TAB_CLASS, APP_PAGE_SUBTITLE_CLASS, APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
+import { APP_NAV_TAB_CLASS, APP_PAGE_SUBTITLE_CLASS, APP_SECTION_TITLE_CLASS, APP_SUBSECTION_TITLE_CLASS } from '@/lib/app-typography';
 
 type TimelineTab = 'checkpoints' | 'insights' | 'reports';
 
@@ -218,7 +218,7 @@ export default function PropertyCheckpointsPage() {
             <>
               <MetricsDashboard />
               <div className="mt-6">
-                <h2 className={cn(APP_SECTION_TITLE_CLASS, 'mb-4')}>Checkpoint history</h2>
+                <h2 className={cn(APP_SUBSECTION_TITLE_CLASS, 'mb-4')}>Checkpoint history</h2>
                 <CheckpointList
                   checkpoints={checkpoints}
                   loading={loading}
