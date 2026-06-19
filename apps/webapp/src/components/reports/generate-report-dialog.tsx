@@ -705,7 +705,7 @@ export function GenerateReportDialog({
                 />
               </div>
               {mode === 'snapshot' ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="report-start">From</Label>
                     <DateInput
@@ -750,7 +750,7 @@ export function GenerateReportDialog({
                   <p className="text-sm font-medium text-foreground">
                     {comparisonBeforePeriodLabel(purpose)}
                   </p>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="baseline-start">From</Label>
                       <DateInput
@@ -771,7 +771,7 @@ export function GenerateReportDialog({
                   <p className="text-sm font-medium text-foreground">
                     {comparisonAfterPeriodLabel(purpose)}
                   </p>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="comparison-start">From</Label>
                       <DateInput

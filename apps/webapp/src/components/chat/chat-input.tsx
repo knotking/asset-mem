@@ -272,7 +272,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
     };
 
     return (
-      <div className="w-full relative">
+      <div className="relative w-full min-w-0">
         {hasFileAttached && (
           <div className="absolute bottom-full mb-2 w-full max-w-md">
             <div className="relative p-2 border rounded-lg bg-card shadow-lg">
@@ -323,9 +323,9 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
 
         <form
           onSubmit={handleSubmit}
-          className="relative flex w-full items-end gap-2"
+          className="flex w-full min-w-0 max-w-full flex-col gap-2.5"
         >
-          <div className="flex flex-1 flex-col gap-3">
+          <div className="min-w-0 max-w-full space-y-2">
             {useContextMode ? (
               <ComposerMetaSection
                 contextChipStrip={contextChipStrip}
@@ -387,7 +387,6 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
                 </ChatSettingsPopover>
               </>
             )}
-            {/* Selected Checkpoints Display */}
             {!useContextMode &&
               primaryAgent === "checkpoint" &&
               selectedCheckpoints.length > 0 && (
@@ -425,7 +424,6 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
                 </div>
               )}
 
-            {/* Checkpoint Selection Button */}
             {!useContextMode &&
               primaryAgent === "checkpoint" &&
               selectedCheckpoints.length === 0 &&
@@ -439,15 +437,38 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
                   <span>Select checkpoints for context</span>
                 </button>
               )}
+          </div>
 
-            <div className="relative flex w-full items-center rounded-lg bg-muted">
+          <div
+            className={cn(
+              "grid w-full min-w-0 items-center gap-2",
+              useContextMode
+                ? "grid-cols-[auto_minmax(0,1fr)_auto]"
+                : "grid-cols-[minmax(0,1fr)_auto]",
+            )}
+          >
+            {useContextMode ? (
+              <Button
+                variant="default"
+                size="icon"
+                className="size-10 shrink-0 rounded-full"
+                onClick={onOpenAddContext}
+                disabled={isLoading}
+                type="button"
+                aria-label="Add context"
+              >
+                <Plus className="size-[18px]" />
+              </Button>
+            ) : null}
+
+            <div className="relative flex min-h-10 min-w-0 items-center overflow-hidden rounded-lg bg-muted">
               <Textarea
                 ref={textareaRef}
                 value={content}
                 onInput={handleInput}
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
-                className="flex-1 resize-none max-h-48 overflow-y-auto bg-transparent border-0 shadow-none focus-visible:ring-0 pl-4 py-2.5 pr-24"
+                className="min-h-10 min-w-0 flex-1 resize-none max-h-48 overflow-y-auto bg-transparent border-0 shadow-none focus-visible:ring-0 px-3 py-2 leading-5"
                 rows={1}
                 disabled={isLoading}
                 aria-label="Chat input"
@@ -565,21 +586,6 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
                 </Popover>
               )}
 
-              {useContextMode ? (
-                <div className="absolute right-2 top-1/2 flex -translate-y-1/2">
-                  <Button
-                    variant="default"
-                    size="icon"
-                    className="h-8 w-8 flex-shrink-0 rounded-full"
-                    onClick={onOpenAddContext}
-                    disabled={isLoading}
-                    type="button"
-                    aria-label="Add context"
-                  >
-                    <Plus className="h-[18px] w-[18px]" />
-                  </Button>
-                </div>
-              ) : null}
               {allowFileAttachment && (
                 <div className="absolute right-2 top-1/2 flex -translate-y-1/2 gap-1">
                   <Button
@@ -607,29 +613,30 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
                 </div>
               )}
             </div>
-          </div>
+
           {isLoading ? (
             <Button
               type="button"
               size="icon"
-              className="flex-shrink-0 h-10 w-10 rounded-md bg-muted-foreground text-background"
+              className="size-10 shrink-0 bg-muted-foreground text-background hover:bg-muted-foreground/90"
               onClick={onStop}
               aria-label="Stop processing"
               variant="destructive"
             >
-              <Square className="h-5 w-5" />
+              <Square className="size-4" />
             </Button>
           ) : (
             <Button
               type="submit"
               size="icon"
-              className="flex-shrink-0 h-10 w-10 rounded-md bg-muted-foreground text-background"
+              className="size-10 shrink-0 bg-muted-foreground text-background hover:bg-muted-foreground/90"
               disabled={isSendDisabled}
               aria-label="Send message"
             >
-              <Send className="h-5 w-5" />
+              <Send className="size-4" />
             </Button>
           )}
+          </div>
         </form>
         {allowFileAttachment && (
           <CameraCaptureDialog

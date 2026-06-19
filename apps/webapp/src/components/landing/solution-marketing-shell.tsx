@@ -54,14 +54,14 @@ export function SolutionMarketingShell({
         }}
       >
         <div
-          className="container mx-auto flex h-16 items-center justify-between gap-4 px-4"
+          className="container mx-auto flex h-16 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4"
           style={{ maxWidth: '1200px' }}
         >
-          <Link href="/" className="flex items-center gap-2 min-w-0">
+          <Link href="/" className="flex min-w-0 items-center gap-2">
             <AssetMemBrandIcon variant="mark" size="sm" markTheme="landing" className="shrink-0" />
             <AssetMemWordmark size="solutions" className="truncate" />
           </Link>
-          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-4">
             <Link
               href="/"
               className="text-sm font-medium transition-colors"
@@ -93,10 +93,11 @@ export function SolutionMarketingShell({
             <a
               href={getEnterpriseMailtoHref(enterprise.enterpriseEmail)}
               onClick={() => trackEnterpriseCta('team_cta_solutions_header')}
-              className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium"
+              className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium sm:px-4"
               style={{ backgroundColor: LANDING_COLORS.primary, color: '#0a0a0f' }}
             >
-              Email our team
+              <span className="sm:hidden">Email us</span>
+              <span className="hidden sm:inline">Email our team</span>
             </a>
           </div>
         </div>

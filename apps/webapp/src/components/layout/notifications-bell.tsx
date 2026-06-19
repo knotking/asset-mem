@@ -4,10 +4,11 @@ import * as React from 'react';
 import { Bell, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { useAuth } from '@/contexts/auth-context';
 import { db } from '@/lib/firebase';
 import { useNotifications } from '@/hooks/use-notifications';
@@ -43,7 +44,12 @@ function notificationBody(
   return '';
 }
 
-export function NotificationsBell() {
+type NotificationsBellProps = {
+  /** Anchor panel to the header actions row (right edge + bottom of header). */
+  anchorRef?: React.RefObject<HTMLElement | null>;
+};
+
+export function NotificationsBell({ anchorRef }: NotificationsBellProps) {
   const { user } = useAuth();
   const {
     notifications,
@@ -53,6 +59,14 @@ export function NotificationsBell() {
     markAllNotificationsRead,
   } = useNotifications(db, user?.uid);
   const [open, setOpen] = React.useState(false);
+
+  const virtualAnchor = React.useMemo(
+    () => ({
+      getBoundingClientRect: () =>
+        anchorRef?.current?.getBoundingClientRect() ?? new DOMRect(),
+    }),
+    [anchorRef],
+  );
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
@@ -64,8 +78,8 @@ export function NotificationsBell() {
   if (!user) return null;
 
   return (
-    <DropdownMenu open={open} onOpenChange={handleOpenChange}>
-      <DropdownMenuTrigger asChild>
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
@@ -75,7 +89,7 @@ export function NotificationsBell() {
           <Bell className="h-4 w-4" />
           {unreadCount > 0 ? (
             <span
-              className={`absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold text-primary-foreground ${
+              className={`absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-xs font-semibold text-primary-foreground ${
                 unreadActionCount > 0 ? 'bg-destructive' : 'bg-primary'
               }`}
             >
@@ -83,8 +97,15 @@ export function NotificationsBell() {
             </span>
           ) : null}
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 p-0">
+      </PopoverTrigger>
+      {anchorRef ? <PopoverAnchor virtualRef={{ current: virtualAnchor }} /> : null}
+      <PopoverContent
+        align="end"
+        side="bottom"
+        sideOffset={0}
+        collisionPadding={12}
+        className="w-80 max-w-[calc(100vw-1.5rem)] p-0"
+      >
         <div className="border-b px-3 py-2 text-sm font-semibold">Notifications</div>
         {notifications.length === 0 ? (
           <p className="px-3 py-6 text-center text-sm text-muted-foreground">No notifications</p>
@@ -113,7 +134,7 @@ export function NotificationsBell() {
             ))}
           </div>
         )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </PopoverContent>
+    </Popover>
   );
 }

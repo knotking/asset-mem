@@ -1,6 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, TrendingDown, Minus, AlertCircle, Activity } from 'lucide-react';
@@ -15,6 +16,7 @@ import {
 } from '@/lib/checkpoint-metrics-display';
 import { format } from 'date-fns';
 import type { PropertyCheckpointMetrics } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 function toDate(value: PropertyCheckpointMetrics['updatedAt']): Date {
   if (value && typeof (value as { toDate?: () => Date }).toDate === 'function') {
@@ -35,7 +37,7 @@ export function MetricsDashboard() {
     return (
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className={cn(APP_SECTION_TITLE_CLASS, 'flex items-center gap-2 sm:text-2xl sm:leading-none sm:tracking-tight')}>
             <Activity className="h-5 w-5" />
             Property Health Insights
           </CardTitle>
@@ -111,7 +113,7 @@ export function MetricsDashboard() {
   return (
     <Card className="mb-6">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className={cn(APP_SECTION_TITLE_CLASS, 'flex items-center gap-2 sm:text-2xl sm:leading-none sm:tracking-tight')}>
           <Activity className="h-5 w-5" />
           Property Health Insights
           {status === 'partial' && (

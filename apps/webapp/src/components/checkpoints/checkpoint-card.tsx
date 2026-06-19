@@ -17,6 +17,7 @@ import { Checkpoint } from '@/lib/types';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { APP_LIST_ITEM_TITLE_CLASS } from '@/lib/app-typography';
 
 interface CheckpointCardProps {
   checkpoint: Checkpoint;
@@ -96,7 +97,7 @@ export function CheckpointCard({
   return (
     <Card
       className={cn(
-        'relative cursor-pointer transition-all hover:shadow-md',
+        'relative min-w-0 cursor-pointer transition-all hover:shadow-md',
         selected && 'ring-2 ring-primary',
         selectionMode && 'hover:ring-2 hover:ring-muted-foreground',
         isDeleting && 'opacity-90'
@@ -104,9 +105,9 @@ export function CheckpointCard({
       onClick={handleClick}
     >
       <CardContent className="p-4">
-        <div className="flex gap-4">
+        <div className="flex gap-3 sm:gap-4">
           {/* Thumbnail */}
-          <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-md bg-muted">
+          <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-muted sm:h-24 sm:w-24">
             {checkpoint.media && checkpoint.media.length > 0 ? (
               <>
                 <Image
@@ -144,13 +145,19 @@ export function CheckpointCard({
           </div>
 
           {/* Content */}
-          <div className="flex flex-1 flex-col justify-between">
-            <div>
-              <div className="flex items-start justify-between">
-                <h3 className="font-semibold text-foreground line-clamp-1">
+          <div className="flex min-w-0 flex-1 flex-col justify-between gap-2">
+            <div className="min-w-0 space-y-1.5">
+              <div className="sm:flex sm:items-start sm:justify-between sm:gap-2">
+                <h3
+                  className={cn(
+                    APP_LIST_ITEM_TITLE_CLASS,
+                    'min-w-0 break-words text-balance sm:flex-1 sm:line-clamp-2 lg:line-clamp-1',
+                  )}
+                  title={checkpoint.name || undefined}
+                >
                   {checkpoint.name || (isAnalyzing ? 'Analyzing...' : 'Untitled Checkpoint')}
                 </h3>
-                {getConditionBadge()}
+                <div className="mt-1.5 shrink-0 sm:mt-0">{getConditionBadge()}</div>
               </div>
               {checkpoint.description && (
                 <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{checkpoint.description}</p>
@@ -176,22 +183,22 @@ export function CheckpointCard({
               ) : null}
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex min-w-0 flex-col gap-1.5 text-xs text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+                <div className="flex shrink-0 items-center gap-1">
+                  <Calendar className="h-3 w-3 shrink-0" />
                   <span>{format(createdAt, 'MMM dd, yyyy')}</span>
                 </div>
                 {checkpoint.location && (
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    <span>{checkpoint.location}</span>
+                  <div className="flex min-w-0 items-start gap-1">
+                    <MapPin className="mt-0.5 h-3 w-3 shrink-0" />
+                    <span className="min-w-0 break-words">{checkpoint.location}</span>
                   </div>
                 )}
               </div>
 
               {checkpoint.visualDiff && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="w-fit shrink-0 text-xs">
                   <AlertCircle className="mr-1 h-3 w-3" />
                   Comparison Available
                 </Badge>

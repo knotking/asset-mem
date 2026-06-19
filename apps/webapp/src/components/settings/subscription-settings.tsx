@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
 
 type BillingSummary = {
   subscriptionStatus?: string | null;
@@ -157,7 +158,7 @@ export function SubscriptionSettings({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className={cn(APP_SECTION_TITLE_CLASS, 'flex items-center gap-2')}>
           <CreditCard className="h-5 w-5" />
           Plan &amp; billing
         </CardTitle>

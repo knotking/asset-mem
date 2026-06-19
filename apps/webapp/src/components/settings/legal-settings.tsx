@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { FileText, Scale } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
 
 export function LegalSettings() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Legal</CardTitle>
+        <CardTitle className={APP_SECTION_TITLE_CLASS}>Legal</CardTitle>
         <CardDescription>Privacy policy and terms of service</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">

@@ -248,7 +248,7 @@ export default function LandingPageClient() {
       {/* How It Works */}
       <section
         id="how-it-works"
-        className="py-32 relative overflow-hidden w-full"
+        className="relative w-full overflow-hidden py-16 sm:py-24 lg:py-32"
         style={{ backgroundColor: "#0f0f14" }}
       >
         <div
@@ -359,7 +359,7 @@ export default function LandingPageClient() {
       {/* AI Intelligence Engine Section */}
       <section
         id="ai-pipeline"
-        className="py-24 relative overflow-hidden w-full"
+        className="relative w-full overflow-hidden py-16 sm:py-20 lg:py-24"
         style={{ backgroundColor: '#0a0a0f' }}
       >
         <div className="absolute inset-0 w-full" style={{ background: 'radial-gradient(ellipse at 50% 60%, rgba(34,211,238,0.07), transparent 65%)' }} />
@@ -390,7 +390,7 @@ export default function LandingPageClient() {
           <div className="landing-glass-strong rounded-2xl border overflow-hidden" style={{ borderColor: 'rgba(34,211,238,0.15)' }}>
 
             {/* Stage 1: Inputs */}
-            <div className="px-8 pt-6 pb-5 border-b" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+            <div className="border-b px-4 pt-6 pb-5 sm:px-6 lg:px-8" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
               <div className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: LANDING_COLORS.mutedForeground }}>Evidence in</div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
@@ -420,7 +420,7 @@ export default function LandingPageClient() {
             </div>
 
             {/* Stage 2: Orchestrator */}
-            <div className="mx-6 mb-3 rounded-xl border px-5 py-4" style={{ borderColor: 'rgba(34,211,238,0.35)', backgroundColor: 'rgba(34,211,238,0.07)' }}>
+            <div className="mx-4 mb-3 rounded-xl border px-4 py-4 sm:mx-6 sm:px-5" style={{ borderColor: 'rgba(34,211,238,0.35)', backgroundColor: 'rgba(34,211,238,0.07)' }}>
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(34,211,238,0.18)' }}>
@@ -452,7 +452,7 @@ export default function LandingPageClient() {
             </div>
 
             {/* Stage 3: Agents */}
-            <div className="px-8 pt-0 pb-5 border-b" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+            <div className="border-b px-4 pt-0 pb-5 sm:px-6 lg:px-8" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
               <div className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: LANDING_COLORS.mutedForeground }}>Focused analysis</div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                 {[
@@ -491,7 +491,7 @@ export default function LandingPageClient() {
             </div>
 
             {/* Stage 4: Output */}
-            <div className="mx-6 mb-6 rounded-xl border px-5 py-4" style={{ borderColor: 'rgba(34,211,238,0.25)', backgroundColor: 'rgba(34,211,238,0.04)' }}>
+            <div className="mx-4 mb-6 rounded-xl border px-4 py-4 sm:mx-6 sm:px-5" style={{ borderColor: 'rgba(34,211,238,0.25)', backgroundColor: 'rgba(34,211,238,0.04)' }}>
               <div className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: '#67e8f9' }}>Clear outputs</div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                 {[
@@ -523,7 +523,7 @@ export default function LandingPageClient() {
       {/* Use Cases Section */}
       <section
         id="use-cases"
-        className="py-32 relative overflow-hidden w-full"
+        className="relative w-full overflow-hidden py-16 sm:py-24 lg:py-32"
         style={{ backgroundColor: LANDING_COLORS.background }}
       >
         <div

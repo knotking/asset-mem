@@ -12,6 +12,8 @@ import { useProperty } from '@/contexts/property-context';
 import type { Service } from '@/lib/types';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import { APP_SR_ONLY_PAGE_TITLE_CLASS } from '@/lib/app-typography';
 
 const placeholderServicesData: Omit<Service, 'scheduledDate' | 'createdAt'>[] = [
   {
@@ -32,25 +34,25 @@ function ServiceListItem({ service }: { service: Service }) {
     };
 
     return (
-        <Card className="transition-shadow hover:shadow-md">
-            <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <p className="font-semibold text-foreground">{service.name}</p>
+        <Card className="min-w-0 transition-shadow hover:shadow-md">
+            <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 flex-1 space-y-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                        <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <p className="min-w-0 break-words font-semibold text-foreground">{service.name}</p>
                     </div>
                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
+                        <Calendar className="h-4 w-4 shrink-0" />
                         <p>{service.scheduledDate ? format(service.scheduledDate, 'M/dd/yyyy') : '...'}</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-4 sm:gap-6 w-full sm:w-auto">
-                    <Badge variant="outline" className={statusVariant[service.status]}>
+                <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-6">
+                    <Badge variant="outline" className={cn('w-fit', statusVariant[service.status])}>
                         {service.status}
                     </Badge>
-                    <div className="flex items-center gap-2 ml-auto">
-                        <Button variant="outline" size="sm">View Details</Button>
-                        <Button variant="outline" size="sm">Reschedule</Button>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto">View Details</Button>
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto">Reschedule</Button>
                     </div>
                 </div>
             </CardContent>
@@ -111,17 +113,12 @@ function PropertyServicesContent() {
 
     return (
         <div className="p-6 md:p-10 max-w-7xl mx-auto w-full">
-            <header className="mb-8">
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold text-foreground">Property Services</h1>
-                        <p className="text-muted-foreground">Manage maintenance and services for {property?.name || 'this property'}.</p>
-                    </div>
-                    <Button>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Schedule Service
-                    </Button>
-                </div>
+            <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
+                <h1 className={APP_SR_ONLY_PAGE_TITLE_CLASS}>Property services</h1>
+                <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Schedule Service
+                </Button>
             </header>
 
             <div className="mb-6 p-4 rounded-lg border bg-card flex flex-col sm:flex-row gap-4">

@@ -177,7 +177,7 @@ export function CheckpointDetailDialog() {
                       handleCancelEdit();
                     }
                   }}
-                  className="text-xl"
+                  className="text-lg"
                 />
                 <div className="flex gap-1">
                   <Button
@@ -207,7 +207,7 @@ export function CheckpointDetailDialog() {
             </div>
           ) : (
             <div className="flex items-center justify-between gap-2">
-              <DialogTitle className="text-xl">{checkpoint.name}</DialogTitle>
+              <DialogTitle>{checkpoint.name}</DialogTitle>
               {isAnalyzed && (
                 <Button
                   variant="ghost"

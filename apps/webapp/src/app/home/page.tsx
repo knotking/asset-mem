@@ -15,10 +15,11 @@ import { Search, X } from 'lucide-react';
 import { HomeOnboardingChecklist } from '@/components/onboarding/home-onboarding-checklist';
 import { DiscoveryChecklist } from '@/components/feature-discovery/discovery-checklist';
 import { ProductHuntWelcomeBanner } from '@/components/onboarding/product-hunt-welcome-banner';
+import { APP_PAGE_SUBTITLE_CLASS, APP_PAGE_TITLE_CLASS } from '@/lib/app-typography';
 
 function PropertiesDashboardSkeleton() {
   return (
-    <div className="p-6 md:p-10">
+    <div className="p-4 sm:p-6 md:p-10">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
           <Skeleton className="h-8 w-1/3 mb-2" />
@@ -97,13 +98,13 @@ function PropertiesDashboardContent() {
   }
 
   return (
-    <div className="p-6 md:p-10">
+    <div className="p-4 sm:p-6 md:p-10">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">Property AI Agent</h1>
-          <p className="text-muted-foreground">
-            Upload property documents and chat with AI to get insights or diagnostics of your
-            properties and assets
+          <h1 className={APP_PAGE_TITLE_CLASS}>Property AI Agent</h1>
+          <p className={APP_PAGE_SUBTITLE_CLASS}>
+            Build visual property checkpoints, compare condition over time, and chat with your
+            documents to plan maintenance with confidence
           </p>
         </header>
 

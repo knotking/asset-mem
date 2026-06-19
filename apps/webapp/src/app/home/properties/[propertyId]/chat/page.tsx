@@ -1,5 +1,6 @@
-
 'use client';
+
+import { APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
@@ -11,6 +12,7 @@ import { ChatPageSkeleton } from '@/components/chat/chat-page-skeleton';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
 import { createLogger, truncateId } from '@/lib/logger';
+import { cn } from '@/lib/utils';
 
 const chatLog = createLogger('chat');
 
@@ -169,7 +171,7 @@ export default function NewChatRedirectPage() {
         return (
             <div className="flex flex-col items-center justify-center h-full text-center p-4">
                 <AlertTriangle className="h-10 w-10 text-destructive mb-4" />
-                <h2 className="text-xl font-semibold mb-2">Failed to Start Chat</h2>
+                <h2 className={cn(APP_SECTION_TITLE_CLASS, 'mb-2')}>Failed to Start Chat</h2>
                 <p className="text-muted-foreground mb-6">We couldn&apos;t create a new chat session. Please check your connection and try again.</p>
                 <Button onClick={handleRetry}>
                     Retry

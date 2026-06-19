@@ -8,6 +8,8 @@ import { usePreferences } from '@/contexts/preferences-context';
 import { Separator } from '@/components/ui/separator';
 import { Info, Camera } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
+import { cn } from '@/lib/utils';
 
 export function CheckpointSettings() {
   const { preferences, loading, updatePreferences } = usePreferences();
@@ -49,7 +51,7 @@ export function CheckpointSettings() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className={cn(APP_SECTION_TITLE_CLASS, 'flex items-center gap-2')}>
             <Camera className="h-5 w-5" />
             Checkpoint Comparison
           </CardTitle>
@@ -67,7 +69,7 @@ export function CheckpointSettings() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className={cn(APP_SECTION_TITLE_CLASS, 'flex items-center gap-2')}>
           <Camera className="h-5 w-5" />
           Checkpoint Comparison
         </CardTitle>
@@ -77,8 +79,8 @@ export function CheckpointSettings() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Enable/Disable */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 space-y-0.5">
             <Label htmlFor="enabled">Enable Automatic Comparison</Label>
             <p className="text-sm text-muted-foreground">
               Automatically detect changes when creating checkpoints
@@ -88,6 +90,7 @@ export function CheckpointSettings() {
             id="enabled"
             checked={comparisonPrefs.enabled}
             onCheckedChange={handleEnabledChange}
+            className="shrink-0 self-start sm:self-center"
           />
         </div>
 
@@ -95,14 +98,14 @@ export function CheckpointSettings() {
 
         {/* Max Age Days */}
         <div className="space-y-3">
-          <div className="flex items-start justify-between">
-            <div className="space-y-0.5">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+            <div className="min-w-0 space-y-0.5">
               <Label>Maximum Age (Days)</Label>
               <p className="text-sm text-muted-foreground">
                 Only compare with checkpoints from the last {comparisonPrefs.maxAgeDays} days
               </p>
             </div>
-            <span className="text-sm font-medium">{comparisonPrefs.maxAgeDays} days</span>
+            <span className="shrink-0 text-sm font-medium">{comparisonPrefs.maxAgeDays} days</span>
           </div>
           <Slider
             value={[comparisonPrefs.maxAgeDays]}
@@ -123,14 +126,14 @@ export function CheckpointSettings() {
 
         {/* Min Asset Confidence */}
         <div className="space-y-3">
-          <div className="flex items-start justify-between">
-            <div className="space-y-0.5">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+            <div className="min-w-0 space-y-0.5">
               <Label>Minimum Asset Confidence</Label>
               <p className="text-sm text-muted-foreground">
                 Only compare when asset detection confidence is at least {Math.round(comparisonPrefs.minAssetConfidence * 100)}%
               </p>
             </div>
-            <span className="text-sm font-medium">
+            <span className="shrink-0 text-sm font-medium">
               {Math.round(comparisonPrefs.minAssetConfidence * 100)}%
             </span>
           </div>

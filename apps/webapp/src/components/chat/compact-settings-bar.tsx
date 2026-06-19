@@ -50,14 +50,14 @@ export function CompactSettingsBar({
   const LocationIcon = searchLocation?.source === 'device_gps' ? Navigation : MapPin;
 
   return (
-    <div className={cn("flex min-w-0 items-center gap-2 mb-3", className)}>
+    <div className={cn("mb-3 flex min-w-0 flex-1 items-center gap-1.5 sm:w-auto sm:flex-none", className)}>
       {/* Agent Selector */}
       <Button
         type="button"
         variant="outline"
         size="sm"
         className={cn(
-          "h-8 min-w-0 max-w-[9.5rem] shrink gap-1.5 px-2.5 text-xs font-medium",
+          "h-8 min-w-0 flex-1 basis-0 shrink gap-1.5 px-2 text-xs font-medium sm:basis-auto sm:flex-none sm:max-w-[9.5rem] sm:px-2.5",
           onAgentPress && "cursor-pointer"
         )}
         onClick={onAgentPress || onOpenSettings}
@@ -65,12 +65,12 @@ export function CompactSettingsBar({
         <AgentIcon className="h-3.5 w-3.5 shrink-0" />
         <span className="min-w-0 truncate">{getPrimaryAgentLabel(primaryAgent)}</span>
         {primaryAgent === "analysis" && selectedOptionalAgents.length > 0 && (
-          <span className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
+          <span className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5 text-xs font-bold text-primary-foreground">
             +{selectedOptionalAgents.length}
           </span>
         )}
         {primaryAgent === "checkpoint" && selectedCheckpointOptionalAgents.length > 0 && (
-          <span className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
+          <span className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5 text-xs font-bold text-primary-foreground">
             +{selectedCheckpointOptionalAgents.length}
           </span>
         )}
@@ -83,7 +83,7 @@ export function CompactSettingsBar({
           variant="outline"
           size="sm"
           className={cn(
-            "h-8 min-w-0 max-w-[11rem] shrink gap-1.5 px-2.5 text-xs font-medium sm:max-w-[13rem]",
+            "h-8 min-w-0 flex-1 basis-0 shrink gap-1.5 px-2 text-xs font-medium sm:basis-auto sm:flex-none sm:max-w-[11rem] sm:px-2.5 md:max-w-[13rem]",
             hasLocation ? "border-primary/30" : "text-muted-foreground"
           )}
           onClick={onLocationPress}

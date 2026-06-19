@@ -28,6 +28,7 @@ import {
 } from '@/lib/deletion';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { APP_LIST_ITEM_TITLE_CLASS } from '@/lib/app-typography';
 import { createLogger } from '@/lib/logger';
 import { getWebDeletionApiUrls } from '@/lib/api-deletion';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
@@ -147,23 +148,29 @@ export function PropertyCard({ property }: { property: Property }) {
             <Card
               onClick={handleCardClick}
               className={cn(
-                'relative flex flex-col transition-shadow group',
+                'relative flex min-w-0 flex-col transition-shadow group',
                 isRemoving ? 'cursor-default opacity-90' : 'cursor-pointer hover:shadow-lg'
               )}
             >
                 <CardContent className="p-4 flex-1 flex flex-col gap-4">
-                     <div className="flex flex-col">
-                        <div className="flex items-start justify-between ">
-                            <div className="flex items-center gap-3 ">
+                     <div className="flex flex-col min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="flex min-w-0 flex-1 items-start gap-3">
                                 <div className="flex items-center justify-center h-10 w-10 bg-muted rounded-lg shrink-0">
                                     <Icon className="h-5 w-5 text-muted-foreground" />
                                 </div>
-                                <h3 className="font-medium leading-tight text-foreground" title={property.name}>
+                                <h3
+                                  className={cn(
+                                    APP_LIST_ITEM_TITLE_CLASS,
+                                    'min-w-0 break-words leading-tight',
+                                  )}
+                                  title={property.name}
+                                >
                                     {property.name}
                                 </h3>
                             </div>
                             {!isRemoving && !isFailed ? (
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" onClick={(e) => { e.stopPropagation(); setIsDeleteDialogOpen(true);}}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground opacity-100 transition-opacity hover:text-destructive sm:opacity-0 sm:group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); setIsDeleteDialogOpen(true);}}>
                                   <Trash2 className="h-4 w-4" />
                               </Button>
                             ) : null}

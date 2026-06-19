@@ -308,14 +308,14 @@ function EnterprisePricingCard({
       }}
     >
       <h3
-        className="text-xl font-semibold mb-2"
+        className="text-lg sm:text-xl font-semibold mb-2"
         style={{ color: c.foreground }}
       >
         {card.name}
       </h3>
       <div className="mb-3 flex items-baseline gap-1">
         <span
-          className="text-3xl font-semibold tracking-tight"
+          className="text-2xl sm:text-3xl font-semibold tracking-tight"
           style={{ color: c.foreground }}
         >
           {card.priceLabel}
@@ -472,7 +472,7 @@ export function PlanPricingCards({
               <div className="mb-3 flex items-baseline gap-1">
                 <span
                   className={cn(
-                    "text-3xl font-semibold tracking-tight tabular-nums",
+                    "text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums",
                     variant === "settings" && "text-foreground",
                   )}
                   style={isLanding ? { color: c.foreground } : undefined}

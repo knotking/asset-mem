@@ -35,6 +35,7 @@ export function Header() {
   const pathname = usePathname();
   const { toast } = useToast();
   const [supportOpen, setSupportOpen] = React.useState(false);
+  const headerActionsRef = React.useRef<HTMLDivElement>(null);
   const returnContext = resolveHeaderReturnContext(pathname);
 
   const handleLogout = useCallback(async () => {
@@ -55,21 +56,22 @@ export function Header() {
         <AssetMemBrandIcon size="sm" />
         <h1 className="truncate text-lg font-bold text-foreground sm:text-xl">AssetMem AI</h1>
       </div>
-      <div className="flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2">
+      <div
+        ref={headerActionsRef}
+        className="relative flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2"
+      >
          {loading || signingOut ? (
             <Skeleton className='h-8 w-32' />
          ) : user ? (
             <TooltipProvider delayDuration={300}>
                 <ThemeToggle />
-                <HeaderIconTooltip label="Notifications">
-                  <NotificationsBell />
-                </HeaderIconTooltip>
+                <NotificationsBell anchorRef={headerActionsRef} />
                 <TokenUsageToolbar settingsReturnContext={returnContext} />
                 <HeaderIconTooltip label="FAQ & guides">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9"
+                    className="hidden h-9 w-9 md:inline-flex"
                     onClick={() => router.push(buildSettingsHref('faq', returnContext))}
                     aria-label="FAQ & guides"
                   >
@@ -80,7 +82,7 @@ export function Header() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9"
+                    className="hidden h-9 w-9 md:inline-flex"
                     onClick={() => router.push(buildSettingsHref(undefined, returnContext))}
                     aria-label="Settings"
                   >
@@ -93,7 +95,7 @@ export function Header() {
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="outline"
-                      className="flex h-9 items-center gap-2"
+                      className="flex h-9 items-center gap-2 px-2 sm:px-3"
                       aria-label="Account menu"
                     >
                       <UserProfileAvatar user={user} className="h-6 w-6" />
@@ -106,6 +108,13 @@ export function Header() {
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="md:hidden"
+                      onClick={() => router.push(buildSettingsHref('faq', returnContext))}
+                    >
+                        <BookOpen className="mr-2 h-4 w-4" />
+                        <span>FAQ & guides</span>
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push(buildSettingsHref(undefined, returnContext))}>
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Settings</span>

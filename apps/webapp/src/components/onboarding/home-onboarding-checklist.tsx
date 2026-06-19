@@ -22,6 +22,7 @@ import {
   ONBOARDING_CHAT_OPEN_PARAM,
   type OnboardingStepId,
 } from '@/lib/home-onboarding';
+import { APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
 
 type HomeOnboardingChecklistProps = {
   properties: Property[];
@@ -107,7 +108,7 @@ export function HomeOnboardingChecklist({ properties }: HomeOnboardingChecklistP
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <CardTitle className="text-lg">
+            <CardTitle className={APP_SECTION_TITLE_CLASS}>
               {allDone ? 'All steps complete' : 'Get started in 4 steps'}
             </CardTitle>
             <CardDescription>

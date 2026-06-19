@@ -21,6 +21,7 @@ import {
   shouldShowDiscoveryChecklist,
   type DiscoveryStepId,
 } from '@/lib/feature-discovery';
+import { APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
 
 type DiscoveryChecklistProps = {
   properties: Property[];
@@ -110,7 +111,7 @@ export function DiscoveryChecklist({ properties }: DiscoveryChecklistProps) {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <CardTitle className="text-lg">
+            <CardTitle className={APP_SECTION_TITLE_CLASS}>
               {allDone ? 'Explore more features' : 'Discover what you can do next'}
             </CardTitle>
             <CardDescription>

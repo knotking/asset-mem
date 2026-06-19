@@ -15,6 +15,11 @@ import { CheckpointProvider } from '@/contexts/checkpoint-context';
 import { ReportsProvider } from '@/contexts/reports-context';
 import { SavedServiceProvidersProvider } from '@/contexts/saved-service-providers-context';
 import { cn } from '@/lib/utils';
+import {
+  APP_NAV_TAB_CLASS,
+  APP_PROPERTY_TITLE_CLASS,
+  APP_SHEET_TITLE_CLASS,
+} from '@/lib/app-typography';
 import { SessionNavBar } from '@/components/chat/session-sidebar';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -55,7 +60,8 @@ function PropertyTabs() {
                                 key={tab.name}
                                 disabled
                                 className={cn(
-                                    'flex-1 text-center whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm text-muted-foreground/50 cursor-not-allowed flex items-center justify-center gap-2'
+                                    'flex flex-1 cursor-not-allowed items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 py-2 text-muted-foreground/50 sm:gap-2 sm:px-4',
+                                    APP_NAV_TAB_CLASS,
                                 )}
                             >
                                 {Icon && <Icon className="h-4 w-4" />}
@@ -69,7 +75,8 @@ function PropertyTabs() {
                             key={tab.name}
                             href={tab.href}
                             className={cn(
-                                'flex-1 text-center whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm transition-colors flex items-center justify-center gap-2',
+                                'flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 py-2 transition-colors sm:gap-2 sm:px-4',
+                                APP_NAV_TAB_CLASS,
                                 isActive
                                 ? 'bg-background text-foreground shadow-sm'
                                 : 'text-muted-foreground hover:text-foreground'
@@ -92,14 +99,20 @@ function PropertyHeader() {
   const isNewPropertyFlow = params.propertyId === 'new-property';
 
   return (
-      <header className="p-4 border-b flex justify-between items-center gap-4 bg-background">
-        <div className="flex items-center gap-3 min-w-0">
-          <Button variant="ghost" size="sm" onClick={() => router.push('/home')} className="shrink-0">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Properties
+      <header className="border-b bg-background p-3 sm:p-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push('/home')}
+            className="shrink-0 px-2 sm:px-3"
+            aria-label="Back to properties"
+          >
+              <ArrowLeft className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Back to Properties</span>
           </Button>
-          <div className="h-8 w-px bg-border" />
-          <div className='min-w-0 flex-1 group'>
+          <div className="hidden h-8 w-px bg-border sm:block" />
+          <div className='min-w-0 flex-1'>
             {isPropertyLoading ? (
                 <div className="flex flex-col gap-2">
                     <Skeleton className="h-5 w-40" />
@@ -108,7 +121,7 @@ function PropertyHeader() {
             ) : (
               <div className="flex items-start gap-2">
                 <div className='flex-1 min-w-0'>
-                    <h1 className="text-base font-semibold text-foreground truncate" title={property?.name}>
+                    <h1 className={APP_PROPERTY_TITLE_CLASS} title={property?.name}>
                         {isNewPropertyFlow && <PlusCircle className="h-4 w-4 text-primary inline-block mr-2" />}
                         {property?.name || 'New Property'}
                     </h1>
@@ -130,12 +143,12 @@ function PropertyChatLayoutContent({ children }: { children: React.ReactNode; })
 
   if (!isChatActive) {
     return (
-        <div className="flex flex-col flex-1 min-h-0">
-            <main className="flex-1 overflow-y-auto relative">
-                {children}
-            </main>
-        </div>
-    )
+      <div className="flex min-h-0 flex-1 flex-col">
+        <main className="relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
+          {children}
+        </main>
+      </div>
+    );
   }
 
   return (
@@ -155,14 +168,16 @@ function PropertyChatLayoutContent({ children }: { children: React.ReactNode; })
             />
         </aside>
 
-        <div className="flex flex-col flex-1 overflow-hidden">
-            <main className="flex-1 overflow-hidden relative">
+        <div className="flex flex-1 flex-col overflow-hidden">
+            <main className="relative flex-1 overflow-hidden">
                  <div className="absolute top-2 left-2 z-10 lg:hidden">
                     <Button variant="outline" size="icon" onClick={() => setIsMobileSessionOpen(true)}>
                         <PanelLeft className="h-4 w-4" />
                     </Button>
                 </div>
-                {children}
+                <div className="h-full min-w-0 overflow-x-hidden pt-12 lg:pt-0">
+                  {children}
+                </div>
             </main>
         </div>
         
@@ -183,7 +198,7 @@ function MobileSheet({ children, side, triggerIcon, title, contentClassName }: {
             <SheetContent side={side} className={cn("p-0 flex flex-col", contentClassName)}>
                 <header className="p-4 border-b">
                     <SheetTitle asChild>
-                        <h2 className="font-semibold text-lg">{title}</h2>
+                        <h2 className={APP_SHEET_TITLE_CLASS}>{title}</h2>
                     </SheetTitle>
                 </header>
                 <ScrollArea className="flex-1">
@@ -207,10 +222,10 @@ function LayoutWithDialog({ children }: { children: React.ReactNode }) {
   
     return (
         <>
-            <div className='h-full flex flex-col min-h-0'>
+            <div className="flex h-full min-h-0 flex-col overflow-hidden">
                 <PropertyHeader />
                 <PropertyTabs />
-                <main className="flex-1 min-h-0">
+                <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
                     <PropertyChatLayoutContent>
                         {children}
                     </PropertyChatLayoutContent>

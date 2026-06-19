@@ -99,7 +99,7 @@ export function CheckpointProcessingDialog({
               <CheckCircle className="h-10 w-10 text-green-500" />
             </div>
           </div>
-          <DialogTitle className="text-center text-xl">Checkpoint Created!</DialogTitle>
+          <DialogTitle className="text-center">Checkpoint Created!</DialogTitle>
           <DialogDescription className="text-center font-medium pt-2">
             {displayName}
           </DialogDescription>

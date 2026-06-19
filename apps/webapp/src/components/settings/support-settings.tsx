@@ -10,6 +10,8 @@ import { useAuth } from '@/contexts/auth-context';
 import { useFirebase } from '@/contexts/firebase-context';
 import { useToast } from '@/hooks/use-toast';
 import { submitSupportRequest } from '@/lib/support';
+import { APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
+import { cn } from '@/lib/utils';
 
 export function SupportSettings() {
   const { user } = useAuth();
@@ -65,7 +67,7 @@ export function SupportSettings() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className={cn(APP_SECTION_TITLE_CLASS, 'flex items-center gap-2')}>
           <LifeBuoy className="h-5 w-5" />
           Support
         </CardTitle>

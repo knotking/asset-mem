@@ -10,6 +10,8 @@ import { usePreferences } from '@/contexts/preferences-context';
 import { usePropertiesDashboard } from '@/contexts/properties-dashboard-context';
 import { useToast } from '@/hooks/use-toast';
 import { trackEvent } from '@/lib/analytics';
+import { APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
+import { cn } from '@/lib/utils';
 
 export function HelpHubSettings() {
   const router = useRouter();
@@ -32,7 +34,7 @@ export function HelpHubSettings() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className={cn(APP_SECTION_TITLE_CLASS, 'flex items-center gap-2')}>
           <BookOpen className="h-5 w-5" />
           How to use AssetMem AI
         </CardTitle>

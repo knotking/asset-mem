@@ -17,6 +17,7 @@ import {
   PENDING_DOCUMENT_UPLOAD_LABEL,
 } from "@/lib/chat-context-labels";
 import { ADD_CONTEXT_VISIBLE_CHIP_COUNT } from "@/lib/chat-context-limits";
+import { APP_CAPTION_CLASS } from "@/lib/app-typography";
 
 type Props = {
   pendingContext: PendingContextItem[];
@@ -77,13 +78,13 @@ export function ChatContextChipStrip({
   if (!hasContent) return null;
 
   return (
-    <div className="mb-2 space-y-2">
+    <div className="mb-2 min-w-0 max-w-full space-y-2">
       {queuedSend ? (
         <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/10 px-3 py-2">
           <div className="mr-2 min-w-0 flex-1">
             <p className="text-xs font-semibold text-primary">{ASK_WHEN_READY_LABEL}</p>
             <p className="truncate text-xs text-muted-foreground">{queuedSend.text}</p>
-            <p className="text-[10px] text-muted-foreground">{ASK_WHEN_READY_HINT}</p>
+            <p className={APP_CAPTION_CLASS}>{ASK_WHEN_READY_HINT}</p>
           </div>
           {onCancelQueuedSend ? (
             <button type="button" onClick={onCancelQueuedSend} className="shrink-0 p-1">
@@ -93,7 +94,7 @@ export function ChatContextChipStrip({
         </div>
       ) : null}
 
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+      <div className="flex min-w-0 max-w-full items-center gap-2 overflow-x-auto pb-1">
         {pendingContext.map((item) => (
           <div
             key={item.id}

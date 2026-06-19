@@ -1025,7 +1025,7 @@ const StructuredResponse = ({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="absolute top-1 right-1 z-10 h-7 w-7 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                className="absolute top-1 right-1 z-10 h-7 w-7 text-muted-foreground opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                 aria-label="Copy message"
                 onClick={onCopyClick}
               >
@@ -1061,7 +1061,7 @@ const StructuredResponse = ({
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                              className="h-8 w-8 text-muted-foreground opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                               aria-label="Copy message"
                               onClick={onCopyClick}
                             >
@@ -2072,7 +2072,7 @@ const ChatMessageComponent = ({
       {renderFilePreview()}
       {messageMarkdown ? (
         <div className="w-fit max-w-full rounded-lg bg-secondary px-4 py-2.5 text-secondary-foreground shadow-sm">
-          <div className="prose prose-sm dark:prose-invert max-w-none break-words">
+          <div className="prose prose-sm dark:prose-invert max-w-none break-words text-sm">
             <p className="m-0 whitespace-pre-wrap break-words text-secondary-foreground">
               {messageMarkdown}
             </p>
@@ -2156,7 +2156,7 @@ const ChatMessageComponent = ({
               !showLoadingIndicator &&
               (!!messageMarkdown.trim() || !!effectiveStructuredData) &&
               !effectiveStructuredData && (
-                <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleCopyClick}>
+                <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7 text-muted-foreground opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100" onClick={handleCopyClick}>
                     <Copy className="h-4 w-4" />
                     <span className="sr-only">Copy message</span>
                 </Button>
