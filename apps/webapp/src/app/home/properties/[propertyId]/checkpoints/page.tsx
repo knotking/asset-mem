@@ -74,9 +74,8 @@ export default function PropertyCheckpointsPage() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
-        <div className="mx-auto max-w-5xl">
+    <>
+      <div className="mx-auto max-w-5xl p-4 sm:p-6 md:p-8">
           <header className="mb-6">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
               <div>
@@ -185,7 +184,6 @@ export default function PropertyCheckpointsPage() {
               }}
             />
           )}
-        </div>
       </div>
 
       <CreateCheckpointDialog
@@ -210,6 +208,6 @@ export default function PropertyCheckpointsPage() {
         }}
         regenerateFrom={regenerateFrom}
       />
-    </div>
+    </>
   );
 }
