@@ -82,6 +82,8 @@ type ContextTab = "timeline" | "documents";
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** When true, render panel body only (inside chat setup sheet). */
+  embedded?: boolean;
   primaryAgent: PrimaryAgent;
   checkpoints: Checkpoint[];
   documents: Document[];
@@ -230,9 +232,41 @@ function TabButton({
   );
 }
 
+const SHEET_PANEL_CLASS = cn(
+  "flex h-[85vh] max-h-[85vh] flex-col rounded-t-2xl p-0",
+  "left-1/2 right-auto w-full max-w-lg -translate-x-1/2",
+  "sm:max-w-xl md:max-w-2xl",
+  "border-x shadow-2xl",
+);
+
+function AddContextSheetFrame({
+  embedded,
+  open,
+  onOpenChange,
+  children,
+}: {
+  embedded?: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+}) {
+  if (embedded) {
+    if (!open) return null;
+    return <div className="flex h-full min-h-0 flex-col">{children}</div>;
+  }
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className={SHEET_PANEL_CLASS}>
+        {children}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 export function AddContextSheet({
   open,
   onOpenChange,
+  embedded = false,
   primaryAgent,
   checkpoints,
   documents,
@@ -572,19 +606,12 @@ export function AddContextSheet({
 
   if (isDocsMode) {
     return (
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent
-          side="bottom"
-          className={cn(
-            "flex h-[85vh] max-h-[85vh] flex-col rounded-t-2xl p-0",
-            "left-1/2 right-auto w-full max-w-lg -translate-x-1/2",
-            "sm:max-w-xl md:max-w-2xl",
-            "border-x shadow-2xl"
-          )}
-        >
-          <SheetHeader className="shrink-0 border-b px-4 py-3">
-            <SheetTitle>{ADD_CONTEXT_TITLE}</SheetTitle>
-          </SheetHeader>
+      <AddContextSheetFrame embedded={embedded} open={open} onOpenChange={onOpenChange}>
+          {!embedded ? (
+            <SheetHeader className="shrink-0 border-b px-4 py-3">
+              <SheetTitle>{ADD_CONTEXT_TITLE}</SheetTitle>
+            </SheetHeader>
+          ) : null}
           <div className="shrink-0 space-y-2 border-b px-4 py-3">
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
@@ -654,26 +681,18 @@ export function AddContextSheet({
             ) : null}
             {renderDocumentsList()}
           </div>
-        </SheetContent>
-      </Sheet>
+      </AddContextSheetFrame>
     );
   }
 
   if (isReportMode) {
     return (
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent
-          side="bottom"
-          className={cn(
-            "flex h-[85vh] max-h-[85vh] flex-col rounded-t-2xl p-0",
-            "left-1/2 right-auto w-full max-w-lg -translate-x-1/2",
-            "sm:max-w-xl md:max-w-2xl",
-            "border-x shadow-2xl"
-          )}
-        >
-          <SheetHeader className="shrink-0 border-b px-4 py-3">
-            <SheetTitle>{ADD_CONTEXT_TITLE}</SheetTitle>
-          </SheetHeader>
+      <AddContextSheetFrame embedded={embedded} open={open} onOpenChange={onOpenChange}>
+          {!embedded ? (
+            <SheetHeader className="shrink-0 border-b px-4 py-3">
+              <SheetTitle>{ADD_CONTEXT_TITLE}</SheetTitle>
+            </SheetHeader>
+          ) : null}
           <div className="shrink-0 space-y-2 border-b px-4 py-3">
             <p className="text-xs text-muted-foreground">
               {selectedReportCount} selected ·{" "}
@@ -717,26 +736,17 @@ export function AddContextSheet({
               })
             )}
           </div>
-        </SheetContent>
-      </Sheet>
+      </AddContextSheetFrame>
     );
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        className={cn(
-          "flex h-[85vh] max-h-[85vh] flex-col rounded-t-2xl p-0",
-          /* Full width on mobile; centered panel on larger screens (overrides inset-x-0). */
-          "left-1/2 right-auto w-full max-w-lg -translate-x-1/2",
-          "sm:max-w-xl md:max-w-2xl",
-          "border-x shadow-2xl"
-        )}
-      >
-        <SheetHeader className="shrink-0 border-b px-4 py-3">
-          <SheetTitle>{ADD_CONTEXT_TITLE}</SheetTitle>
-        </SheetHeader>
+    <AddContextSheetFrame embedded={embedded} open={open} onOpenChange={onOpenChange}>
+        {!embedded ? (
+          <SheetHeader className="shrink-0 border-b px-4 py-3">
+            <SheetTitle>{ADD_CONTEXT_TITLE}</SheetTitle>
+          </SheetHeader>
+        ) : null}
 
         <div className="shrink-0 space-y-2 border-b px-4 py-3">
           <div className="flex items-center justify-between">
@@ -894,7 +904,6 @@ export function AddContextSheet({
 
           {activeTab === "timeline" ? renderTimelineList() : renderDocumentsList()}
         </div>
-      </SheetContent>
-    </Sheet>
+    </AddContextSheetFrame>
   );
 }
