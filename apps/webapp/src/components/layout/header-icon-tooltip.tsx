@@ -6,6 +6,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { usePrefersFinePointer } from '@/hooks/use-prefers-fine-pointer';
 
 type HeaderIconTooltipProps = {
   label: string;
@@ -19,6 +20,12 @@ export function HeaderIconTooltip({
   children,
   side = 'bottom',
 }: HeaderIconTooltipProps) {
+  const showTooltip = usePrefersFinePointer();
+
+  if (!showTooltip) {
+    return children;
+  }
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>

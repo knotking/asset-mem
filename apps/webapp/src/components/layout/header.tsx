@@ -61,9 +61,7 @@ export function Header() {
          ) : user ? (
             <TooltipProvider delayDuration={300}>
                 <ThemeToggle />
-                <HeaderIconTooltip label="Notifications">
-                  <NotificationsBell />
-                </HeaderIconTooltip>
+                <NotificationsBell />
                 <TokenUsageToolbar settingsReturnContext={returnContext} />
                 <HeaderIconTooltip label="FAQ & guides">
                   <Button

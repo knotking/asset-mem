@@ -84,7 +84,12 @@ export function NotificationsBell() {
           ) : null}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 p-0">
+      <DropdownMenuContent
+        align="end"
+        side="bottom"
+        collisionPadding={12}
+        className="w-[min(20rem,calc(100vw-1.5rem))] p-0"
+      >
         <div className="border-b px-3 py-2 text-sm font-semibold">Notifications</div>
         {notifications.length === 0 ? (
           <p className="px-3 py-6 text-center text-sm text-muted-foreground">No notifications</p>
