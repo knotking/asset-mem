@@ -22,6 +22,7 @@ import {
   getEnterpriseMailtoHref,
   type EnterpriseConfig,
 } from "@/lib/enterprise-config";
+import { LANDING_SECTION_HEADING_CLASS } from "@/lib/landing-theme";
 
 type BillingSummary = {
   subscriptionStatus?: string | null;
@@ -136,7 +137,7 @@ export function LandingPricingSection({
             </span>
           </div>
           <h2
-            className="text-4xl lg:text-5xl font-light tracking-tight"
+            className={LANDING_SECTION_HEADING_CLASS}
             style={{ color: c.foreground }}
           >
             Choose{" "}

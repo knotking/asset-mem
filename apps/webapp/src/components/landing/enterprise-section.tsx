@@ -6,6 +6,7 @@ import {
   type EnterpriseConfig,
 } from "@/lib/enterprise-config";
 import { trackEnterpriseCta } from "@/lib/analytics";
+import { LANDING_SECTION_HEADING_CLASS } from "@/lib/landing-theme";
 import type { SolutionSlug } from "@/lib/solutions-data";
 import type { LandingPricingPalette } from "@/components/billing/plan-pricing-cards";
 
@@ -98,7 +99,7 @@ export function EnterpriseSection({
             </span>
           </div>
           <h2
-            className="text-4xl lg:text-5xl font-light tracking-tight"
+            className={LANDING_SECTION_HEADING_CLASS}
             style={{ color: c.foreground }}
           >
             Built for{" "}

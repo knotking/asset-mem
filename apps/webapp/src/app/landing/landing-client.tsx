@@ -13,7 +13,7 @@ import {
 import { EnterpriseSection } from "@/components/landing/enterprise-section";
 import { LandingHero } from "@/components/landing/landing-hero";
 import { AssetMemWordmark } from "@/components/brand/asset-mem-wordmark";
-import { LANDING_COLORS, LANDING_HEADER_OFFSET } from "@/lib/landing-theme";
+import { LANDING_COLORS, LANDING_HEADER_OFFSET, LANDING_SECTION_HEADING_CLASS, LANDING_SECTION_HEADING_EMPHASIS_CLASS } from "@/lib/landing-theme";
 import {
   DEFAULT_LANDING_DEMO_VIDEO_URLS,
   fetchLandingRemoteConfig,
@@ -279,7 +279,7 @@ export default function LandingPageClient() {
               </span>
             </div>
             <h2
-              className="text-4xl lg:text-5xl font-light tracking-tight"
+              className={LANDING_SECTION_HEADING_CLASS}
               style={{ color: LANDING_COLORS.foreground }}
             >
               From site visit to{" "}
@@ -382,7 +382,7 @@ export default function LandingPageClient() {
               </svg>
               <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>AI INTELLIGENCE LAYER</span>
             </div>
-            <h2 className="text-4xl lg:text-5xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
+            <h2 className={LANDING_SECTION_HEADING_CLASS} style={{ color: LANDING_COLORS.foreground }}>
               Spot changes early.{' '}
               <span className="font-bold" style={{ background: `linear-gradient(to right, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                 Move with confidence.
@@ -562,7 +562,7 @@ export default function LandingPageClient() {
               </span>
             </div>
             <h2
-              className="text-5xl lg:text-6xl font-light tracking-tight"
+              className={LANDING_SECTION_HEADING_EMPHASIS_CLASS}
               style={{ color: LANDING_COLORS.foreground }}
             >
               See How AssetMem
