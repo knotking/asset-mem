@@ -77,7 +77,7 @@ export function ChatContextChipStrip({
   if (!hasContent) return null;
 
   return (
-    <div className="mb-2 space-y-2">
+    <div className="mb-2 min-w-0 max-w-full space-y-2">
       {queuedSend ? (
         <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/10 px-3 py-2">
           <div className="mr-2 min-w-0 flex-1">
@@ -93,7 +93,7 @@ export function ChatContextChipStrip({
         </div>
       ) : null}
 
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+      <div className="flex min-w-0 max-w-full items-center gap-2 overflow-x-auto pb-1">
         {pendingContext.map((item) => (
           <div
             key={item.id}

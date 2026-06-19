@@ -79,12 +79,12 @@ export function ComposerMetaSection({
   );
 
   const metaRow = composerMetaExpanded ? (
-    <>
+    <div className="space-y-2.5">
       {contextChipStrip}
       {sendBlockHint ? (
         <p className="text-xs text-muted-foreground">{sendBlockHint}</p>
       ) : null}
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex min-w-0 items-center gap-1.5 sm:w-auto">
         <CompactSettingsBar
           primaryAgent={primaryAgent}
           selectedOptionalAgents={selectedOptionalAgents}
@@ -95,33 +95,33 @@ export function ComposerMetaSection({
           onAgentPress={() => openSettings("agent")}
           onLocationPress={() => openSettings("location")}
           showSettingsButton={false}
-          className="mb-0 min-w-0 shrink"
+          className="mb-0 min-w-0 flex-1 sm:flex-none"
         />
         <Button
           type="button"
           variant="outline"
           size="icon"
-          className="h-8 w-8 shrink-0"
+          className="size-8 shrink-0"
           onClick={() => openSettings("agent")}
           aria-label="Open chat settings"
         >
-          <Settings className="h-4 w-4" />
+          <Settings className="size-4" />
         </Button>
         <Button
           type="button"
           variant="outline"
           size="icon"
-          className="h-8 w-8 shrink-0"
+          className="size-8 shrink-0"
           onClick={() => setComposerMetaExpanded(false)}
           aria-label="Collapse chat settings and context"
         >
-          <ChevronDown className="h-4 w-4" />
+          <ChevronDown className="size-4" />
         </Button>
       </div>
-    </>
+    </div>
   ) : (
     <>
-      <div className="flex items-center gap-1.5">
+      <div className="flex min-w-0 max-w-full items-center gap-1.5">
         <button
           type="button"
           onClick={() => openSettings("agent")}
@@ -164,7 +164,7 @@ export function ComposerMetaSection({
       onSearchLocationChange={onSearchLocationChange}
       propertyAddress={propertyAddress}
       initialTab={settingsPopoverTab}
-      anchor={<div className="mb-3 w-full">{metaRow}</div>}
+      anchor={<div className="w-full min-w-0 max-w-full">{metaRow}</div>}
     />
   );
 }

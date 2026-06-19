@@ -623,7 +623,7 @@ function PropertyChatComposerInner(
 
   return (
     <>
-      <footer className="flex w-full min-w-0 items-center overflow-hidden border-t bg-card p-3 sm:p-4">
+      <footer className="relative z-10 flex w-full min-w-0 items-center border-t bg-card px-3 py-2.5 sm:p-4">
         <ChatInput
           onSend={(text) => void runSend(text)}
           isLoading={props.isLoading}
