@@ -33,4 +33,11 @@ export const LANDING_COLORS = {
 
 export const LANDING_HEADER_OFFSET = 80;
 
+/** Landing section H2 — 36px on mobile, scales up on lg */
+export const LANDING_SECTION_HEADING_CLASS =
+  'text-4xl leading-tight font-light tracking-tight lg:text-5xl';
+
+export const LANDING_SECTION_HEADING_EMPHASIS_CLASS =
+  'text-4xl leading-tight font-light tracking-tight md:text-5xl lg:text-6xl';
+
 export type LandingColorPalette = typeof LANDING_COLORS;

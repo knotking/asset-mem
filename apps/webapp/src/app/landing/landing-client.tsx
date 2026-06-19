@@ -13,7 +13,7 @@ import {
 import { EnterpriseSection } from "@/components/landing/enterprise-section";
 import { LandingHero } from "@/components/landing/landing-hero";
 import { AssetMemWordmark } from "@/components/brand/asset-mem-wordmark";
-import { LANDING_COLORS, LANDING_HEADER_OFFSET } from "@/lib/landing-theme";
+import { LANDING_COLORS, LANDING_HEADER_OFFSET, LANDING_SECTION_HEADING_CLASS, LANDING_SECTION_HEADING_EMPHASIS_CLASS } from "@/lib/landing-theme";
 import {
   DEFAULT_LANDING_DEMO_VIDEO_URLS,
   fetchLandingRemoteConfig,
@@ -109,7 +109,7 @@ export default function LandingPageClient() {
       const scrollY = window.scrollY;
 
       if (scrollY < 100) {
-        setActiveSection("");
+        setActiveSection((prev) => (prev === "" ? prev : ""));
         return;
       }
 
@@ -126,13 +126,13 @@ export default function LandingPageClient() {
         if (el) {
           const rect = el.getBoundingClientRect();
           if (rect.top <= 150 && rect.bottom >= 150) {
-            setActiveSection(id);
+            setActiveSection((prev) => (prev === id ? prev : id));
             return;
           }
           if (rect.top > 150) break; // Section below viewport, stop
         }
       }
-      setActiveSection("");
+      setActiveSection((prev) => (prev === "" ? prev : ""));
     };
 
     // Initial check
@@ -279,19 +279,11 @@ export default function LandingPageClient() {
               </span>
             </div>
             <h2
-              className="text-4xl lg:text-5xl font-light tracking-tight"
+              className={LANDING_SECTION_HEADING_CLASS}
               style={{ color: LANDING_COLORS.foreground }}
             >
               From site visit to{" "}
-              <span
-                className="font-bold"
-                style={{
-                  background: `linear-gradient(to right, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
+              <span className="font-bold landing-gradient-text">
                 evidence teams trust
               </span>
             </h2>
@@ -347,7 +339,7 @@ export default function LandingPageClient() {
                   {item.title}
                 </h3>
                 <p
-                  className="text-sm font-light leading-relaxed"
+                  className="mx-auto max-w-[17rem] text-sm font-light leading-relaxed [text-wrap:pretty] sm:max-w-[14.5rem] lg:max-w-none"
                   style={{ color: LANDING_COLORS.mutedForeground }}
                 >
                   {item.desc}
@@ -377,14 +369,14 @@ export default function LandingPageClient() {
           {/* Header */}
           <div className="text-center mb-14 space-y-5">
             <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm" style={{ backgroundColor: LANDING_COLORS.primaryLight, borderColor: LANDING_COLORS.primaryBorder }}>
-              <svg className="h-4 w-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.primary }}>
+              <svg className="h-4 w-4 landing-subtle-pulse animate-pulse max-lg:animate-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.primary }}>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>AI INTELLIGENCE LAYER</span>
             </div>
-            <h2 className="text-4xl lg:text-5xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
+            <h2 className={LANDING_SECTION_HEADING_CLASS} style={{ color: LANDING_COLORS.foreground }}>
               Spot changes early.{' '}
-              <span className="font-bold" style={{ background: `linear-gradient(to right, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+              <span className="font-bold landing-gradient-text">
                 Move with confidence.
               </span>
             </h2>
@@ -395,7 +387,7 @@ export default function LandingPageClient() {
           </div>
 
           {/* Pipeline card */}
-          <div className="rounded-2xl border overflow-hidden" style={{ borderColor: 'rgba(34,211,238,0.15)', backgroundColor: 'rgba(12,18,32,0.7)', backdropFilter: 'blur(8px)' }}>
+          <div className="landing-glass-strong rounded-2xl border overflow-hidden" style={{ borderColor: 'rgba(34,211,238,0.15)' }}>
 
             {/* Stage 1: Inputs */}
             <div className="px-8 pt-6 pb-5 border-b" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
@@ -562,20 +554,12 @@ export default function LandingPageClient() {
               </span>
             </div>
             <h2
-              className="text-5xl lg:text-6xl font-light tracking-tight"
+              className={LANDING_SECTION_HEADING_EMPHASIS_CLASS}
               style={{ color: LANDING_COLORS.foreground }}
             >
               See How AssetMem
               <br />
-              <span
-                className="font-bold"
-                style={{
-                  background: `linear-gradient(to right, ${LANDING_COLORS.primary}, ${LANDING_COLORS.foreground70})`,
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
+              <span className="font-bold landing-gradient-text-muted">
                 Solves Real Problems
               </span>
             </h2>
@@ -679,10 +663,8 @@ export default function LandingPageClient() {
             ].map((useCase, i) => (
               <div
                 key={useCase.title}
-                className="border rounded-2xl p-8 transition-all duration-500 hover:-translate-y-2 animate-stagger-in"
+                className="landing-glass-card border rounded-2xl p-8 transition-all duration-500 hover:-translate-y-2 animate-stagger-in"
                 style={{
-                  backgroundColor: "rgba(20,20,28,0.6)",
-                  backdropFilter: "blur(4px)",
                   borderColor: LANDING_COLORS.border,
                   animationDelay: `${i * 0.1}s`,
                 }}
