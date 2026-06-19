@@ -55,6 +55,7 @@ import {
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useToast } from "@/hooks/use-toast";
 import { createLogger } from "@/lib/logger";
+import { pickFromNativeCamera, supportsInBrowserCamera } from "@/lib/camera-capability";
 import { trackFirstChatMessage } from "@/lib/analytics";
 import {
   clientMessageTimestampAfter,
@@ -414,21 +415,31 @@ function PropertyChatComposerInner(
     cameraFlowResolveRef.current = null;
   }, []);
 
-  const handleOpenCamera = React.useCallback((mode: "photo" | "video"): Promise<boolean> => {
+  const handleOpenCamera = React.useCallback(async (mode: "photo" | "video"): Promise<boolean> => {
     if (!limitsLoading && isAtPlanLimit(checkpointsLimit, 1)) {
       toast({
         variant: "destructive",
         title: "Monthly checkpoint limit reached",
         description: CHECKPOINT_QUOTA_USER_MESSAGE,
       });
-      return Promise.resolve(false);
+      return false;
     }
+
+    if (!supportsInBrowserCamera()) {
+      const file = await pickFromNativeCamera(mode);
+      if (file) {
+        const previewUrl = URL.createObjectURL(file);
+        void startCheckpointFromFile(file, previewUrl);
+      }
+      return false;
+    }
+
     setCameraInitialMode(mode);
     setCameraOpen(true);
     return new Promise((resolve) => {
       cameraFlowResolveRef.current = resolve;
     });
-  }, [limitsLoading, checkpointsLimit, toast]);
+  }, [limitsLoading, checkpointsLimit, startCheckpointFromFile, toast]);
 
   const handleCameraCapture = React.useCallback(
     (file: File) => {

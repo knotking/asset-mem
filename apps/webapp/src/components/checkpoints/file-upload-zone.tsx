@@ -1,29 +1,44 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Upload, X, Image as ImageIcon, Film } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
-interface FileWithPreview {
+export interface FileWithPreview {
   file: File;
   preview: string;
   type: 'image' | 'video';
 }
 
+export function fileToPreview(file: File): FileWithPreview {
+  return {
+    file,
+    preview: URL.createObjectURL(file),
+    type: file.type.startsWith('video/') ? 'video' : 'image',
+  };
+}
+
+export function revokeFilePreviews(files: FileWithPreview[]) {
+  for (const entry of files) {
+    URL.revokeObjectURL(entry.preview);
+  }
+}
+
 interface FileUploadZoneProps {
+  files: FileWithPreview[];
   onFilesChange: (files: FileWithPreview[]) => void;
   maxFiles?: number;
   accept?: string;
 }
 
 export function FileUploadZone({
+  files,
   onFilesChange,
   maxFiles = 10,
   accept = 'image/*,video/*',
 }: FileUploadZoneProps) {
-  const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
   const processFiles = useCallback(
@@ -31,15 +46,8 @@ export function FileUploadZone({
       if (!newFiles) return;
 
       const fileArray = Array.from(newFiles).slice(0, maxFiles - files.length);
-      const filesWithPreviews: FileWithPreview[] = fileArray.map((file) => ({
-        file,
-        preview: URL.createObjectURL(file),
-        type: file.type.startsWith('video/') ? 'video' : 'image',
-      }));
-
-      const updatedFiles = [...files, ...filesWithPreviews];
-      setFiles(updatedFiles);
-      onFilesChange(updatedFiles);
+      const filesWithPreviews = fileArray.map(fileToPreview);
+      onFilesChange([...files, ...filesWithPreviews]);
     },
     [files, maxFiles, onFilesChange]
   );
@@ -65,23 +73,21 @@ export function FileUploadZone({
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       processFiles(e.target.files);
+      e.target.value = '';
     },
     [processFiles]
   );
 
   const removeFile = useCallback(
     (index: number) => {
-      const updatedFiles = files.filter((_, i) => i !== index);
       URL.revokeObjectURL(files[index].preview);
-      setFiles(updatedFiles);
-      onFilesChange(updatedFiles);
+      onFilesChange(files.filter((_, i) => i !== index));
     },
     [files, onFilesChange]
   );
 
   return (
     <div className="space-y-4">
-      {/* Drop Zone */}
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -111,12 +117,11 @@ export function FileUploadZone({
         </p>
       </div>
 
-      {/* Preview Grid */}
       {files.length > 0 && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
           {files.map((fileWithPreview, index) => (
             <div
-              key={index}
+              key={fileWithPreview.preview}
               className="group relative aspect-square overflow-hidden rounded-lg border bg-muted"
             >
               {fileWithPreview.type === 'image' ? (
@@ -132,7 +137,6 @@ export function FileUploadZone({
                 </div>
               )}
 
-              {/* Remove Button */}
               <Button
                 type="button"
                 size="icon"
@@ -143,7 +147,6 @@ export function FileUploadZone({
                 <X className="h-4 w-4" />
               </Button>
 
-              {/* Type Badge */}
               <div className="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-xs text-white">
                 {fileWithPreview.type === 'image' ? (
                   <ImageIcon className="inline h-3 w-3" />
@@ -158,4 +161,3 @@ export function FileUploadZone({
     </div>
   );
 }
-

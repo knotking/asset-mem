@@ -21,14 +21,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FileUploadZone } from './file-upload-zone';
+import { FileUploadZone, fileToPreview, revokeFilePreviews, type FileWithPreview } from './file-upload-zone';
 import { CheckpointProcessingDialog } from './checkpoint-processing-dialog';
+import { CameraCaptureDialog } from '@/components/chat/camera-capture-dialog';
 import { useCheckpoint } from '@/contexts/checkpoint-context';
 import { useAuth } from '@/contexts/auth-context';
 import { useProperty } from '@/contexts/property-context';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeCheckpoint } from '@/lib/api-checkpoint';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Camera, Video, Images } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   CHECKPOINT_QUOTA_USER_MESSAGE,
@@ -39,6 +40,7 @@ import {
 } from '@/lib/plan-limit-errors';
 import { useLlmTokenUsage } from '@/contexts/llm-token-usage-context';
 import { createLogger } from '@/lib/logger';
+import { pickFromNativeCamera, supportsInBrowserCamera } from '@/lib/camera-capability';
 
 const checkpointLog = createLogger('checkpoint');
 
@@ -48,11 +50,8 @@ interface CreateCheckpointDialogProps {
   onCheckpointCreated?: () => void;
 }
 
-interface FileWithPreview {
-  file: File;
-  preview: string;
-  type: 'image' | 'video';
-}
+const MAX_CHECKPOINT_FILES = 10;
+const MAX_FILE_SIZE = 10485760; // 10MB
 
 const ASSET_TYPES = [
   { label: 'Real Estate', value: 'real_estate' as const },
@@ -139,6 +138,8 @@ export function CreateCheckpointDialog({
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [isCreating, setIsCreating] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraInitialMode, setCameraInitialMode] = useState<'photo' | 'video'>('photo');
   
   // Processing feedback state
   const [isProcessingDialogOpen, setIsProcessingDialogOpen] = useState(false);
@@ -150,6 +151,73 @@ export function CreateCheckpointDialog({
     const base = location.trim() || 'Checkpoint';
     return `${base} • ${format(new Date(), 'MMM d • h:mm a')}`;
   }, [location]);
+
+  const resetForm = useCallback(() => {
+    setName('');
+    setAssetType('real_estate');
+    setLocation('');
+    setDescription('');
+    setFiles((current) => {
+      revokeFilePreviews(current);
+      return [];
+    });
+  }, []);
+
+  const appendCapturedFile = useCallback(
+    (file: File) => {
+      if (file.size > MAX_FILE_SIZE) {
+        toast({
+          variant: 'destructive',
+          title: 'File too large',
+          description: 'Maximum file size is 10MB. Please try again with lower resolution.',
+        });
+        return;
+      }
+
+      if (files.length >= MAX_CHECKPOINT_FILES) {
+        toast({
+          variant: 'destructive',
+          title: 'File limit reached',
+          description: `You can add up to ${MAX_CHECKPOINT_FILES} photos or videos.`,
+        });
+        return;
+      }
+
+      setFiles((current) => [...current, fileToPreview(file)]);
+    },
+    [files.length, toast]
+  );
+
+  const handleOpenCamera = useCallback(
+    async (mode: 'photo' | 'video') => {
+      if (createBlockedByLimit) {
+        toast({
+          variant: 'destructive',
+          title: 'Monthly checkpoint limit reached',
+          description: CHECKPOINT_QUOTA_USER_MESSAGE,
+        });
+        return;
+      }
+
+      if (!supportsInBrowserCamera()) {
+        const file = await pickFromNativeCamera(mode);
+        if (file) appendCapturedFile(file);
+        return;
+      }
+
+      setCameraInitialMode(mode);
+      setCameraOpen(true);
+    },
+    [appendCapturedFile, createBlockedByLimit, toast]
+  );
+
+  const handleCameraCapture = useCallback(
+    (file: File) => {
+      appendCapturedFile(file);
+      setCameraOpen(false);
+    },
+    [appendCapturedFile]
+  );
 
   const handleCreate = async () => {
     // Name is now optional - will be AI-generated if empty
@@ -239,11 +307,7 @@ export function CreateCheckpointDialog({
       }
 
       // Reset form
-      setName('');
-      setAssetType('real_estate');
-      setLocation('');
-      setDescription('');
-      setFiles([]);
+      resetForm();
     } catch (error) {
       checkpointLog.error('checkpoint.create.failed', undefined, error);
       toast({
@@ -258,11 +322,7 @@ export function CreateCheckpointDialog({
 
   const handleCancel = () => {
     if (!isCreating) {
-      setName('');
-      setAssetType('real_estate');
-      setLocation('');
-      setDescription('');
-      setFiles([]);
+      resetForm();
       onOpenChange(false);
     }
   };
@@ -374,12 +434,70 @@ export function CreateCheckpointDialog({
             />
           </div>
 
-          {/* File Upload */}
+          {/* Media capture */}
           <div className="space-y-2">
             <Label>
               Photos/Videos <span className="text-destructive">*</span>
             </Label>
-            <FileUploadZone onFilesChange={setFiles} maxFiles={10} />
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-auto flex-col gap-1 py-3"
+                onClick={() => handleOpenCamera('photo')}
+                disabled={isCreating || createBlockedByLimit || files.length >= MAX_CHECKPOINT_FILES}
+              >
+                <Camera className="h-4 w-4" />
+                <span className="text-xs">Photo</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-auto flex-col gap-1 py-3"
+                onClick={() => handleOpenCamera('video')}
+                disabled={isCreating || createBlockedByLimit || files.length >= MAX_CHECKPOINT_FILES}
+              >
+                <Video className="h-4 w-4" />
+                <span className="text-xs">Video</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-auto flex-col gap-1 py-3"
+                disabled={isCreating || files.length >= MAX_CHECKPOINT_FILES}
+                onClick={() => {
+                  const input = document.getElementById('checkpoint-gallery-input');
+                  input?.click();
+                }}
+              >
+                <Images className="h-4 w-4" />
+                <span className="text-xs">Gallery</span>
+              </Button>
+            </div>
+            <input
+              id="checkpoint-gallery-input"
+              type="file"
+              multiple
+              accept="image/*,video/*"
+              className="hidden"
+              disabled={isCreating || files.length >= MAX_CHECKPOINT_FILES}
+              onChange={(event) => {
+                const selected = event.target.files;
+                if (!selected) return;
+
+                const remaining = MAX_CHECKPOINT_FILES - files.length;
+                const nextFiles = Array.from(selected).slice(0, remaining).map(fileToPreview);
+                if (nextFiles.length > 0) {
+                  setFiles((current) => [...current, ...nextFiles]);
+                }
+                event.target.value = '';
+              }}
+            />
+            <FileUploadZone
+              files={files}
+              onFilesChange={setFiles}
+              maxFiles={MAX_CHECKPOINT_FILES}
+            />
           </div>
           {(checkpointLimitHint || checkpointLimitMessage) && (
             <p
@@ -416,6 +534,13 @@ export function CreateCheckpointDialog({
         checkpointName={newCheckpointName}
         onViewCheckpoint={handleViewNewCheckpoint}
         onContinue={handleContinue}
+      />
+
+      <CameraCaptureDialog
+        open={cameraOpen}
+        initialMode={cameraInitialMode}
+        onOpenChange={setCameraOpen}
+        onCapture={handleCameraCapture}
       />
     </Dialog>
   );

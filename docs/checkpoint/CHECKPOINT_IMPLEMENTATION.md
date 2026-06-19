@@ -43,13 +43,20 @@ webapp → @homeapp/common → Firebase/Firestore
 
 3. **CreateCheckpointDialog** (`components/checkpoints/create-checkpoint-dialog.tsx`)
    - Modal for creating new checkpoints
+   - Photo / Video / Gallery capture row (reuses `CameraCaptureDialog` from chat)
    - File upload with drag-and-drop support
    - Form for name, location, description
 
 4. **FileUploadZone** (`components/checkpoints/file-upload-zone.tsx`)
-   - Drag-and-drop file upload component
+   - Controlled drag-and-drop file upload component
    - Preview grid for uploaded files
    - Support for images and videos
+
+4b. **CameraCaptureDialog** (`components/chat/camera-capture-dialog.tsx`)
+   - Shared in-browser camera for chat, documents, and checkpoint creation
+   - Photo and video capture; front/rear toggle on mobile
+   - Multi-camera device picker via `useCameraDevices` when several webcams are available
+   - On HTTP (non-localhost) mobile browsers, falls back to the OS camera via `pickFromNativeCamera` (`lib/camera-capability.ts`) because `getUserMedia` requires a secure context
 
 5. **CheckpointDetailDialog** (`components/checkpoints/checkpoint-detail-dialog.tsx`)
    - Full checkpoint details view

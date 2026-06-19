@@ -21,6 +21,7 @@ import {
 import { Upload, X, File as FileIcon, Camera } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { CameraCaptureDialog } from "@/components/chat/camera-capture-dialog";
+import { pickFromNativeCamera, supportsInBrowserCamera } from "@/lib/camera-capability";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { trackFirstPropertyCreated } from "@/lib/analytics";
@@ -159,6 +160,15 @@ export function UploadDocumentsDialog({
 
   const removeFile = (id: string) => {
     setFiles((files) => files.filter((file) => file.id !== id));
+  };
+
+  const handleOpenCamera = async () => {
+    if (!supportsInBrowserCamera()) {
+      const file = await pickFromNativeCamera("photo");
+      if (file) handleCameraCapture(file);
+      return;
+    }
+    setCameraDialogOpen(true);
   };
 
   const handleCameraCapture = (file: File) => {
@@ -552,7 +562,7 @@ export function UploadDocumentsDialog({
               </div>
               <Button
                 variant="outline"
-                onClick={() => setCameraDialogOpen(true)}
+                onClick={() => void handleOpenCamera()}
                 className="w-full"
                 disabled={isUploading}
               >
