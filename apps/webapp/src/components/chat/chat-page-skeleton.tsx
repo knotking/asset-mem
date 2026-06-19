@@ -29,7 +29,7 @@ export function ChatPageSkeleton() {
       </main>
       <footer className="shrink-0 border-t bg-card px-3 py-2 sm:px-4 sm:py-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         {/* Collapsed composer summary — mobile only (matches ComposerMetaSection default). */}
-        <Skeleton className="mb-2 h-8 w-44 max-w-full rounded-full md:hidden" />
+        <Skeleton className="mb-2 h-9 w-full rounded-full md:hidden" />
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
           <Skeleton className="size-10 shrink-0 rounded-full bg-primary/20" />
           <Skeleton className="h-10 w-full rounded-lg bg-primary/20" />

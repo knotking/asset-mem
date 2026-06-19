@@ -18,6 +18,7 @@ import {
 } from "@/lib/chat-context-labels";
 import { ADD_CONTEXT_VISIBLE_CHIP_COUNT } from "@/lib/chat-context-limits";
 import { APP_CAPTION_CLASS } from "@/lib/app-typography";
+import { cn } from "@/lib/utils";
 
 type Props = {
   pendingContext: PendingContextItem[];
@@ -31,6 +32,8 @@ type Props = {
   onRemovePending: (id: string) => void;
   onClearReady: () => void;
   onCancelQueuedSend?: () => void;
+  /** scroll = horizontal strip above composer; wrap = inside settings sheet. */
+  chipLayout?: "scroll" | "wrap";
 };
 
 function pendingLabel(item: PendingContextItem): string {
@@ -57,6 +60,7 @@ export function ChatContextChipStrip({
   onRemovePending,
   onClearReady,
   onCancelQueuedSend,
+  chipLayout = "scroll",
 }: Props) {
   const readyPreview: PreviewChip[] = [];
   for (const cp of readySelectedCheckpoints) {
@@ -94,7 +98,14 @@ export function ChatContextChipStrip({
         </div>
       ) : null}
 
-      <div className="flex min-w-0 max-w-full items-center gap-2 overflow-x-auto overscroll-x-contain scrollbar-hidden pb-1 pr-0.5">
+      <div
+        className={cn(
+          "flex min-w-0 max-w-full items-center gap-2 pr-0.5",
+          chipLayout === "scroll"
+            ? "overflow-x-auto overscroll-x-contain scrollbar-hidden pb-1"
+            : "flex-wrap pb-0",
+        )}
+      >
         {pendingContext.map((item) => (
           <div
             key={item.id}

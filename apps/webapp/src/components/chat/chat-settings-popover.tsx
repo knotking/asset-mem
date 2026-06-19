@@ -80,7 +80,10 @@ interface ChatSettingsPopoverProps {
   searchLocation?: SearchLocationInput;
   onSearchLocationChange?: (searchLocation: SearchLocationInput | undefined) => void;
   propertyAddress?: string;
-  initialTab?: 'agent' | 'location';
+  initialTab?: ChatSettingsTab;
+  /** Mobile sheet: attached checkpoints, documents, reports. */
+  contextSection?: ReactNode;
+  hasContextContent?: boolean;
 }
 
 const PRIMARY_AGENT_OPTIONS: ReadonlyArray<{
@@ -103,11 +106,16 @@ const OPTIONAL_AGENT_OPTIONS: ReadonlyArray<{
   { id: 'cost', label: 'Cost', icon: BadgeDollarSign },
 ];
 
+export type ChatSettingsTab = 'context' | 'agent' | 'location';
+
 type ChatSettingsPanelProps = {
-  activeTab: 'agent' | 'location';
-  onActiveTabChange: (tab: 'agent' | 'location') => void;
+  activeTab: ChatSettingsTab;
+  onActiveTabChange: (tab: ChatSettingsTab) => void;
   /** Use SheetTitle for bottom-sheet a11y; h3 in desktop popover. */
   useSheetTitle?: boolean;
+  showContextTab?: boolean;
+  contextSection?: ReactNode;
+  contextEmptyHint?: ReactNode;
   primaryAgent: PrimaryAgent;
   onPrimaryAgentChange: (agent: PrimaryAgent) => void;
   selectedOptionalAgents: AnalysisOptionalAgent[];
@@ -130,6 +138,9 @@ function ChatSettingsPanel({
   activeTab,
   onActiveTabChange,
   useSheetTitle = false,
+  showContextTab = false,
+  contextSection,
+  contextEmptyHint,
   bodyClassName,
   primaryAgent,
   onPrimaryAgentChange,
@@ -148,9 +159,11 @@ function ChatSettingsPanel({
   onGetCurrentLocation,
 }: ChatSettingsPanelProps) {
   const titleClassName = "mb-3 text-left text-base font-semibold";
+  const tabCount =
+    (showContextTab ? 1 : 0) + 1 + (onSearchLocationChange ? 1 : 0);
 
   return (
-    <Tabs value={activeTab} onValueChange={(v) => onActiveTabChange(v as 'agent' | 'location')}>
+    <Tabs value={activeTab} onValueChange={(v) => onActiveTabChange(v as ChatSettingsTab)}>
       <div className="shrink-0 border-b px-4 pb-3 pt-4">
         {useSheetTitle ? (
           <SheetTitle className={titleClassName}>Chat Settings</SheetTitle>
@@ -160,14 +173,19 @@ function ChatSettingsPanel({
         <TabsList
           className={cn(
             "grid h-10 w-full p-1",
-            onSearchLocationChange ? "grid-cols-2" : "grid-cols-1",
+            tabCount === 3 ? "grid-cols-3" : tabCount === 2 ? "grid-cols-2" : "grid-cols-1",
           )}
         >
-          <TabsTrigger value="agent" className="h-8 flex-1">
+          {showContextTab && (
+            <TabsTrigger value="context" className="h-8 flex-1 px-2 text-xs sm:text-sm">
+              Context
+            </TabsTrigger>
+          )}
+          <TabsTrigger value="agent" className="h-8 flex-1 px-2 text-xs sm:text-sm">
             Agent
           </TabsTrigger>
           {onSearchLocationChange && (
-            <TabsTrigger value="location" className="h-8 flex-1">
+            <TabsTrigger value="location" className="h-8 flex-1 px-2 text-xs sm:text-sm">
               Location
             </TabsTrigger>
           )}
@@ -175,6 +193,12 @@ function ChatSettingsPanel({
       </div>
 
       <div className={cn("overflow-y-auto overscroll-contain", bodyClassName)}>
+        {showContextTab && (
+          <TabsContent value="context" className="m-0 space-y-3 p-4">
+            {contextSection}
+            {contextEmptyHint}
+          </TabsContent>
+        )}
         <TabsContent value="agent" className="m-0 space-y-4 p-4">
           <div>
             <label className="mb-3 block text-sm font-semibold">Primary Agent</label>
@@ -397,10 +421,12 @@ export function ChatSettingsPopover({
   onSearchLocationChange,
   propertyAddress,
   initialTab = 'agent',
+  contextSection,
+  hasContextContent = false,
 }: ChatSettingsPopoverProps) {
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState<'agent' | 'location'>(initialTab);
+  const [activeTab, setActiveTab] = useState<ChatSettingsTab>(initialTab);
   const [locationSource, setLocationSource] = useState<SearchLocationSource>(
     searchLocation?.source || 'property_address'
   );
@@ -496,9 +522,21 @@ export function ChatSettingsPopover({
     }
   };
 
+  const showContextTab = isMobile && contextSection != null;
+  const contextEmptyHint =
+    showContextTab && !hasContextContent ? (
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        No attachments yet. Use + below the message field to add checkpoints, documents, or
+        reports.
+      </p>
+    ) : null;
+
   const panelProps: ChatSettingsPanelProps = {
     activeTab,
     onActiveTabChange: setActiveTab,
+    showContextTab,
+    contextSection,
+    contextEmptyHint,
     primaryAgent,
     onPrimaryAgentChange,
     selectedOptionalAgents,

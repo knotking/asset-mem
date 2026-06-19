@@ -117,8 +117,9 @@ Uses contentJson/contentMarkdown — not raw `message.content` alone.
 
 `PropertyChatWithContext` uses `ComposerMetaSection` (via `ChatInput` when `onOpenAddContext` is set):
 
-- **Expanded:** context chip strip, `CompactSettingsBar` (agent → Agent tab, location → Location tab; icon-only below `sm`), settings gear from `sm` up (agent icon covers it on mobile), collapse chevron. Chat settings open in a **bottom sheet** below `md`, popover on desktop.
-- **Collapsed:** single summary pill (`Checkpoint +4 · 2 context`, etc.); tap pill opens chat settings popover; chevron expands chips/settings again.
+- **Mobile (`<md`):** single summary pill opens a bottom sheet with **Context** (attached checkpoints/documents/reports), **Agent**, and **Location** tabs — no expand/collapse chevron; use **+** to add context.
+- **Desktop:** **Expanded:** context chip strip, `CompactSettingsBar` (agent → Agent tab, location → Location tab), settings gear, collapse chevron. Chat settings use a popover.
+- **Collapsed (desktop):** summary pill + expand chevron; tap pill opens settings.
 - Send-block hints remain visible when collapsed.
 
 Header shortcuts (usage, FAQ, settings) use `settings-navigation` return params so back restores the same property tab and chat session.

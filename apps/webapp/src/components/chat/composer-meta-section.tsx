@@ -13,7 +13,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CompactSettingsBar } from "./compact-settings-bar";
-import { ChatSettingsPopover } from "./chat-settings-popover";
+import { ChatSettingsPopover, type ChatSettingsTab } from "./chat-settings-popover";
 
 type ComposerMetaSectionProps = {
   contextChipStrip?: React.ReactNode;
@@ -31,6 +31,13 @@ type ComposerMetaSectionProps = {
   pendingContextCount?: number;
   hasQueuedSend?: boolean;
 };
+
+function withWrapChipLayout(strip: React.ReactNode): React.ReactNode {
+  if (!React.isValidElement(strip)) return strip;
+  return React.cloneElement(strip as React.ReactElement<{ chipLayout?: "scroll" | "wrap" }>, {
+    chipLayout: "wrap",
+  });
+}
 
 export function ComposerMetaSection({
   contextChipStrip,
@@ -50,19 +57,30 @@ export function ComposerMetaSection({
 }: ComposerMetaSectionProps) {
   const isMobile = useIsMobile();
   const [settingsPopoverOpen, setSettingsPopoverOpen] = React.useState(false);
-  const [settingsPopoverTab, setSettingsPopoverTab] = React.useState<"agent" | "location">(
-    "agent",
-  );
+  const [settingsPopoverTab, setSettingsPopoverTab] = React.useState<ChatSettingsTab>("agent");
   const [composerMetaExpanded, setComposerMetaExpanded] = React.useState(false);
+
+  const hasContextContent =
+    readyContextCount + pendingContextCount > 0 || hasQueuedSend;
 
   React.useEffect(() => {
     setComposerMetaExpanded(!isMobile);
   }, [isMobile]);
 
-  const openSettings = React.useCallback((tab: "agent" | "location") => {
-    setSettingsPopoverTab(tab);
-    setSettingsPopoverOpen(true);
-  }, []);
+  const defaultSettingsTab = React.useCallback((): ChatSettingsTab => {
+    if (isMobile && contextChipStrip != null && hasContextContent) {
+      return "context";
+    }
+    return "agent";
+  }, [contextChipStrip, hasContextContent, isMobile]);
+
+  const openSettings = React.useCallback(
+    (tab?: ChatSettingsTab) => {
+      setSettingsPopoverTab(tab ?? defaultSettingsTab());
+      setSettingsPopoverOpen(true);
+    },
+    [defaultSettingsTab],
+  );
 
   const collapsedSummary = React.useMemo(
     () =>
@@ -84,7 +102,26 @@ export function ComposerMetaSection({
     ],
   );
 
-  const metaRow = composerMetaExpanded ? (
+  const mobileMetaRow = (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => openSettings()}
+        className={cn(
+          "w-full min-w-0 rounded-full border border-border bg-background px-3 py-2",
+          "text-left text-xs font-medium text-foreground truncate",
+        )}
+        aria-label={`Chat settings: ${collapsedSummary}`}
+      >
+        {collapsedSummary}
+      </button>
+      {sendBlockHint ? (
+        <p className="text-xs text-muted-foreground">{sendBlockHint}</p>
+      ) : null}
+    </div>
+  );
+
+  const desktopMetaRow = composerMetaExpanded ? (
     <div className="space-y-2.5">
       {contextChipStrip}
       {sendBlockHint ? (
@@ -107,7 +144,7 @@ export function ComposerMetaSection({
           type="button"
           variant="outline"
           size="icon"
-          className="hidden size-8 shrink-0 sm:inline-flex"
+          className="size-8 shrink-0"
           onClick={() => openSettings("agent")}
           aria-label="Open chat settings"
         >
@@ -117,7 +154,7 @@ export function ComposerMetaSection({
           type="button"
           variant="outline"
           size="icon"
-          className="size-10 shrink-0 sm:size-8"
+          className="size-8 shrink-0"
           onClick={() => setComposerMetaExpanded(false)}
           aria-label="Collapse chat settings and context"
         >
@@ -130,7 +167,7 @@ export function ComposerMetaSection({
       <div className="flex min-w-0 max-w-full items-center gap-1.5">
         <button
           type="button"
-          onClick={() => openSettings("agent")}
+          onClick={() => openSettings()}
           className={cn(
             "min-w-0 max-w-[calc(100%-2.25rem)] shrink rounded-full border border-border bg-background px-3 py-1.5",
             "text-left text-xs font-medium text-foreground truncate",
@@ -143,7 +180,7 @@ export function ComposerMetaSection({
           type="button"
           variant="outline"
           size="icon"
-          className="h-10 w-10 shrink-0 sm:h-8 sm:w-8"
+          className="h-8 w-8 shrink-0"
           onClick={() => setComposerMetaExpanded(true)}
           aria-label="Expand chat settings and context"
         >
@@ -155,6 +192,8 @@ export function ComposerMetaSection({
       ) : null}
     </>
   );
+
+  const metaRow = isMobile ? mobileMetaRow : desktopMetaRow;
 
   return (
     <ChatSettingsPopover
@@ -170,6 +209,8 @@ export function ComposerMetaSection({
       onSearchLocationChange={onSearchLocationChange}
       propertyAddress={propertyAddress}
       initialTab={settingsPopoverTab}
+      contextSection={isMobile ? withWrapChipLayout(contextChipStrip) : undefined}
+      hasContextContent={hasContextContent}
       anchor={<div className="w-full min-w-0 max-w-full">{metaRow}</div>}
     />
   );
