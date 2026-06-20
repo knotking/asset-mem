@@ -1,3 +1,5 @@
+import type { PrimaryAgent } from "../types";
+
 export const ADD_CONTEXT_TITLE = "Add attachments";
 
 export const PENDING_CHECKPOINT_LABEL = "Analyzing checkpoint…";
@@ -123,3 +125,49 @@ export const ADD_CONTEXT_SELECTED_SUMMARY = (
   if (documentCount > 0) parts.push(`${documentCount}/${maxDoc} documents`);
   return parts.length > 0 ? parts.join(" · ") : "Nothing selected";
 };
+
+/** Chat settings — attachment row action label for the active primary agent. */
+export function getSettingsAttachmentActionLabel(primaryAgent: PrimaryAgent): string {
+  switch (primaryAgent) {
+    case "report":
+      return "Add report";
+    case "checkpoint":
+      return "Add checkpoint";
+    case "docs":
+      return "Add document";
+    case "analysis":
+      return "Add attachment";
+  }
+}
+
+export function getSettingsAttachmentHint(primaryAgent: PrimaryAgent): string {
+  switch (primaryAgent) {
+    case "report":
+      return ADD_CONTEXT_MODE_HINT_REPORT;
+    case "checkpoint":
+      return ADD_CONTEXT_MODE_HINT_CHECKPOINT;
+    case "docs":
+      return ADD_CONTEXT_MODE_HINT_DOCS;
+    case "analysis":
+      return "Attach checkpoints or documents for context.";
+  }
+}
+
+export function getSettingsAttachmentCountLabel(
+  readyCount: number,
+  pendingCount: number,
+): string | null {
+  const total = readyCount + pendingCount;
+  if (total === 0) return null;
+  if (pendingCount > 0 && readyCount === 0) {
+    return pendingCount === 1 ? "1 processing" : `${pendingCount} processing`;
+  }
+  if (pendingCount > 0) {
+    const ready =
+      readyCount === 1 ? "1 attached" : `${readyCount} attached`;
+    const pending =
+      pendingCount === 1 ? "1 processing" : `${pendingCount} processing`;
+    return `${ready} · ${pending}`;
+  }
+  return readyCount === 1 ? "1 attached" : `${readyCount} attached`;
+}

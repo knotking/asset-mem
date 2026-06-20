@@ -321,6 +321,9 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
       onSearchLocationChange,
       propertyAddress,
       initialTab: settingsPopoverTab,
+      onOpenAddContext: useContextMode ? onOpenAddContext : undefined,
+      readyContextCount: useContextMode ? readyContextCount : undefined,
+      pendingContextCount: useContextMode ? pendingContextCount : undefined,
     };
 
     const composerMetaSection = useContextMode ? (

@@ -17,8 +17,15 @@ import {
   BadgeDollarSign,
   MapPin,
   Navigation,
+  Paperclip,
+  ChevronRight,
 } from "lucide-react";
 import { getPrimaryAgentIcon } from "@/lib/primary-agent-display";
+import {
+  getSettingsAttachmentActionLabel,
+  getSettingsAttachmentCountLabel,
+  getSettingsAttachmentHint,
+} from "@/lib/chat-context-labels";
 import type {
   PrimaryAgent,
   AnalysisOptionalAgent,
@@ -77,6 +84,9 @@ interface ChatSettingsPopoverProps {
   onSearchLocationChange?: (searchLocation: SearchLocationInput | undefined) => void;
   propertyAddress?: string;
   initialTab?: 'agent' | 'location';
+  onOpenAddContext?: () => void;
+  readyContextCount?: number;
+  pendingContextCount?: number;
 }
 
 const PRIMARY_AGENT_OPTIONS: ReadonlyArray<{
@@ -120,6 +130,10 @@ type ChatSettingsPanelProps = {
   isGettingLocation: boolean;
   onGetCurrentLocation: () => void;
   bodyClassName?: string;
+  onOpenAddContext?: () => void;
+  onCloseSettings?: () => void;
+  readyContextCount?: number;
+  pendingContextCount?: number;
 };
 
 function ChatSettingsPanel({
@@ -142,8 +156,16 @@ function ChatSettingsPanel({
   onRadiusChange,
   isGettingLocation,
   onGetCurrentLocation,
+  onOpenAddContext,
+  onCloseSettings,
+  readyContextCount = 0,
+  pendingContextCount = 0,
 }: ChatSettingsPanelProps) {
   const titleClassName = "mb-3 text-left text-base font-semibold";
+  const attachmentCountLabel = getSettingsAttachmentCountLabel(
+    readyContextCount,
+    pendingContextCount,
+  );
 
   return (
     <Tabs value={activeTab} onValueChange={(v) => onActiveTabChange(v as 'agent' | 'location')}>
@@ -193,73 +215,81 @@ function ChatSettingsPanel({
             </div>
           </div>
 
-          <div className="min-h-[9rem]">
+          {onOpenAddContext ? (
+            <div>
+              <label className="mb-3 block text-sm font-semibold">Attachments</label>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-auto w-full justify-between gap-2 px-3 py-3"
+                onClick={() => {
+                  onCloseSettings?.();
+                  onOpenAddContext();
+                }}
+              >
+                <span className="flex min-w-0 flex-1 items-center gap-2">
+                  <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="truncate text-sm font-medium">
+                    {getSettingsAttachmentActionLabel(primaryAgent)}
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
+                  {attachmentCountLabel ? (
+                    <span className="text-xs text-muted-foreground">
+                      {attachmentCountLabel}
+                    </span>
+                  ) : null}
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </span>
+              </Button>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {getSettingsAttachmentHint(primaryAgent)}
+              </p>
+            </div>
+          ) : null}
+
+          <div>
             <label className="mb-3 block text-sm font-semibold">Optional Agents</label>
             {primaryAgent === 'docs' ? (
-              <>
-                <div className="flex min-h-[4.5rem] items-center rounded-lg border border-dashed border-border bg-muted/30 px-3 py-3">
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    Not available for Docs. The Docs agent answers from your uploaded property
-                    documents. Switch to Checkpoint to add coverage, DIY, service, or cost
-                    recommendations.
-                  </p>
-                </div>
-                <div className="mt-2 min-h-[3rem]" aria-hidden />
-              </>
-            ) : primaryAgent === 'report' ? (
-              <>
-                <div className="flex min-h-[4.5rem] items-center rounded-lg border border-dashed border-border bg-muted/30 px-3 py-3">
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    Reports mode answers from saved report snapshots you attach in chat — not live
-                    checkpoints.
-                  </p>
-                </div>
-                <div className="mt-2 min-h-[3rem]" aria-hidden />
-              </>
-            ) : (
-              <>
-                <div className="flex min-h-[4.5rem] flex-wrap content-start gap-1.5 md:gap-2">
-                  {OPTIONAL_AGENT_OPTIONS.map((option) => {
-                    const isSelected =
-                      primaryAgent === 'checkpoint'
-                        ? selectedCheckpointOptionalAgents.includes(option.id)
-                        : selectedOptionalAgents.includes(option.id);
-                    const Icon = option.icon;
-                    return (
-                      <SelectableChipButton
-                        key={option.id}
-                        selected={isSelected}
-                        onClick={() =>
-                          primaryAgent === 'checkpoint'
-                            ? onToggleCheckpointOptionalAgent(option.id)
-                            : onToggleOptionalAgent(option.id)
-                        }
-                        className="h-7 gap-1 px-2 text-xs md:h-9 md:gap-1.5 md:px-3 md:text-sm"
-                      >
-                        <Icon className="h-3 w-3 shrink-0 md:h-3.5 md:w-3.5" />
-                        <span>{option.label}</span>
-                      </SelectableChipButton>
-                    );
-                  })}
-                </div>
-                <p className="mt-2 min-h-[3rem] text-xs text-muted-foreground">
-                  {primaryAgent === 'checkpoint' ? (
-                    selectedCheckpointOptionalAgents.length === 0 ? (
-                      <>
-                        Checkpoint Agent will answer questions about your checkpoints without
-                        recommendations
-                      </>
-                    ) : (
-                      <>
-                        Checkpoint Agent will analyze checkpoints and provide{' '}
-                        {selectedCheckpointOptionalAgents.join(', ')} recommendations
-                      </>
-                    )
-                  ) : selectedOptionalAgents.length === 0 ? (
-                    <>Triage agent will run by default</>
-                  ) : null}
+              <div className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-3">
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Not available for Docs. The Docs agent answers from your uploaded property
+                  documents. Switch to Checkpoint to add coverage, DIY, service, or cost
+                  recommendations.
                 </p>
-              </>
+              </div>
+            ) : primaryAgent === 'report' ? (
+              <div className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-3">
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Reports mode answers from saved report snapshots you attach in chat — not live
+                  checkpoints.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-wrap content-start gap-1.5 md:gap-2">
+                {OPTIONAL_AGENT_OPTIONS.map((option) => {
+                  const isSelected =
+                    primaryAgent === 'checkpoint'
+                      ? selectedCheckpointOptionalAgents.includes(option.id)
+                      : selectedOptionalAgents.includes(option.id);
+                  const Icon = option.icon;
+                  return (
+                    <SelectableChipButton
+                      key={option.id}
+                      selected={isSelected}
+                      onClick={() =>
+                        primaryAgent === 'checkpoint'
+                          ? onToggleCheckpointOptionalAgent(option.id)
+                          : onToggleOptionalAgent(option.id)
+                      }
+                      className="h-7 gap-1 px-2 text-xs md:h-9 md:gap-1.5 md:px-3 md:text-sm"
+                    >
+                      <Icon className="h-3 w-3 shrink-0 md:h-3.5 md:w-3.5" />
+                      <span>{option.label}</span>
+                    </SelectableChipButton>
+                  );
+                })}
+              </div>
             )}
           </div>
         </TabsContent>
@@ -392,6 +422,9 @@ export function ChatSettingsPopover({
   onSearchLocationChange,
   propertyAddress,
   initialTab = 'agent',
+  onOpenAddContext,
+  readyContextCount,
+  pendingContextCount,
 }: ChatSettingsPopoverProps) {
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -509,6 +542,10 @@ export function ChatSettingsPopover({
     onRadiusChange: handleRadiusChange,
     isGettingLocation,
     onGetCurrentLocation: handleGetCurrentLocation,
+    onOpenAddContext,
+    onCloseSettings: () => onOpenChange(false),
+    readyContextCount,
+    pendingContextCount,
   };
 
   if (isMobile) {
@@ -543,7 +580,7 @@ export function ChatSettingsPopover({
       >
         <ChatSettingsPanel
           {...panelProps}
-          bodyClassName="h-[min(22rem,calc(100dvh-12rem))]"
+          bodyClassName="max-h-[min(24rem,calc(100dvh-12rem))]"
         />
       </PopoverContent>
     </Popover>

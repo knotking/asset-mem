@@ -333,6 +333,7 @@ function PropertyChatComposerInner(
       props,
       readySelectedCheckpoints,
       readySelectedDocuments,
+      readySelectedReports,
       pendingContext,
       setQueuedSend,
       toast,
