@@ -702,8 +702,8 @@ export function AddContextSheet({
         </Button>
       </View>
 
-      <View className="mb-2 flex-row items-center justify-between">
-        <Text className="text-xs text-muted-foreground">
+      <View className="mb-2 flex-row items-start justify-between">
+        <Text className="flex-1 pr-2 text-xs leading-4 text-muted-foreground">
           {ADD_CONTEXT_SELECTED_SUMMARY(
             selectedCheckpointCount,
             selectedDocumentCount,
@@ -712,7 +712,7 @@ export function AddContextSheet({
           )}
         </Text>
         {(selectedCheckpointCount > 0 || selectedDocumentCount > 0) && (
-          <Pressable onPress={onClearSelection}>
+          <Pressable onPress={onClearSelection} className="ml-2 shrink-0">
             <Text className="text-xs text-primary">Clear</Text>
           </Pressable>
         )}
@@ -761,13 +761,13 @@ export function AddContextSheet({
                 <Icon as={X} size={20} className="text-foreground" />
               </Button>
             </View>
-            <View className="mb-2 flex-row items-center justify-between">
-              <Text className="text-xs text-muted-foreground">
+            <View className="mb-2 flex-row items-start justify-between">
+              <Text className="flex-1 pr-2 text-xs leading-4 text-muted-foreground">
                 {selectedDocumentCount} selected ·{' '}
                 {CONTEXT_SELECTION_DOCUMENT_LIMIT(MAX_SELECTED_DOCUMENTS)}
               </Text>
               {selectedDocumentCount > 0 && (
-                <Pressable onPress={onClearSelection}>
+                <Pressable onPress={onClearSelection} className="ml-2 shrink-0">
                   <Text className="text-xs text-primary">Clear</Text>
                 </Pressable>
               )}

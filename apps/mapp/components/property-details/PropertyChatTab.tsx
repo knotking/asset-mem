@@ -60,7 +60,6 @@ interface PropertyChatTabProps {
   sendBlockHint?: string | null;
   readyContextCount?: number;
   pendingContextCount?: number;
-  hasQueuedSend?: boolean;
   searchLocation?: import('@homeapp/common/types').SearchLocationInput;
   onSearchLocationChange?: (
     searchLocation: import('@homeapp/common/types').SearchLocationInput | undefined
@@ -102,7 +101,6 @@ function PropertyChatTab({
   sendBlockHint,
   readyContextCount,
   pendingContextCount,
-  hasQueuedSend,
   searchLocation,
   onSearchLocationChange,
   propertyAddress,
@@ -266,7 +264,6 @@ function PropertyChatTab({
         sendBlockHint={sendBlockHint}
         readyContextCount={readyContextCount}
         pendingContextCount={pendingContextCount}
-        hasQueuedSend={hasQueuedSend}
         primaryAgent={primaryAgent}
         onPrimaryAgentChange={onPrimaryAgentChange}
         selectedOptionalAgents={selectedOptionalAgents}
@@ -286,7 +283,6 @@ function PropertyChatTab({
       sendBlockHint,
       readyContextCount,
       pendingContextCount,
-      hasQueuedSend,
       primaryAgent,
       onPrimaryAgentChange,
       selectedOptionalAgents,

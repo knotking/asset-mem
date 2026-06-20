@@ -23,6 +23,8 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  Search,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import {
   CHECKPOINT_PAGE_SIZE,
@@ -64,6 +66,7 @@ import {
 } from '@homeapp/common/lib/plan-limit-slice';
 import { getCheckpointListConditionBadge } from '@homeapp/common/lib/checkpoint-list-badge';
 import { checkpointListBadgeStyles } from '@/lib/checkpoint-list-badge-styles';
+import { Input } from '@/components/ui/input';
 import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
 import {
   AlertDialog,
@@ -749,6 +752,9 @@ export function PropertyCheckpointsTab({
   const [isDetailModalVisible, setIsDetailModalVisible] = React.useState(false);
   const [isIssuesModalVisible, setIsIssuesModalVisible] = React.useState(false);
   const [issuesFilter, setIssuesFilter] = React.useState<IssueSeverity | 'all'>('all');
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [locationFilter, setLocationFilter] = React.useState<string>('all');
+  const [filterModalVisible, setFilterModalVisible] = React.useState(false);
 
   // Selection State (always active in 'select' sub-tab)
   const [selectedForActions, setSelectedForActions] = React.useState<string[]>([]);
@@ -929,6 +935,38 @@ export function PropertyCheckpointsTab({
       setIsDeleteConfirmOpen(true);
     }
   };
+
+  const locationOptions = React.useMemo(() => {
+    return Array.from(
+      new Set(
+        checkpoints
+          .map((cp) => cp.location?.trim())
+          .filter((location): location is string => !!location),
+      ),
+    ).sort((a, b) => a.localeCompare(b));
+  }, [checkpoints]);
+
+  const filteredCheckpoints = React.useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return checkpoints.filter((cp) => {
+      const matchesLocation =
+        locationFilter === 'all' ||
+        (cp.location?.trim().toLowerCase() ?? '') === locationFilter.toLowerCase();
+      if (!matchesLocation) return false;
+      if (!term) return true;
+      const fields = [cp.name, cp.location, cp.detectedAsset, cp.assetType, cp.description];
+      return fields.some((value) => (value ?? '').toLowerCase().includes(term));
+    });
+  }, [checkpoints, searchTerm, locationFilter]);
+
+  const hasActiveFilters = searchTerm.trim().length > 0 || locationFilter !== 'all';
+  const activeFilterCount =
+    (searchTerm.trim().length > 0 ? 1 : 0) + (locationFilter !== 'all' ? 1 : 0);
+
+  const clearCheckpointFilters = React.useCallback(() => {
+    setSearchTerm('');
+    setLocationFilter('all');
+  }, []);
   
   const runBulkDelete = React.useCallback(
     async (checkpointIds: string[]) => {
@@ -1155,6 +1193,47 @@ export function PropertyCheckpointsTab({
       {/* Checkpoints Sub-tab Content */}
       {activeSubTab === 'checkpoints' && (
         <View className="flex-1 p-4">
+          <View className="mb-3 gap-2">
+            <View className="flex-row items-center gap-2">
+              <View className="flex-1">
+                <Input
+                  value={searchTerm}
+                  onChangeText={setSearchTerm}
+                  placeholder="Search checkpoints by name or location..."
+                  className="h-10 border-border bg-background pl-9 pr-3 text-sm"
+                />
+                <View className="pointer-events-none absolute left-3 top-0 h-10 items-center justify-center">
+                  <Icon as={Search} size={16} className="text-muted-foreground" />
+                </View>
+              </View>
+              <Button
+                variant="outline"
+                onPress={() => setFilterModalVisible(true)}
+                className={`h-10 px-3 ${activeFilterCount > 0 ? 'border-primary bg-primary/5' : ''}`}>
+                <View className="flex-row items-center gap-1.5">
+                  <Icon
+                    as={SlidersHorizontal}
+                    size={16}
+                    className={activeFilterCount > 0 ? 'text-primary' : 'text-foreground'}
+                  />
+                  <Text className={activeFilterCount > 0 ? 'text-primary' : 'text-foreground'}>
+                    {activeFilterCount > 0 ? `Filter · ${activeFilterCount}` : 'Filter'}
+                  </Text>
+                </View>
+              </Button>
+            </View>
+            {hasActiveFilters ? (
+              <View className="flex-row items-center justify-between">
+                <Text className="text-xs text-muted-foreground">
+                  Showing {filteredCheckpoints.length} of {checkpoints.length} checkpoints
+                </Text>
+                <Button variant="link" onPress={clearCheckpointFilters} className="h-7 px-0">
+                  <Text className="text-xs text-primary">Clear filters</Text>
+                </Button>
+              </View>
+            ) : null}
+          </View>
+
           {/* Selection indicator and action buttons */}
           {isSelectionMode && (
             <View className="mb-4 rounded-lg border border-border bg-secondary/50 p-3">
@@ -1234,7 +1313,7 @@ export function PropertyCheckpointsTab({
           ) : null}
 
           <FlatList
-            data={checkpoints}
+            data={filteredCheckpoints}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <CheckpointCard
@@ -1271,6 +1350,18 @@ export function PropertyCheckpointsTab({
                   </Text>
                 </View>
               ) : null
+            }
+            ListEmptyComponent={
+              <View className="rounded-lg border border-dashed border-border bg-secondary/30 p-4">
+                <Text className="text-center text-sm text-muted-foreground">
+                  No checkpoints match your current filters.
+                </Text>
+                {hasActiveFilters ? (
+                  <Button variant="link" onPress={clearCheckpointFilters} className="mt-1 h-8 self-center">
+                    <Text className="text-primary">Reset filters</Text>
+                  </Button>
+                ) : null}
+              </View>
             }
           />
         </View>
@@ -1393,6 +1484,63 @@ export function PropertyCheckpointsTab({
                 );
               })()}
             </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      <Modal visible={filterModalVisible} animationType="slide" presentationStyle="pageSheet">
+        <View className="flex-1 bg-background">
+          <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+            <View className="flex-1">
+              <Text className="text-lg font-semibold text-foreground">Filter checkpoints</Text>
+              <Text className="text-xs text-muted-foreground">Narrow by location</Text>
+            </View>
+            <Button onPress={() => setFilterModalVisible(false)} variant="ghost" size="icon">
+              <Icon as={X} size={22} className="text-foreground" />
+            </Button>
+          </View>
+
+          <ScrollView className="flex-1 p-4">
+            <Text className="mb-2 text-sm font-medium text-foreground">Location</Text>
+            <View className="mb-4 flex-row flex-wrap gap-2">
+              <Pressable
+                onPress={() => {
+                  setLocationFilter('all');
+                  setFilterModalVisible(false);
+                }}
+                className={`rounded-full border px-3 py-1.5 ${
+                  locationFilter === 'all' ? 'border-primary bg-primary/10' : 'border-border bg-card'
+                }`}>
+                <Text className={`text-xs ${locationFilter === 'all' ? 'text-primary' : 'text-foreground'}`}>
+                  All locations
+                </Text>
+              </Pressable>
+              {locationOptions.map((location) => (
+                <Pressable
+                  key={location}
+                  onPress={() => {
+                    setLocationFilter(location);
+                    setFilterModalVisible(false);
+                  }}
+                  className={`rounded-full border px-3 py-1.5 ${
+                    locationFilter === location ? 'border-primary bg-primary/10' : 'border-border bg-card'
+                  }`}>
+                  <Text className={`text-xs ${locationFilter === location ? 'text-primary' : 'text-foreground'}`}>
+                    {location}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Button
+              variant="outline"
+              onPress={() => {
+                clearCheckpointFilters();
+                setFilterModalVisible(false);
+              }}
+              className="w-full">
+              <Text className="text-foreground">Clear all filters</Text>
+            </Button>
           </ScrollView>
         </View>
       </Modal>
