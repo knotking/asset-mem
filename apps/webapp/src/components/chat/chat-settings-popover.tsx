@@ -1,9 +1,7 @@
 import { useState, useEffect, type ReactNode } from "react";
 import {
   Popover,
-  PopoverAnchor,
   PopoverContent,
-  PopoverTrigger,
 } from "@/components/ui/popover";
 import {
   Sheet,
@@ -67,8 +65,6 @@ function SelectableChipButton({
 
 interface ChatSettingsPopoverProps {
   children?: React.ReactNode;
-  /** Position anchor when opened programmatically (no trigger child). */
-  anchor?: React.ReactNode;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   primaryAgent: PrimaryAgent;
@@ -384,7 +380,6 @@ function ChatSettingsPanel({
 
 export function ChatSettingsPopover({
   children,
-  anchor,
   open,
   onOpenChange,
   primaryAgent,
@@ -519,7 +514,6 @@ export function ChatSettingsPopover({
   if (isMobile) {
     return (
       <>
-        {anchor}
         {children}
         <Sheet open={open} onOpenChange={onOpenChange}>
           <SheetContent
@@ -539,8 +533,7 @@ export function ChatSettingsPopover({
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
-      {anchor ? <PopoverAnchor asChild>{anchor}</PopoverAnchor> : null}
-      {children ? <PopoverTrigger asChild>{children}</PopoverTrigger> : null}
+      {children}
       <PopoverContent
         className="w-[min(28rem,calc(100vw-1.5rem))] overflow-hidden p-0"
         align="start"
@@ -550,7 +543,7 @@ export function ChatSettingsPopover({
       >
         <ChatSettingsPanel
           {...panelProps}
-          bodyClassName="h-[min(18.75rem,calc(100dvh-12rem))]"
+          bodyClassName="h-[min(22rem,calc(100dvh-12rem))]"
         />
       </PopoverContent>
     </Popover>

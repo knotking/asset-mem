@@ -11,7 +11,6 @@ import type {
   PrimaryAgent,
   PropertyReport,
 } from "@/lib/types";
-import { reportContextChipLabel } from "@/lib/chat-context-reports";
 import {
   getCheckpointThumbnail,
   isDocumentImage,
@@ -19,16 +18,10 @@ import {
 import {
   ASK_WHEN_READY_HINT,
   ASK_WHEN_READY_LABEL,
-  PENDING_CHECKPOINT_LABEL,
-  PENDING_DOCUMENT_ANALYZE_LABEL,
-  PENDING_DOCUMENT_INDEX_LABEL,
-  PENDING_DOCUMENT_UPLOAD_LABEL,
 } from "@/lib/chat-context-labels";
-import { ADD_CONTEXT_VISIBLE_CHIP_COUNT } from "@/lib/chat-context-limits";
 import { APP_CAPTION_CLASS } from "@/lib/app-typography";
 import { buildCollapsedComposerSummary } from "@/lib/composer-collapse";
 import { getRequiredContextEmptyPillLabel } from "@/lib/chat-send-context";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 const MOBILE_PEEK_THUMB_COUNT = 3;
@@ -48,16 +41,9 @@ type Props = {
   onRemovePending: (id: string) => void;
   onClearReady: () => void;
   onCancelQueuedSend?: () => void;
-  /** Mobile summary pill — open add-context sheet to review selection. */
+  /** Summary pill — open add-context sheet to review selection. */
   onViewAll?: () => void;
 };
-
-function pendingLabel(item: PendingContextItem): string {
-  if (item.kind === "checkpoint") return PENDING_CHECKPOINT_LABEL;
-  if (item.status === "uploading") return PENDING_DOCUMENT_UPLOAD_LABEL;
-  if (item.status === "analyzing") return PENDING_DOCUMENT_ANALYZE_LABEL;
-  return PENDING_DOCUMENT_INDEX_LABEL;
-}
 
 type PreviewChip =
   | { kind: "checkpoint"; item: Checkpoint }
@@ -176,7 +162,7 @@ function PeekThumbnail({
   );
 }
 
-function MobileContextSummaryPill({
+function ContextSummaryPill({
   peekEntries,
   summary,
   onViewAll,
@@ -194,8 +180,8 @@ function MobileContextSummaryPill({
       type="button"
       onClick={onViewAll}
       className={cn(
-        "flex w-full min-w-0 items-center gap-2 rounded-full border bg-background py-1 pl-1 pr-2.5",
-        "text-left transition-colors hover:bg-muted/50",
+        "flex min-w-0 items-center gap-2 rounded-full border bg-background py-1 pl-1 pr-2.5",
+        "w-full text-left transition-colors hover:bg-muted/50 md:w-auto md:max-w-md",
         isEmpty ? "border-dashed border-muted-foreground/40" : "border-border",
       )}
       aria-label={
@@ -219,7 +205,7 @@ function MobileContextSummaryPill({
       ) : null}
       <span
         className={cn(
-          "min-w-0 flex-1 truncate text-xs font-medium",
+          "min-w-0 flex-1 truncate text-xs font-medium md:flex-none md:max-w-[14rem]",
           isEmpty ? "text-muted-foreground" : "text-foreground",
         )}
       >
@@ -239,16 +225,9 @@ export function ChatContextChipStrip({
   readySelectedDocuments,
   readySelectedReports = [],
   queuedSend,
-  onToggleCheckpoint,
-  onToggleDocument,
-  onToggleReport,
-  onRemovePending,
-  onClearReady,
   onCancelQueuedSend,
   onViewAll,
 }: Props) {
-  const isMobile = useIsMobile();
-
   const readyPreview: PreviewChip[] = [];
   for (const cp of readySelectedCheckpoints) {
     readyPreview.push({ kind: "checkpoint", item: cp });
@@ -259,9 +238,6 @@ export function ChatContextChipStrip({
   for (const report of readySelectedReports) {
     readyPreview.push({ kind: "report", item: report });
   }
-
-  const visibleReady = readyPreview.slice(0, ADD_CONTEXT_VISIBLE_CHIP_COUNT);
-  const hiddenReadyCount = Math.max(0, readyPreview.length - visibleReady.length);
 
   const peekEntries: PeekEntry[] = [];
   for (const item of pendingContext) {
@@ -302,10 +278,10 @@ export function ChatContextChipStrip({
   });
 
   if (!hasContent) {
-    if (isMobile && emptyPillLabel) {
+    if (emptyPillLabel) {
       return (
-        <div className="mb-2 min-w-0 max-w-full">
-          <MobileContextSummaryPill
+        <div className="min-w-0 max-w-full">
+          <ContextSummaryPill
             peekEntries={[]}
             summary={emptyPillLabel}
             onViewAll={onViewAll}
@@ -332,159 +308,16 @@ export function ChatContextChipStrip({
     </div>
   ) : null;
 
-  if (isMobile) {
-    return (
-      <div className="mb-2 min-w-0 max-w-full space-y-2">
-        {queuedSendBanner}
-        {hasAttachmentRow ? (
-          <MobileContextSummaryPill
-            peekEntries={peekEntries}
-            summary={contextSummary}
-            onViewAll={onViewAll}
-          />
-        ) : null}
-      </div>
-    );
-  }
-
   return (
-    <div className="mb-2 min-w-0 max-w-full space-y-2">
+    <div className="min-w-0 max-w-full space-y-1.5">
       {queuedSendBanner}
-
-      <div className="flex min-w-0 max-w-full items-center gap-2 overflow-x-auto overscroll-x-contain scrollbar-hidden pb-1 pr-0.5">
-        {pendingContext.map((item) => (
-          <div
-            key={item.id}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-dashed border-border bg-muted/50 py-1 pl-1 pr-2"
-          >
-            {item.localPreviewUri ? (
-              <Image
-                src={item.localPreviewUri}
-                alt=""
-                width={32}
-                height={32}
-                className="h-8 w-8 rounded-md object-cover"
-                unoptimized
-              />
-            ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary">
-                {item.kind === "checkpoint" ? (
-                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                ) : (
-                  <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                )}
-              </div>
-            )}
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-            <span className="max-w-28 truncate text-xs text-muted-foreground">
-              {item.label || pendingLabel(item)}
-            </span>
-            <button
-              type="button"
-              onClick={() => onRemovePending(item.id)}
-              className="rounded-md p-1.5"
-              aria-label={`Remove ${item.label || pendingLabel(item)}`}
-            >
-              <X className="h-3.5 w-3.5 text-muted-foreground" />
-            </button>
-          </div>
-        ))}
-
-        {visibleReady.map((chip) => {
-          if (chip.kind === "checkpoint") {
-            const cp = chip.item;
-            const thumb = getCheckpointThumbnail(cp);
-            return (
-              <button
-                key={`cp-${cp.id}`}
-                type="button"
-                onClick={() => onToggleCheckpoint(cp)}
-                className="flex shrink-0 items-center gap-1.5 rounded-lg border border-primary bg-primary/10 py-1 pl-1 pr-2"
-              >
-                {thumb ? (
-                  <Image
-                    src={thumb}
-                    alt=""
-                    width={32}
-                    height={32}
-                    className="h-8 w-8 rounded-md object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary">
-                    <Clock className="h-3.5 w-3.5 text-primary" />
-                  </div>
-                )}
-                <span className="max-w-24 truncate text-xs text-foreground">
-                  {cp.name || "Checkpoint"}
-                </span>
-                <X className="h-3 w-3 text-muted-foreground" />
-              </button>
-            );
-          }
-          if (chip.kind === "document") {
-            const doc = chip.item;
-            return (
-              <button
-                key={`doc-${doc.id}`}
-                type="button"
-                onClick={() => onToggleDocument(doc)}
-                className="flex shrink-0 items-center gap-1.5 rounded-lg border border-primary bg-primary/10 py-1 pl-1 pr-2"
-              >
-                {isDocumentImage(doc) && doc.url ? (
-                  <Image
-                    src={doc.url}
-                    alt=""
-                    width={32}
-                    height={32}
-                    className="h-8 w-8 rounded-md object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary">
-                    <FileText className="h-3.5 w-3.5 text-primary" />
-                  </div>
-                )}
-                <span className="max-w-24 truncate text-xs text-foreground">{doc.name}</span>
-                <X className="h-3 w-3 text-muted-foreground" />
-              </button>
-            );
-          }
-          const report = chip.item;
-          return (
-            <button
-              key={`report-${report.id}`}
-              type="button"
-              onClick={() => onToggleReport?.(report)}
-              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-primary bg-primary/10 py-1 pl-1 pr-2"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary">
-                <FileText className="h-3.5 w-3.5 text-primary" />
-              </div>
-              <span className="max-w-28 truncate text-xs text-foreground">
-                {reportContextChipLabel(report)}
-              </span>
-              <X className="h-3 w-3 text-muted-foreground" />
-            </button>
-          );
-        })}
-
-        {hiddenReadyCount > 0 ? (
-          <span className="inline-flex h-10 shrink-0 items-center rounded-lg border border-primary/40 bg-primary/5 px-2.5 text-xs font-medium text-primary">
-            +{hiddenReadyCount} more
-          </span>
-        ) : null}
-
-        {readyPreview.length > 0 && (
-          <button
-            type="button"
-            onClick={onClearReady}
-            className="inline-flex h-10 shrink-0 items-center rounded-lg bg-secondary px-2 text-xs text-muted-foreground"
-          >
-            Clear
-          </button>
-        )}
-      </div>
+      {hasAttachmentRow ? (
+        <ContextSummaryPill
+          peekEntries={peekEntries}
+          summary={contextSummary}
+          onViewAll={onViewAll}
+        />
+      ) : null}
     </div>
   );
 }

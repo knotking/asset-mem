@@ -19,7 +19,6 @@ import {
   Send,
   Camera,
   Clock,
-  Plus,
   Settings,
 } from "lucide-react";
 import Image from "next/image";
@@ -52,6 +51,7 @@ import {
 } from "@/lib/types";
 import type { Checkpoint } from "@/lib/types";
 import { CompactSettingsBar } from "./compact-settings-bar";
+import { PopoverAnchor } from "@/components/ui/popover";
 import { ChatSettingsPopover } from "./chat-settings-popover";
 import { ComposerMetaSection } from "./composer-meta-section";
 
@@ -201,7 +201,6 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
     };
 
     const useContextMode = !!onOpenAddContext;
-    const showAddContextButton = useContextMode && !isMobile;
     const isUploading =
       fileAttachment && fileAttachment.progress < 100 && !fileAttachment.error;
     const isSendDisabled = useContextMode
@@ -328,26 +327,20 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
       <ComposerMetaSection
         contextChipStrip={contextChipStrip}
         sendBlockHint={sendBlockHint}
-        primaryAgent={primaryAgent}
-        selectedOptionalAgents={selectedOptionalAgents}
-        selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
-        searchLocation={searchLocation}
-        propertyAddress={propertyAddress}
-        readyContextCount={readyContextCount}
-        pendingContextCount={pendingContextCount}
-        hasQueuedSend={hasQueuedSend}
-        onOpenSettings={openChatSettings}
       />
     ) : null;
 
     const composerForm = (
         <form
           onSubmit={handleSubmit}
-          className="flex w-full min-w-0 max-w-full flex-col gap-2 sm:gap-2.5"
+          className={cn(
+            "flex w-full min-w-0 max-w-full flex-col",
+            useContextMode ? "gap-1" : "gap-2 sm:gap-2.5",
+          )}
         >
           <div className="min-w-0 max-w-full space-y-2">
             {useContextMode ? (
-              isMobile ? composerMetaSection : null
+              composerMetaSection
             ) : (
               <>
                 {contextChipStrip}
@@ -447,37 +440,37 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
           <div
             className={cn(
               "grid w-full min-w-0 items-center gap-2",
-              useContextMode && isMobile
+              useContextMode
                 ? "grid-cols-[auto_minmax(0,1fr)_auto]"
-                : useContextMode
-                  ? "grid-cols-[auto_minmax(0,1fr)_auto]"
-                  : "grid-cols-[minmax(0,1fr)_auto]",
+                : "grid-cols-[minmax(0,1fr)_auto]",
             )}
           >
-            {useContextMode && isMobile ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="size-11 shrink-0 md:size-10"
-                onClick={() => openChatSettings("agent")}
-                aria-label="Open chat settings"
-              >
-                <Settings className="size-[18px]" />
-              </Button>
-            ) : null}
-            {showAddContextButton ? (
-              <Button
-                variant="default"
-                size="icon"
-                className="size-11 shrink-0 rounded-full md:size-10"
-                onClick={onOpenAddContext}
-                disabled={isLoading}
-                type="button"
-                aria-label="Add attachments"
-              >
-                <Plus className="size-[18px]" />
-              </Button>
+            {useContextMode ? (
+              isMobile ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="size-11 shrink-0 md:size-10"
+                  onClick={() => openChatSettings("agent")}
+                  aria-label="Open chat settings"
+                >
+                  <Settings className="size-[18px]" />
+                </Button>
+              ) : (
+                <PopoverAnchor asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="size-11 shrink-0 md:size-10"
+                    onClick={() => openChatSettings("agent")}
+                    aria-label="Open chat settings"
+                  >
+                    <Settings className="size-[18px]" />
+                  </Button>
+                </PopoverAnchor>
+              )
             ) : null}
 
             <div className="relative flex min-h-10 min-w-0 items-center overflow-hidden rounded-lg bg-muted">
@@ -711,14 +704,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
         )}
 
         {useContextMode ? (
-          <ChatSettingsPopover
-            {...chatSettingsPopoverProps}
-            anchor={
-              !isMobile ? (
-                <div className="mb-2 w-full min-w-0 max-w-full">{composerMetaSection}</div>
-              ) : undefined
-            }
-          >
+          <ChatSettingsPopover {...chatSettingsPopoverProps}>
             {composerForm}
           </ChatSettingsPopover>
         ) : (
