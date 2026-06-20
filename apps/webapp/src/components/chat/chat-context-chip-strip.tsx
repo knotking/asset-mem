@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { X, FileText, Clock, Loader2, ChevronDown } from "lucide-react";
+import { X, FileText, Clock, Loader2, ChevronDown, Plus } from "lucide-react";
 import type {
   AnalysisOptionalAgent,
   Checkpoint,
@@ -27,6 +27,7 @@ import {
 import { ADD_CONTEXT_VISIBLE_CHIP_COUNT } from "@/lib/chat-context-limits";
 import { APP_CAPTION_CLASS } from "@/lib/app-typography";
 import { buildCollapsedComposerSummary } from "@/lib/composer-collapse";
+import { getRequiredContextEmptyPillLabel } from "@/lib/chat-send-context";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
@@ -179,22 +180,33 @@ function MobileContextSummaryPill({
   peekEntries,
   summary,
   onViewAll,
+  variant = "default",
 }: {
   peekEntries: PeekEntry[];
   summary: string;
   onViewAll?: () => void;
+  variant?: "default" | "empty";
 }) {
+  const isEmpty = variant === "empty";
+
   return (
     <button
       type="button"
       onClick={onViewAll}
       className={cn(
-        "flex w-full min-w-0 items-center gap-2 rounded-full border border-border bg-background py-1 pl-1 pr-2.5",
+        "flex w-full min-w-0 items-center gap-2 rounded-full border bg-background py-1 pl-1 pr-2.5",
         "text-left transition-colors hover:bg-muted/50",
+        isEmpty ? "border-dashed border-muted-foreground/40" : "border-border",
       )}
-      aria-label={`${summary}. View all attachments.`}
+      aria-label={
+        isEmpty ? `${summary}. Add attachment.` : `${summary}. View all attachments.`
+      }
     >
-      {peekEntries.length > 0 ? (
+      {isEmpty ? (
+        <div className="ml-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-background bg-muted">
+          <Plus className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+        </div>
+      ) : peekEntries.length > 0 ? (
         <div className="flex shrink-0 items-center pl-0.5">
           {peekEntries.map((entry, index) => (
             <PeekThumbnail
@@ -205,7 +217,12 @@ function MobileContextSummaryPill({
           ))}
         </div>
       ) : null}
-      <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
+      <span
+        className={cn(
+          "min-w-0 flex-1 truncate text-xs font-medium",
+          isEmpty ? "text-muted-foreground" : "text-foreground",
+        )}
+      >
         {summary}
       </span>
       <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -276,7 +293,29 @@ export function ChatContextChipStrip({
 
   const hasContent = hasAttachmentRow || queuedSend;
 
-  if (!hasContent) return null;
+  const emptyPillLabel = getRequiredContextEmptyPillLabel({
+    primaryAgent,
+    readySelectedCheckpoints,
+    readySelectedDocuments,
+    readySelectedReports,
+    pendingContext,
+  });
+
+  if (!hasContent) {
+    if (isMobile && emptyPillLabel) {
+      return (
+        <div className="mb-2 min-w-0 max-w-full">
+          <MobileContextSummaryPill
+            peekEntries={[]}
+            summary={emptyPillLabel}
+            onViewAll={onViewAll}
+            variant="empty"
+          />
+        </div>
+      );
+    }
+    return null;
+  }
 
   const queuedSendBanner = queuedSend ? (
     <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/10 px-3 py-2">

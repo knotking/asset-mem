@@ -21,8 +21,10 @@ import {
   buildAgentRequestContext,
   buildMessageContextRefs,
   canSendChatMessage,
+  getRequiredContextEmptyPillLabel,
   getSendBlockReason,
 } from "@/lib/chat-send-context";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export type ChatSendOptions = {
   chatIntent?: "discuss_analysis" | "new_analysis" | "replay_analysis";
@@ -129,6 +131,8 @@ function PropertyChatComposerInner(
     setQueuedSend,
   } = useChatContext();
 
+  const isMobile = useIsMobile();
+
   const [addContextOpen, setAddContextOpen] = React.useState(false);
   const [cameraOpen, setCameraOpen] = React.useState(false);
   const [cameraInitialMode, setCameraInitialMode] = React.useState<"photo" | "video">("photo");
@@ -159,17 +163,25 @@ function PropertyChatComposerInner(
   );
 
   const sendBlockHint = React.useMemo(() => {
-    const reason = getSendBlockReason({
+    const pillInput = {
       primaryAgent: props.primaryAgent,
-      text: "placeholder",
       readySelectedCheckpoints,
       readySelectedDocuments,
       readySelectedReports,
       pendingContext,
+    };
+    if (isMobile && getRequiredContextEmptyPillLabel(pillInput)) {
+      return null;
+    }
+
+    const reason = getSendBlockReason({
+      ...pillInput,
+      text: "placeholder",
     });
     if (!reason || reason === "Enter a message.") return null;
     return reason;
   }, [
+    isMobile,
     props.primaryAgent,
     readySelectedCheckpoints,
     readySelectedDocuments,

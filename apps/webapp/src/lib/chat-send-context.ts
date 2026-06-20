@@ -17,6 +17,10 @@ import {
   PENDING_DOCUMENT_ANALYZE_LABEL,
   PENDING_DOCUMENT_INDEX_LABEL,
   PENDING_DOCUMENT_UPLOAD_LABEL,
+  COMPOSER_ADD_REPORT_PILL,
+  COMPOSER_ADD_CHECKPOINT_PILL,
+  COMPOSER_ADD_DOCS_PILL,
+  COMPOSER_ADD_ANALYSIS_PILL,
   CONTEXT_READY_EMPTY_REPORT,
   CONTEXT_REPORT_NOT_READY,
 } from "@/lib/chat-context-labels";
@@ -113,6 +117,55 @@ function pendingBlockReason(items: PendingContextItem[]): string | null {
   if (first.status === "uploading") return PENDING_DOCUMENT_UPLOAD_LABEL;
   if (first.status === "analyzing") return PENDING_DOCUMENT_ANALYZE_LABEL;
   return PENDING_DOCUMENT_INDEX_LABEL;
+}
+
+function emptyContextAddPillLabelForAgent(
+  primaryAgent: PrimaryAgent,
+): string | null {
+  switch (primaryAgent) {
+    case "report":
+      return COMPOSER_ADD_REPORT_PILL;
+    case "checkpoint":
+      return COMPOSER_ADD_CHECKPOINT_PILL;
+    case "docs":
+      return COMPOSER_ADD_DOCS_PILL;
+    case "analysis":
+      return COMPOSER_ADD_ANALYSIS_PILL;
+    default:
+      return null;
+  }
+}
+
+/** Mobile empty-state attachment pill when the active agent has nothing attached. */
+export function getRequiredContextEmptyPillLabel(
+  input: Pick<
+    ChatSendContextInput,
+    | "primaryAgent"
+    | "readySelectedCheckpoints"
+    | "readySelectedDocuments"
+    | "readySelectedReports"
+    | "pendingContext"
+  >,
+): string | null {
+  if (input.pendingContext.length > 0) return null;
+
+  const attachedCount =
+    input.readySelectedCheckpoints.length +
+    input.readySelectedDocuments.length +
+    input.readySelectedReports.length;
+  if (attachedCount > 0) return null;
+
+  return emptyContextAddPillLabelForAgent(input.primaryAgent);
+}
+
+/** Composer-only helper when only attachment counts are available. */
+export function getEmptyContextAddPillLabelFromCounts(input: {
+  primaryAgent: PrimaryAgent;
+  readyContextCount: number;
+  pendingContextCount: number;
+}): string | null {
+  if (input.pendingContextCount > 0 || input.readyContextCount > 0) return null;
+  return emptyContextAddPillLabelForAgent(input.primaryAgent);
 }
 
 export function getSendBlockReason(input: ChatSendContextInput): string | null {

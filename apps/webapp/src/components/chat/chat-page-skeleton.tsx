@@ -29,9 +29,9 @@ export function ChatPageSkeleton() {
       </main>
       <footer className="shrink-0 border-t bg-card px-3 py-2 sm:px-4 sm:py-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <Skeleton className="mb-2 h-9 w-full max-w-xs rounded-full md:hidden" />
-        <div className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 md:grid-cols-[auto_minmax(0,1fr)_auto]">
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 md:grid-cols-[auto_minmax(0,1fr)_auto]">
           <Skeleton className="size-11 shrink-0 rounded-md bg-primary/20 md:hidden" />
-          <Skeleton className="size-11 shrink-0 rounded-full bg-primary/20 md:size-10" />
+          <Skeleton className="hidden size-11 shrink-0 rounded-full bg-primary/20 md:block md:size-10" />
           <Skeleton className="h-10 w-full rounded-lg bg-primary/20" />
           <Skeleton className="size-11 shrink-0 rounded-full bg-primary/80 md:size-10" />
         </div>

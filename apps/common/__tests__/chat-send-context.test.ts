@@ -2,8 +2,11 @@ import {
   buildAgentRequestContext,
   buildMessageContextRefs,
   canSendChatMessage,
+  getRequiredContextEmptyPillLabel,
+  getEmptyContextAddPillLabelFromCounts,
   getSendBlockReason,
 } from "../src/lib/chat-send-context";
+import { COMPOSER_ADD_REPORT_PILL, COMPOSER_ADD_CHECKPOINT_PILL, COMPOSER_ADD_DOCS_PILL, COMPOSER_ADD_ANALYSIS_PILL } from "../src/lib/chat-context-labels";
 import type { Checkpoint, Document } from "../src/types";
 
 const readyCheckpoint = {
@@ -46,6 +49,83 @@ describe("chat-send-context", () => {
       readySelectedReports: [],
     });
     expect(cp.checkpointIds).toEqual([]);
+  });
+
+  it("returns empty pill label for report mode without attachment", () => {
+    expect(
+      getRequiredContextEmptyPillLabel({
+        primaryAgent: "report",
+        readySelectedCheckpoints: [],
+        readySelectedDocuments: [],
+        readySelectedReports: [],
+        pendingContext: [],
+      })
+    ).toBe(COMPOSER_ADD_REPORT_PILL);
+  });
+
+  it("returns empty pill label for checkpoint mode without attachment", () => {
+    expect(
+      getRequiredContextEmptyPillLabel({
+        primaryAgent: "checkpoint",
+        readySelectedCheckpoints: [],
+        readySelectedDocuments: [],
+        readySelectedReports: [],
+        pendingContext: [],
+      })
+    ).toBe(COMPOSER_ADD_CHECKPOINT_PILL);
+  });
+
+  it("returns empty pill label for docs mode without attachment", () => {
+    expect(
+      getRequiredContextEmptyPillLabel({
+        primaryAgent: "docs",
+        readySelectedCheckpoints: [],
+        readySelectedDocuments: [],
+        readySelectedReports: [],
+        pendingContext: [],
+      })
+    ).toBe(COMPOSER_ADD_DOCS_PILL);
+  });
+
+  it("returns empty pill label for analysis mode without attachment", () => {
+    expect(
+      getRequiredContextEmptyPillLabel({
+        primaryAgent: "analysis",
+        readySelectedCheckpoints: [],
+        readySelectedDocuments: [],
+        readySelectedReports: [],
+        pendingContext: [],
+      })
+    ).toBe(COMPOSER_ADD_ANALYSIS_PILL);
+  });
+
+  it("omits empty pill label when report is selected", () => {
+    expect(
+      getRequiredContextEmptyPillLabel({
+        primaryAgent: "report",
+        readySelectedCheckpoints: [],
+        readySelectedDocuments: [],
+        readySelectedReports: [{ id: "r1", title: "Q1 report" }],
+        pendingContext: [],
+      })
+    ).toBeNull();
+  });
+
+  it("matches empty pill label from attachment counts", () => {
+    expect(
+      getEmptyContextAddPillLabelFromCounts({
+        primaryAgent: "checkpoint",
+        readyContextCount: 0,
+        pendingContextCount: 0,
+      })
+    ).toBe(COMPOSER_ADD_CHECKPOINT_PILL);
+    expect(
+      getEmptyContextAddPillLabelFromCounts({
+        primaryAgent: "checkpoint",
+        readyContextCount: 1,
+        pendingContextCount: 0,
+      })
+    ).toBeNull();
   });
 
   it("blocks send without text", () => {

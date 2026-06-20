@@ -117,9 +117,9 @@ Uses contentJson/contentMarkdown — not raw `message.content` alone.
 
 `PropertyChatWithContext` uses `ComposerMetaSection` (via `ChatInput` when `onOpenAddContext` is set):
 
-- **Mobile:** attachments show as one summary pill (stacked thumb previews + agent summary e.g. `Checkpoint +2 · 3 attached`); tap opens add-attachments sheet. Input row is `[settings][add attachments][message][send]`.
+- **Mobile:** attachments show as one summary pill (stacked thumb previews + agent summary e.g. `Checkpoint +2 · 3 attached`); tap opens add-attachments sheet. When nothing is attached, a dashed add pill appears (e.g. `Checkpoint · Add checkpoint`); composer is always `[settings][input][send]` with no input-row **+**. To add more after attaching, tap the summary pill.
 - **Desktop (`md+`):** expandable meta row with attachment chips, `CompactSettingsBar`, settings gear, and collapse chevron; summary pill when collapsed. Chat settings use a popover.
-- Send-block hints remain visible above the input row when set.
+- Send-block hints remain visible above the input row when set (desktop; mobile uses the empty-state pill for missing required report context).
 
 Header shortcuts (usage, FAQ, settings) use `settings-navigation` return params so back restores the same property tab and chat session.
 

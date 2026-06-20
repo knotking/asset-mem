@@ -201,6 +201,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
     };
 
     const useContextMode = !!onOpenAddContext;
+    const showAddContextButton = useContextMode && !isMobile;
     const isUploading =
       fileAttachment && fileAttachment.progress < 100 && !fileAttachment.error;
     const isSendDisabled = useContextMode
@@ -447,7 +448,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
             className={cn(
               "grid w-full min-w-0 items-center gap-2",
               useContextMode && isMobile
-                ? "grid-cols-[auto_auto_minmax(0,1fr)_auto]"
+                ? "grid-cols-[auto_minmax(0,1fr)_auto]"
                 : useContextMode
                   ? "grid-cols-[auto_minmax(0,1fr)_auto]"
                   : "grid-cols-[minmax(0,1fr)_auto]",
@@ -465,7 +466,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
                 <Settings className="size-[18px]" />
               </Button>
             ) : null}
-            {useContextMode ? (
+            {showAddContextButton ? (
               <Button
                 variant="default"
                 size="icon"

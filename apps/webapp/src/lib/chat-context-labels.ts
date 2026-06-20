@@ -20,6 +20,18 @@ export const CONTEXT_READY_EMPTY_DOCS =
 export const CONTEXT_READY_EMPTY_REPORT =
   "Select a saved report that is ready.";
 
+/** Mobile composer pill when Reports mode has no attachment yet. */
+export const COMPOSER_ADD_REPORT_PILL = "Reports · Add report";
+
+/** Mobile composer pill when Checkpoint mode has no attachment yet. */
+export const COMPOSER_ADD_CHECKPOINT_PILL = "Checkpoint · Add checkpoint";
+
+/** Mobile composer pill when Docs mode has no attachment yet. */
+export const COMPOSER_ADD_DOCS_PILL = "Docs · Add document";
+
+/** Mobile composer pill when Analysis mode has no attachment yet. */
+export const COMPOSER_ADD_ANALYSIS_PILL = "Analysis · Add attachment";
+
 export const CONTEXT_REPORT_NOT_READY =
   "Selected report is still generating or failed.";
 
