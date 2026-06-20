@@ -6,6 +6,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   ArrowLeft,
   MessageSquare,
   FileText,
@@ -15,6 +21,7 @@ import {
   Clock,
   Heart,
   BookOpen,
+  MoreHorizontal,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list-context';
@@ -517,22 +524,13 @@ function PropertyDetailsScreenContent({
                           {property.name}
                         </Text>
                       </View>
-                      <View className="shrink-0 flex-row items-center gap-1.5">
-                        <Button
-                          onPress={() =>
-                            navigateToSettingsSubScreen(router, 'faq', settingsReturnContext)
-                          }
-                          variant="ghost"
-                          size="icon"
-                          accessibilityLabel="FAQ & guides">
-                          <Icon as={BookOpen} size={20} className="text-foreground" />
-                        </Button>
+                      <View className="shrink-0 flex-row items-center gap-1">
                         <TokenUsageBar
                           matchActionIconSize
                           settingsReturnContext={settingsReturnContext}
                         />
                         {activeTab === 'chat' && (
-                          <View className="flex-row items-center gap-1 rounded-lg border border-border/50 px-1">
+                          <View className="flex-row items-center gap-0.5">
                             <View className="relative">
                               <Button
                                 onPress={() => setSessionsDrawerVisible(true)}
@@ -545,22 +543,6 @@ function PropertyDetailsScreenContent({
                                 <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
                                   <Text className="text-center text-[10px] font-semibold text-primary-foreground">
                                     {sessionsByProperty[id].length}
-                                  </Text>
-                                </View>
-                              )}
-                            </View>
-                            <View className="relative">
-                              <Button
-                                onPress={() => setMyProsDrawerVisible(true)}
-                                variant="ghost"
-                                size="icon"
-                                accessibilityLabel="My pros">
-                                <Icon as={Heart} size={20} className="text-foreground" />
-                              </Button>
-                              {savedProviders.length > 0 && (
-                                <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
-                                  <Text className="text-center text-[10px] font-semibold text-primary-foreground">
-                                    {savedProviders.length > 99 ? '99+' : savedProviders.length}
                                   </Text>
                                 </View>
                               )}
@@ -578,7 +560,8 @@ function PropertyDetailsScreenContent({
                                 }
                               }}
                               variant="ghost"
-                              size="icon">
+                              size="icon"
+                              accessibilityLabel="New chat session">
                               <Icon as={Plus} size={20} className="text-foreground" />
                             </Button>
                           </View>
@@ -620,6 +603,37 @@ function PropertyDetailsScreenContent({
                             )}
                           </View>
                         )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              accessibilityLabel="More property options">
+                              <Icon as={MoreHorizontal} size={20} className="text-foreground" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="min-w-[11rem]">
+                            <DropdownMenuItem
+                              onPress={() =>
+                                navigateToSettingsSubScreen(router, 'faq', settingsReturnContext)
+                              }
+                              className="py-2.5">
+                              <Icon as={BookOpen} size={16} className="text-foreground" />
+                              <Text className="text-sm">FAQ & guides</Text>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onPress={() => setMyProsDrawerVisible(true)}
+                              className="py-2.5">
+                              <Icon as={Heart} size={16} className="text-foreground" />
+                              <Text className="text-sm">
+                                My pros
+                                {savedProviders.length > 0
+                                  ? ` (${savedProviders.length > 99 ? '99+' : savedProviders.length})`
+                                  : ''}
+                              </Text>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </View>
                     </View>
                   </View>

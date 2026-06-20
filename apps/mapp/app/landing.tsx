@@ -31,7 +31,6 @@ import {
   ChevronUp,
   type LucideIcon,
 } from 'lucide-react-native';
-import { AssetMemBrandIcon } from '@/components/AssetMemBrandIcon';
 import { LandingDemoVideoModal } from '@/components/landing/LandingDemoVideoModal';
 import { openExternalWebUrl } from '@/lib/open-external-url';
 import { getWebAppOrigin } from '@/lib/expo-extra';
@@ -439,14 +438,12 @@ export default function LandingPage() {
             <View
               style={{
                 flexDirection: 'row',
-                alignItems: 'center',
+                alignItems: 'baseline',
                 justifyContent: 'center',
+                gap: 4,
+                flexShrink: 0,
               }}>
-              <View style={{ marginRight: 12, flexShrink: 0 }}>
-                <AssetMemBrandIcon variant="mark" size="md" markTheme="landing" />
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4, flexShrink: 0 }}>
-                <Text
+              <Text
                   style={{
                     fontSize: HERO_BRAND_FONT_SIZE,
                     fontWeight: '300',
@@ -465,7 +462,6 @@ export default function LandingPage() {
                   }}>
                   AI
                 </LandingGradientText>
-              </View>
             </View>
 
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', paddingVertical: 32 }}>
@@ -1132,12 +1128,14 @@ export default function LandingPage() {
               paddingHorizontal: 20,
             }}>
             <View style={{ alignItems: 'center' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-                <View style={{ marginRight: 10, flexShrink: 0 }}>
-                  <AssetMemBrandIcon variant="mark" size="sm" markTheme="landing" />
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-                  <Text
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'baseline',
+                  gap: 4,
+                  marginBottom: 16,
+                }}>
+                <Text
                     style={{
                       fontSize: 18,
                       fontWeight: '300',
@@ -1156,7 +1154,6 @@ export default function LandingPage() {
                     }}>
                     AI
                   </LandingGradientText>
-                </View>
               </View>
               <Text
                 style={{

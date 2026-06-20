@@ -111,7 +111,7 @@ export const CHAT_SESSION_EMPTY_INTRO = {
 } as const;
 
 export const CHAT_SESSION_EMPTY_SUGGESTED_PROMPTS = [
-  "Give me a complete analysis of my property's issues",
+  "Give me a complete analysis of my issues",
   "Estimate repair costs for the issues you see",
 ] as const;
 
