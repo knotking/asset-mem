@@ -7,7 +7,13 @@ import {
   getSendBlockReason,
 } from "../src/lib/chat-send-context";
 import { COMPOSER_ADD_REPORT_PILL, COMPOSER_ADD_CHECKPOINT_PILL, COMPOSER_ADD_DOCS_PILL, COMPOSER_ADD_ANALYSIS_PILL } from "../src/lib/chat-context-labels";
-import type { Checkpoint, Document } from "../src/types";
+import type { Checkpoint, Document, PropertyReport } from "../src/types";
+
+const readyReport = {
+  id: "r1",
+  title: "Q1 report",
+  status: "ready",
+} as PropertyReport;
 
 const readyCheckpoint = {
   id: "cp1",
@@ -105,7 +111,7 @@ describe("chat-send-context", () => {
         primaryAgent: "report",
         readySelectedCheckpoints: [],
         readySelectedDocuments: [],
-        readySelectedReports: [{ id: "r1", title: "Q1 report" }],
+        readySelectedReports: [readyReport],
         pendingContext: [],
       })
     ).toBeNull();
