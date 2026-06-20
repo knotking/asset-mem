@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { View, Pressable, Image, ActivityIndicator, Platform } from 'react-native';
+import { View, Pressable, Image, ActivityIndicator } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
 import { X, FileText, Clock, Plus, ChevronDown, ClipboardList } from 'lucide-react-native';
@@ -158,9 +158,11 @@ function ContextSummaryPill({
       ) : null}
       <Text
         className={cn(
-          'min-w-0 flex-1 text-xs font-medium',
+          'min-w-0 flex-1 font-medium',
           isEmpty ? 'text-muted-foreground' : 'text-foreground'
         )}
+        style={{ fontSize: 12, lineHeight: 16 }}
+        allowFontScaling={false}
         numberOfLines={1}>
         {summary}
       </Text>
@@ -239,7 +241,7 @@ export function ChatContextChipStrip({
       return (
         <View
           className="min-w-0 max-w-full"
-          style={{ marginBottom: Platform.OS === 'ios' ? 2 : 4 }}>
+          style={{ marginBottom: 4 }}>
           <ContextSummaryPill
             peekEntries={[]}
             summary={emptyPillLabel}
@@ -255,7 +257,7 @@ export function ChatContextChipStrip({
   return (
     <View
       className="min-w-0 max-w-full gap-1.5"
-      style={{ marginBottom: Platform.OS === 'ios' ? 2 : 4 }}>
+      style={{ marginBottom: 4 }}>
       {queuedSend ? (
         <View className="flex-row items-center justify-between rounded-lg border border-primary/30 bg-primary/10 px-3 py-2">
           <View className="mr-2 min-w-0 flex-1">

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { View, Platform, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
 import NetInfo from '@react-native-community/netinfo';
@@ -30,6 +31,8 @@ import {
   useChatListScrollOnScrollHandler,
 } from '@/lib/chat-list-scroll-anchor-context';
 import type { AnimatedList } from 'react-native-gifted-chat/lib/MessageContainer/types';
+
+import { giftedChatBottomOffset } from '@/lib/tab-bar-metrics';
 import {
   CHAT_SESSION_EMPTY_INTRO,
   getSuggestedPrompts,
@@ -105,6 +108,7 @@ function PropertyChatTab({
   onSearchLocationChange,
   propertyAddress,
 }: PropertyChatTabProps) {
+  const insets = useSafeAreaInsets();
   const { messages, isLoading, isLoadingEarlier, hasMoreMessages, loadEarlierMessages } = useMessages();
 
   const [isOnline, setIsOnline] = React.useState(true);
@@ -356,6 +360,8 @@ function PropertyChatTab({
           loadEarlier={hasMoreMessages && !isLoading}
           onLoadEarlier={loadEarlierMessages}
           alwaysShowSend={true}
+          minComposerHeight={44}
+          maxComposerHeight={120}
           keyboardShouldPersistTaps="never"
           messagesContainerStyle={{
             backgroundColor: 'transparent',
@@ -364,7 +370,7 @@ function PropertyChatTab({
             autoCapitalize: 'sentences',
             autoCorrect: true,
           }}
-          bottomOffset={-84}
+          bottomOffset={giftedChatBottomOffset(insets.bottom)}
           minInputToolbarHeight={44}
           infiniteScroll
         />
