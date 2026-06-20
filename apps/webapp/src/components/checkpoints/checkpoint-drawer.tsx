@@ -28,7 +28,7 @@ export function CheckpointDrawer({
         <SheetHeader>
           <SheetTitle>Select Checkpoints</SheetTitle>
           <SheetDescription>
-            {selectedCheckpoints.length} selected for chat context
+            {selectedCheckpoints.length} attached to chat
           </SheetDescription>
         </SheetHeader>
 
@@ -49,8 +49,8 @@ export function CheckpointDrawer({
             <div className="space-y-4">
               <div className="rounded-lg bg-secondary p-3">
                 <p className="text-sm text-muted-foreground">
-                  Select checkpoints to provide context for your chat conversation. The AI will use
-                  these checkpoints to answer questions about property condition, changes, and
+                  Select checkpoints to attach to your chat. The AI will use these
+                  checkpoints to answer questions about property condition, changes, and
                   history.
                 </p>
               </div>

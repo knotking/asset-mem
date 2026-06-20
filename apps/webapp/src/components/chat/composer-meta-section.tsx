@@ -13,56 +13,36 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CompactSettingsBar } from "./compact-settings-bar";
-import { ChatSettingsPopover } from "./chat-settings-popover";
 
 type ComposerMetaSectionProps = {
   contextChipStrip?: React.ReactNode;
   sendBlockHint?: string | null;
   primaryAgent: PrimaryAgent;
-  onPrimaryAgentChange: (agent: PrimaryAgent) => void;
   selectedOptionalAgents: AnalysisOptionalAgent[];
-  onToggleOptionalAgent: (agent: AnalysisOptionalAgent) => void;
   selectedCheckpointOptionalAgents: CheckpointOptionalAgent[];
-  onToggleCheckpointOptionalAgent: (agent: CheckpointOptionalAgent) => void;
   searchLocation?: SearchLocationInput;
-  onSearchLocationChange?: (searchLocation: SearchLocationInput | undefined) => void;
   propertyAddress?: string;
   readyContextCount?: number;
   pendingContextCount?: number;
   hasQueuedSend?: boolean;
+  onOpenSettings: (tab: "agent" | "location") => void;
 };
 
 export function ComposerMetaSection({
   contextChipStrip,
   sendBlockHint,
   primaryAgent,
-  onPrimaryAgentChange,
   selectedOptionalAgents,
-  onToggleOptionalAgent,
   selectedCheckpointOptionalAgents,
-  onToggleCheckpointOptionalAgent,
   searchLocation,
-  onSearchLocationChange,
   propertyAddress,
   readyContextCount = 0,
   pendingContextCount = 0,
   hasQueuedSend = false,
+  onOpenSettings,
 }: ComposerMetaSectionProps) {
   const isMobile = useIsMobile();
-  const [settingsPopoverOpen, setSettingsPopoverOpen] = React.useState(false);
-  const [settingsPopoverTab, setSettingsPopoverTab] = React.useState<"agent" | "location">(
-    "agent",
-  );
-  const [composerMetaExpanded, setComposerMetaExpanded] = React.useState(false);
-
-  React.useEffect(() => {
-    setComposerMetaExpanded(!isMobile);
-  }, [isMobile]);
-
-  const openSettings = React.useCallback((tab: "agent" | "location") => {
-    setSettingsPopoverTab(tab);
-    setSettingsPopoverOpen(true);
-  }, []);
+  const [composerMetaExpanded, setComposerMetaExpanded] = React.useState(true);
 
   const collapsedSummary = React.useMemo(
     () =>
@@ -84,53 +64,71 @@ export function ComposerMetaSection({
     ],
   );
 
-  const metaRow = composerMetaExpanded ? (
-    <div className="space-y-2.5">
-      {contextChipStrip}
-      {sendBlockHint ? (
-        <p className="text-xs text-muted-foreground">{sendBlockHint}</p>
-      ) : null}
-      <div className="flex min-w-0 max-w-full items-center gap-1 overflow-hidden">
-        <CompactSettingsBar
-          primaryAgent={primaryAgent}
-          selectedOptionalAgents={selectedOptionalAgents}
-          selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
-          searchLocation={searchLocation}
-          propertyAddress={propertyAddress}
-          onOpenSettings={() => openSettings("agent")}
-          onAgentPress={() => openSettings("agent")}
-          onLocationPress={() => openSettings("location")}
-          showSettingsButton={false}
-          className="mb-0"
-        />
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          className="hidden size-8 shrink-0 md:inline-flex"
-          onClick={() => openSettings("agent")}
-          aria-label="Open chat settings"
-        >
-          <Settings className="size-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          className="size-10 shrink-0 md:size-8"
-          onClick={() => setComposerMetaExpanded(false)}
-          aria-label="Collapse chat settings and context"
-        >
-          <ChevronDown className="size-4" />
-        </Button>
+  if (isMobile) {
+    if (!contextChipStrip && !sendBlockHint) {
+      return null;
+    }
+    return (
+      <div className="space-y-2">
+        {contextChipStrip}
+        {sendBlockHint ? (
+          <p className="text-xs text-muted-foreground">{sendBlockHint}</p>
+        ) : null}
       </div>
-    </div>
-  ) : (
+    );
+  }
+
+  if (composerMetaExpanded) {
+    return (
+      <div className="space-y-2.5">
+        {contextChipStrip}
+        {sendBlockHint ? (
+          <p className="text-xs text-muted-foreground">{sendBlockHint}</p>
+        ) : null}
+        <div className="flex min-w-0 max-w-full items-center gap-1 overflow-hidden">
+          <CompactSettingsBar
+            primaryAgent={primaryAgent}
+            selectedOptionalAgents={selectedOptionalAgents}
+            selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
+            searchLocation={searchLocation}
+            propertyAddress={propertyAddress}
+            onOpenSettings={() => onOpenSettings("agent")}
+            onAgentPress={() => onOpenSettings("agent")}
+            onLocationPress={() => onOpenSettings("location")}
+            showSettingsButton={false}
+            className="mb-0"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-8 shrink-0"
+            onClick={() => onOpenSettings("agent")}
+            aria-label="Open chat settings"
+          >
+            <Settings className="size-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-8 shrink-0"
+            onClick={() => setComposerMetaExpanded(false)}
+            aria-label="Collapse chat settings and attachments"
+          >
+            <ChevronDown className="size-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
     <>
       <div className="flex min-w-0 max-w-full items-center gap-1.5">
         <button
           type="button"
-          onClick={() => openSettings("agent")}
+          onClick={() => onOpenSettings("agent")}
           className={cn(
             "min-w-0 max-w-[calc(100%-2.25rem)] shrink rounded-full border border-border bg-background px-3 py-1.5",
             "text-left text-xs font-medium text-foreground truncate",
@@ -143,9 +141,9 @@ export function ComposerMetaSection({
           type="button"
           variant="outline"
           size="icon"
-          className="h-10 w-10 shrink-0 md:h-8 md:w-8"
+          className="size-8 shrink-0"
           onClick={() => setComposerMetaExpanded(true)}
-          aria-label="Expand chat settings and context"
+          aria-label="Expand chat settings and attachments"
         >
           <ChevronUp className="h-4 w-4" />
         </Button>
@@ -154,23 +152,5 @@ export function ComposerMetaSection({
         <p className="mt-2 text-xs text-muted-foreground">{sendBlockHint}</p>
       ) : null}
     </>
-  );
-
-  return (
-    <ChatSettingsPopover
-      open={settingsPopoverOpen}
-      onOpenChange={setSettingsPopoverOpen}
-      primaryAgent={primaryAgent}
-      onPrimaryAgentChange={onPrimaryAgentChange}
-      selectedOptionalAgents={selectedOptionalAgents}
-      onToggleOptionalAgent={onToggleOptionalAgent}
-      selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
-      onToggleCheckpointOptionalAgent={onToggleCheckpointOptionalAgent}
-      searchLocation={searchLocation}
-      onSearchLocationChange={onSearchLocationChange}
-      propertyAddress={propertyAddress}
-      initialTab={settingsPopoverTab}
-      anchor={<div className="w-full min-w-0 max-w-full">{metaRow}</div>}
-    />
   );
 }

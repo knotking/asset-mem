@@ -28,11 +28,11 @@ export function ChatPageSkeleton() {
         </div>
       </main>
       <footer className="shrink-0 border-t bg-card px-3 py-2 sm:px-4 sm:py-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-        {/* Collapsed composer summary — mobile only (matches ComposerMetaSection default). */}
-        <Skeleton className="mb-2 h-8 w-44 max-w-full rounded-full md:hidden" />
-        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
+        <Skeleton className="mb-2 h-9 w-full max-w-xs rounded-full md:hidden" />
+        <div className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 md:grid-cols-[auto_minmax(0,1fr)_auto]">
+          <Skeleton className="size-11 shrink-0 rounded-md bg-primary/20 md:hidden" />
           <Skeleton className="size-11 shrink-0 rounded-full bg-primary/20 md:size-10" />
-          <Skeleton className="h-10 w-full rounded-lg bg-primary/20 md:h-10" />
+          <Skeleton className="h-10 w-full rounded-lg bg-primary/20" />
           <Skeleton className="size-11 shrink-0 rounded-full bg-primary/80 md:size-10" />
         </div>
       </footer>

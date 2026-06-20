@@ -661,6 +661,9 @@ function PropertyChatComposerInner(
           onOpenAddContext={() => setAddContextOpen(true)}
           contextChipStrip={
             <ChatContextChipStrip
+              primaryAgent={props.primaryAgent}
+              selectedOptionalAgents={props.selectedOptionalAgents}
+              selectedCheckpointOptionalAgents={props.selectedCheckpointOptionalAgents}
               pendingContext={pendingContext}
               readySelectedCheckpoints={readySelectedCheckpoints}
               readySelectedDocuments={readySelectedDocuments}
@@ -672,6 +675,7 @@ function PropertyChatComposerInner(
               onRemovePending={removePendingContext}
               onClearReady={clearReadySelection}
               onCancelQueuedSend={() => setQueuedSend(null)}
+              onViewAll={() => setAddContextOpen(true)}
             />
           }
           sendBlockHint={sendBlockHint}

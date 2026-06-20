@@ -14,7 +14,7 @@ describe("composer-collapse", () => {
     ).toBe("Checkpoint +4");
   });
 
-  it("includes context and queued send", () => {
+  it("includes attached count and queued send", () => {
     expect(
       buildCollapsedComposerSummary({
         primaryAgent: "docs",
@@ -24,6 +24,6 @@ describe("composer-collapse", () => {
         pendingContextCount: 0,
         hasQueuedSend: false,
       }),
-    ).toBe("Docs · 2 context");
+    ).toBe("Docs · 2 attached");
   });
 });

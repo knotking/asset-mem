@@ -20,6 +20,7 @@ import {
   Camera,
   Clock,
   Plus,
+  Settings,
 } from "lucide-react";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
@@ -302,78 +303,50 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
       setCameraDialogOpen(true);
     };
 
-    return (
-      <div className="relative w-full min-w-0">
-        {hasFileAttached && (
-          <div className="absolute bottom-full mb-2 w-full max-w-md">
-            <div className="relative p-2 border rounded-lg bg-card shadow-lg">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-1 right-1 h-6 w-6 z-10 bg-black/20 hover:bg-black/50 text-white hover:text-white"
-                onClick={onFileRemove}
-              >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Remove file</span>
-              </Button>
-              <div className="flex items-start gap-4">
-                <div className="relative flex-shrink-0">{renderPreview()}</div>
-                <div className="flex flex-col justify-center flex-grow min-w-0 pt-2">
-                  <p className="text-sm font-medium text-foreground break-words truncate">
-                    {fileAttachment.file.name}
-                  </p>
-                  {isUploading && (
-                    <div className="mt-2">
-                      <Progress
-                        value={fileAttachment.progress}
-                        className="h-2"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {Math.round(fileAttachment.progress)}% uploaded
-                      </p>
-                    </div>
-                  )}
-                  {fileAttachment.downloadURL && !fileAttachment.error && (
-                    <p className="text-xs text-green-600 mt-1">
-                      Upload complete
-                    </p>
-                  )}
-                  {fileAttachment.error && (
-                    <div className="flex items-center text-red-600 gap-2 mt-1">
-                      <AlertCircle className="h-4 w-4" />
-                      <p className="text-xs font-medium">
-                        {fileAttachment.error}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+    const openChatSettings = (tab: "agent" | "location") => {
+      setSettingsPopoverTab(tab);
+      setSettingsPopoverOpen(true);
+    };
 
+    const chatSettingsPopoverProps = {
+      open: settingsPopoverOpen,
+      onOpenChange: setSettingsPopoverOpen,
+      primaryAgent,
+      onPrimaryAgentChange,
+      selectedOptionalAgents,
+      onToggleOptionalAgent: handleOptionalAgentToggle,
+      selectedCheckpointOptionalAgents,
+      onToggleCheckpointOptionalAgent: handleCheckpointOptionalAgentToggle,
+      searchLocation,
+      onSearchLocationChange,
+      propertyAddress,
+      initialTab: settingsPopoverTab,
+    };
+
+    const composerMetaSection = useContextMode ? (
+      <ComposerMetaSection
+        contextChipStrip={contextChipStrip}
+        sendBlockHint={sendBlockHint}
+        primaryAgent={primaryAgent}
+        selectedOptionalAgents={selectedOptionalAgents}
+        selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
+        searchLocation={searchLocation}
+        propertyAddress={propertyAddress}
+        readyContextCount={readyContextCount}
+        pendingContextCount={pendingContextCount}
+        hasQueuedSend={hasQueuedSend}
+        onOpenSettings={openChatSettings}
+      />
+    ) : null;
+
+    const composerForm = (
         <form
           onSubmit={handleSubmit}
           className="flex w-full min-w-0 max-w-full flex-col gap-2 sm:gap-2.5"
         >
           <div className="min-w-0 max-w-full space-y-2">
             {useContextMode ? (
-              <ComposerMetaSection
-                contextChipStrip={contextChipStrip}
-                sendBlockHint={sendBlockHint}
-                primaryAgent={primaryAgent}
-                onPrimaryAgentChange={onPrimaryAgentChange}
-                selectedOptionalAgents={selectedOptionalAgents}
-                onToggleOptionalAgent={handleOptionalAgentToggle}
-                selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
-                onToggleCheckpointOptionalAgent={handleCheckpointOptionalAgentToggle}
-                searchLocation={searchLocation}
-                onSearchLocationChange={onSearchLocationChange}
-                propertyAddress={propertyAddress}
-                readyContextCount={readyContextCount}
-                pendingContextCount={pendingContextCount}
-                hasQueuedSend={hasQueuedSend}
-              />
+              isMobile ? composerMetaSection : null
             ) : (
               <>
                 {contextChipStrip}
@@ -473,11 +446,25 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
           <div
             className={cn(
               "grid w-full min-w-0 items-center gap-2",
-              useContextMode
-                ? "grid-cols-[auto_minmax(0,1fr)_auto]"
-                : "grid-cols-[minmax(0,1fr)_auto]",
+              useContextMode && isMobile
+                ? "grid-cols-[auto_auto_minmax(0,1fr)_auto]"
+                : useContextMode
+                  ? "grid-cols-[auto_minmax(0,1fr)_auto]"
+                  : "grid-cols-[minmax(0,1fr)_auto]",
             )}
           >
+            {useContextMode && isMobile ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="size-11 shrink-0 md:size-10"
+                onClick={() => openChatSettings("agent")}
+                aria-label="Open chat settings"
+              >
+                <Settings className="size-[18px]" />
+              </Button>
+            ) : null}
             {useContextMode ? (
               <Button
                 variant="default"
@@ -486,7 +473,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
                 onClick={onOpenAddContext}
                 disabled={isLoading}
                 type="button"
-                aria-label="Add context"
+                aria-label="Add attachments"
               >
                 <Plus className="size-[18px]" />
               </Button>
@@ -670,6 +657,73 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
           )}
           </div>
         </form>
+    );
+
+    return (
+      <div className="relative w-full min-w-0">
+        {hasFileAttached && (
+          <div className="absolute bottom-full mb-2 w-full max-w-md">
+            <div className="relative p-2 border rounded-lg bg-card shadow-lg">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-1 right-1 h-6 w-6 z-10 bg-black/20 hover:bg-black/50 text-white hover:text-white"
+                onClick={onFileRemove}
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Remove file</span>
+              </Button>
+              <div className="flex items-start gap-4">
+                <div className="relative flex-shrink-0">{renderPreview()}</div>
+                <div className="flex flex-col justify-center flex-grow min-w-0 pt-2">
+                  <p className="text-sm font-medium text-foreground break-words truncate">
+                    {fileAttachment.file.name}
+                  </p>
+                  {isUploading && (
+                    <div className="mt-2">
+                      <Progress
+                        value={fileAttachment.progress}
+                        className="h-2"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {Math.round(fileAttachment.progress)}% uploaded
+                      </p>
+                    </div>
+                  )}
+                  {fileAttachment.downloadURL && !fileAttachment.error && (
+                    <p className="text-xs text-green-600 mt-1">
+                      Upload complete
+                    </p>
+                  )}
+                  {fileAttachment.error && (
+                    <div className="flex items-center text-red-600 gap-2 mt-1">
+                      <AlertCircle className="h-4 w-4" />
+                      <p className="text-xs font-medium">
+                        {fileAttachment.error}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {useContextMode ? (
+          <ChatSettingsPopover
+            {...chatSettingsPopoverProps}
+            anchor={
+              !isMobile ? (
+                <div className="mb-2 w-full min-w-0 max-w-full">{composerMetaSection}</div>
+              ) : undefined
+            }
+          >
+            {composerForm}
+          </ChatSettingsPopover>
+        ) : (
+          composerForm
+        )}
+
         {allowFileAttachment && (
           <CameraCaptureDialog
             open={cameraDialogOpen}

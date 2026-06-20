@@ -1,4 +1,4 @@
-export const ADD_CONTEXT_TITLE = "Add context";
+export const ADD_CONTEXT_TITLE = "Add attachments";
 
 export const PENDING_CHECKPOINT_LABEL = "Analyzing checkpoint…";
 export const PENDING_DOCUMENT_UPLOAD_LABEL = "Uploading document…";
@@ -37,7 +37,7 @@ export const ADD_CONTEXT_TAB_DOCUMENTS = "Documents";
 
 /** Checkpoint mode: checkpoints required; docs optional but sent as contextDocURIs. */
 export const ADD_CONTEXT_MODE_HINT_CHECKPOINT =
-  "Requires at least one timeline checkpoint. Documents are optional extra context.";
+  "Requires at least one timeline checkpoint. Documents are optional extra attachments.";
 
 export const ADD_CONTEXT_MODE_HINT_DOCS =
   "Requires at least one indexed document.";

@@ -109,17 +109,17 @@ Uses contentJson/contentMarkdown — not raw `message.content` alone.
 | `src/lib/message-content-parts.ts` | Read `contentMarkdown` / `contentJson` |
 | `src/lib/message-display-parts.ts` | Structured vs markdown gating |
 | `src/hooks/use-debounced-thinking-status.ts` | Debounced thinking strip text |
-| `src/components/chat/composer-meta-section.tsx` | Context-mode composer collapse, summary pill, settings row |
-| `src/lib/composer-collapse.ts` | Collapsed summary text (agent + optional agents + context counts) |
+| `src/components/chat/composer-meta-section.tsx` | Context-mode composer chips (mobile) and desktop collapse/settings row |
+| `src/lib/composer-collapse.ts` | Collapsed summary text (agent + optional agents + attachment counts) |
 | `src/lib/settings-navigation.ts` | Origin-aware back from header settings shortcuts |
 
 ## Property chat composer (context mode)
 
 `PropertyChatWithContext` uses `ComposerMetaSection` (via `ChatInput` when `onOpenAddContext` is set):
 
-- **Expanded:** context chip strip, `CompactSettingsBar` (agent → Agent tab, location → Location tab; icon-only below `md`), settings gear from `md` up (agent icon covers it on mobile), collapse chevron. Chat settings open in a **bottom sheet** below `md`, popover on desktop.
-- **Collapsed:** single summary pill (`Checkpoint +4 · 2 context`, etc.); tap pill opens chat settings popover; chevron expands chips/settings again.
-- Send-block hints remain visible when collapsed.
+- **Mobile:** attachments show as one summary pill (stacked thumb previews + agent summary e.g. `Checkpoint +2 · 3 attached`); tap opens add-attachments sheet. Input row is `[settings][add attachments][message][send]`.
+- **Desktop (`md+`):** expandable meta row with attachment chips, `CompactSettingsBar`, settings gear, and collapse chevron; summary pill when collapsed. Chat settings use a popover.
+- Send-block hints remain visible above the input row when set.
 
 Header shortcuts (usage, FAQ, settings) use `settings-navigation` return params so back restores the same property tab and chat session.
 
