@@ -31,9 +31,9 @@ export function ChatPageSkeleton() {
         {/* Collapsed composer summary — mobile only (matches ComposerMetaSection default). */}
         <Skeleton className="mb-2 h-8 w-44 max-w-full rounded-full md:hidden" />
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
-          <Skeleton className="size-10 shrink-0 rounded-full bg-primary/20" />
-          <Skeleton className="h-10 w-full rounded-lg bg-primary/20" />
-          <Skeleton className="size-10 shrink-0 rounded-full bg-primary/80" />
+          <Skeleton className="size-11 shrink-0 rounded-full bg-primary/20 md:size-10" />
+          <Skeleton className="h-10 w-full rounded-lg bg-primary/20 md:h-10" />
+          <Skeleton className="size-11 shrink-0 rounded-full bg-primary/80 md:size-10" />
         </div>
       </footer>
     </div>

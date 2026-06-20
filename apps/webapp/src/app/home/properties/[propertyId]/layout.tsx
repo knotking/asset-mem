@@ -51,7 +51,7 @@ function PropertyTabs() {
 
     return (
         <div className="">
-             <nav className="flex space-x-0 bg-muted p-0.5 sm:p-1" aria-label="Tabs">
+             <nav className="flex space-x-0 bg-muted p-0.5 md:p-1" aria-label="Tabs">
                 {tabs.map((tab) => {
                     const isActive = pathname.includes(`/${tab.segment}`);
                     const Icon = tab.icon;
@@ -98,7 +98,7 @@ function PropertyTabs() {
 }
 
 type PropertyHeaderProps = {
-  /** Tighter mobile header — property name only below sm; address from sm up. */
+  /** Tighter mobile header — truncated name below md; full name + address from md up. */
   compact?: boolean;
   onOpenSessions?: () => void;
 };
@@ -113,27 +113,27 @@ function PropertyHeader({ compact, onOpenSessions }: PropertyHeaderProps) {
       <header
         className={cn(
           'border-b bg-background',
-          compact ? 'px-2 py-2 sm:p-4' : 'p-3 sm:p-4',
+          compact ? 'px-2 py-2 md:p-4' : 'p-3 md:p-4',
         )}
       >
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <div className="flex min-w-0 items-center gap-2 md:gap-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push('/home')}
-            className="shrink-0 px-2 sm:px-3"
+            className="shrink-0 px-2 md:px-3"
             aria-label="Back to properties"
           >
-              <ArrowLeft className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Back to Properties</span>
+              <ArrowLeft className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Back to Properties</span>
           </Button>
-          <div className="hidden h-8 w-px bg-border sm:block" />
+          <div className="hidden h-8 w-px bg-border md:block" />
           <div className="min-w-0 flex-1 overflow-hidden">
             {isPropertyLoading ? (
                 <div className="flex flex-col gap-2">
                     <Skeleton className="h-5 w-40" />
                     <Skeleton
-                      className={cn('h-4 w-60', compact && 'hidden sm:block')}
+                      className={cn('h-4 w-60', compact && 'hidden md:block')}
                     />
                 </div>
             ) : (
@@ -143,19 +143,19 @@ function PropertyHeader({ compact, onOpenSessions }: PropertyHeaderProps) {
                       title={property?.name}
                     >
                         {isNewPropertyFlow && <PlusCircle className="h-4 w-4 text-primary inline-block mr-2" />}
-                        <span className="sm:hidden">
+                        <span className="md:hidden">
                           {displayPropertyName(
                             isNewPropertyFlow ? 'New Property' : property?.name,
                           )}
                         </span>
-                        <span className="hidden sm:inline">
+                        <span className="hidden md:inline">
                           {property?.name || 'New Property'}
                         </span>
                     </h1>
                     <p
                       className={cn(
                         'text-sm text-muted-foreground truncate',
-                        compact && 'hidden sm:block',
+                        compact && 'hidden md:block',
                       )}
                       title={property?.address}
                     >
@@ -177,7 +177,11 @@ function PropertyHeader({ compact, onOpenSessions }: PropertyHeaderProps) {
               <PanelLeft className="h-4 w-4" />
             </Button>
           ) : null}
-          <HeaderToolbarActions className="md:hidden" compactAccount />
+          <HeaderToolbarActions
+            className="md:hidden"
+            compactAccount
+            showMobileTokenUsage={false}
+          />
         </div>
       </header>
   );

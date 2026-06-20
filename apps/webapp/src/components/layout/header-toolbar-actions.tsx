@@ -30,11 +30,14 @@ type HeaderToolbarActionsProps = {
   className?: string;
   /** Icon-only account trigger (property shell mobile toolbar). */
   compactAccount?: boolean;
+  /** When false, hide the AI usage control below `md` (property shell mobile header). */
+  showMobileTokenUsage?: boolean;
 };
 
 export function HeaderToolbarActions({
   className,
   compactAccount = false,
+  showMobileTokenUsage = true,
 }: HeaderToolbarActionsProps) {
   const { user, loading, signingOut, logout } = useAuth();
   const router = useRouter();
@@ -70,9 +73,13 @@ export function HeaderToolbarActions({
         <TooltipProvider delayDuration={300}>
           <ThemeToggle />
           <NotificationsBell anchorRef={anchorRef} />
-          <span className="hidden sm:contents">
+          {showMobileTokenUsage ? (
             <TokenUsageToolbar settingsReturnContext={returnContext} />
-          </span>
+          ) : (
+            <span className="hidden md:contents">
+              <TokenUsageToolbar settingsReturnContext={returnContext} />
+            </span>
+          )}
           <HeaderIconTooltip label="FAQ & guides">
             <Button
               variant="ghost"

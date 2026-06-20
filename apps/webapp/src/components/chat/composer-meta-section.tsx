@@ -107,7 +107,7 @@ export function ComposerMetaSection({
           type="button"
           variant="outline"
           size="icon"
-          className="hidden size-8 shrink-0 sm:inline-flex"
+          className="hidden size-8 shrink-0 md:inline-flex"
           onClick={() => openSettings("agent")}
           aria-label="Open chat settings"
         >
@@ -117,7 +117,7 @@ export function ComposerMetaSection({
           type="button"
           variant="outline"
           size="icon"
-          className="size-10 shrink-0 sm:size-8"
+          className="size-10 shrink-0 md:size-8"
           onClick={() => setComposerMetaExpanded(false)}
           aria-label="Collapse chat settings and context"
         >
@@ -143,7 +143,7 @@ export function ComposerMetaSection({
           type="button"
           variant="outline"
           size="icon"
-          className="h-10 w-10 shrink-0 sm:h-8 sm:w-8"
+          className="h-10 w-10 shrink-0 md:h-8 md:w-8"
           onClick={() => setComposerMetaExpanded(true)}
           aria-label="Expand chat settings and context"
         >

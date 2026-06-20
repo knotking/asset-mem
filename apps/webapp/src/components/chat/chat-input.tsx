@@ -482,7 +482,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
               <Button
                 variant="default"
                 size="icon"
-                className="size-11 shrink-0 rounded-full sm:size-10"
+                className="size-11 shrink-0 rounded-full md:size-10"
                 onClick={onOpenAddContext}
                 disabled={isLoading}
                 type="button"
@@ -650,7 +650,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
             <Button
               type="button"
               size="icon"
-              className="size-11 shrink-0 bg-muted-foreground text-background hover:bg-muted-foreground/90 sm:size-10"
+              className="size-11 shrink-0 bg-muted-foreground text-background hover:bg-muted-foreground/90 md:size-10"
               onClick={onStop}
               aria-label="Stop processing"
               variant="destructive"
@@ -661,7 +661,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
             <Button
               type="submit"
               size="icon"
-              className="size-11 shrink-0 bg-muted-foreground text-background hover:bg-muted-foreground/90 sm:size-10"
+              className="size-11 shrink-0 bg-muted-foreground text-background hover:bg-muted-foreground/90 md:size-10"
               disabled={isSendDisabled}
               aria-label="Send message"
             >
