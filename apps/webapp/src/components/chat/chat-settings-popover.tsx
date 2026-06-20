@@ -222,7 +222,7 @@ function ChatSettingsPanel({
               </>
             ) : (
               <>
-                <div className="flex min-h-[4.5rem] flex-wrap content-start gap-2">
+                <div className="flex min-h-[4.5rem] flex-wrap content-start gap-1.5 md:gap-2">
                   {OPTIONAL_AGENT_OPTIONS.map((option) => {
                     const isSelected =
                       primaryAgent === 'checkpoint'
@@ -238,9 +238,9 @@ function ChatSettingsPanel({
                             ? onToggleCheckpointOptionalAgent(option.id)
                             : onToggleOptionalAgent(option.id)
                         }
-                        className="gap-1.5"
+                        className="h-7 gap-1 px-2 text-xs md:h-9 md:gap-1.5 md:px-3 md:text-sm"
                       >
-                        <Icon className="h-3.5 w-3.5" />
+                        <Icon className="h-3 w-3 shrink-0 md:h-3.5 md:w-3.5" />
                         <span>{option.label}</span>
                       </SelectableChipButton>
                     );
