@@ -32,12 +32,18 @@ type HeaderToolbarActionsProps = {
   compactAccount?: boolean;
   /** When false, hide the AI usage control below `md` (property shell mobile header). */
   showMobileTokenUsage?: boolean;
+  /** When false, hide light/dark toggle (e.g. property shell mobile — usage ring instead). */
+  showThemeToggle?: boolean;
+  /** When false, hide notifications bell (e.g. property shell mobile). */
+  showNotificationsBell?: boolean;
 };
 
 export function HeaderToolbarActions({
   className,
   compactAccount = false,
   showMobileTokenUsage = true,
+  showThemeToggle = true,
+  showNotificationsBell = true,
 }: HeaderToolbarActionsProps) {
   const { user, loading, signingOut, logout } = useAuth();
   const router = useRouter();
@@ -71,8 +77,10 @@ export function HeaderToolbarActions({
         <Skeleton className="h-8 w-8 rounded-full sm:w-32" />
       ) : user ? (
         <TooltipProvider delayDuration={300}>
-          <ThemeToggle />
-          <NotificationsBell anchorRef={anchorRef} />
+          {showThemeToggle ? <ThemeToggle /> : null}
+          {showNotificationsBell ? (
+            <NotificationsBell anchorRef={anchorRef} />
+          ) : null}
           {showMobileTokenUsage ? (
             <TokenUsageToolbar settingsReturnContext={returnContext} />
           ) : (

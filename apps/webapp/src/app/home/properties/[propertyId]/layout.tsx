@@ -180,7 +180,8 @@ function PropertyHeader({ compact, onOpenSessions }: PropertyHeaderProps) {
           <HeaderToolbarActions
             className="md:hidden"
             compactAccount
-            showMobileTokenUsage={false}
+            showThemeToggle={false}
+            showNotificationsBell={false}
           />
         </div>
       </header>
