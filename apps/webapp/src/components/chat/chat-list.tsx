@@ -9,7 +9,6 @@ import { assistantMessageHasDisplayableContent, getMessageDisplayParts } from '@
 import { countPriorAssistantTurnsInSession } from '@/lib/agent-lifecycle-ui';
 import { getActiveStreamingAssistantMessageId } from '@/lib/sort-messages';
 import { AnimatePresence } from 'framer-motion';
-import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
 import { Button } from '@/components/ui/button';
 import {
   CHAT_SESSION_EMPTY_INTRO,
@@ -120,7 +119,6 @@ export function ChatList({
       {isEmpty ? (
         <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6">
           <div className="flex flex-col items-center text-center p-4 rounded-lg bg-card/80 max-w-md">
-            <AssetMemBrandIcon size="md" className="mb-3 text-muted-foreground" />
             <h3 className="text-lg font-semibold mb-2">{CHAT_SESSION_EMPTY_INTRO.title}</h3>
             <p className="text-sm text-muted-foreground max-w-sm mb-4">
               {CHAT_SESSION_EMPTY_INTRO.subtitle}

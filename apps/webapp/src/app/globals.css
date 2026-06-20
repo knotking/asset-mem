@@ -246,3 +246,22 @@
     line-height: 1.25rem;
   }
 }
+
+@layer utilities {
+  /** AssetMem “AI” suffix — cyan solid on mobile, gradient on lg+ (matches landing). */
+  .brand-ai-gradient-text,
+  .landing-gradient-text {
+    color: #22d3ee;
+  }
+
+  @media (min-width: 1024px) {
+    .brand-ai-gradient-text,
+    .landing-gradient-text {
+      color: transparent;
+      background-image: linear-gradient(to right, #22d3ee, rgba(34, 211, 238, 0.6));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+}

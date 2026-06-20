@@ -17,16 +17,37 @@ export type AssetMemWordmarkSize = keyof typeof WORDMARK_BRAND_CLASS;
 type AssetMemWordmarkProps = {
   size?: AssetMemWordmarkSize;
   className?: string;
+  /** `app` uses theme foreground + landing AI gradient; `landing` uses marketing palette. */
+  tone?: 'landing' | 'app';
   foregroundColor?: string;
-  primaryColor?: string;
 };
 
 export function AssetMemWordmark({
   size = 'header',
   className,
+  tone = 'landing',
   foregroundColor = LANDING_COLORS.foreground,
-  primaryColor = LANDING_COLORS.primary,
 }: AssetMemWordmarkProps) {
+  if (tone === 'app') {
+    return (
+      <span
+        className={cn(
+          'inline-flex items-baseline gap-1 font-light tracking-tight leading-none',
+          WORDMARK_BRAND_CLASS[size],
+          className,
+        )}
+      >
+        <span className="text-foreground">AssetMem</span>
+        <span
+          className="brand-ai-gradient-text font-bold tracking-normal"
+          style={{ fontSize: `${LANDING_BRAND_AI_SIZE_EM}em` }}
+        >
+          AI
+        </span>
+      </span>
+    );
+  }
+
   return (
     <span
       className={cn(
@@ -38,8 +59,8 @@ export function AssetMemWordmark({
     >
       <span>AssetMem</span>
       <span
-        className="font-bold tracking-normal"
-        style={{ color: primaryColor, fontSize: `${LANDING_BRAND_AI_SIZE_EM}em` }}
+        className="brand-ai-gradient-text font-bold tracking-normal"
+        style={{ fontSize: `${LANDING_BRAND_AI_SIZE_EM}em` }}
       >
         AI
       </span>
