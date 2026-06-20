@@ -34,6 +34,8 @@ import { UploadDialogProvider, useUploadDialog } from '@/contexts/upload-dialog-
 import { PropertyDocumentsProvider } from '@/contexts/property-documents-context';
 import { AddressConfirmationProvider } from '@/contexts/address-confirmation-context';
 import { MyProsSheetProvider } from '@/contexts/my-pros-sheet-context';
+import { HeaderToolbarActions } from '@/components/layout/header-toolbar-actions';
+import { displayPropertyName } from '@/lib/display-property-name';
 
 
 function PropertyTabs() {
@@ -49,7 +51,7 @@ function PropertyTabs() {
 
     return (
         <div className="">
-             <nav className="flex space-x-0 p-1  bg-muted" aria-label="Tabs">
+             <nav className="flex space-x-0 bg-muted p-0.5 md:p-1" aria-label="Tabs">
                 {tabs.map((tab) => {
                     const isActive = pathname.includes(`/${tab.segment}`);
                     const Icon = tab.icon;
@@ -60,12 +62,13 @@ function PropertyTabs() {
                                 key={tab.name}
                                 disabled
                                 className={cn(
-                                    'flex flex-1 cursor-not-allowed items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 py-2 text-muted-foreground/50 sm:gap-2 sm:px-4',
+                                    'flex flex-1 cursor-not-allowed items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 py-2.5 text-muted-foreground/50 md:gap-2 md:px-4 md:py-2',
                                     APP_NAV_TAB_CLASS,
                                 )}
+                                aria-label={tab.name}
                             >
                                 {Icon && <Icon className="h-4 w-4" />}
-                                {tab.name}
+                                <span className="hidden md:inline">{tab.name}</span>
                             </button>
                         )
                     }
@@ -74,8 +77,10 @@ function PropertyTabs() {
                         <Link
                             key={tab.name}
                             href={tab.href}
+                            aria-label={tab.name}
+                            title={tab.name}
                             className={cn(
-                                'flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 py-2 transition-colors sm:gap-2 sm:px-4',
+                                'flex flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 py-2.5 transition-colors md:gap-2 md:px-4 md:py-2',
                                 APP_NAV_TAB_CLASS,
                                 isActive
                                 ? 'bg-background text-foreground shadow-sm'
@@ -83,7 +88,7 @@ function PropertyTabs() {
                             )}
                         >
                             {Icon && <Icon className="h-4 w-4" />}
-                            {tab.name}
+                                <span className="hidden md:inline">{tab.name}</span>
                         </Link>
                     )
                 })}
@@ -92,55 +97,110 @@ function PropertyTabs() {
     )
 }
 
-function PropertyHeader() {
+type PropertyHeaderProps = {
+  /** Tighter mobile header — truncated name below md; full name + address from md up. */
+  compact?: boolean;
+  onOpenSessions?: () => void;
+};
+
+function PropertyHeader({ compact, onOpenSessions }: PropertyHeaderProps) {
   const params = useParams();
   const router = useRouter();
   const { property, isLoading: isPropertyLoading } = useProperty();
   const isNewPropertyFlow = params.propertyId === 'new-property';
 
   return (
-      <header className="border-b bg-background p-3 sm:p-4">
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+      <header
+        className={cn(
+          'border-b bg-background',
+          compact ? 'px-2 py-2 md:p-4' : 'p-3 md:p-4',
+        )}
+      >
+        <div className="flex min-w-0 items-center gap-2 md:gap-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push('/home')}
-            className="shrink-0 px-2 sm:px-3"
+            className="shrink-0 px-2 md:px-3"
             aria-label="Back to properties"
           >
-              <ArrowLeft className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Back to Properties</span>
+              <ArrowLeft className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Back to Properties</span>
           </Button>
-          <div className="hidden h-8 w-px bg-border sm:block" />
-          <div className='min-w-0 flex-1'>
+          <div className="hidden h-8 w-px bg-border md:block" />
+          <div className="min-w-0 flex-1 overflow-hidden">
             {isPropertyLoading ? (
                 <div className="flex flex-col gap-2">
                     <Skeleton className="h-5 w-40" />
-                    <Skeleton className="h-4 w-60" />
+                    <Skeleton
+                      className={cn('h-4 w-60', compact && 'hidden md:block')}
+                    />
                 </div>
             ) : (
-              <div className="flex items-start gap-2">
-                <div className='flex-1 min-w-0'>
-                    <h1 className={APP_PROPERTY_TITLE_CLASS} title={property?.name}>
+              <div className="min-w-0 overflow-hidden">
+                    <h1
+                      className={cn(APP_PROPERTY_TITLE_CLASS, 'block w-full')}
+                      title={property?.name}
+                    >
                         {isNewPropertyFlow && <PlusCircle className="h-4 w-4 text-primary inline-block mr-2" />}
-                        {property?.name || 'New Property'}
+                        <span className="md:hidden">
+                          {displayPropertyName(
+                            isNewPropertyFlow ? 'New Property' : property?.name,
+                          )}
+                        </span>
+                        <span className="hidden md:inline">
+                          {property?.name || 'New Property'}
+                        </span>
                     </h1>
-                    <p className="text-sm text-muted-foreground truncate" title={property?.address}>{isNewPropertyFlow ? "Upload documents to get started" : property?.address || '...'}</p>
-                </div>
+                    <p
+                      className={cn(
+                        'text-sm text-muted-foreground truncate',
+                        compact && 'hidden md:block',
+                      )}
+                      title={property?.address}
+                    >
+                      {isNewPropertyFlow
+                        ? 'Upload documents to get started'
+                        : property?.address || '...'}
+                    </p>
               </div>
             )}
           </div>
+          {onOpenSessions ? (
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-10 w-10 shrink-0 md:hidden"
+              onClick={onOpenSessions}
+              aria-label="Open chat sessions"
+            >
+              <PanelLeft className="h-4 w-4" />
+            </Button>
+          ) : null}
+          <HeaderToolbarActions
+            className="md:hidden"
+            compactAccount
+            showThemeToggle={false}
+            showNotificationsBell={false}
+          />
         </div>
       </header>
   );
 }
 
-function PropertyChatLayoutContent({ children }: { children: React.ReactNode; }) {
-  const pathname = usePathname();
-  const isChatActive = pathname.includes('/chat');
-  const [isSessionSidebarCollapsed, setIsSessionSidebarCollapsed] = useState(false);
-  const [isMobileSessionOpen, setIsMobileSessionOpen] = useState(false);
+type PropertyChatLayoutContentProps = {
+  children: React.ReactNode;
+  isChatActive: boolean;
+  isSessionSidebarCollapsed: boolean;
+  onToggleSessionSidebarCollapse: () => void;
+};
 
+function PropertyChatLayoutContent({
+  children,
+  isChatActive,
+  isSessionSidebarCollapsed,
+  onToggleSessionSidebarCollapse,
+}: PropertyChatLayoutContentProps) {
   if (!isChatActive) {
     return (
       <div className="flex min-h-0 flex-1 flex-col">
@@ -152,36 +212,28 @@ function PropertyChatLayoutContent({ children }: { children: React.ReactNode; })
   }
 
   return (
-      <div className="flex h-full w-full relative">
-        <aside className={cn(
-            "lg:relative border-r bg-sidebar transition-all duration-300 z-20",
-            "lg:w-64",
-            isSessionSidebarCollapsed ? 'lg:w-14' : 'lg:w-80',
-            !isMobileSessionOpen && "hidden lg:flex flex-col",
-            isMobileSessionOpen && "absolute inset-0 w-full max-w-sm flex flex-col"
-            )}>
-            <SessionNavBar 
+      <div className="flex h-full w-full">
+        <aside
+          className={cn(
+            'relative z-20 hidden flex-col border-r bg-sidebar transition-all duration-300 md:flex',
+            isSessionSidebarCollapsed ? 'md:w-14' : 'md:w-80',
+          )}
+        >
+            <SessionNavBar
                 isCollapsed={isSessionSidebarCollapsed}
-                onToggleCollapse={() => setIsSessionSidebarCollapsed(!isSessionSidebarCollapsed)}
-                isMobileOpen={isMobileSessionOpen}
-                onMobileClose={() => setIsMobileSessionOpen(false)}
+                onToggleCollapse={onToggleSessionSidebarCollapse}
+                isMobileOpen={false}
+                onMobileClose={() => {}}
             />
         </aside>
 
-        <div className="flex flex-1 flex-col overflow-hidden">
-            <main className="relative flex-1 overflow-hidden">
-                 <div className="absolute top-2 left-2 z-10 lg:hidden">
-                    <Button variant="outline" size="icon" onClick={() => setIsMobileSessionOpen(true)}>
-                        <PanelLeft className="h-4 w-4" />
-                    </Button>
-                </div>
-                <div className="h-full min-w-0 overflow-x-hidden pt-12 lg:pt-0">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            <main className="relative min-h-0 flex-1 overflow-hidden">
+                <div className="h-full min-w-0 overflow-x-hidden">
                   {children}
                 </div>
             </main>
         </div>
-        
-        {/* Context is managed in the chat composer (Add context), not the sidebar panel. */}
       </div>
   );
 }
@@ -212,7 +264,11 @@ function MobileSheet({ children, side, triggerIcon, title, contentClassName }: {
 function LayoutWithDialog({ children }: { children: React.ReactNode }) {
     const { isOpen, onClose, onOpen } = useUploadDialog();
     const params = useParams();
+    const pathname = usePathname();
     const isNewPropertyFlow = params.propertyId === 'new-property';
+    const isChatActive = pathname.includes('/chat');
+    const [isSessionSidebarCollapsed, setIsSessionSidebarCollapsed] = useState(false);
+    const [isMobileSessionOpen, setIsMobileSessionOpen] = useState(false);
 
     useEffect(() => {
         if (isNewPropertyFlow) {
@@ -223,14 +279,42 @@ function LayoutWithDialog({ children }: { children: React.ReactNode }) {
     return (
         <>
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
-                <PropertyHeader />
+                <PropertyHeader
+                  compact
+                  onOpenSessions={
+                    isChatActive ? () => setIsMobileSessionOpen(true) : undefined
+                  }
+                />
                 <PropertyTabs />
                 <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                    <PropertyChatLayoutContent>
+                    <PropertyChatLayoutContent
+                      isChatActive={isChatActive}
+                      isSessionSidebarCollapsed={isSessionSidebarCollapsed}
+                      onToggleSessionSidebarCollapse={() =>
+                        setIsSessionSidebarCollapsed((v) => !v)
+                      }
+                    >
                         {children}
                     </PropertyChatLayoutContent>
                 </main>
             </div>
+            {isChatActive ? (
+              <Sheet open={isMobileSessionOpen} onOpenChange={setIsMobileSessionOpen}>
+                <SheetContent
+                  side="left"
+                  showCloseButton={false}
+                  className="flex w-full max-w-sm flex-col p-0 md:hidden"
+                >
+                  <SheetTitle className="sr-only">Chat sessions</SheetTitle>
+                  <SessionNavBar
+                    isCollapsed={false}
+                    onToggleCollapse={() => {}}
+                    isMobileOpen={isMobileSessionOpen}
+                    onMobileClose={() => setIsMobileSessionOpen(false)}
+                  />
+                </SheetContent>
+              </Sheet>
+            ) : null}
             <UploadDocumentsDialog open={isOpen} onOpenChange={onClose} />
         </>
     );

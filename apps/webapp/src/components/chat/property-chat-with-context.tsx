@@ -21,6 +21,7 @@ import {
   buildAgentRequestContext,
   buildMessageContextRefs,
   canSendChatMessage,
+  getRequiredContextEmptyPillLabel,
   getSendBlockReason,
 } from "@/lib/chat-send-context";
 
@@ -57,6 +58,8 @@ import { useToast } from "@/hooks/use-toast";
 import { createLogger } from "@/lib/logger";
 import { pickFromNativeCamera, supportsInBrowserCamera } from "@/lib/camera-capability";
 import { trackFirstChatMessage } from "@/lib/analytics";
+import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
+import { cn } from "@/lib/utils";
 import {
   clientMessageTimestampAfter,
   clientStartedAtTimestamp,
@@ -111,6 +114,7 @@ function PropertyChatComposerInner(
     isLoadingEarlier,
   } = useCheckpoint();
   const { documents, property } = useProperty();
+  const keyboardInset = useKeyboardInset();
   const {
     readySelectedCheckpoints,
     readySelectedDocuments,
@@ -156,13 +160,20 @@ function PropertyChatComposerInner(
   );
 
   const sendBlockHint = React.useMemo(() => {
-    const reason = getSendBlockReason({
+    const pillInput = {
       primaryAgent: props.primaryAgent,
-      text: "placeholder",
       readySelectedCheckpoints,
       readySelectedDocuments,
       readySelectedReports,
       pendingContext,
+    };
+    if (getRequiredContextEmptyPillLabel(pillInput)) {
+      return null;
+    }
+
+    const reason = getSendBlockReason({
+      ...pillInput,
+      text: "placeholder",
     });
     if (!reason || reason === "Enter a message.") return null;
     return reason;
@@ -322,6 +333,7 @@ function PropertyChatComposerInner(
       props,
       readySelectedCheckpoints,
       readySelectedDocuments,
+      readySelectedReports,
       pendingContext,
       setQueuedSend,
       toast,
@@ -634,7 +646,13 @@ function PropertyChatComposerInner(
 
   return (
     <>
-      <footer className="relative z-10 flex w-full min-w-0 items-center border-t bg-card px-3 py-2.5 sm:p-4">
+      <footer
+        className={cn(
+          'relative z-10 flex w-full min-w-0 items-center border-t bg-card px-3 py-2 sm:px-4 sm:py-2.5',
+          keyboardInset === 0 && 'pb-[max(0.5rem,env(safe-area-inset-bottom))]',
+        )}
+        style={keyboardInset > 0 ? { paddingBottom: keyboardInset } : undefined}
+      >
         <ChatInput
           onSend={(text) => void runSend(text)}
           isLoading={props.isLoading}
@@ -652,6 +670,9 @@ function PropertyChatComposerInner(
           onOpenAddContext={() => setAddContextOpen(true)}
           contextChipStrip={
             <ChatContextChipStrip
+              primaryAgent={props.primaryAgent}
+              selectedOptionalAgents={props.selectedOptionalAgents}
+              selectedCheckpointOptionalAgents={props.selectedCheckpointOptionalAgents}
               pendingContext={pendingContext}
               readySelectedCheckpoints={readySelectedCheckpoints}
               readySelectedDocuments={readySelectedDocuments}
@@ -663,6 +684,7 @@ function PropertyChatComposerInner(
               onRemovePending={removePendingContext}
               onClearReady={clearReadySelection}
               onCancelQueuedSend={() => setQueuedSend(null)}
+              onViewAll={() => setAddContextOpen(true)}
             />
           }
           sendBlockHint={sendBlockHint}

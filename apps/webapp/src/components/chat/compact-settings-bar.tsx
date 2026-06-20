@@ -41,65 +41,74 @@ export function CompactSettingsBar({
     (searchLocation?.source === 'property_address' && propertyAddress)
   );
 
-  const getLocationLabel = () => {
-    if (!hasLocation) return 'No location';
-    return searchLocationLabel(searchLocation, propertyAddress);
-  };
+  const locationLabel = !hasLocation
+    ? 'No location'
+    : searchLocationLabel(searchLocation, propertyAddress);
 
   const AgentIcon = getPrimaryAgentIcon(primaryAgent);
   const LocationIcon = searchLocation?.source === 'device_gps' ? Navigation : MapPin;
+  const agentLabel = getPrimaryAgentLabel(primaryAgent);
+  const optionalCount =
+    primaryAgent === "analysis"
+      ? selectedOptionalAgents.length
+      : primaryAgent === "checkpoint"
+        ? selectedCheckpointOptionalAgents.length
+        : 0;
+  const agentAriaLabel =
+    optionalCount > 0 ? `Agent: ${agentLabel}, +${optionalCount} optional` : `Agent: ${agentLabel}`;
 
   return (
-    <div className={cn("mb-3 flex min-w-0 flex-1 items-center gap-1.5 sm:w-auto sm:flex-none", className)}>
-      {/* Agent Selector */}
+    <div className={cn("mb-3 flex min-w-0 shrink-0 items-center gap-1 md:gap-1.5", className)}>
       <Button
         type="button"
         variant="outline"
         size="sm"
+        title={agentAriaLabel}
+        aria-label={agentAriaLabel}
         className={cn(
-          "h-8 min-w-0 flex-1 basis-0 shrink gap-1.5 px-2 text-xs font-medium sm:basis-auto sm:flex-none sm:max-w-[9.5rem] sm:px-2.5",
+          "h-10 w-10 shrink-0 gap-0 px-0 text-xs font-medium md:h-8 md:w-auto md:max-w-[9.5rem] md:gap-1.5 md:px-2.5",
           onAgentPress && "cursor-pointer"
         )}
         onClick={onAgentPress || onOpenSettings}
       >
         <AgentIcon className="h-3.5 w-3.5 shrink-0" />
-        <span className="min-w-0 truncate">{getPrimaryAgentLabel(primaryAgent)}</span>
+        <span className="hidden min-w-0 truncate md:inline">{agentLabel}</span>
         {primaryAgent === "analysis" && selectedOptionalAgents.length > 0 && (
-          <span className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5 text-xs font-bold text-primary-foreground">
+          <span className="ml-0.5 hidden rounded-full bg-primary px-1.5 py-0.5 text-xs font-bold text-primary-foreground md:inline">
             +{selectedOptionalAgents.length}
           </span>
         )}
         {primaryAgent === "checkpoint" && selectedCheckpointOptionalAgents.length > 0 && (
-          <span className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5 text-xs font-bold text-primary-foreground">
+          <span className="ml-0.5 hidden rounded-full bg-primary px-1.5 py-0.5 text-xs font-bold text-primary-foreground md:inline">
             +{selectedCheckpointOptionalAgents.length}
           </span>
         )}
       </Button>
 
-      {/* Location Selector */}
       {onLocationPress && (
         <Button
           type="button"
           variant="outline"
           size="sm"
+          title={locationLabel}
+          aria-label={locationLabel}
           className={cn(
-            "h-8 min-w-0 flex-1 basis-0 shrink gap-1.5 px-2 text-xs font-medium sm:basis-auto sm:flex-none sm:max-w-[11rem] sm:px-2.5 md:max-w-[13rem]",
+            "h-10 w-10 shrink-0 gap-0 px-0 md:h-8 md:w-auto md:max-w-[11rem] md:gap-1.5 md:px-2.5 lg:max-w-[13rem]",
             hasLocation ? "border-primary/30" : "text-muted-foreground"
           )}
           onClick={onLocationPress}
         >
-          <LocationIcon className="h-3.5 w-3.5 shrink-0" />
-          <span className="min-w-0 truncate">{getLocationLabel()}</span>
+          <LocationIcon className="h-4 w-4 shrink-0" />
+          <span className="hidden min-w-0 truncate md:inline">{locationLabel}</span>
         </Button>
       )}
 
-      {/* Settings */}
       {showSettingsButton ? (
         <Button
           type="button"
           variant="outline"
           size="icon"
-          className="h-8 w-8 shrink-0"
+          className="h-10 w-10 shrink-0 md:h-8 md:w-8"
           onClick={onOpenSettings}
           aria-label="Open chat settings"
         >

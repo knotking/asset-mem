@@ -32,6 +32,12 @@ const TIMELINE_TAB_DESCRIPTIONS: Record<TimelineTab, string> = {
   reports: 'Generated property reports',
 };
 
+const TIMELINE_TAB_SHORT_DESCRIPTIONS: Record<TimelineTab, string> = {
+  checkpoints: 'History & comparisons',
+  insights: 'Condition trends',
+  reports: 'Generated reports',
+};
+
 function TimelineHeader({
   activeTab,
   onAddCheckpoint,
@@ -43,43 +49,58 @@ function TimelineHeader({
 }) {
   const label = TIMELINE_TAB_LABELS[activeTab];
   const description = TIMELINE_TAB_DESCRIPTIONS[activeTab];
+  const shortDescription = TIMELINE_TAB_SHORT_DESCRIPTIONS[activeTab];
 
   return (
-    <header className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 sm:flex sm:items-start sm:justify-between">
-      <div className="min-w-0">
-        <h1 className={cn(APP_SECTION_TITLE_CLASS, 'hidden sm:block')}>{label}</h1>
-        <p
-          className={cn(
-            APP_PAGE_SUBTITLE_CLASS,
-            'min-h-10 line-clamp-2 sm:mt-0 sm:min-h-0 sm:line-clamp-none',
-          )}
-        >
-          <span className="sr-only sm:hidden">{label}. </span>
-          {description}
+    <header className="mb-4 flex items-center gap-2 md:mb-6 md:items-start md:justify-between">
+      <div className="min-w-0 flex-1">
+        <h1 className={cn(APP_SECTION_TITLE_CLASS, 'hidden md:block')}>{label}</h1>
+        <p className={cn(APP_PAGE_SUBTITLE_CLASS, 'line-clamp-1 md:line-clamp-none')}>
+          <span className="font-medium text-foreground md:hidden">{label}</span>
+          <span className="text-muted-foreground md:hidden"> · {shortDescription}</span>
+          <span className="hidden md:inline">{description}</span>
         </p>
       </div>
-      <div className="flex min-h-8 w-[9.5rem] shrink-0 items-center justify-end sm:min-h-0 sm:w-auto sm:pt-0.5">
+      <div className="flex shrink-0 items-center justify-end">
         {activeTab === 'checkpoints' ? (
-          <Button
-            size="sm"
-            className="h-8 max-w-[9.5rem] shrink-0 px-2.5 text-xs whitespace-nowrap sm:h-10 sm:max-w-none sm:px-4 sm:text-sm"
-            onClick={onAddCheckpoint}
-          >
-            <Plus className="mr-1 h-4 w-4 sm:mr-2" />
-            Add Checkpoint
-          </Button>
+          <>
+            <Button
+              size="icon"
+              className="h-11 w-11 md:hidden"
+              onClick={onAddCheckpoint}
+              aria-label="Add checkpoint"
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
+            <Button
+              size="sm"
+              className="hidden h-10 px-4 md:inline-flex"
+              onClick={onAddCheckpoint}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Checkpoint
+            </Button>
+          </>
         ) : activeTab === 'reports' ? (
-          <Button
-            size="sm"
-            className="h-8 shrink-0 px-2.5 text-xs whitespace-nowrap sm:h-10 sm:px-4 sm:text-sm"
-            onClick={onCreateReport}
-          >
-            <Plus className="mr-1 h-4 w-4 sm:mr-2" />
-            Create Report
-          </Button>
-        ) : (
-          <span className="block w-full sm:hidden" aria-hidden />
-        )}
+          <>
+            <Button
+              size="icon"
+              className="h-11 w-11 md:hidden"
+              onClick={onCreateReport}
+              aria-label="Create report"
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
+            <Button
+              size="sm"
+              className="hidden h-10 px-4 md:inline-flex"
+              onClick={onCreateReport}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create Report
+            </Button>
+          </>
+        ) : null}
       </div>
     </header>
   );

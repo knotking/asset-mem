@@ -40,7 +40,7 @@ export function buildCollapsedComposerSummary({
       parts.push(
         pendingContextCount > 0 && readyContextCount === 0
           ? `${pendingContextCount} pending`
-          : `${contextTotal} context`,
+          : `${contextTotal} attached`,
       );
     }
   }

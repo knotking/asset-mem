@@ -96,24 +96,12 @@
 
 /* --- Mobile / touch scroll performance (Android Chrome) --- */
 
-/** Solid accent on touch; gradient clip on lg+ (avoids text repaint jank). */
-.landing-gradient-text {
-  color: #22d3ee;
-}
-
+/** Solid accent on touch; gradient clip on lg+ (see globals.css `.landing-gradient-text`). */
 .landing-gradient-text-muted {
   color: #22d3ee;
 }
 
 @media (min-width: 1024px) {
-  .landing-gradient-text {
-    color: transparent;
-    background-image: linear-gradient(to right, #22d3ee, rgba(34, 211, 238, 0.6));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
   .landing-gradient-text-muted {
     color: transparent;
     background-image: linear-gradient(to right, #22d3ee, rgba(250, 250, 250, 0.7));

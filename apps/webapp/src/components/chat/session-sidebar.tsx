@@ -537,7 +537,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
           </Button>
           <Button
             variant="ghost"
-            className="flex-shrink-0 h-8 w-8 rounded-lg p-0 hidden lg:flex items-center justify-center"
+            className="flex-shrink-0 h-8 w-8 rounded-lg p-0 hidden md:flex items-center justify-center"
             onClick={onToggleCollapse}
             aria-label="Toggle sidebar"
           >
@@ -545,7 +545,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
           </Button>
           <Button
             variant="ghost"
-            className="flex-shrink-0 h-8 w-8 rounded-lg p-0 lg:hidden"
+            className="flex-shrink-0 h-8 w-8 rounded-lg p-0 md:hidden"
             onClick={onMobileClose}
             aria-label="Close sidebar"
           >

@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Search, ArrowRightLeft, X, Trash2, Loader2 } from 'lucide-react';
+import { Search, ArrowRightLeft, X, Trash2, Loader2, SlidersHorizontal } from 'lucide-react';
 import { CHECKPOINT_PAGE_SIZE } from '@/contexts/checkpoint-context';
 import { Checkpoint } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +40,12 @@ import { FeatureTipBanner } from '@/components/feature-discovery/feature-tip-ban
 import { usePreferences } from '@/contexts/preferences-context';
 import { useDismissFeatureTip } from '@/hooks/use-dismiss-feature-tip';
 import { shouldShowFeatureTip } from '@/lib/feature-discovery';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 
 const checkpointLog = createLogger('checkpoint');
 
@@ -76,6 +82,10 @@ export function CheckpointList({
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedCheckpoints, setSelectedCheckpoints] = useState<Set<string>>(new Set());
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+
+  const activeFilterCount =
+    (locationFilter !== 'all' ? 1 : 0) + (statusFilter !== 'all' ? 1 : 0);
 
   // Extract unique locations
   const locations = Array.from(
@@ -228,6 +238,53 @@ export function CheckpointList({
     locationFilter === 'all' &&
     statusFilter === 'all';
 
+  const clearFilters = () => {
+    setLocationFilter('all');
+    setStatusFilter('all');
+  };
+
+  const locationStatusFilters = (
+    <>
+      <Select value={locationFilter} onValueChange={setLocationFilter}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="All Locations" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Locations</SelectItem>
+          {locations.map((location) => (
+            <SelectItem key={location} value={location!}>
+              {location}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="All Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Status</SelectItem>
+          <SelectItem value="analyzed">Analyzed</SelectItem>
+          <SelectItem value="pending">Pending Analysis</SelectItem>
+          <SelectItem value="issues">Has Issues</SelectItem>
+        </SelectContent>
+      </Select>
+    </>
+  );
+
+  const searchInput = (
+    <div className="relative min-w-0 flex-1">
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Input
+        placeholder="Search checkpoints..."
+        className="pl-10"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       {showCompareTip ? (
@@ -240,20 +297,73 @@ export function CheckpointList({
           onAction={() => setSelectionMode(true)}
         />
       ) : null}
-      {/* Filters */}
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search checkpoints..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+      {/* Mobile: search + filter sheet + compare icon */}
+      <div className="flex gap-2 md:hidden">
+        {searchInput}
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="relative h-11 w-11 shrink-0"
+          aria-label={
+            activeFilterCount > 0
+              ? `Filters, ${activeFilterCount} active`
+              : 'Filters'
+          }
+          onClick={() => setFilterSheetOpen(true)}
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          {activeFilterCount > 0 ? (
+            <Badge
+              variant="secondary"
+              className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center px-1 text-[10px]"
+            >
+              {activeFilterCount}
+            </Badge>
+          ) : null}
+        </Button>
+        <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
+          <SheetContent side="bottom" className="rounded-t-xl">
+            <SheetHeader>
+              <SheetTitle>Filter checkpoints</SheetTitle>
+            </SheetHeader>
+            <div className="mt-4 space-y-4">
+              {locationStatusFilters}
+              {activeFilterCount > 0 ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    clearFilters();
+                    setFilterSheetOpen(false);
+                  }}
+                >
+                  Clear filters
+                </Button>
+              ) : null}
+            </div>
+          </SheetContent>
+        </Sheet>
+        {onCompare && !selectionMode ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-11 w-11 shrink-0"
+            aria-label="Compare checkpoints"
+            onClick={() => setSelectionMode(true)}
+          >
+            <ArrowRightLeft className="h-4 w-4" />
+          </Button>
+        ) : null}
+      </div>
 
+      {/* Desktop: inline filter row */}
+      <div className="hidden flex-col gap-3 md:flex md:flex-row">
+        {searchInput}
         <Select value={locationFilter} onValueChange={setLocationFilter}>
-          <SelectTrigger className="w-full sm:w-[180px]">
+          <SelectTrigger className="w-full md:w-[180px]">
             <SelectValue placeholder="All Locations" />
           </SelectTrigger>
           <SelectContent>
@@ -265,9 +375,8 @@ export function CheckpointList({
             ))}
           </SelectContent>
         </Select>
-
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-[180px]">
+          <SelectTrigger className="w-full md:w-[180px]">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent>
@@ -277,7 +386,6 @@ export function CheckpointList({
             <SelectItem value="issues">Has Issues</SelectItem>
           </SelectContent>
         </Select>
-
         {onCompare && !selectionMode && (
           <Button variant="outline" onClick={() => setSelectionMode(true)}>
             <ArrowRightLeft className="mr-2 h-4 w-4" />
@@ -409,11 +517,15 @@ export function CheckpointList({
 function CheckpointListSkeleton() {
   return (
     <div className="space-y-4">
-      {/* Filters Skeleton */}
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex gap-2 md:hidden">
         <Skeleton className="h-10 flex-1" />
-        <Skeleton className="h-10 w-full sm:w-[180px]" />
-        <Skeleton className="h-10 w-full sm:w-[180px]" />
+        <Skeleton className="h-10 w-10 shrink-0" />
+        <Skeleton className="h-10 w-10 shrink-0" />
+      </div>
+      <div className="hidden flex-col gap-3 md:flex md:flex-row">
+        <Skeleton className="h-10 flex-1" />
+        <Skeleton className="h-10 w-[180px]" />
+        <Skeleton className="h-10 w-[180px]" />
         <Skeleton className="h-10 w-[120px]" />
       </div>
 
