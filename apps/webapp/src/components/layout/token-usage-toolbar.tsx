@@ -99,8 +99,11 @@ export function TokenUsageToolbar({ settingsReturnContext }: TokenUsageToolbarPr
 
   if (loading || limitsLoading) {
     return (
-      <div className="h-9 w-9 shrink-0" aria-hidden>
-        <Skeleton className="mx-auto h-6 w-6 rounded-full" />
+      <div
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center"
+        aria-hidden
+      >
+        <Skeleton className="h-6 w-6 rounded-full" />
       </div>
     );
   }
