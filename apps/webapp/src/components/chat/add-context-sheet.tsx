@@ -77,6 +77,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
+/** Mobile: full viewport height within safe areas; desktop: capped bottom panel. */
+const ADD_CONTEXT_SHEET_CONTENT_CLASS = cn(
+  "flex flex-col gap-0 overflow-hidden rounded-t-2xl p-0",
+  "h-[calc(100dvh-env(safe-area-inset-top))]",
+  "max-h-[calc(100dvh-env(safe-area-inset-top))]",
+  "pb-[max(0px,env(safe-area-inset-bottom))]",
+  "md:h-[85vh] md:max-h-[85vh] md:pb-0",
+  "left-1/2 right-auto w-full max-w-lg -translate-x-1/2",
+  "sm:max-w-xl md:max-w-2xl",
+  "border-x shadow-2xl",
+);
+
 type ContextTab = "timeline" | "documents";
 
 type Props = {
@@ -573,15 +585,7 @@ export function AddContextSheet({
   if (isDocsMode) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent
-          side="bottom"
-          className={cn(
-            "flex h-[85vh] max-h-[85vh] flex-col rounded-t-2xl p-0",
-            "left-1/2 right-auto w-full max-w-lg -translate-x-1/2",
-            "sm:max-w-xl md:max-w-2xl",
-            "border-x shadow-2xl"
-          )}
-        >
+        <SheetContent side="bottom" className={ADD_CONTEXT_SHEET_CONTENT_CLASS}>
           <SheetHeader className="shrink-0 border-b px-4 py-3">
             <SheetTitle>{ADD_CONTEXT_TITLE}</SheetTitle>
           </SheetHeader>
@@ -662,15 +666,7 @@ export function AddContextSheet({
   if (isReportMode) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent
-          side="bottom"
-          className={cn(
-            "flex h-[85vh] max-h-[85vh] flex-col rounded-t-2xl p-0",
-            "left-1/2 right-auto w-full max-w-lg -translate-x-1/2",
-            "sm:max-w-xl md:max-w-2xl",
-            "border-x shadow-2xl"
-          )}
-        >
+        <SheetContent side="bottom" className={ADD_CONTEXT_SHEET_CONTENT_CLASS}>
           <SheetHeader className="shrink-0 border-b px-4 py-3">
             <SheetTitle>{ADD_CONTEXT_TITLE}</SheetTitle>
           </SheetHeader>
@@ -724,16 +720,7 @@ export function AddContextSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        className={cn(
-          "flex h-[85vh] max-h-[85vh] flex-col rounded-t-2xl p-0",
-          /* Full width on mobile; centered panel on larger screens (overrides inset-x-0). */
-          "left-1/2 right-auto w-full max-w-lg -translate-x-1/2",
-          "sm:max-w-xl md:max-w-2xl",
-          "border-x shadow-2xl"
-        )}
-      >
+      <SheetContent side="bottom" className={ADD_CONTEXT_SHEET_CONTENT_CLASS}>
         <SheetHeader className="shrink-0 border-b px-4 py-3">
           <SheetTitle>{ADD_CONTEXT_TITLE}</SheetTitle>
         </SheetHeader>

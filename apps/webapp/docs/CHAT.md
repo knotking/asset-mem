@@ -117,7 +117,7 @@ Uses contentJson/contentMarkdown — not raw `message.content` alone.
 
 `PropertyChatWithContext` uses `ComposerMetaSection` (via `ChatInput` when `onOpenAddContext` is set):
 
-- **Mobile & desktop (context mode):** one attachment summary pill (stacked thumb previews + agent summary e.g. `Checkpoint +2 · 3 attached`); tap opens add-attachments sheet. Empty dashed pill when nothing selected. Pill is full width on mobile, content-sized on `md+`. Input row is `[settings][input][send]`. Chat settings (Agent tab) includes an **Attachments** row under Primary Agent — label follows the active agent (`Add report`, `Add checkpoint`, etc.) and opens the same add-attachments sheet.
+- **Mobile & desktop (context mode):** one attachment summary pill (stacked thumb previews + agent summary e.g. `Checkpoint +2 · 3 attached`); tap opens add-attachments sheet. On mobile the sheet uses full viewport height within safe areas (`100dvh` minus top/bottom insets); on `md+` it stays capped at 85vh. Empty dashed pill when nothing selected. Pill is full width on mobile, content-sized on `md+`. Input row is `[settings][input][send]`. Chat settings (Agent tab) includes an **Attachments** row under Primary Agent — label follows the active agent (`Add report`, `Add checkpoint`, etc.) and opens the same add-attachments sheet.
 
 Header shortcuts (usage, FAQ, settings) use `settings-navigation` return params so back restores the same property tab and chat session.
 
