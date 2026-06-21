@@ -31,6 +31,8 @@ export type CustomGiftedComposerProps = {
   onInputSizeChanged?(layout: { width: number; height: number }): void;
   /** Rendered inside the pill (border) container — e.g. send button. Clipped by overflow. */
   overlay?: React.ReactNode;
+  /** Inset for overlay slot from pill right/bottom edges (send button). */
+  overlayInset?: number;
   paddingTop?: number;
   paddingBottomSingle?: number;
   paddingBottomMulti?: number;
@@ -106,6 +108,7 @@ export function CustomGiftedComposer({
   textInputProps,
   textInputStyle,
   overlay,
+  overlayInset = 4,
   paddingTop = 10,
   paddingBottomSingle = 10,
   paddingBottomMulti = 28,
@@ -244,7 +247,20 @@ export function CustomGiftedComposer({
           {...restTextInputProps}
           scrollEnabled={scrollEnabled}
         />
-        {overlay}
+        {overlay ? (
+          <View
+            pointerEvents="box-none"
+            style={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              right: overlayInset,
+              justifyContent: isMultiline ? 'flex-end' : 'center',
+              paddingBottom: isMultiline ? overlayInset : 0,
+            }}>
+            {overlay}
+          </View>
+        ) : null}
       </View>
     </View>
   );
