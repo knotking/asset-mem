@@ -163,13 +163,14 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
             placeholder="Type a message…"
             placeholderTextColor={colors.mutedForeground}
             multiline
+            overlayInset={COMPOSER_SEND_INSET}
             overlay={
               <Pressable
                 onPress={isSending ? onStop : handleSend}
                 disabled={isSending ? false : !canSend}
                 accessibilityRole="button"
                 accessibilityLabel={isSending ? 'Stop response' : 'Send message'}
-                style={[styles.sendButton, { opacity: isSending || canSend ? 1 : 0.5 }]}>
+                style={{ opacity: isSending || canSend ? 1 : 0.5 }}>
                 {isSending ? (
                   <View
                     className="items-center justify-center rounded-full bg-destructive"
@@ -272,10 +273,5 @@ const styles = StyleSheet.create({
   composerColumn: {
     width: '100%',
     alignSelf: 'flex-end',
-  },
-  sendButton: {
-    position: 'absolute',
-    right: COMPOSER_SEND_INSET,
-    bottom: COMPOSER_SEND_INSET,
   },
 });
