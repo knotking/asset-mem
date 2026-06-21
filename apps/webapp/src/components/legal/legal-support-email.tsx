@@ -1,11 +1,8 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import {
-  DEFAULT_SUPPORT_EMAIL,
-  getEnterpriseConfigFromEnv,
-} from '@/lib/enterprise-config';
-import { fetchLandingRemoteConfig } from '@/lib/landing-demo-video';
+import { createContext, useContext } from 'react';
+import { DEFAULT_SUPPORT_EMAIL } from '@/lib/enterprise-config';
+import { useSupportEmail } from '@/hooks/use-support-email';
 
 const SupportEmailContext = createContext(DEFAULT_SUPPORT_EMAIL);
 
@@ -14,21 +11,7 @@ export function LegalSupportEmailProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [email, setEmail] = useState(
-    () => getEnterpriseConfigFromEnv().supportEmail || DEFAULT_SUPPORT_EMAIL,
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-    void fetchLandingRemoteConfig().then((remote) => {
-      if (cancelled) return;
-      const next = remote.enterprise.supportEmail?.trim() || DEFAULT_SUPPORT_EMAIL;
-      setEmail(next);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const email = useSupportEmail();
 
   return (
     <SupportEmailContext.Provider value={email}>{children}</SupportEmailContext.Provider>

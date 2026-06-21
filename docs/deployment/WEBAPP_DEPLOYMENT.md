@@ -130,7 +130,7 @@ Used for Open Graph URLs, contact/legal pages, and GA4 (Product Hunt / launch). 
 | Variable                        | Staging (example)       | Production (example)    | Notes                                                |
 | ------------------------------- | ----------------------- | ----------------------- | ---------------------------------------------------- |
 | `NEXT_PUBLIC_SITE_URL`          | Staging App Hosting URL | `https://asset-mem.com` | Canonical origin for OG metadata (no trailing slash) |
-| `NEXT_PUBLIC_SUPPORT_EMAIL`     | `hello@asset-mem.com` | `hello@asset-mem.com` | Landing contact + legal pages                        |
+| `NEXT_PUBLIC_SUPPORT_EMAIL`     | `support@buildgeek.ai` | `support@buildgeek.ai` | Landing contact + legal pages (override via Remote Config `support_email`) |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Optional                | **Add before PH**       | GA4 `G-XXXXXXXX`; omit = analytics disabled          |
 
 
