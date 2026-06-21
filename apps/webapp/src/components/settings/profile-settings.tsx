@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { updateProfile } from 'firebase/auth';
-import { Check, Loader2, Pencil, X } from 'lucide-react';
+import { Check, Loader2, LogOut, Pencil, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,11 +15,15 @@ import {
   DISPLAY_NAME_MAX_LENGTH,
   displayNameFromEmail,
   getProfileDisplayPresentation,
+  getSignInMethodLabel,
 } from '@/lib/user-display';
 import { cn } from '@/lib/utils';
+import { createLogger } from '@/lib/logger';
+
+const profileLog = createLogger('profile');
 
 export function ProfileSettings() {
-  const { user } = useAuth();
+  const { user, logout, signingOut } = useAuth();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = React.useState(false);
   const [editedName, setEditedName] = React.useState('');
@@ -31,6 +35,7 @@ export function ProfileSettings() {
 
   const savedName = user.displayName?.trim() ?? '';
   const profileDisplay = getProfileDisplayPresentation(user);
+  const signInMethod = getSignInMethodLabel(user);
   const inputPlaceholder = displayNameFromEmail(user.email) ?? 'Your name';
 
   const handleStartEdit = () => {
@@ -90,13 +95,27 @@ export function ProfileSettings() {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await logout();
+    } catch (error: unknown) {
+      profileLog.error('signOut.failed', undefined, error);
+      toast({
+        variant: 'destructive',
+        title: 'Could not sign out',
+        description:
+          error instanceof Error ? error.message : 'Something went wrong. Please try again.',
+      });
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className={APP_SECTION_TITLE_CLASS}>Profile</CardTitle>
         <CardDescription>Your account information</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <div className="flex items-start gap-4">
           <UserProfileAvatar
             user={user}
@@ -154,7 +173,12 @@ export function ProfileSettings() {
             ) : (
               <div className="flex items-center gap-1">
                 <p
-                  className={cn('truncate', APP_PROFILE_NAME_CLASS, profileDisplay.isUnset && 'text-muted-foreground')}
+                  className={cn(
+                    'truncate',
+                    profileDisplay.isUnset
+                      ? 'text-sm font-normal text-muted-foreground'
+                      : APP_PROFILE_NAME_CLASS,
+                  )}
                 >
                   {profileDisplay.label}
                 </p>
@@ -174,7 +198,26 @@ export function ProfileSettings() {
             {user.email ? (
               <p className="text-sm text-muted-foreground break-all">{user.email}</p>
             ) : null}
+            {signInMethod ? (
+              <p className="text-sm text-muted-foreground">Signed in with {signInMethod}</p>
+            ) : null}
           </div>
+        </div>
+        <div className="border-t pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2"
+            disabled={signingOut}
+            onClick={() => void handleSignOut()}
+          >
+            {signingOut ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <LogOut className="h-4 w-4" />
+            )}
+            {signingOut ? 'Signing out…' : 'Sign out'}
+          </Button>
         </div>
       </CardContent>
     </Card>

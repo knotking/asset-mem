@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { deleteUser } from 'firebase/auth';
 import { Trash2 } from 'lucide-react';
 import {
@@ -79,15 +80,21 @@ export function AccountDeletionSettings() {
         <CardTitle className={cn(APP_SECTION_TITLE_CLASS, 'text-destructive')}>Delete account</CardTitle>
         <CardDescription>{ACCOUNT_DELETION_CARD_DESCRIPTION}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="flex flex-col items-start gap-3">
         <p className="text-sm text-muted-foreground">{ACCOUNT_DELETION_BILLING_NOTE}</p>
         <p className="text-sm text-muted-foreground">
           {fullDataErasureSupportLine()}{' '}
-          <a href={`mailto:${supportEmail}`} className="underline hover:text-foreground">
+          <a href={`mailto:${supportEmail}`} className="text-primary underline hover:text-foreground">
             {supportEmail}
           </a>
           .
         </p>
+        <Link
+          href="/account-deletion"
+          className="block w-fit text-sm font-medium text-primary hover:underline"
+        >
+          How account deletion works
+        </Link>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
         <AlertDialog
           open={open}

@@ -1,12 +1,14 @@
 import * as React from 'react';
 import { Pressable, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { updateProfile } from 'firebase/auth';
-import { ChevronRight, Loader2 } from 'lucide-react-native';
+import { ChevronRight, Loader2, LogOut } from 'lucide-react-native';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import {
   DISPLAY_NAME_MAX_LENGTH,
   displayNameFromEmail,
   getProfileDisplayPresentation,
+  getSignInMethodLabel,
 } from '@homeapp/common/lib/user-display';
 import { cn } from '@/lib/utils';
 import { UserProfileAvatar } from '@/components/UserProfileAvatar';
@@ -29,11 +31,13 @@ import { useThemedAlert } from '@/contexts/themed-alert-context';
 const profileLog = createLogger('profile');
 
 export function ProfileSettings() {
+  const router = useRouter();
   const { showAlert } = useThemedAlert();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [editOpen, setEditOpen] = React.useState(false);
   const [editedName, setEditedName] = React.useState('');
   const [saving, setSaving] = React.useState(false);
+  const [signingOut, setSigningOut] = React.useState(false);
 
   if (!user) {
     return null;
@@ -41,6 +45,7 @@ export function ProfileSettings() {
 
   const savedName = user.displayName?.trim() ?? '';
   const profileDisplay = getProfileDisplayPresentation(user);
+  const signInMethod = getSignInMethodLabel(user);
   const inputPlaceholder =
     displayNameFromEmail(user.email) ?? 'Your name';
 
@@ -76,6 +81,12 @@ export function ProfileSettings() {
       });
       setEditOpen(false);
       setEditedName('');
+      showAlert(
+        'Profile updated',
+        trimmed.length > 0
+          ? 'Your display name has been saved.'
+          : 'Your display name has been cleared.',
+      );
     } catch (error: unknown) {
       profileLog.error('displayName.update.failed', undefined, error);
       showAlert(
@@ -89,18 +100,31 @@ export function ProfileSettings() {
 
   const isSaveDisabled = saving || editedName.trim().length > DISPLAY_NAME_MAX_LENGTH;
 
+  const handleSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await logout();
+      router.replace('/');
+    } catch (error) {
+      profileLog.error('signOut.failed', undefined, error);
+      showAlert(
+        'Could not sign out',
+        error instanceof Error ? error.message : 'Something went wrong. Please try again.',
+      );
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
   return (
     <>
       <Card className="mb-4">
         <CardHeader>
-          <CardTitle>
-            <Text>Profile</Text>
-          </CardTitle>
-          <CardDescription>
-            <Text className="text-muted-foreground">Your account information</Text>
-          </CardDescription>
+          <CardTitle>Profile</CardTitle>
+          <CardDescription>Your account information</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="gap-4">
           <View className="flex-row items-start gap-4">
             <UserProfileAvatar user={user} className="size-16 shrink-0" />
             <View className="min-w-0 flex-1 gap-2">
@@ -113,10 +137,10 @@ export function ProfileSettings() {
                   <Text className="text-xs text-muted-foreground">Display name</Text>
                   <Text
                     className={cn(
-                      'text-base font-semibold',
+                      'leading-5',
                       profileDisplay.isUnset
-                        ? 'text-muted-foreground'
-                        : 'text-foreground'
+                        ? 'text-sm font-normal text-muted-foreground'
+                        : 'text-base font-semibold text-foreground',
                     )}
                     numberOfLines={1}>
                     {profileDisplay.label}
@@ -125,9 +149,30 @@ export function ProfileSettings() {
                 <Icon as={ChevronRight} size={18} className="shrink-0 text-muted-foreground" />
               </Pressable>
               {user.email ? (
-                <Text className="text-sm text-muted-foreground">{user.email}</Text>
+                <Text className="break-all text-sm leading-5 text-muted-foreground">{user.email}</Text>
+              ) : null}
+              {signInMethod ? (
+                <Text className="text-sm leading-5 text-muted-foreground">
+                  Signed in with {signInMethod}
+                </Text>
               ) : null}
             </View>
+          </View>
+          <View className="border-t border-border pt-4">
+            <Button
+              variant="outline"
+              disabled={signingOut}
+              className="w-full flex-row items-center justify-center gap-2"
+              onPress={() => void handleSignOut()}>
+              {signingOut ? (
+                <Icon as={Loader2} size={20} className="animate-spin text-foreground" />
+              ) : (
+                <Icon as={LogOut} size={20} className="text-foreground" />
+              )}
+              <Text className="font-semibold text-foreground">
+                {signingOut ? 'Signing out…' : 'Sign out'}
+              </Text>
+            </Button>
           </View>
         </CardContent>
       </Card>

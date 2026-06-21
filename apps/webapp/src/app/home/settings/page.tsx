@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Activity, ArrowLeft, BookOpen, Camera, CreditCard, LifeBuoy, LogOut, User } from 'lucide-react';
+import { Activity, ArrowLeft, BookOpen, Camera, CreditCard, LifeBuoy, User } from 'lucide-react';
 import { CheckpointSettings } from '@/components/settings/checkpoint-settings';
 import { AiUsageSettings } from '@/components/settings/ai-usage-settings';
 import { SubscriptionSettings } from '@/components/settings/subscription-settings';
@@ -41,7 +41,7 @@ function isSettingsTabId(value: string | null): value is SettingsTabId {
 }
 
 function SettingsPageContent() {
-  const { user, logout, signingOut } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -182,14 +182,6 @@ function SettingsPageContent() {
           <TabsContent value="account" className="mt-0 space-y-4 focus-visible:outline-none">
             <ProfileSettings />
             <AccountDeletionSettings />
-            <Button
-              variant="outline"
-              className="w-full justify-center gap-2 border-destructive bg-background text-destructive hover:bg-destructive/10 hover:text-destructive"
-              disabled={signingOut}
-              onClick={() => void logout().then(() => router.push('/login'))}>
-              <LogOut className="h-4 w-4 text-destructive" />
-              {signingOut ? 'Signing out…' : 'Sign out'}
-            </Button>
           </TabsContent>
 
           <TabsContent value="faq" className="mt-0 focus-visible:outline-none">
