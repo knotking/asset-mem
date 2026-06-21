@@ -355,7 +355,9 @@ OTA bundle published with URLs
 | `ANDROID_PACKAGE` | Android package  | `com.assetmem.staging` | `eas.json`              |
 | `EXPO_PROJECT_ID` | Expo project ID  | (set in eas.json)        | `eas.json`              |
 | `APP_ENV`         | Environment name | (not set)                | `eas.json` (production) |
-| `EXPO_PUBLIC_ANDROID_IMMERSIVE` | Hide Android status + nav bars app-wide (swipe edges to reveal) | `true` (set `false` to disable) | `.env` (local dev only) |
+| `EXPO_PUBLIC_ANDROID_IMMERSIVE` | Hide Android status + nav bars app-wide (swipe edges to reveal) | `false` (set `true` to enable) | `.env` or `eas.json` |
+
+**Android immersive and chat:** Immersive mode hides the status and navigation bars via `StatusBar.setHidden` and `expo-navigation-bar`. On physical Android devices this conflicts with GiftedChat / `react-native-keyboard-controller` and can cause tab-bar height jumps, blank space below the composer, and keyboard overlap after backgrounding. Keep immersive **disabled** (default) unless you accept broken property-chat keyboard behavior. See [CHAT_IMPLEMENTATION.md](./CHAT_IMPLEMENTATION.md#android-keyboard-and-immersive-mode).
 
 ### Constructed URLs (in expo.extra)
 

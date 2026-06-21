@@ -7,9 +7,13 @@ import { createLogger } from '@/lib/logger';
 
 const immersiveLog = createLogger('immersive');
 
-/** Android immersive is on by default. Set `EXPO_PUBLIC_ANDROID_IMMERSIVE=false` in apps/mapp/.env to disable. */
+/**
+ * Android immersive is off by default — toggling StatusBar / nav bar visibility
+ * conflicts with GiftedChat keyboard layout on physical Android devices.
+ * Set `EXPO_PUBLIC_ANDROID_IMMERSIVE=true` in apps/mapp/.env to enable.
+ */
 export const ANDROID_IMMERSIVE_ENABLED =
-  process.env.EXPO_PUBLIC_ANDROID_IMMERSIVE !== 'false';
+  process.env.EXPO_PUBLIC_ANDROID_IMMERSIVE === 'true';
 
 let immersiveDepth = 0;
 let savedBehavior: NavigationBarBehavior | null = null;
