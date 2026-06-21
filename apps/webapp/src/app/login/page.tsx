@@ -5,10 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { AuthScreenShell } from '@/components/auth/auth-screen-shell';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import { AuthDivider } from '@/components/auth/auth-divider';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
@@ -55,74 +55,61 @@ function LoginPageContent() {
   const formDisabled = isLoading;
 
   return (
-    <div className="flex min-h-dvh w-full items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>
-            Sign in with Google or your email to manage your properties.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <GoogleSignInButton
-            mode="login"
+    <AuthScreenShell
+      title="Sign in"
+      description="Sign in with Google or your email to manage your properties."
+    >
+      <GoogleSignInButton mode="login" disabled={formDisabled} checkoutTier={checkoutTier} />
+      <AuthDivider />
+      <form onSubmit={handleLogin} className="grid gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="m@example.com"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             disabled={formDisabled}
-            checkoutTier={checkoutTier}
           />
-          <AuthDivider />
-          <form onSubmit={handleLogin} className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={formDisabled}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={formDisabled}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={formDisabled}>
-              {isLoading ? 'Signing In...' : 'Sign In with Email'}
-            </Button>
-          </form>
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            <Link href="/privacy" className="underline hover:text-foreground">
-              Privacy Policy
-            </Link>
-            {' · '}
-            <Link href="/terms" className="underline hover:text-foreground">
-              Terms of Service
-            </Link>
-          </p>
-          <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{' '}
-            <Link
-              href={
-                checkoutTier
-                  ? `/signup?checkout=${encodeURIComponent(checkoutTier)}`
-                  : '/signup'
-              }
-              className="underline"
-            >
-              Sign up
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={formDisabled}
+          />
+        </div>
+        <Button type="submit" className="w-full" disabled={formDisabled}>
+          {isLoading ? 'Signing In...' : 'Sign In with Email'}
+        </Button>
+      </form>
+      <p className="mt-4 text-center text-xs text-muted-foreground">
+        <Link href="/privacy" className="underline hover:text-foreground">
+          Privacy Policy
+        </Link>
+        {' · '}
+        <Link href="/terms" className="underline hover:text-foreground">
+          Terms of Service
+        </Link>
+      </p>
+      <div className="mt-4 text-center text-sm">
+        Don&apos;t have an account?{' '}
+        <Link
+          href={
+            checkoutTier ? `/signup?checkout=${encodeURIComponent(checkoutTier)}` : '/signup'
+          }
+          className="underline"
+        >
+          Sign up
+        </Link>
+      </div>
+    </AuthScreenShell>
   );
 }
 
@@ -130,14 +117,9 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-svh w-full items-center justify-center bg-background">
-          <Card className="w-full max-w-sm">
-            <CardHeader>
-              <CardTitle className="text-2xl">Login</CardTitle>
-              <CardDescription>Loading…</CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
+        <AuthScreenShell title="Sign in" description="Loading…">
+          <div className="h-40" aria-hidden />
+        </AuthScreenShell>
       }
     >
       <LoginPageContent />
