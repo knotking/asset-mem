@@ -10,7 +10,7 @@ export const ACCOUNT_DELETION_BILLING_NOTE =
   'Paid plans are billed through Stripe. Cancel in Plan & billing before deleting your account if you do not want charges to continue.';
 
 export const ACCOUNT_DELETION_DIALOG_BODY =
-  'This removes your login and access to AssetMem AI right away. It does not cancel a paid subscription — use Plan & billing on the web first if you subscribe through Stripe. Some property data may be kept for security, legal, or operational reasons until you request full erasure.';
+  'This removes your login and access to AssetMem AI right away. It does not cancel a paid subscription — cancel in Plan & billing under Settings first if you subscribe through Stripe. Some property data may be kept for security, legal, or operational reasons until you request full erasure.';
 
 export const ACCOUNT_DELETION_REAUTH_MESSAGE =
   'For security, sign out, sign in again, then retry. Or email support for help deleting your account.';

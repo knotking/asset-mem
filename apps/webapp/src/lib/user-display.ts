@@ -130,3 +130,37 @@ export function getUserAvatarAlt(user: UserLike): string {
   const label = getUserDisplayLabel(user);
   return label === DISPLAY_NAME_ACCOUNT_FALLBACK ? 'Profile' : label;
 }
+
+const SIGN_IN_PROVIDER_LABELS: Record<string, string> = {
+  'google.com': 'Google',
+  'apple.com': 'Apple',
+  password: 'Email & password',
+  phone: 'Phone',
+};
+
+export type SignInMethodUser = Pick<User, 'providerData' | 'providerId'>;
+
+/** Human-readable sign-in method(s) for account settings (e.g. Google, Apple). */
+export function getSignInMethodLabel(user: SignInMethodUser): string | null {
+  const providerIds = new Set<string>();
+  for (const provider of user.providerData ?? []) {
+    if (provider.providerId) {
+      providerIds.add(provider.providerId);
+    }
+  }
+  if (providerIds.size === 0 && user.providerId) {
+    providerIds.add(user.providerId);
+  }
+
+  const labels = [...providerIds]
+    .map((id) => SIGN_IN_PROVIDER_LABELS[id] ?? id)
+    .filter((label) => label.length > 0);
+
+  if (labels.length === 0) {
+    return null;
+  }
+  if (labels.length === 1) {
+    return labels[0];
+  }
+  return labels.join(', ');
+}
