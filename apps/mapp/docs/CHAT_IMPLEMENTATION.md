@@ -27,6 +27,10 @@ User messages persist `contextRefs` (checkpoint/doc ids and names at send time) 
 
 **Queued send:** When pending uploads block send, **Ask when ready** banner renders above the summary pill.
 
+### Android keyboard and immersive mode
+
+Property chat relies on GiftedChat and `react-native-keyboard-controller` with Android `adjustResize`. **Do not enable** app-wide Android immersive mode (`EXPO_PUBLIC_ANDROID_IMMERSIVE=true`) on devices where you need reliable chat input: hiding the status/navigation bars breaks keyboard inset calculations and leaves stale layout (tab bar growth, gap below composer, overlap) after background/resume. Immersive is **off by default**; see [ENV_CONFIG.md](./ENV_CONFIG.md).
+
 **Property → session entry:** `MessagesProvider` keeps `hasMoreMessages` false until the first snapshot (no **Load earlier messages** flash). `PropertyChatTab` hides the empty-state intro while `isLoading`. `useSessionSelection` resolves the draft session synchronously (no **Select a session** flash).
 
 ### Scale-first Add context picker
