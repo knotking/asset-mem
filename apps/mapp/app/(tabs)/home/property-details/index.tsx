@@ -659,8 +659,9 @@ function PropertyDetailsScreenContent({
 
                   {/* Main Content Area */}
                   {activeTab === 'chat' ? (
-                    <MessagesProvider sessionId={selectedSessionId}>
-                      <PropertyChatWithContext
+                    <View className="flex-1">
+                      <MessagesProvider sessionId={selectedSessionId}>
+                        <PropertyChatWithContext
                         sessionId={selectedSessionId}
                         userId={user?.uid || ''}
                         propertyId={id!}
@@ -683,8 +684,9 @@ function PropertyDetailsScreenContent({
                           setErrorMessage(msg);
                           setErrorAlertOpen(true);
                         }}
-                      />
-                    </MessagesProvider>
+                        />
+                      </MessagesProvider>
+                    </View>
                   ) : activeTab === 'timeline' ? (
                     <PropertyCheckpointsTab
                       isCreateModalVisible={isCreateCheckpointModalVisible}

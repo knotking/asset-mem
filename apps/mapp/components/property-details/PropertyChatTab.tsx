@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { View, Platform, Pressable } from 'react-native';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
@@ -76,13 +77,22 @@ function GiftedChatWithScrollAnchor(
 ) {
   const handleOnScroll = useChatListScrollOnScrollHandler();
   const { messageContainerRef, ...giftedChatProps } = props;
-  return (
+  const chat = (
     <GiftedChat
       {...giftedChatProps}
       messageContainerRef={messageContainerRef as React.RefObject<AnimatedList<IMessage>>}
       handleOnScroll={handleOnScroll}
     />
   );
+
+  // GiftedChat wraps iOS with KeyboardProvider but not Android. With edge-to-edge
+  // enabled, adjustResize no longer lifts the composer — keyboard-controller must
+  // drive the translateY animation on Android too.
+  if (Platform.OS === 'android') {
+    return <KeyboardProvider preload={false}>{chat}</KeyboardProvider>;
+  }
+
+  return chat;
 }
 
 function PropertyChatTab({
@@ -322,7 +332,7 @@ function PropertyChatTab({
   }
 
   return (
-    <>
+    <View style={{ flex: 1 }}>
       {!isOnline && (
         <View className="bg-warning px-4 py-2">
           <Text className="text-center text-sm font-medium text-warning-foreground">
@@ -373,7 +383,7 @@ function PropertyChatTab({
           infiniteScroll
         />
       </ChatListScrollAnchorProvider>
-    </>
+    </View>
   );
 }
 
