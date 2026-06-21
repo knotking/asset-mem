@@ -11,7 +11,7 @@ import {
   fullDataErasureSupportLine,
 } from '@/lib/account-deletion';
 import { useAuth } from '@/contexts/auth-context';
-import { getSupportEmail } from '@/lib/site';
+import { useSupportEmail } from '@/hooks/use-support-email';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { APP_SECTION_TITLE_CLASS } from '@/lib/app-typography';
 import { cn } from '@/lib/utils';
@@ -35,7 +35,7 @@ const accountLog = createLogger('account');
 export function AccountDeletionSettings() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
-  const supportEmail = getSupportEmail();
+  const supportEmail = useSupportEmail();
   const [open, setOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);

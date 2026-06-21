@@ -42,4 +42,4 @@ Privacy policy: [apps/webapp/src/app/privacy/page.tsx](../../webapp/src/app/priv
 
 ## Support email
 
-Production: `hello@asset-mem.com` (`NEXT_PUBLIC_SUPPORT_EMAIL` in [apphosting.prod.yaml](../../webapp/apphosting.prod.yaml), `extra.supportEmail` in mapp [app.config.js](../app.config.js)).
+Production default: `support@buildgeek.ai` (code fallback and `NEXT_PUBLIC_SUPPORT_EMAIL` / `EXPO_PUBLIC_SUPPORT_EMAIL` when unset). Override via Firebase Remote Config `support_email` or build env vars.

@@ -2,7 +2,6 @@ import * as React from 'react';
 import { Linking } from 'react-native';
 import { deleteUser } from 'firebase/auth';
 import { Trash2 } from 'lucide-react-native';
-import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import {
   ACCOUNT_DELETION_BILLING_NOTE,
@@ -29,19 +28,15 @@ import {
 } from '@/components/ui/alert-dialog';
 import { getAccountDeletionHelpUrl } from '@/lib/legal-urls';
 import { openExternalWebUrl } from '@/lib/open-external-url';
+import { useSupportEmail } from '@/hooks/useSupportEmail';
 import { createLogger } from '@/lib/logger';
 
 const accountLog = createLogger('account');
 
-function getSupportEmail(): string {
-  const fromExtra = Constants.expoConfig?.extra?.supportEmail as string | undefined;
-  return fromExtra?.trim() || 'hello@asset-mem.com';
-}
-
 export function AccountDeletionSettings() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const supportEmail = getSupportEmail();
+  const supportEmail = useSupportEmail();
   const [open, setOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
