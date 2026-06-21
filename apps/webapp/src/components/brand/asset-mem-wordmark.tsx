@@ -9,6 +9,7 @@ export const LANDING_BRAND_AI_SIZE_EM = 0.75;
 const WORDMARK_BRAND_CLASS = {
   xs: 'text-xs',
   eyebrow: 'text-sm font-medium tracking-wide',
+  auth: 'text-2xl',
   header: 'text-xl lg:text-2xl',
   footer: 'text-xl',
   solutions: 'text-lg',

@@ -5,11 +5,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { trackSignUp } from '@/lib/analytics';
+import { AuthScreenShell } from '@/components/auth/auth-screen-shell';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import { AuthDivider } from '@/components/auth/auth-divider';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
@@ -57,76 +57,63 @@ function SignupPageContent() {
   const formDisabled = isLoading;
 
   return (
-    <div className="flex min-h-dvh w-full items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl">Sign Up</CardTitle>
-          <CardDescription>
-            Create an account with Google or email to get started.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <GoogleSignInButton
-            mode="signup"
+    <AuthScreenShell
+      title="Sign up"
+      description="Create an account with Google or email to get started."
+    >
+      <GoogleSignInButton mode="signup" disabled={formDisabled} checkoutTier={checkoutTier} />
+      <AuthDivider />
+      <form onSubmit={handleSignUp} className="grid gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="m@example.com"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             disabled={formDisabled}
-            checkoutTier={checkoutTier}
           />
-          <AuthDivider />
-          <form onSubmit={handleSignUp} className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={formDisabled}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={formDisabled}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={formDisabled}>
-              {isLoading ? 'Creating Account...' : 'Create Account with Email'}
-            </Button>
-          </form>
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            By creating an account, you agree to our{' '}
-            <Link href="/terms" className="underline hover:text-foreground">
-              Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link href="/privacy" className="underline hover:text-foreground">
-              Privacy Policy
-            </Link>
-            .
-          </p>
-          <div className="mt-4 text-center text-sm">
-            Already have an account?{' '}
-            <Link
-              href={
-                checkoutTier
-                  ? `/login?checkout=${encodeURIComponent(checkoutTier)}`
-                  : '/login'
-              }
-              className="underline"
-            >
-              Sign in
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={formDisabled}
+          />
+        </div>
+        <Button type="submit" className="w-full" disabled={formDisabled}>
+          {isLoading ? 'Creating Account...' : 'Create Account with Email'}
+        </Button>
+      </form>
+      <p className="mt-4 text-center text-xs text-muted-foreground">
+        By creating an account, you agree to our{' '}
+        <Link href="/terms" className="underline hover:text-foreground">
+          Terms of Service
+        </Link>{' '}
+        and{' '}
+        <Link href="/privacy" className="underline hover:text-foreground">
+          Privacy Policy
+        </Link>
+        .
+      </p>
+      <div className="mt-4 text-center text-sm">
+        Already have an account?{' '}
+        <Link
+          href={
+            checkoutTier ? `/login?checkout=${encodeURIComponent(checkoutTier)}` : '/login'
+          }
+          className="underline"
+        >
+          Sign in
+        </Link>
+      </div>
+    </AuthScreenShell>
   );
 }
 
@@ -134,14 +121,9 @@ export default function SignupPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-svh w-full items-center justify-center bg-background">
-          <Card className="w-full max-w-sm">
-            <CardHeader>
-              <CardTitle className="text-2xl">Sign Up</CardTitle>
-              <CardDescription>Loading…</CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
+        <AuthScreenShell title="Sign up" description="Loading…">
+          <div className="h-40" aria-hidden />
+        </AuthScreenShell>
       }
     >
       <SignupPageContent />

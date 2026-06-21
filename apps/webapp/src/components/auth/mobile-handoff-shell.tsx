@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,6 +39,13 @@ export function MobileHandoffShell({
         className,
       )}
     >
+      <Link
+        href="/"
+        className="mb-6 inline-flex rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        aria-label="AssetMem AI home"
+      >
+        <AssetMemWordmark size="auth" tone="app" />
+      </Link>
       <Card className="w-full max-w-sm border-border/80 shadow-sm">
         <CardHeader className="items-center space-y-4 pb-2 text-center">
           <div
@@ -72,13 +80,7 @@ export function MobileHandoffShell({
               Go to login
             </Button>
           </CardContent>
-        ) : (
-          <CardContent className="pb-6 pt-0">
-            <div className="mx-auto" aria-live="polite">
-              <AssetMemWordmark size="xs" tone="app" subdued className="mx-auto" />
-            </div>
-          </CardContent>
-        )}
+        ) : null}
       </Card>
     </div>
   );
