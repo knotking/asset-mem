@@ -1,0 +1,12 @@
+appId: ${APP_ID}
+---
+# Resume: home list → end. Use after fixes to 01-home or later.
+- runFlow: ../subflows/resume-if-needed.yaml
+- runFlow: ../subflows/resume-to-home.yaml
+- runFlow: ../subflows/dismiss-overlays.yaml
+
+- runFlow: ../audit/01-home.yaml
+- runFlow: ../audit/02-property-inside.yaml
+- runFlow: ../audit/06-settings-hub.yaml
+- runFlow: ../audit/07-settings-subscreens.yaml
+- takeScreenshot: audit-complete

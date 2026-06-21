@@ -1,0 +1,21 @@
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: false
+
+- extendedWaitUntil:
+    visible: "AssetMem AI|Dashboard|Get Started|Property AI Agent|Welcome Back|DEVELOPMENT SERVERS"
+    timeout: 10000
+
+# Expo Go recents — tap project if not already in the app shell.
+- runFlow:
+    when:
+      visible: "AssetMem AI \\(staging\\)"
+    commands:
+      - tapOn:
+          text: "AssetMem AI \\(staging\\)"
+          waitToSettleTimeoutMs: 300
+
+- extendedWaitUntil:
+    visible: "Dashboard|Get Started|Property AI Agent|Welcome Back|Ask about your timeline|Type a message"
+    timeout: 10000

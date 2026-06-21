@@ -1,0 +1,14 @@
+appId: ${APP_ID}
+---
+- tapOn:
+    id: "property-tab-details"
+    waitToSettleTimeoutMs: 300
+- assertVisible: "Property Documents"
+- takeScreenshot: audit-property-details-tab
+
+- tapOn:
+    id: "property-documents-drawer"
+    waitToSettleTimeoutMs: 300
+- assertVisible: "Property Documents"
+- takeScreenshot: audit-property-documents-drawer
+- runFlow: ../subflows/close-drawer.yaml

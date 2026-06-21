@@ -30,36 +30,42 @@ export default function SettingsHubScreen() {
           icon={User}
           title="Account"
           subtitle={accountSubtitle}
+          testID="settings-row-account"
           onPress={() => router.navigate('/(tabs)/settings/account')}
         />
         <SettingsHubRow
           icon={CreditCard}
           title="Plan & billing"
           subtitle={billingSubtitle}
+          testID="settings-row-billing"
           onPress={() => router.navigate('/(tabs)/settings/billing')}
         />
         <SettingsHubRow
           icon={Activity}
           title="AI usage"
           subtitle={usageSubtitle}
+          testID="settings-row-usage"
           onPress={() => router.navigate('/(tabs)/settings/usage')}
         />
         <SettingsHubRow
           icon={Camera}
           title="Checkpoints"
           subtitle={checkpointsSubtitle}
+          testID="settings-row-checkpoints"
           onPress={() => router.navigate('/(tabs)/settings/checkpoints')}
         />
         <SettingsHubRow
           icon={BookOpen}
           title="FAQ"
           subtitle={faqSubtitle}
+          testID="settings-row-faq"
           onPress={() => router.navigate('/(tabs)/settings/faq')}
         />
         <SettingsHubRow
           icon={LifeBuoy}
           title="Help & support"
           subtitle={helpSubtitle}
+          testID="settings-row-help"
           onPress={() => router.navigate('/(tabs)/settings/help')}
         />
       </View>

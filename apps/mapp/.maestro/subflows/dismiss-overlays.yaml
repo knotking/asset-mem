@@ -1,0 +1,26 @@
+appId: ${APP_ID}
+---
+# Only runs when overlay is present — no optional-tap polling delay.
+- runFlow:
+    when:
+      visible: "Dismiss checklist"
+    commands:
+      - tapOn:
+          text: "Dismiss checklist"
+          waitToSettleTimeoutMs: 300
+
+- runFlow:
+    when:
+      visible: "Dismiss discovery checklist"
+    commands:
+      - tapOn:
+          text: "Dismiss discovery checklist"
+          waitToSettleTimeoutMs: 300
+
+- runFlow:
+    when:
+      visible: "Dismiss tip"
+    commands:
+      - tapOn:
+          text: "Dismiss tip"
+          waitToSettleTimeoutMs: 300

@@ -1,0 +1,32 @@
+appId: ${APP_ID}
+---
+# --- More menu (must be on chat tab) ---
+- tapOn:
+    id: "property-tab-chat"
+    waitToSettleTimeoutMs: 100
+- tapOn:
+    text: "More property options"
+    waitToSettleTimeoutMs: 100
+- takeScreenshot: audit-property-more-menu
+
+- tapOn:
+    id: "property-menu-faq"
+    waitToSettleTimeoutMs: 100
+- assertVisible: "FAQ"
+- takeScreenshot: audit-property-faq-shortcut
+- tapOn:
+    text: "Back to AI chat"
+    waitToSettleTimeoutMs: 100
+- assertVisible:
+    id: "property-tab-chat"
+
+- tapOn:
+    text: "More property options"
+    waitToSettleTimeoutMs: 100
+- tapOn:
+    id: "property-menu-my-pros"
+    waitToSettleTimeoutMs: 100
+- assertVisible:
+    id: "my-pros-drawer-close"
+- takeScreenshot: audit-property-my-pros-drawer
+- runFlow: ../subflows/close-my-pros-drawer.yaml

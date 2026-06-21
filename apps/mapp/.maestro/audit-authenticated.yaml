@@ -1,0 +1,21 @@
+appId: ${APP_ID}
+---
+# Full audit from cold start. Resume after failure: checkpoints/from-*.yaml
+- runFlow: subflows/launch-app.yaml
+- runFlow: subflows/login.yaml
+- runFlow: subflows/dismiss-overlays.yaml
+
+# Session restore may land on property chat — return to home before home audit.
+- runFlow:
+    when:
+      visible:
+        id: "property-tab-chat"
+    commands:
+      - runFlow: subflows/leave-property.yaml
+
+- runFlow: audit/01-home.yaml
+- runFlow: audit/02-property-inside.yaml
+- runFlow: audit/06-settings-hub.yaml
+- runFlow: audit/07-settings-subscreens.yaml
+
+- takeScreenshot: audit-complete

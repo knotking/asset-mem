@@ -1,0 +1,5 @@
+appId: ${APP_ID}
+---
+- runFlow: ../subflows/tap-settings-tab.yaml
+- assertVisible: "Plan & billing|Help & support"
+- takeScreenshot: audit-settings-hub

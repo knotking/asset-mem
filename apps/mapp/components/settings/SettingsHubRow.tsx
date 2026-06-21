@@ -11,6 +11,7 @@ type SettingsHubRowProps = {
   subtitle?: string;
   onPress: () => void;
   accessibilityLabel?: string;
+  testID?: string;
 };
 
 export function SettingsHubRow({
@@ -19,10 +20,12 @@ export function SettingsHubRow({
   subtitle,
   onPress,
   accessibilityLabel,
+  testID,
 }: SettingsHubRowProps) {
   return (
     <Pressable
       onPress={onPress}
+      testID={testID}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? title}
       className="flex-row items-center gap-3 rounded-lg border border-border bg-card px-3 py-3.5 active:opacity-80">

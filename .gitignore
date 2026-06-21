@@ -195,3 +195,7 @@ gcp/agents/homecare/web-log*
 /android/
 /ios/
 /app.json
+
+# Local mapp Maestro/composer debug screenshots (repo root)
+/composer-*.png
+/composer-align-*.png

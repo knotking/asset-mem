@@ -164,6 +164,8 @@ export function MyProsList() {
         <Input
           className="ml-2 flex-1 border-0 bg-transparent"
           placeholder="Search My pros..."
+          accessibilityLabel="Search My pros"
+          testID="my-pros-search"
           value={searchTerm}
           onChangeText={setSearchTerm}
         />

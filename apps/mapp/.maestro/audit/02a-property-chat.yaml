@@ -1,0 +1,29 @@
+appId: ${APP_ID}
+---
+- assertVisible:
+    id: "property-tab-chat"
+- takeScreenshot: audit-property-chat
+
+- tapOn:
+    text: "Chat sessions"
+    waitToSettleTimeoutMs: 300
+- assertVisible: "Sessions"
+- takeScreenshot: audit-property-sessions-drawer
+- runFlow: ../subflows/close-drawer.yaml
+
+- tapOn:
+    text: "New chat session"
+    waitToSettleTimeoutMs: 300
+- takeScreenshot: audit-property-new-session
+
+- runFlow:
+    when:
+      visible: "Open chat settings"
+    commands:
+      - tapOn:
+          text: "Open chat settings"
+          waitToSettleTimeoutMs: 300
+      - takeScreenshot: audit-property-chat-settings
+      - tapOn:
+          text: "Close settings"
+          waitToSettleTimeoutMs: 300
