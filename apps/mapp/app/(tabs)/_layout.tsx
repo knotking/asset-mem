@@ -5,19 +5,13 @@ import { Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { NAV_THEME, THEME } from '@/lib/theme';
-
-const TAB_BAR_PADDING_TOP = 10;
-const TAB_BAR_PADDING_BOTTOM = 20;
-const TAB_BAR_CONTENT_HEIGHT = 60;
+import { tabBarStylePadding } from '@/lib/tab-bar-metrics';
 
 export default function TabLayout() {
   const { colorScheme } = useColorScheme();
   const insets = useSafeAreaInsets();
-  // edgeToEdgeEnabled draws behind the Android nav bar; iOS tab bar insets are handled by the system.
   const bottomInset = Platform.OS === 'android' ? insets.bottom : 0;
-  const tabBarPaddingBottom = TAB_BAR_PADDING_BOTTOM + bottomInset;
-  const tabBarHeight =
-    TAB_BAR_PADDING_TOP + TAB_BAR_CONTENT_HEIGHT + tabBarPaddingBottom;
+  const tabBarPadding = tabBarStylePadding(bottomInset);
 
   const activeColor = NAV_THEME[colorScheme ?? 'dark'].colors.primary;
   const inactiveColor = THEME[colorScheme ?? 'dark'].mutedForeground;
@@ -35,9 +29,7 @@ export default function TabLayout() {
           backgroundColor: tabBarBg,
           borderTopWidth: 1,
           borderTopColor: borderTopColor,
-          height: tabBarHeight,
-          paddingBottom: tabBarPaddingBottom,
-          paddingTop: TAB_BAR_PADDING_TOP,
+          ...tabBarPadding,
         },
         tabBarLabelStyle: {
           fontSize: 12,
