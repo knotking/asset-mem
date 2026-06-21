@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
 import { AssetMemWordmark } from '@/components/brand/asset-mem-wordmark';
 import {
   getEnterpriseConfigFromEnv,
@@ -57,8 +56,7 @@ export function SolutionMarketingShell({
           className="container mx-auto flex h-16 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4"
           style={{ maxWidth: '1200px' }}
         >
-          <Link href="/" className="flex min-w-0 items-center gap-2">
-            <AssetMemBrandIcon variant="mark" size="sm" markTheme="landing" className="shrink-0" />
+          <Link href="/" className="flex min-w-0 items-center">
             <AssetMemWordmark size="solutions" className="truncate" />
           </Link>
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-4">

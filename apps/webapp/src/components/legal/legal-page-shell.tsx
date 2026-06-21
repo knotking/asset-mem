@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AssetMemWordmark } from '@/components/brand/asset-mem-wordmark';
 import { LegalSupportEmailProvider } from '@/components/legal/legal-support-email';
 
 export function LegalPageShell({
@@ -41,8 +42,8 @@ export function LegalPageShell({
 
       <header className="relative border-b border-white/10">
         <div className="container mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
-          <Link href="/" className="text-lg font-semibold tracking-tight text-white">
-            AssetMem <span className="text-cyan-300">AI</span>
+          <Link href="/" className="min-w-0 truncate">
+            <AssetMemWordmark size="solutions" foregroundColor="#ffffff" />
           </Link>
           <Link
             href="/"

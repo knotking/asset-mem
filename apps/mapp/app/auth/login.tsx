@@ -8,7 +8,7 @@ import { AuthDivider } from '@/components/auth/AuthDivider';
 import { AppleSignInButton } from '@/components/auth/AppleSignInButton';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { Eye, EyeOff, Loader2 } from 'lucide-react-native';
-import { AssetMemBrandIcon } from '@/components/AssetMemBrandIcon';
+import { AssetMemWordmark } from '@/components/AssetMemWordmark';
 
 import { Button } from '../../components/ui/button';
 import { Icon } from '../../components/ui/icon';
@@ -131,7 +131,7 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <View className="items-center p-4 pt-2">
-          <AssetMemBrandIcon size="lg" className="mb-6" />
+          <AssetMemWordmark size="auth" align="center" className="mb-6" />
           <Text className="mb-2 w-full text-center text-2xl font-bold leading-normal text-foreground">
             Welcome Back
           </Text>

@@ -12,7 +12,7 @@ import { ChatPageSkeleton } from '@/components/chat/chat-page-skeleton';
 import { SavedServiceProvidersProvider } from '@/contexts/saved-service-providers-context';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ExternalLink, Share2 } from 'lucide-react';
-import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
+import { AssetMemWordmark } from '@/components/brand/asset-mem-wordmark';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { createLogger } from '@/lib/logger';
@@ -31,9 +31,8 @@ function SharedChatHeader({ sessionName }: { sessionName: string | null }) {
     return (
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-2 border-b bg-background px-4">
             <div className="flex items-center gap-2 min-w-0">
-                <AssetMemBrandIcon size="sm" />
                 <div className="flex flex-col min-w-0">
-                    <h1 className="text-lg font-semibold text-foreground">AssetMem AI</h1>
+                <AssetMemWordmark size="solutions" tone="app" className="truncate" />
                     {sessionName ? (
                         <h2 className="text-sm text-muted-foreground truncate" title={sessionName}>{sessionName}</h2>
                     ) : (

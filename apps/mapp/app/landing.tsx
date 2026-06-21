@@ -43,6 +43,7 @@ import {
 } from '@/lib/enterprise-config';
 import { fetchLandingRemoteConfig } from '@/lib/landing-remote-config';
 import { LANDING_COLORS } from '@/lib/landing-theme';
+import { AssetMemWordmark } from '@/components/AssetMemWordmark';
 import { LandingGradientText } from '@/components/landing/landing-gradient-text';
 import {
   LandingGradientBadge,
@@ -61,10 +62,6 @@ const SITE_FOOTER_TAGLINE = SITE_HERO_DESCRIPTION;
 const SCROLL_TOP_NEAR_BOTTOM_PX = 120;
 /** Ignore back-to-top until the user has scrolled past the hero. */
 const SCROLL_TOP_MIN_OFFSET_PX = 240;
-
-/** Wordmark AI cap height ≈ lowercase m in AssetMem (18px when brand is 24px). */
-const HERO_BRAND_FONT_SIZE = 24;
-const HERO_BRAND_AI_FONT_SIZE = Math.round(HERO_BRAND_FONT_SIZE * 0.75);
 
 const WORKFLOW_STEPS = [
   {
@@ -435,34 +432,7 @@ export default function LandingPage() {
               paddingBottom: 36,
               justifyContent: 'space-between',
             }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'baseline',
-                justifyContent: 'center',
-                gap: 4,
-                flexShrink: 0,
-              }}>
-              <Text
-                  style={{
-                    fontSize: HERO_BRAND_FONT_SIZE,
-                    fontWeight: '300',
-                    color: LANDING_COLORS.foreground,
-                    lineHeight: HERO_BRAND_FONT_SIZE,
-                    includeFontPadding: false,
-                  }}>
-                  AssetMem
-                </Text>
-                <LandingGradientText
-                  inline
-                  style={{
-                    fontSize: HERO_BRAND_AI_FONT_SIZE,
-                    fontWeight: '700',
-                    letterSpacing: 0.4,
-                  }}>
-                  AI
-                </LandingGradientText>
-            </View>
+            <AssetMemWordmark size="hero" tone="landing" align="center" />
 
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', paddingVertical: 32 }}>
               <Text
@@ -1128,33 +1098,12 @@ export default function LandingPage() {
               paddingHorizontal: 20,
             }}>
             <View style={{ alignItems: 'center' }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'baseline',
-                  gap: 4,
-                  marginBottom: 16,
-                }}>
-                <Text
-                    style={{
-                      fontSize: 18,
-                      fontWeight: '300',
-                      lineHeight: 18,
-                      includeFontPadding: false,
-                      color: LANDING_COLORS.foreground,
-                    }}>
-                    AssetMem
-                  </Text>
-                  <LandingGradientText
-                    inline
-                    style={{
-                      fontSize: Math.round(18 * 0.75),
-                      fontWeight: 'bold',
-                      letterSpacing: 0.4,
-                    }}>
-                    AI
-                  </LandingGradientText>
-              </View>
+              <AssetMemWordmark
+                size="footer"
+                tone="landing"
+                align="center"
+                className="mb-4"
+              />
               <Text
                 style={{
                   fontSize: 14,
