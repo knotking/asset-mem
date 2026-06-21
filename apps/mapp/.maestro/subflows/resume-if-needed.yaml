@@ -1,0 +1,22 @@
+appId: ${APP_ID}
+---
+# Skip bootstrap when already inside mapp (including property chat).
+- runFlow:
+    when:
+      visible:
+        id: "property-tab-chat"
+    commands:
+      - assertVisible:
+          id: "property-tab-chat"
+
+- runFlow:
+    when:
+      notVisible:
+        id: "property-tab-chat"
+    commands:
+      - runFlow:
+          when:
+            notVisible: "Property AI Agent|Dashboard|Ask about your timeline|Type a message"
+          commands:
+            - runFlow: launch-app.yaml
+            - runFlow: login.yaml

@@ -13,8 +13,6 @@ import {
   File,
   X,
   Clock,
-  Heart,
-  BookOpen,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list-context';
@@ -39,6 +37,7 @@ import { ANALYSIS_OPTIONAL_AGENTS, CHECKPOINT_OPTIONAL_AGENTS } from '@homeapp/c
 import { defaultSearchLocationInput } from '@homeapp/common/lib/search-location';
 import { PropertyDetailsTab } from '@/components/property-details/PropertyDetailsTab';
 import { MyProsDrawerContent } from '@/components/property-details/MyProsDrawerContent';
+import { PropertyMoreMenu } from '@/components/property-details/PropertyMoreMenu';
 import {
   parsePropertyScreenTab,
   parseTimelineSubTab,
@@ -507,7 +506,12 @@ function PropertyDetailsScreenContent({
                     <View
                       className="flex-row items-center justify-between"
                       style={{ minHeight: 40 }}>
-                      <Button onPress={() => router.back()} variant="ghost" size="icon">
+                      <Button
+                        onPress={() => router.back()}
+                        variant="ghost"
+                        size="icon"
+                        testID="property-details-back"
+                        accessibilityLabel="Back to properties">
                         <Icon as={ArrowLeft} size={24} className="text-foreground" />
                       </Button>
                       <View className="mx-2 min-w-0 flex-1">
@@ -517,22 +521,13 @@ function PropertyDetailsScreenContent({
                           {property.name}
                         </Text>
                       </View>
-                      <View className="shrink-0 flex-row items-center gap-1.5">
-                        <Button
-                          onPress={() =>
-                            navigateToSettingsSubScreen(router, 'faq', settingsReturnContext)
-                          }
-                          variant="ghost"
-                          size="icon"
-                          accessibilityLabel="FAQ & guides">
-                          <Icon as={BookOpen} size={20} className="text-foreground" />
-                        </Button>
+                      <View className="shrink-0 flex-row items-center gap-1">
                         <TokenUsageBar
                           matchActionIconSize
                           settingsReturnContext={settingsReturnContext}
                         />
                         {activeTab === 'chat' && (
-                          <View className="flex-row items-center gap-1 rounded-lg border border-border/50 px-1">
+                          <View className="flex-row items-center gap-0.5">
                             <View className="relative">
                               <Button
                                 onPress={() => setSessionsDrawerVisible(true)}
@@ -545,22 +540,6 @@ function PropertyDetailsScreenContent({
                                 <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
                                   <Text className="text-center text-[10px] font-semibold text-primary-foreground">
                                     {sessionsByProperty[id].length}
-                                  </Text>
-                                </View>
-                              )}
-                            </View>
-                            <View className="relative">
-                              <Button
-                                onPress={() => setMyProsDrawerVisible(true)}
-                                variant="ghost"
-                                size="icon"
-                                accessibilityLabel="My pros">
-                                <Icon as={Heart} size={20} className="text-foreground" />
-                              </Button>
-                              {savedProviders.length > 0 && (
-                                <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
-                                  <Text className="text-center text-[10px] font-semibold text-primary-foreground">
-                                    {savedProviders.length > 99 ? '99+' : savedProviders.length}
                                   </Text>
                                 </View>
                               )}
@@ -578,7 +557,8 @@ function PropertyDetailsScreenContent({
                                 }
                               }}
                               variant="ghost"
-                              size="icon">
+                              size="icon"
+                              accessibilityLabel="New chat session">
                               <Icon as={Plus} size={20} className="text-foreground" />
                             </Button>
                           </View>
@@ -608,7 +588,9 @@ function PropertyDetailsScreenContent({
                               onPress={() => setDocumentsDrawerVisible(true)}
                               variant="ghost"
                               size="icon"
-                              className="items-center justify-center">
+                              className="items-center justify-center"
+                              testID="property-documents-drawer"
+                              accessibilityLabel="Property documents">
                               <Icon as={File} size={20} className="text-foreground" />
                             </Button>
                             {documents.length > 0 && (
@@ -620,6 +602,13 @@ function PropertyDetailsScreenContent({
                             )}
                           </View>
                         )}
+                        <PropertyMoreMenu
+                          savedProsCount={savedProviders.length}
+                          onFaqPress={() =>
+                            navigateToSettingsSubScreen(router, 'faq', settingsReturnContext)
+                          }
+                          onMyProsPress={() => setMyProsDrawerVisible(true)}
+                        />
                       </View>
                     </View>
                   </View>
@@ -628,6 +617,9 @@ function PropertyDetailsScreenContent({
                   <View className="flex-row border-b border-border px-4">
                     <Pressable
                       onPress={() => setActiveTab('chat')}
+                      testID="property-tab-chat"
+                      accessibilityRole="tab"
+                      accessibilityLabel="AI chat"
                       className={`flex-1 items-center py-3 ${activeTab === 'chat' ? 'border-b-2 border-primary' : ''}`}>
                       <Icon
                         as={MessageSquare}
@@ -637,6 +629,9 @@ function PropertyDetailsScreenContent({
                     </Pressable>
                     <Pressable
                       onPress={() => setActiveTab('timeline')}
+                      testID="property-tab-timeline"
+                      accessibilityRole="tab"
+                      accessibilityLabel="Timeline"
                       className={`flex-1 items-center py-3 ${activeTab === 'timeline' ? 'border-b-2 border-primary' : ''}`}>
                       <Icon
                         as={Clock}
@@ -648,6 +643,9 @@ function PropertyDetailsScreenContent({
                     </Pressable>
                     <Pressable
                       onPress={() => setActiveTab('details')}
+                      testID="property-tab-details"
+                      accessibilityRole="tab"
+                      accessibilityLabel="Property details"
                       className={`flex-1 items-center py-3 ${activeTab === 'details' ? 'border-b-2 border-primary' : ''}`}>
                       <Icon
                         as={FileText}

@@ -1,0 +1,16 @@
+appId: ${APP_ID}
+---
+# Smoke test: can Maestro tap the Settings bottom tab from property chat?
+- runFlow: subflows/resume-if-needed.yaml
+- runFlow:
+    when:
+      notVisible:
+        id: "property-tab-chat"
+    commands:
+      - runFlow: subflows/resume-to-property-chat.yaml
+
+- takeScreenshot: settings-tab-before
+- runFlow: subflows/tap-settings-tab.yaml
+- takeScreenshot: settings-tab-after
+
+- assertVisible: "Plan & billing|Help & support|Account"

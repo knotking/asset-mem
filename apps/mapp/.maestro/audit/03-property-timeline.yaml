@@ -1,0 +1,19 @@
+appId: ${APP_ID}
+---
+- runFlow: ../subflows/open-property.yaml
+
+- tapOn:
+    id: "property-tab-timeline"
+- extendedWaitUntil:
+    visible: "Checkpoints"
+    timeout: 15000
+- takeScreenshot: audit-property-timeline-checkpoints
+
+- tapOn: "Insights"
+- takeScreenshot: audit-property-timeline-insights
+
+- tapOn: "Reports"
+- takeScreenshot: audit-property-timeline-reports
+
+- tapOn: "Checkpoints"
+- assertVisible: "Checkpoints"

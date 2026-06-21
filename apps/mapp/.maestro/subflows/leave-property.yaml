@@ -1,0 +1,6 @@
+appId: ${APP_ID}
+---
+- tapOn:
+    id: "property-details-back"
+    waitToSettleTimeoutMs: 300
+- assertVisible: "Property AI Agent"

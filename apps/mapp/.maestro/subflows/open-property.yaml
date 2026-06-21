@@ -1,0 +1,7 @@
+appId: ${APP_ID}
+---
+- tapOn:
+    text: "${MAESTRO_PROPERTY_NAME}"
+    waitToSettleTimeoutMs: 300
+- assertVisible:
+    id: "property-tab-chat"

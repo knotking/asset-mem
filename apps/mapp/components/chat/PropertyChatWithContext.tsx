@@ -32,6 +32,7 @@ import {
   buildAgentRequestContext,
   buildMessageContextRefs,
   canSendChatMessage,
+  getRequiredContextEmptyPillLabel,
   getSendBlockReason,
 } from '@homeapp/common/lib/chat-send-context';
 import { analyzeCheckpoint, queueExtractDocInfo, postFileToAgent, streamAgentResponse } from '@/lib/api';
@@ -156,13 +157,20 @@ function PropertyChatInner(props: Props) {
   );
 
   const sendBlockHint = React.useMemo(() => {
-    const reason = getSendBlockReason({
+    const pillInput = {
       primaryAgent,
-      text: 'placeholder',
       readySelectedCheckpoints,
       readySelectedDocuments,
       readySelectedReports,
       pendingContext,
+    };
+    if (getRequiredContextEmptyPillLabel(pillInput)) {
+      return null;
+    }
+
+    const reason = getSendBlockReason({
+      ...pillInput,
+      text: 'placeholder',
     });
     if (!reason || reason === 'Enter a message.') return null;
     return reason;
@@ -567,18 +575,16 @@ function PropertyChatInner(props: Props) {
         onOpenAddContext={() => setAddContextVisible(true)}
         contextChipStrip={
           <ChatContextChipStrip
+            primaryAgent={primaryAgent}
+            selectedOptionalAgents={selectedOptionalAgents}
+            selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
             pendingContext={pendingContext}
             readySelectedCheckpoints={readySelectedCheckpoints}
             readySelectedDocuments={readySelectedDocuments}
             readySelectedReports={readySelectedReports}
             queuedSend={queuedSend}
-            onOpenAddContext={() => setAddContextVisible(true)}
-            onToggleCheckpoint={toggleCheckpoint}
-            onToggleDocument={toggleDocument}
-            onToggleReport={toggleReport}
-            onRemovePending={removePendingContext}
-            onClearReady={clearReadySelection}
             onCancelQueuedSend={() => setQueuedSend(null)}
+            onViewAll={() => setAddContextVisible(true)}
           />
         }
         sendBlockHint={sendBlockHint}
@@ -588,7 +594,6 @@ function PropertyChatInner(props: Props) {
           readySelectedReports.length
         }
         pendingContextCount={pendingContext.length}
-        hasQueuedSend={queuedSend != null}
       />
       <AddContextSheet
         visible={addContextVisible}

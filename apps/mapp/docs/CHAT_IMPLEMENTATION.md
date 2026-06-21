@@ -5,9 +5,9 @@ This document describes the implementation of chat messages functionality in the
 
 > **Note**: This app now uses `react-native-gifted-chat` for the chat UI. See [GIFTED_CHAT_MIGRATION.md](../GIFTED_CHAT_MIGRATION.md) for migration details.
 
-## Unified Add context (async context queue)
+## Unified Add attachments (async context queue)
 
-Chat uses a single **Add context** (`+`) affordance in the composer — not ephemeral scratch uploads or `message.file` on new sends.
+Chat uses **Add attachments** via the summary pill above the composer or the **Attachments** row in chat settings — not ephemeral scratch uploads or `message.file` on new sends.
 
 | State | UI | Send |
 | ----- | -- | ---- |
@@ -21,11 +21,11 @@ Chat uses a single **Add context** (`+`) affordance in the composer — not ephe
 
 User messages persist `contextRefs` (checkpoint/doc ids and names at send time) instead of `message.file`. Sent messages show a **collapsed** context summary (paperclip + first name + `+N more`); tap the chip to expand/collapse full chips. Context is **hidden** when it matches the previous user message's `contextRefs`. Legacy messages with `message.file` still render.
 
-**Key modules:** `ChatContextProvider` (`apps/common/src/contexts/chat-context-context.tsx`), `PropertyChatWithContext`, `AddContextSheet`, `ChatContextChipStrip`, `chat-send-context.ts`.
+**Key modules:** `ChatContextProvider` (`apps/common/src/contexts/chat-context-context.tsx`), `PropertyChatWithContext`, `AddContextSheet`, `ChatContextChipStrip`, `chat-send-context.ts`, `composer-collapse.ts`.
 
-**Composer collapse:** `GiftedChatInputToolbar` shows a chevron to collapse context chips and `CompactSettingsBar` into a single summary pill (agent, optional agents, context/queue counts). Tap the pill to open chat settings; tap chevron up to expand. Send-block hints stay visible when collapsed.
+**Composer layout:** One attachment summary pill above the input row (stacked thumb previews + agent summary e.g. `Checkpoint +2 · 3 attached`); tap opens `AddContextSheet`. When nothing is attached, a dashed agent-specific empty pill (`Checkpoint · Add checkpoint`, etc.) opens the same sheet. Input row is `[settings][input pill with send]` — settings gear (44pt) sits beside the pill; both are bottom-aligned so the pill grows **upward** on multiline input (not downward into the tab bar). Settings opens `ChatSettingsModal` (Agent tab includes an **Attachments** row). Send-block hints stay visible below the pill when relevant; empty-pill CTA suppresses duplicate hints via `getRequiredContextEmptyPillLabel`. Multiline input uses `CustomGiftedComposer` (16px / 20 line height, text-based height, pill wrapper for iOS). Composer toolbar uses platform bottom padding (6px on iOS, 8px on Android). GiftedChat `bottomOffset` while the keyboard is open is `-TAB_BAR_BASE_HEIGHT` on iOS (dock on keyboard, no tab-bar gap) and `-(tabBar + Android inset)` on edge-to-edge Android.
 
-**Context chip row:** `ChatContextChipStrip` always reserves a fixed-height row (`CONTEXT_CHIP_ROW_HEIGHT`) when the composer meta is expanded. With no selection, a dashed **Add checkpoint or document** placeholder opens the add-context sheet; chips swap in without changing composer height. Queued-send banner renders above the fixed row when present.
+**Queued send:** When pending uploads block send, **Ask when ready** banner renders above the summary pill.
 
 **Property → session entry:** `MessagesProvider` keeps `hasMoreMessages` false until the first snapshot (no **Load earlier messages** flash). `PropertyChatTab` hides the empty-state intro while `isLoading`. `useSessionSelection` resolves the draft session synchronously (no **Select a session** flash).
 
@@ -40,7 +40,7 @@ Designed for **1,000+ checkpoints** and **100+ documents**:
 | **Documents** | Client browse pages of 30 over property listener (ready-only rows) |
 | **Discovery** | Search bar (name, location, type); **Recent** (10) + **All checkpoints/documents**; **Results** while searching |
 | **Selection** | Max **5** checkpoints / **10** docs per send; defaults to **1 recent** ready checkpoint + **1 recent** ready document until the user changes selection (Docs mode: document only) |
-| **Composer chips** | First 2 thumbnails + `+N more` summary |
+| **Composer chips** | Summary pill with up to 3 stacked peek thumbnails; full selection in add-attachments sheet |
 
 Constants: `apps/common/src/lib/chat-context-limits.ts`. Filter/sort: `chat-context-picker.ts`.
 

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { View, Platform, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
 import NetInfo from '@react-native-community/netinfo';
@@ -10,7 +11,6 @@ import {
   type InputToolbarProps,
 } from 'react-native-gifted-chat';
 import { ChevronDown } from 'lucide-react-native';
-import { AssetMemBrandIcon } from '@/components/AssetMemBrandIcon';
 import { useMessages } from '@homeapp/common/contexts/messages-context';
 import {
   shouldUpdateGiftedChatMessage,
@@ -30,6 +30,8 @@ import {
   useChatListScrollOnScrollHandler,
 } from '@/lib/chat-list-scroll-anchor-context';
 import type { AnimatedList } from 'react-native-gifted-chat/lib/MessageContainer/types';
+
+import { giftedChatBottomOffset } from '@/lib/tab-bar-metrics';
 import {
   CHAT_SESSION_EMPTY_INTRO,
   getSuggestedPrompts,
@@ -60,7 +62,6 @@ interface PropertyChatTabProps {
   sendBlockHint?: string | null;
   readyContextCount?: number;
   pendingContextCount?: number;
-  hasQueuedSend?: boolean;
   searchLocation?: import('@homeapp/common/types').SearchLocationInput;
   onSearchLocationChange?: (
     searchLocation: import('@homeapp/common/types').SearchLocationInput | undefined
@@ -102,11 +103,11 @@ function PropertyChatTab({
   sendBlockHint,
   readyContextCount,
   pendingContextCount,
-  hasQueuedSend,
   searchLocation,
   onSearchLocationChange,
   propertyAddress,
 }: PropertyChatTabProps) {
+  const insets = useSafeAreaInsets();
   const { messages, isLoading, isLoadingEarlier, hasMoreMessages, loadEarlierMessages } = useMessages();
 
   const [isOnline, setIsOnline] = React.useState(true);
@@ -220,7 +221,6 @@ function PropertyChatTab({
               : [{ rotateX: '180deg' }, { rotateY: '180deg' }],
         }}>
         <View style={{ alignItems: 'center', paddingHorizontal: 16, maxWidth: 360 }}>
-          <AssetMemBrandIcon size="lg" className="mb-4 text-muted-foreground" />
           <Text className="mb-2 text-center text-xl font-semibold text-foreground">
             {CHAT_SESSION_EMPTY_INTRO.title}
           </Text>
@@ -242,8 +242,8 @@ function PropertyChatTab({
                     },
                   ])
                 }
-                className="rounded-md border border-border bg-background px-3 py-2.5 disabled:opacity-50">
-                <Text className="text-left text-sm text-foreground">{prompt}</Text>
+                className="items-center rounded-md border border-border bg-background px-3 py-2.5 disabled:opacity-50">
+                <Text className="text-center text-sm text-foreground">{prompt}</Text>
               </Pressable>
             ))}
           </View>
@@ -266,7 +266,6 @@ function PropertyChatTab({
         sendBlockHint={sendBlockHint}
         readyContextCount={readyContextCount}
         pendingContextCount={pendingContextCount}
-        hasQueuedSend={hasQueuedSend}
         primaryAgent={primaryAgent}
         onPrimaryAgentChange={onPrimaryAgentChange}
         selectedOptionalAgents={selectedOptionalAgents}
@@ -286,7 +285,6 @@ function PropertyChatTab({
       sendBlockHint,
       readyContextCount,
       pendingContextCount,
-      hasQueuedSend,
       primaryAgent,
       onPrimaryAgentChange,
       selectedOptionalAgents,
@@ -360,6 +358,8 @@ function PropertyChatTab({
           loadEarlier={hasMoreMessages && !isLoading}
           onLoadEarlier={loadEarlierMessages}
           alwaysShowSend={true}
+          minComposerHeight={44}
+          maxComposerHeight={120}
           keyboardShouldPersistTaps="never"
           messagesContainerStyle={{
             backgroundColor: 'transparent',
@@ -368,7 +368,7 @@ function PropertyChatTab({
             autoCapitalize: 'sentences',
             autoCorrect: true,
           }}
-          bottomOffset={-84}
+          bottomOffset={giftedChatBottomOffset(insets.bottom)}
           minInputToolbarHeight={44}
           infiniteScroll
         />

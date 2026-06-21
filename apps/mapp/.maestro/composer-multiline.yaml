@@ -1,0 +1,26 @@
+appId: host.exp.Exponent
+---
+# Property chat composer — multiline grow/shrink smoke test (iPhone simulator + Expo Go)
+- back
+- back
+- tapOn:
+    id: "Type a message..."
+    optional: true
+- tapOn:
+    text: "Type a message..."
+    optional: true
+- inputText: "First line of text"
+- hideKeyboard
+- takeScreenshot: composer-line1
+- tapOn:
+    id: "Type a message..."
+    optional: true
+- inputText: "\nSecond line here"
+- hideKeyboard
+- takeScreenshot: composer-line2
+- tapOn:
+    id: "Type a message..."
+    optional: true
+- eraseText: 100
+- hideKeyboard
+- takeScreenshot: composer-cleared

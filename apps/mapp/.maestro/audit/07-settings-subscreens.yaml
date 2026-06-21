@@ -1,0 +1,44 @@
+appId: ${APP_ID}
+---
+# Hub row testIDs + settings-back — no text matching or hub asserts on each return.
+
+- tapOn:
+    id: "settings-row-account"
+    waitToSettleTimeoutMs: 100
+- assertVisible: "Account"
+- takeScreenshot: audit-settings-account
+- runFlow: ../subflows/back-to-settings-hub.yaml
+
+- tapOn:
+    id: "settings-row-billing"
+    waitToSettleTimeoutMs: 100
+- assertVisible: "Plan & billing|Billing|Subscription"
+- takeScreenshot: audit-settings-billing
+- runFlow: ../subflows/back-to-settings-hub.yaml
+
+- tapOn:
+    id: "settings-row-usage"
+    waitToSettleTimeoutMs: 100
+- assertVisible: "AI usage|Token|usage"
+- takeScreenshot: audit-settings-usage
+- runFlow: ../subflows/back-to-settings-hub.yaml
+
+- tapOn:
+    id: "settings-row-checkpoints"
+    waitToSettleTimeoutMs: 100
+- assertVisible: "Automatic comparison|Checkpoints"
+- takeScreenshot: audit-settings-checkpoints
+- runFlow: ../subflows/back-to-settings-hub.yaml
+
+- tapOn:
+    id: "settings-row-faq"
+    waitToSettleTimeoutMs: 100
+- assertVisible: "FAQ"
+- takeScreenshot: audit-settings-faq
+- runFlow: ../subflows/back-to-settings-hub.yaml
+
+- tapOn:
+    id: "settings-row-help"
+    waitToSettleTimeoutMs: 100
+- assertVisible: "Help|support|Contact"
+- takeScreenshot: audit-settings-help

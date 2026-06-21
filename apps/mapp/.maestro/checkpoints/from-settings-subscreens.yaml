@@ -1,0 +1,9 @@
+appId: ${APP_ID}
+---
+# Resume: settings sub-screens only (assumes Settings tab is reachable).
+- runFlow: ../subflows/resume-if-needed.yaml
+- runFlow: ../subflows/resume-to-home.yaml
+- runFlow: ../subflows/tap-settings-tab.yaml
+
+- runFlow: ../audit/07-settings-subscreens.yaml
+- takeScreenshot: audit-complete

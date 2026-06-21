@@ -101,6 +101,21 @@ function DropdownMenuContent({
     overlayClassName?: string;
     portalHost?: string;
   }) {
+  const contentA11y =
+    Platform.OS === 'web'
+      ? {}
+      : {
+          accessible: false as const,
+          importantForAccessibility: 'no-hide-descendants' as const,
+        };
+  const overlayA11y =
+    Platform.OS === 'web'
+      ? {}
+      : {
+          accessible: false as const,
+          importantForAccessibility: 'no-hide-descendants' as const,
+        };
+
   return (
     <DropdownMenuPrimitive.Portal hostName={portalHost}>
       <FullWindowOverlay>
@@ -114,7 +129,8 @@ function DropdownMenuContent({
                 ])
               : StyleSheet.absoluteFill,
           })}
-          className={overlayClassName}>
+          className={overlayClassName}
+          {...overlayA11y}>
           <NativeOnlyAnimatedView entering={FadeIn}>
             <TextClassContext.Provider value="text-popover-foreground">
               <DropdownMenuPrimitive.Content
@@ -129,6 +145,7 @@ function DropdownMenuContent({
                   }),
                   className
                 )}
+                {...contentA11y}
                 {...props}
               />
             </TextClassContext.Provider>
@@ -143,6 +160,7 @@ function DropdownMenuItem({
   className,
   inset,
   variant,
+  accessibilityRole,
   ...props
 }: DropdownMenuPrimitive.ItemProps &
   React.RefAttributes<DropdownMenuPrimitive.ItemRef> & {
@@ -150,6 +168,14 @@ function DropdownMenuItem({
     inset?: boolean;
     variant?: 'default' | 'destructive';
   }) {
+  const nativeItemA11y =
+    Platform.OS === 'web'
+      ? {}
+      : {
+          accessible: true as const,
+          accessibilityRole: (accessibilityRole ?? 'button') as 'button',
+        };
+
   return (
     <TextClassContext.Provider
       value={cn(
@@ -170,6 +196,7 @@ function DropdownMenuItem({
           inset && 'pl-8',
           className
         )}
+        {...nativeItemA11y}
         {...props}
       />
     </TextClassContext.Provider>

@@ -104,7 +104,7 @@ export function HomeOnboardingChecklist({
       id: 'first_chat' as const,
       title: 'Ask your first question',
       description:
-        'Try “Give me a complete analysis of my property’s issues” — or describe something you see.',
+        'Try “Give me a complete analysis of my issues” — or describe something you see.',
       done: stepDone('first_chat'),
       icon: MessageSquare,
       onPress: propertyId ? openChatFromChecklist : undefined,

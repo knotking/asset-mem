@@ -1,0 +1,25 @@
+appId: ${APP_ID}
+---
+# Property chat tab — from home, landing, settings, or already on property.
+- runFlow: resume-if-needed.yaml
+
+- runFlow:
+    when:
+      visible:
+        id: "property-tab-chat"
+    commands:
+      - tapOn:
+          id: "property-tab-chat"
+          optional: true
+
+- runFlow:
+    when:
+      notVisible:
+        id: "property-tab-chat"
+    commands:
+      - runFlow: resume-to-home.yaml
+      - runFlow: dismiss-overlays.yaml
+      - runFlow: open-property.yaml
+
+- assertVisible:
+    id: "property-tab-chat"

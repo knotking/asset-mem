@@ -1,0 +1,34 @@
+appId: ${APP_ID}
+---
+- runFlow: ../subflows/open-property.yaml
+
+- tapOn:
+    text: "More property options"
+- takeScreenshot: audit-property-more-menu
+
+- tapOn: "FAQ & guides"
+- extendedWaitUntil:
+    visible: "FAQ"
+    timeout: 15000
+- takeScreenshot: audit-property-faq-shortcut
+- tapOn:
+    text: "Back to AI chat"
+- extendedWaitUntil:
+    visible:
+      id: "property-tab-chat"
+    timeout: 15000
+
+- tapOn:
+    text: "More property options"
+- tapOn: "My pros"
+- extendedWaitUntil:
+    visible: "Search My pros"
+    timeout: 15000
+- takeScreenshot: audit-property-my-pros-drawer
+- runFlow: ../subflows/close-drawer.yaml
+
+- tapOn:
+    id: "property-details-back"
+- extendedWaitUntil:
+    visible: "Property AI Agent"
+    timeout: 15000

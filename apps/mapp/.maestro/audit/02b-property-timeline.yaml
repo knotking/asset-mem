@@ -1,0 +1,21 @@
+appId: ${APP_ID}
+---
+- tapOn:
+    id: "property-tab-timeline"
+    waitToSettleTimeoutMs: 300
+- assertVisible: "Checkpoints"
+- takeScreenshot: audit-property-timeline-checkpoints
+
+- tapOn:
+    text: "Insights"
+    waitToSettleTimeoutMs: 300
+- takeScreenshot: audit-property-timeline-insights
+
+- tapOn:
+    text: "Reports"
+    waitToSettleTimeoutMs: 300
+- takeScreenshot: audit-property-timeline-reports
+
+- tapOn:
+    text: "Checkpoints"
+    waitToSettleTimeoutMs: 300

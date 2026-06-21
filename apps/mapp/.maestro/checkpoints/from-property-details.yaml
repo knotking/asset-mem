@@ -1,0 +1,13 @@
+appId: ${APP_ID}
+---
+# Resume: property details tab → end.
+- runFlow: ../subflows/resume-to-property-chat.yaml
+- tapOn:
+    id: "property-tab-details"
+
+- runFlow: ../audit/02c-property-details.yaml
+- runFlow: ../audit/02d-property-menus.yaml
+- runFlow: ../subflows/leave-property.yaml
+- runFlow: ../audit/06-settings-hub.yaml
+- runFlow: ../audit/07-settings-subscreens.yaml
+- takeScreenshot: audit-complete

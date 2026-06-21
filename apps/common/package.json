@@ -55,6 +55,8 @@
     "./lib/chat-context-readiness": "./src/lib/chat-context-readiness.ts",
     "./lib/chat-context-labels": "./src/lib/chat-context-labels.ts",
     "./lib/chat-send-context": "./src/lib/chat-send-context.ts",
+    "./lib/composer-collapse": "./src/lib/composer-collapse.ts",
+    "./lib/primary-agent-display": "./src/lib/primary-agent-display.ts",
     "./lib/session-timestamps": "./src/lib/session-timestamps.ts",
     "./lib/sort-messages": "./src/lib/sort-messages.ts",
     "./lib/merge-messages-snapshot": "./src/lib/merge-messages-snapshot.ts",

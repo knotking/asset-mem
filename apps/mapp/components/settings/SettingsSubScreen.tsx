@@ -43,6 +43,7 @@ export function SettingsSubScreen({ title, children }: SettingsSubScreenProps) {
           onPress={handleBack}
           variant="ghost"
           size="icon"
+          testID="settings-back"
           accessibilityLabel={settingsBackAccessibilityLabel(returnContext)}>
           <Icon as={ArrowLeft} size={22} className="text-foreground" />
         </Button>

@@ -1,0 +1,28 @@
+# Maestro defaults for mapp. Override at runtime with -e flags.
+#
+# Full audit:
+#   maestro test .maestro/audit-authenticated.yaml
+#
+# Resume from a checkpoint (app already open in simulator is fine):
+#   maestro test .maestro/checkpoints/from-property-menus.yaml
+#   npm run maestro:audit:property-menus
+#
+# Checkpoints: from-home | from-property-chat | from-property-timeline |
+#   from-property-details | from-property-menus | from-settings | from-settings-subscreens
+#
+# Timing: npm run maestro:audit prints per-step durations after the run.
+#         npm run maestro:timing reprints the latest report from ~/.maestro/tests.
+#
+# Speed: Maestro optional taps poll ~3s each on miss — use `when: visible` instead.
+#        `waitToSettleTimeoutMs: 300` on tapOn caps post-tap animation wait (default ~1s+).
+
+appId: ${APP_ID}
+env:
+  APP_ID: host.exp.Exponent
+  MAESTRO_EMAIL: ""
+  MAESTRO_PASSWORD: ""
+  MAESTRO_PROPERTY_NAME: "Dublinhome.*"
+  # Wait tiers: cold start 10s; warm boot + in-app 3s (Maestro uses literals in yaml, not env)
+  WAIT_COLD: 10000
+  WAIT_WARM: 3000
+  WAIT_INAPP: 3000

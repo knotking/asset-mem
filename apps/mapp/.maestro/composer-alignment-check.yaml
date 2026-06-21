@@ -1,0 +1,28 @@
+appId: host.exp.Exponent
+---
+# Open recent staging build then snapshot composer alignment
+- tapOn:
+    text: "AssetMem AI \\(staging\\)"
+    optional: true
+- tapOn:
+    text: "AssetMem AI"
+    optional: true
+- extendedWaitUntil:
+    visible: "Type a message…"
+    timeout: 30000
+- takeScreenshot: composer-align-empty
+- tapOn:
+    id: "Type a message…"
+    optional: true
+- tapOn:
+    text: "Type a message…"
+    optional: true
+- inputText: "Alignment check"
+- hideKeyboard
+- takeScreenshot: composer-align-single
+- tapOn:
+    id: "Type a message…"
+    optional: true
+- inputText: "\nSecond line"
+- hideKeyboard
+- takeScreenshot: composer-align-multiline

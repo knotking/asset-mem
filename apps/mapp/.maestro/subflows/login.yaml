@@ -1,0 +1,39 @@
+appId: ${APP_ID}
+---
+# Already inside a property — skip landing/login.
+- runFlow:
+    when:
+      visible:
+        id: "property-tab-chat"
+    commands:
+      - assertVisible:
+          id: "property-tab-chat"
+
+- runFlow:
+    when:
+      notVisible:
+        id: "property-tab-chat"
+    commands:
+      - runFlow:
+          when:
+            visible: "Get Started"
+          commands:
+            - tapOn:
+                text: "Get Started"
+                waitToSettleTimeoutMs: 300
+            - assertVisible: "Welcome Back"
+
+      - runFlow:
+          when:
+            visible: "Welcome Back"
+          file: login-form.yaml
+
+      - runFlow:
+          when:
+            visible: "Dashboard"
+          commands:
+            - tapOn:
+                text: "Dashboard"
+                waitToSettleTimeoutMs: 300
+
+      - assertVisible: "Property AI Agent|Ask about your timeline|Type a message"

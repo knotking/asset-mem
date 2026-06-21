@@ -1,0 +1,24 @@
+appId: ${APP_ID}
+---
+- runFlow: ../subflows/open-property.yaml
+
+- tapOn:
+    id: "property-tab-details"
+- extendedWaitUntil:
+    visible: "Property Documents"
+    timeout: 15000
+- takeScreenshot: audit-property-details-tab
+
+- tapOn:
+    id: "property-documents-drawer"
+- extendedWaitUntil:
+    visible: "Property Documents"
+    timeout: 10000
+- takeScreenshot: audit-property-documents-drawer
+- runFlow: ../subflows/close-drawer.yaml
+
+- tapOn:
+    id: "property-details-back"
+- extendedWaitUntil:
+    visible: "Property AI Agent"
+    timeout: 15000

@@ -134,6 +134,36 @@ describe("chat-send-context", () => {
     ).toBeNull();
   });
 
+  it("omits empty pill label when pending context exists", () => {
+    expect(
+      getRequiredContextEmptyPillLabel({
+        primaryAgent: "docs",
+        readySelectedCheckpoints: [],
+        readySelectedDocuments: [],
+        readySelectedReports: [],
+        pendingContext: [
+          {
+            kind: "document",
+            id: "pending-doc-1",
+            docId: "doc-pending-1",
+            status: "indexing",
+            label: "Indexing warranty",
+          },
+        ],
+      })
+    ).toBeNull();
+  });
+
+  it("returns docs empty pill label from counts", () => {
+    expect(
+      getEmptyContextAddPillLabelFromCounts({
+        primaryAgent: "docs",
+        readyContextCount: 0,
+        pendingContextCount: 0,
+      })
+    ).toBe(COMPOSER_ADD_DOCS_PILL);
+  });
+
   it("blocks send without text", () => {
     expect(
       getSendBlockReason({

@@ -1,0 +1,8 @@
+appId: ${APP_ID}
+---
+# Resume: settings hub → end.
+- runFlow: ../subflows/resume-if-needed.yaml
+- runFlow: ../subflows/resume-to-home.yaml
+- runFlow: ../audit/06-settings-hub.yaml
+- runFlow: ../audit/07-settings-subscreens.yaml
+- takeScreenshot: audit-complete

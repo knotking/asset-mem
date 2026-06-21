@@ -1,0 +1,43 @@
+appId: ${APP_ID}
+---
+- assertVisible: "Property AI Agent"
+- takeScreenshot: audit-home-list
+
+- tapOn:
+    text: "Search properties by name or address"
+    waitToSettleTimeoutMs: 300
+- inputText: "audit"
+- tapOn:
+    text: "Property AI Agent"
+    waitToSettleTimeoutMs: 300
+- takeScreenshot: audit-home-search
+
+- runFlow:
+    when:
+      visible: "Clear search"
+    commands:
+      - tapOn:
+          text: "Clear search"
+          waitToSettleTimeoutMs: 300
+
+- tapOn:
+    text: "FAQ & guides"
+    waitToSettleTimeoutMs: 300
+- assertVisible: "FAQ"
+- takeScreenshot: audit-header-faq
+- tapOn:
+    text: "Back to properties"
+    waitToSettleTimeoutMs: 300
+- assertVisible: "Property AI Agent"
+
+- tapOn:
+    text: "Account"
+    waitToSettleTimeoutMs: 300
+- assertVisible: "Account"
+- takeScreenshot: audit-header-account
+- tapOn:
+    text: "Back to properties"
+    waitToSettleTimeoutMs: 300
+- assertVisible: "Property AI Agent"
+
+- runFlow: ../subflows/open-property.yaml

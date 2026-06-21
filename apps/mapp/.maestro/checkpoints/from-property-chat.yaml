@@ -1,0 +1,13 @@
+appId: ${APP_ID}
+---
+# Resume: property chat → full property audit + settings.
+- runFlow: ../subflows/resume-to-property-chat.yaml
+
+- runFlow: ../audit/02a-property-chat.yaml
+- runFlow: ../audit/02b-property-timeline.yaml
+- runFlow: ../audit/02c-property-details.yaml
+- runFlow: ../audit/02d-property-menus.yaml
+- runFlow: ../subflows/leave-property.yaml
+- runFlow: ../audit/06-settings-hub.yaml
+- runFlow: ../audit/07-settings-subscreens.yaml
+- takeScreenshot: audit-complete

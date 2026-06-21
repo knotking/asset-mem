@@ -1,0 +1,5 @@
+appId: ${APP_ID}
+---
+- tapOn:
+    id: "my-pros-drawer-close"
+    waitToSettleTimeoutMs: 300

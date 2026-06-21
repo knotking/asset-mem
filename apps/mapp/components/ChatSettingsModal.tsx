@@ -20,6 +20,8 @@ import {
   BadgeDollarSign,
   MapPin,
   Navigation,
+  Paperclip,
+  ChevronRight,
 } from 'lucide-react-native';
 import type {
   PrimaryAgent,
@@ -30,6 +32,11 @@ import type {
 } from '@homeapp/common/types';
 import * as Location from 'expo-location';
 import { createLogger } from '@/lib/logger';
+import {
+  getSettingsAttachmentActionLabel,
+  getSettingsAttachmentCountLabel,
+  getSettingsAttachmentHint,
+} from '@homeapp/common/lib/chat-context-labels';
 
 const chatLog = createLogger('chat');
 // Note: Using button-based radius selector instead of slider for better cross-platform compatibility
@@ -47,6 +54,9 @@ interface ChatSettingsModalProps {
   onSearchLocationChange?: (searchLocation: SearchLocationInput | undefined) => void;
   propertyAddress?: string;
   initialTab?: 'agent' | 'location';
+  onOpenAddContext?: () => void;
+  readyContextCount?: number;
+  pendingContextCount?: number;
 }
 
 const OPTIONAL_AGENT_OPTIONS: {
@@ -84,6 +94,9 @@ export function ChatSettingsModal({
   onSearchLocationChange,
   propertyAddress,
   initialTab = 'agent',
+  onOpenAddContext,
+  readyContextCount = 0,
+  pendingContextCount = 0,
 }: ChatSettingsModalProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -182,6 +195,11 @@ export function ChatSettingsModal({
       });
     }
   };
+
+  const attachmentCountLabel = getSettingsAttachmentCountLabel(
+    readyContextCount,
+    pendingContextCount,
+  );
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -316,6 +334,31 @@ export function ChatSettingsModal({
                     </Pressable>
                   </View>
                 </View>
+
+                {onOpenAddContext ? (
+                  <View>
+                    <Text className="mb-3 text-sm font-semibold text-foreground">Attachments</Text>
+                    <Pressable
+                      onPress={onOpenAddContext}
+                      className="flex-row items-center justify-between gap-2 rounded-xl border border-border bg-background px-3 py-3">
+                      <View className="min-w-0 flex-1 flex-row items-center gap-2">
+                        <Icon as={Paperclip} size={16} className="text-muted-foreground" />
+                        <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
+                          {getSettingsAttachmentActionLabel(primaryAgent)}
+                        </Text>
+                      </View>
+                      <View className="shrink-0 flex-row items-center gap-2">
+                        {attachmentCountLabel ? (
+                          <Text className="text-xs text-muted-foreground">{attachmentCountLabel}</Text>
+                        ) : null}
+                        <Icon as={ChevronRight} size={16} className="text-muted-foreground" />
+                      </View>
+                    </Pressable>
+                    <Text className="mt-2 text-xs text-muted-foreground">
+                      {getSettingsAttachmentHint(primaryAgent)}
+                    </Text>
+                  </View>
+                ) : null}
 
                 {/* Optional Agents — fixed footprint so switching to Docs does not collapse the modal */}
                 <View className="min-h-[140px]">

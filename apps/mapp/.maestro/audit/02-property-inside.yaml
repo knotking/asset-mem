@@ -1,0 +1,6 @@
+appId: ${APP_ID}
+---
+- runFlow: 02a-property-chat.yaml
+- runFlow: 02b-property-timeline.yaml
+- runFlow: 02c-property-details.yaml
+- runFlow: 02d-property-menus.yaml

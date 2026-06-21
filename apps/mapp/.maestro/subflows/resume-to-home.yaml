@@ -1,0 +1,36 @@
+appId: ${APP_ID}
+---
+- runFlow:
+    when:
+      visible: "Dashboard"
+    commands:
+      - tapOn: "Dashboard"
+
+- runFlow:
+    when:
+      visible:
+        id: "property-details-back"
+    commands:
+      - tapOn:
+          id: "property-details-back"
+
+- runFlow:
+    when:
+      visible: "Back to properties"
+    commands:
+      - tapOn: "Back to properties"
+
+- runFlow:
+    when:
+      visible: "Back to AI chat"
+    commands:
+      - tapOn: "Back to AI chat"
+
+- runFlow:
+    when:
+      visible: "Properties, tab.*"
+    commands:
+      - tapOn:
+          text: "Properties, tab.*"
+
+- assertVisible: "Property AI Agent"
