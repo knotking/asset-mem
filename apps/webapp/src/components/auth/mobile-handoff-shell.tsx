@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
+import { AssetMemWordmark } from '@/components/brand/asset-mem-wordmark';
 
 type MobileHandoffShellProps = {
   variant: 'loading' | 'error';
@@ -74,12 +74,8 @@ export function MobileHandoffShell({
           </CardContent>
         ) : (
           <CardContent className="pb-6 pt-0">
-            <div
-              className="mx-auto flex items-center justify-center gap-2 text-xs text-muted-foreground"
-              aria-live="polite"
-            >
-              <AssetMemBrandIcon size="xs" />
-              <span>AssetMem AI</span>
+            <div className="mx-auto" aria-live="polite">
+              <AssetMemWordmark size="xs" tone="app" subdued className="mx-auto" />
             </div>
           </CardContent>
         )}

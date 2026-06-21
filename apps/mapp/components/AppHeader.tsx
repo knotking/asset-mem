@@ -3,10 +3,9 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useSegments } from 'expo-router';
 import { Icon } from '@//components/ui/icon';
-import { Text } from '@//components/ui/text';
 import { Button } from '@//components/ui/button';
 import { BookOpen, SunIcon, MoonStarIcon } from 'lucide-react-native';
-import { LandingGradientText } from '@/components/landing/landing-gradient-text';
+import { AssetMemWordmark } from '@/components/AssetMemWordmark';
 import { useColorScheme } from 'nativewind';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { usePreferences } from '@homeapp/common/contexts/preferences-context';
@@ -18,10 +17,6 @@ import {
   resolveAppHeaderReturnContext,
 } from '@/lib/settings-navigation';
 import { NotificationsBell } from '@/components/NotificationsBell';
-
-/** Match landing/web wordmark proportions (AI ≈ 0.75× AssetMem). */
-const APP_HEADER_BRAND_FONT_SIZE = 18;
-const APP_HEADER_AI_FONT_SIZE = Math.round(APP_HEADER_BRAND_FONT_SIZE * 0.75);
 
 function ThemeToggle() {
   const { user } = useAuth();
@@ -67,26 +62,8 @@ export default function AppHeader() {
     <View
       className="flex-row items-center justify-between bg-card px-3 pb-3 shadow-sm"
       style={{ paddingTop: insets.top + 12 }}>
-      <View className="min-w-0 flex-1 flex-row items-baseline gap-1 pr-2">
-        <Text
-          className="text-foreground"
-          style={{
-            fontSize: APP_HEADER_BRAND_FONT_SIZE,
-            fontWeight: '300',
-            lineHeight: APP_HEADER_BRAND_FONT_SIZE,
-            includeFontPadding: false,
-          }}>
-          AssetMem
-        </Text>
-        <LandingGradientText
-          inline
-          style={{
-            fontSize: APP_HEADER_AI_FONT_SIZE,
-            fontWeight: '700',
-            letterSpacing: 0.4,
-          }}>
-          AI
-        </LandingGradientText>
+      <View className="min-w-0 flex-1 pr-2">
+        <AssetMemWordmark size="header" />
       </View>
       <View className="shrink-0 flex-row items-center gap-px">
         <ThemeToggle />

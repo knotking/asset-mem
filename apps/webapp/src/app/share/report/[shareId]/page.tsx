@@ -6,7 +6,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getPublicReportSignedUrl } from '@/lib/api-reports';
 import { Button } from '@/components/ui/button';
-import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
+import { AssetMemWordmark } from '@/components/brand/asset-mem-wordmark';
 import { Loader2, ExternalLink } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -60,9 +60,8 @@ export default function SharedReportPage() {
     <div className="flex min-h-svh w-full min-w-0 flex-col bg-background">
       <header className="sticky top-0 z-30 flex h-16 w-full shrink-0 items-center justify-between gap-2 border-b bg-background px-4">
         <div className="flex min-w-0 items-center gap-2">
-          <AssetMemBrandIcon size="sm" />
           <div className="min-w-0">
-            <h1 className="text-lg font-semibold text-foreground">AssetMem AI</h1>
+            <AssetMemWordmark size="solutions" tone="app" className="truncate" />
             {title ? (
               <p className="truncate text-sm text-muted-foreground">{title}</p>
             ) : (

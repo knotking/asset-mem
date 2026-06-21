@@ -11,7 +11,7 @@ import {
   SITE_HERO_HEADLINE_PRIMARY,
 } from '@/lib/site';
 import AIGraphic from '@/app/landing/ai-graphic';
-import { LANDING_BRAND_AI_SIZE_EM } from '@/components/brand/asset-mem-wordmark';
+import { AssetMemWordmark } from '@/components/brand/asset-mem-wordmark';
 
 /** Fallback before JS pins height — visible area below sticky header (h-14). */
 const MOBILE_HERO_SCREEN_FALLBACK = 'min-h-[calc(100svh-3.5rem)]';
@@ -256,22 +256,10 @@ export function LandingHero({
         <div className="container relative mx-auto hidden grid-cols-2 items-center gap-16 px-4 py-28 lg:grid">
           <div className="flex max-w-xl flex-col gap-8 text-left">
             <div className="flex w-full flex-col items-start space-y-4">
-              <p
-                className="text-sm font-medium tracking-wide"
-                style={{ color: c.foreground60 }}
-              >
-                <span className="inline-flex items-baseline gap-1">
-                  <span>AssetMem</span>
-                  <span
-                    className="font-bold tracking-normal landing-gradient-text"
-                    style={{
-                      fontSize: `${LANDING_BRAND_AI_SIZE_EM}em`,
-                    }}
-                  >
-                    AI
-                  </span>
-                </span>
-              </p>
+              <AssetMemWordmark
+                size="eyebrow"
+                foregroundColor={c.foreground60}
+              />
               {headlineBlock}
             </div>
             {descriptionBlock}

@@ -7,6 +7,8 @@ export const LANDING_BRAND_AI_FONT_SIZE_PX = 18;
 export const LANDING_BRAND_AI_SIZE_EM = 0.75;
 
 const WORDMARK_BRAND_CLASS = {
+  xs: 'text-xs',
+  eyebrow: 'text-sm font-medium tracking-wide',
   header: 'text-xl lg:text-2xl',
   footer: 'text-xl',
   solutions: 'text-lg',
@@ -20,6 +22,8 @@ type AssetMemWordmarkProps = {
   /** `app` uses theme foreground + landing AI gradient; `landing` uses marketing palette. */
   tone?: 'landing' | 'app';
   foregroundColor?: string;
+  /** Muted foreground for app tone (e.g. loading footers). */
+  subdued?: boolean;
 };
 
 export function AssetMemWordmark({
@@ -27,6 +31,7 @@ export function AssetMemWordmark({
   className,
   tone = 'landing',
   foregroundColor = LANDING_COLORS.foreground,
+  subdued = false,
 }: AssetMemWordmarkProps) {
   if (tone === 'app') {
     return (
@@ -37,7 +42,7 @@ export function AssetMemWordmark({
           className,
         )}
       >
-        <span className="text-foreground">AssetMem</span>
+        <span className={subdued ? 'text-muted-foreground' : 'text-foreground'}>AssetMem</span>
         <span
           className="brand-ai-gradient-text font-bold tracking-normal"
           style={{ fontSize: `${LANDING_BRAND_AI_SIZE_EM}em` }}

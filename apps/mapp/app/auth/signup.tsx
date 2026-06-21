@@ -12,7 +12,7 @@ import { Input } from '../../components/ui/input';
 import { Text } from '../../components/ui/text';
 import { Alert, AlertTitle, AlertDescription } from '../../components/ui/alert';
 import { AlertCircle, CheckCircle, Eye, EyeOff, Loader2 } from 'lucide-react-native';
-import { AssetMemBrandIcon } from '@/components/AssetMemBrandIcon';
+import { AssetMemWordmark } from '@/components/AssetMemWordmark';
 import { Icon } from '../../components/ui/icon';
 import { createLogger } from '@/lib/logger';
 
@@ -127,7 +127,7 @@ export default function SignupScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <View className="items-center p-4 pt-2">
-          <AssetMemBrandIcon size="lg" className="mb-6" />
+          <AssetMemWordmark size="auth" align="center" className="mb-6" />
           <Text className="mb-2 w-full text-center text-2xl font-bold leading-normal text-foreground">
             Create Account
           </Text>

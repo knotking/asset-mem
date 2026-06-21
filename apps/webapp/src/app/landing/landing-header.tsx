@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Menu } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
-import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
 import { AssetMemWordmark } from '@/components/brand/asset-mem-wordmark';
 import {
   Sheet,
@@ -175,15 +174,9 @@ export function LandingHeader({
         <div className="flex h-20 items-center justify-between gap-3">
           <Link
             href="/"
-            className="flex min-w-0 shrink items-center gap-2 sm:gap-3 group"
+            className="flex min-w-0 shrink items-center"
             onClick={(e) => onNavClick(e, '#')}
           >
-            <AssetMemBrandIcon
-              variant="mark"
-              size="md"
-              markTheme="landing"
-              className="shrink-0 group-hover:scale-105 transition-transform"
-            />
             <AssetMemWordmark size="header" className="truncate" />
           </Link>
 

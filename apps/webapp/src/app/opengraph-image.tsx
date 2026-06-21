@@ -36,64 +36,28 @@ export default function OpenGraphImage() {
         <div
           style={{
             display: 'flex',
-            alignItems: 'center',
-            gap: 24,
+            alignItems: 'baseline',
             marginBottom: 32,
+            fontSize: WORDMARK_FONT_SIZE_PX,
+            fontWeight: 300,
+            letterSpacing: '-0.02em',
           }}
         >
-          <div
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: 16,
-              background: 'linear-gradient(135deg, #22d3ee, rgba(34,211,238,0.5))',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <svg
-              width="40"
-              height="40"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#ffffff"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
-              <path d="M20 3v4" />
-              <path d="M22 5h-4" />
-              <path d="M4 17v2" />
-              <path d="M5 18H3" />
-            </svg>
-          </div>
-          <div
+          <span style={{ display: 'flex' }}>AssetMem</span>
+          <div style={{ display: 'flex', width: `${WORDMARK_GAP_EM}em`, flexShrink: 0 }} />
+          <span
             style={{
               display: 'flex',
-              alignItems: 'baseline',
-              fontSize: WORDMARK_FONT_SIZE_PX,
-              fontWeight: 300,
-              letterSpacing: '-0.02em',
+              fontSize: `${LANDING_BRAND_AI_SIZE_EM}em`,
+              fontWeight: 700,
+              transform: `translateY(-${AI_TRANSLATE_Y_PX}px)`,
+              background: AI_GRADIENT,
+              backgroundClip: 'text',
+              color: 'transparent',
             }}
           >
-            <span style={{ display: 'flex' }}>AssetMem</span>
-            <div style={{ display: 'flex', width: `${WORDMARK_GAP_EM}em`, flexShrink: 0 }} />
-            <span
-              style={{
-                display: 'flex',
-                fontSize: `${LANDING_BRAND_AI_SIZE_EM}em`,
-                fontWeight: 700,
-                transform: `translateY(-${AI_TRANSLATE_Y_PX}px)`,
-                background: AI_GRADIENT,
-                backgroundClip: 'text',
-                color: 'transparent',
-              }}
-            >
-              AI
-            </span>
-          </div>
+            AI
+          </span>
         </div>
         <p
           style={{
