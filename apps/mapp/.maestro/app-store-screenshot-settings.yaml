@@ -1,0 +1,40 @@
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: false
+
+- runFlow:
+    when:
+      visible: "http://localhost:8081"
+    commands:
+      - tapOn:
+          text: "http://localhost:8081"
+          waitToSettleTimeoutMs: 1000
+
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn:
+          text: "Continue"
+          waitToSettleTimeoutMs: 500
+
+- runFlow:
+    when:
+      visible: "Dashboard"
+    commands:
+      - tapOn:
+          text: "Dashboard"
+          waitToSettleTimeoutMs: 800
+
+- runFlow: subflows/tap-settings-tab.yaml
+- extendedWaitUntil:
+    visible: "Help & support"
+    timeout: 10000
+- swipe:
+    start: 50%, 75%
+    end: 50%, 25%
+- swipe:
+    start: 50%, 75%
+    end: 50%, 25%
+- takeScreenshot: app-store-06-settings

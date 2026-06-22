@@ -1,0 +1,38 @@
+appId: ${APP_ID}
+---
+- runFlow: subflows/connect-dev-server.yaml
+
+- extendedWaitUntil:
+    visible: "Continue|Timeline Intelligence|Welcome Back|Property AI Agent"
+    timeout: 15000
+
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn:
+          text: "Continue"
+          waitToSettleTimeoutMs: 500
+
+- extendedWaitUntil:
+    visible: "Timeline Intelligence|Get Started|Welcome Back|Property AI Agent"
+    timeout: 15000
+
+- runFlow:
+    when:
+      visible: "Timeline Intelligence"
+    commands:
+      - takeScreenshot: app-store-01-landing
+      - tapOn:
+          text: "Get Started"
+          waitToSettleTimeoutMs: 500
+      - extendedWaitUntil:
+          visible: "Welcome Back"
+          timeout: 10000
+      - takeScreenshot: app-store-02-login
+
+- runFlow:
+    when:
+      visible: "Welcome Back"
+    commands:
+      - takeScreenshot: app-store-02-login

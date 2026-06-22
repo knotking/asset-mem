@@ -1,0 +1,61 @@
+appId: ${APP_ID}
+---
+# App Store marketing screenshots. Requires MAESTRO_EMAIL + MAESTRO_PASSWORD.
+# Run: scripts/capture-app-store-screenshots.sh
+
+- runFlow: subflows/connect-dev-server.yaml
+
+- runFlow:
+    when:
+      visible: "Welcome Back"
+    commands:
+      - takeScreenshot: app-store-02-login
+      - runFlow: subflows/login-form.yaml
+
+- runFlow:
+    when:
+      visible: "Get Started"
+    commands:
+      - takeScreenshot: app-store-01-landing
+      - tapOn:
+          text: "Get Started"
+          waitToSettleTimeoutMs: 500
+      - extendedWaitUntil:
+          visible: "Welcome Back"
+          timeout: 10000
+      - takeScreenshot: app-store-02-login
+      - runFlow: subflows/login-form.yaml
+
+- runFlow: subflows/dismiss-overlays.yaml
+
+- extendedWaitUntil:
+    visible: "Property AI Agent"
+    timeout: 15000
+
+- takeScreenshot: app-store-02-properties
+
+- runFlow: subflows/open-property.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "property-tab-chat"
+    timeout: 10000
+
+- tapOn:
+    id: "property-tab-chat"
+    waitToSettleTimeoutMs: 500
+- takeScreenshot: app-store-03-chat
+
+- tapOn:
+    id: "property-tab-timeline"
+    waitToSettleTimeoutMs: 500
+- takeScreenshot: app-store-04-checkpoints
+
+- tapOn:
+    id: "property-tab-details"
+    waitToSettleTimeoutMs: 500
+- takeScreenshot: app-store-05-documents
+
+- runFlow: subflows/leave-property.yaml
+- runFlow: subflows/tap-settings-tab.yaml
+- takeScreenshot: app-store-06-settings

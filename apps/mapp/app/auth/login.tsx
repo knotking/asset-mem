@@ -132,6 +132,7 @@ export default function LoginScreen() {
       <AuthFieldLabel>Email</AuthFieldLabel>
       <Input
         placeholder="Enter your email"
+        testID="auth-email-input"
         value={state.email}
         onChangeText={(text) => dispatch({ type: 'SET_EMAIL', payload: text })}
         keyboardType="email-address"
@@ -146,6 +147,7 @@ export default function LoginScreen() {
       <View className="relative mb-2 w-full">
         <Input
           placeholder="Enter your password"
+          testID="auth-password-input"
           value={state.password}
           onChangeText={(text) => dispatch({ type: 'SET_PASSWORD', payload: text })}
           secureTextEntry={!passwordVisible}
