@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="72" viewBox="0 0 600 72" role="img" aria-label="AssetMem AI">
+  <defs>
+    <linearGradient id="aiGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0.6"/>
+    </linearGradient>
+  </defs>
+  <text
+    x="0"
+    y="56"
+    font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    letter-spacing="-0.02em"
+  >
+    <tspan font-size="52" font-weight="300" fill="#fafafa">AssetMem</tspan>
+    <tspan dx="8" font-size="40" font-weight="700" fill="url(#aiGrad)">AI</tspan>
+  </text>
+</svg>
