@@ -2,14 +2,18 @@ appId: ${APP_ID}
 ---
 - assertVisible: "Welcome Back"
 - tapOn:
-    text: "Enter your email"
-    waitToSettleTimeoutMs: 300
+    id: "auth-email-input"
+    waitToSettleTimeoutMs: 500
+- eraseText
 - inputText: ${MAESTRO_EMAIL}
 - tapOn:
-    text: "Enter your password"
-    waitToSettleTimeoutMs: 300
+    id: "auth-password-input"
+    waitToSettleTimeoutMs: 500
+- eraseText
 - inputText: ${MAESTRO_PASSWORD}
 - tapOn:
     text: "Sign In"
-    waitToSettleTimeoutMs: 300
-- assertVisible: "Property AI Agent|Dashboard"
+    waitToSettleTimeoutMs: 500
+- extendedWaitUntil:
+    visible: "Property AI Agent|Ask about your timeline|Type a message"
+    timeout: 20000

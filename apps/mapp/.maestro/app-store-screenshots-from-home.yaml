@@ -1,0 +1,64 @@
+appId: ${APP_ID}
+---
+# Continue App Store screenshots from properties list (already signed in).
+
+- launchApp:
+    clearState: false
+
+- runFlow:
+    when:
+      visible: "http://localhost:8081"
+    commands:
+      - tapOn:
+          text: "http://localhost:8081"
+          waitToSettleTimeoutMs: 1000
+
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn:
+          text: "Continue"
+          waitToSettleTimeoutMs: 500
+
+- runFlow:
+    when:
+      visible: "Dashboard"
+    commands:
+      - tapOn:
+          text: "Dashboard"
+          waitToSettleTimeoutMs: 800
+
+- runFlow: subflows/resume-to-home.yaml
+
+- extendedWaitUntil:
+    visible: "Property AI Agent"
+    timeout: 15000
+
+- tapOn:
+    text: "Dublin.*"
+    waitToSettleTimeoutMs: 500
+
+- extendedWaitUntil:
+    visible:
+      id: "property-tab-chat"
+    timeout: 15000
+
+- tapOn:
+    id: "property-tab-chat"
+    waitToSettleTimeoutMs: 500
+- takeScreenshot: app-store-03-chat
+
+- tapOn:
+    id: "property-tab-timeline"
+    waitToSettleTimeoutMs: 500
+- takeScreenshot: app-store-04-checkpoints
+
+- tapOn:
+    id: "property-tab-details"
+    waitToSettleTimeoutMs: 500
+- takeScreenshot: app-store-05-documents
+
+- runFlow: subflows/leave-property.yaml
+- runFlow: subflows/tap-settings-tab.yaml
+- takeScreenshot: app-store-06-settings

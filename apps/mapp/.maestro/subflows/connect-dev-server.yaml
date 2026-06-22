@@ -1,0 +1,24 @@
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: false
+
+- runFlow:
+    when:
+      visible: "http://localhost:8081"
+    commands:
+      - tapOn:
+          text: "http://localhost:8081"
+          waitToSettleTimeoutMs: 1000
+
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn:
+          text: "Continue"
+          waitToSettleTimeoutMs: 500
+
+- extendedWaitUntil:
+    visible: "Timeline Intelligence|Welcome Back|Property AI Agent"
+    timeout: 30000

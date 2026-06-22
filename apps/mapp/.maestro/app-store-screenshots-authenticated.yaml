@@ -1,0 +1,70 @@
+appId: ${APP_ID}
+---
+# App Store screenshots — already signed in (no login).
+
+- launchApp:
+    clearState: false
+
+- runFlow:
+    when:
+      visible: "http://localhost:8081"
+    commands:
+      - tapOn:
+          text: "http://localhost:8081"
+          waitToSettleTimeoutMs: 1000
+
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn:
+          text: "Continue"
+          waitToSettleTimeoutMs: 500
+
+- extendedWaitUntil:
+    visible: "Timeline Intelligence|Property AI Agent|property-tab-chat"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Timeline Intelligence"
+    commands:
+      - takeScreenshot: app-store-01-landing
+      - tapOn:
+          text: "Dashboard"
+          waitToSettleTimeoutMs: 800
+
+- runFlow: subflows/dismiss-overlays.yaml
+- runFlow: subflows/resume-to-home.yaml
+
+- extendedWaitUntil:
+    visible: "Property AI Agent"
+    timeout: 15000
+
+- takeScreenshot: app-store-02-properties
+
+- runFlow: subflows/open-property.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "property-tab-chat"
+    timeout: 15000
+
+- tapOn:
+    id: "property-tab-chat"
+    waitToSettleTimeoutMs: 500
+- takeScreenshot: app-store-03-chat
+
+- tapOn:
+    id: "property-tab-timeline"
+    waitToSettleTimeoutMs: 500
+- takeScreenshot: app-store-04-checkpoints
+
+- tapOn:
+    id: "property-tab-details"
+    waitToSettleTimeoutMs: 500
+- takeScreenshot: app-store-05-documents
+
+- runFlow: subflows/leave-property.yaml
+- runFlow: subflows/tap-settings-tab.yaml
+- takeScreenshot: app-store-06-settings

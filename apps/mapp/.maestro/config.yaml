@@ -21,7 +21,7 @@ env:
   APP_ID: host.exp.Exponent
   MAESTRO_EMAIL: ""
   MAESTRO_PASSWORD: ""
-  MAESTRO_PROPERTY_NAME: "Dublinhome.*"
+  MAESTRO_PROPERTY_NAME: "Dublin.*"
   # Wait tiers: cold start 10s; warm boot + in-app 3s (Maestro uses literals in yaml, not env)
   WAIT_COLD: 10000
   WAIT_WARM: 3000
