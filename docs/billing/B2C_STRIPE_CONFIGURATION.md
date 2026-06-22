@@ -77,6 +77,17 @@ In Stripe → **Settings → Billing → Customer portal**, enable the portal so
 | **Secret key** `sk_test_…` / `sk_live_…` | Proxy only (`STRIPE_SECRET_KEY`) — never in webapp or git |
 | **Publishable key** | Not required for current Checkout flow (server creates sessions) |
 
+### 1.5 Branding assets
+
+Upload files from **[`assets/brand/`](../../assets/brand/)** (not served by the webapp). See that folder’s README for Logo vs Icon paths.
+
+| Stripe field | Suggested value |
+|--------------|-----------------|
+| Brand color | `#0a0a0f` |
+| Logo | `assets/brand/asset-mem-wordmark-checkout-tight.png` |
+| Icon | `apps/webapp/src/app/icon.png` |
+| Statement descriptor | `ASSETMEM AI` |
+
 ---
 
 ## 2. Proxy (Cloud Run)
