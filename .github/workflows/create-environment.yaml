@@ -354,7 +354,8 @@ jobs:
             "roles/iam.serviceAccountUser"
             "roles/artifactregistry.repoAdmin"
             "roles/storage.admin"
-            "roles/pubsub.editor"
+            # pubsub.admin (not editor): apply-pubsub-dlq.sh sets topic IAM for the Pub/Sub service agent
+            "roles/pubsub.admin"
             "roles/aiplatform.user"
             "roles/cloudfunctions.developer"
             "roles/run.admin"
@@ -368,6 +369,8 @@ jobs:
             # - monitoring.editor: allow creating metric descriptors (required by some exporters on first run)
             "roles/monitoring.metricWriter"
             "roles/monitoring.editor"
+            # apply-monitoring-alerts.sh creates user-defined log metrics (token quota alert)
+            "roles/logging.configWriter"
             "roles/cloudtrace.agent"
             # Firestore (Datastore API) — agent proxy Cloud Run uses this SA at runtime for chats, sessions, token quota
             "roles/datastore.user"

@@ -52,6 +52,15 @@ gcloud pubsub subscriptions pull worker-dlq-{ENV}-sub \
 
 Script: [`.github/scripts/apply-pubsub-dlq.sh`](../../.github/scripts/apply-pubsub-dlq.sh)
 
+**`PERMISSION_DENIED` on `pubsub.topics.getIamPolicy`:** The GitHub deployment SA (`githubworkflowdeployment@…`) needs `roles/pubsub.admin` to bind the Pub/Sub service agent on the DLQ topic. Existing projects provisioned with only `pubsub.editor` must grant admin once, then re-run apply:
+
+```bash
+gcloud projects add-iam-policy-binding PROJECT_ID \
+  --member="serviceAccount:githubworkflowdeployment@PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/pubsub.admin" \
+  --condition=None
+```
+
 ## Monitoring alerts
 
 Policies under [`monitoring/policies/`](./monitoring/policies/):
@@ -65,6 +74,15 @@ Policies under [`monitoring/policies/`](./monitoring/policies/):
 | HomeApp token quota exceeded | Log-based metric for `TOKEN_QUOTA_EXCEEDED` |
 
 Script: [`.github/scripts/apply-monitoring-alerts.sh`](../../.github/scripts/apply-monitoring-alerts.sh)
+
+**`logging.logMetrics.create` denied:** Grant `roles/logging.configWriter` to the deployment SA (same `--condition=None` pattern if the project has conditional IAM bindings):
+
+```bash
+gcloud projects add-iam-policy-binding PROJECT_ID \
+  --member="serviceAccount:githubworkflowdeployment@PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/logging.configWriter" \
+  --condition=None
+```
 
 **Verify:** Monitoring → Alerting → select policy → *Test notification* or induce a synthetic 503 on staging proxy `/health` (stop Reasoning Engine client) for readiness alerts.
 

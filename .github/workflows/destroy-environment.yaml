@@ -375,7 +375,7 @@ jobs:
             "roles/iam.serviceAccountUser"
             "roles/artifactregistry.repoAdmin"
             "roles/storage.admin"
-            "roles/pubsub.editor"
+            "roles/pubsub.admin"
             "roles/aiplatform.user"
             "roles/cloudfunctions.developer"
             "roles/run.admin"
@@ -387,6 +387,7 @@ jobs:
             # OpenTelemetry export permissions (Cloud Monitoring + Cloud Trace)
             "roles/monitoring.metricWriter"
             "roles/monitoring.editor"
+            "roles/logging.configWriter"
             "roles/cloudtrace.agent"
           )
 
