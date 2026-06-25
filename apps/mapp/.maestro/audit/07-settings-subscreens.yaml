@@ -12,7 +12,7 @@ appId: ${APP_ID}
 - tapOn:
     id: "settings-row-billing"
     waitToSettleTimeoutMs: 100
-- assertVisible: "Plan & billing|Billing|Subscription"
+- assertVisible: "Plan & (billing|usage)|Billing|Subscription|Usage"
 - takeScreenshot: audit-settings-billing
 - runFlow: ../subflows/back-to-settings-hub.yaml
 

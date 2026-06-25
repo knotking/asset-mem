@@ -11,7 +11,7 @@ export const metadata: Metadata = buildPageMetadata({
   path: '/account-deletion',
 });
 
-const LAST_UPDATED = 'May 25, 2026';
+const LAST_UPDATED = 'June 25, 2026';
 
 export default function AccountDeletionPage() {
   const siteUrl = getSiteUrl();
@@ -63,12 +63,13 @@ export default function AccountDeletionPage() {
         <SupportEmailLink /> from the address on your account.
       </p>
 
-      <h2>Subscriptions and billing</h2>
+      <h2>Subscriptions</h2>
       <p>
-        Paid plans are managed through Stripe on the web. Deleting your account does{' '}
-        <strong>not</strong> automatically cancel a subscription. Before deleting, open{' '}
-        <strong>Plan &amp; billing</strong> in Settings (web or mobile billing handoff) and cancel
-        if needed.
+        Deleting your account does <strong>not</strong> automatically cancel a paid subscription.
+        If you subscribed on the website, cancel in <strong>Settings</strong> →{' '}
+        <strong>Plan &amp; billing</strong> before deleting. If you subscribed elsewhere, cancel
+        through that channel so charges do not continue. The iOS app does not sell or manage
+        subscriptions in the app.
       </p>
 
       <h2>More information</h2>

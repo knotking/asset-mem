@@ -6,6 +6,7 @@ import { Text } from '@/components/ui/text';
 import { AppVersionFooter } from '@/components/settings/AppVersionFooter';
 import { SettingsHubRow } from '@/components/settings/SettingsHubRow';
 import { useSettingsHubSummaries } from '@/components/settings/useSettingsHubSummaries';
+import { planSettingsScreenTitle } from '@/lib/ios-billing-compliance';
 
 export default function SettingsHubScreen() {
   const router = useRouter();
@@ -35,7 +36,7 @@ export default function SettingsHubScreen() {
         />
         <SettingsHubRow
           icon={CreditCard}
-          title="Plan & billing"
+          title={planSettingsScreenTitle()}
           subtitle={billingSubtitle}
           testID="settings-row-billing"
           onPress={() => router.navigate('/(tabs)/settings/billing')}

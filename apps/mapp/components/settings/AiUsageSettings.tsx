@@ -13,6 +13,7 @@ import { formatTokensCompact, formatTokensFull } from '@homeapp/common/lib/forma
 import { FREE_PLAN_TOKENS_PER_MONTH } from '@homeapp/common/lib/plan-defaults';
 import { usePreferences } from '@homeapp/common/contexts/preferences-context';
 import { cn } from '@/lib/utils';
+import { planSettingsScreenTitle } from '@/lib/ios-billing-compliance';
 
 const nf = new Intl.NumberFormat('en-US');
 
@@ -75,7 +76,7 @@ function formatCreationQuota(
   }
   return {
     value: nf.format(periodCount),
-    hint: 'Plan limit unavailable — open Plan & billing or refresh later.',
+    hint: `Plan limit unavailable — open ${planSettingsScreenTitle()} or refresh later.`,
   };
 }
 

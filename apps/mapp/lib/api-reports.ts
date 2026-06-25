@@ -1,10 +1,8 @@
 import Constants from 'expo-constants';
 import { createCorrelationId, proxyFetchWithAuth } from '@homeapp/common/lib/correlation-id';
-import {
-  parseAgentErrorCode,
-  planLimitMessageForErrorCode,
-} from '@homeapp/common/lib/document-analysis-errors';
+import { parseAgentErrorCode } from '@homeapp/common/lib/document-analysis-errors';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
+import { mappPlanLimitMessageForErrorCode } from '@/lib/ios-billing-compliance';
 import type { ReportPreviewResponse } from '@homeapp/common/types';
 
 const extra = Constants.expoConfig?.extra || {};
@@ -89,7 +87,7 @@ export type GenerateReportResponse = {
 };
 
 function reportErrorMessage(body: string, status: number): string {
-  const quota = planLimitMessageForErrorCode(parseAgentErrorCode(body));
+  const quota = mappPlanLimitMessageForErrorCode(parseAgentErrorCode(body));
   if (quota) return quota;
   try {
     const parsed = JSON.parse(body) as { message?: string; detail?: string };

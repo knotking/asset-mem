@@ -28,6 +28,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { getAccountDeletionHelpUrl } from '@/lib/legal-urls';
 import { openExternalWebUrl } from '@/lib/open-external-url';
+import {
+  IOS_ACCOUNT_DELETION_BILLING_NOTE,
+  IOS_ACCOUNT_DELETION_DIALOG_BODY,
+  isIosAppStoreBillingRestricted,
+} from '@/lib/ios-billing-compliance';
 import { useSupportEmail } from '@/hooks/useSupportEmail';
 import { createLogger } from '@/lib/logger';
 
@@ -39,6 +44,11 @@ export function AccountDeletionSettings() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const supportEmail = useSupportEmail();
+  const iosBillingRestricted = isIosAppStoreBillingRestricted();
+  const billingNote = iosBillingRestricted
+    ? IOS_ACCOUNT_DELETION_BILLING_NOTE
+    : ACCOUNT_DELETION_BILLING_NOTE;
+  const dialogBody = iosBillingRestricted ? IOS_ACCOUNT_DELETION_DIALOG_BODY : ACCOUNT_DELETION_DIALOG_BODY;
   const [open, setOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -94,7 +104,7 @@ export function AccountDeletionSettings() {
         <CardDescription>{ACCOUNT_DELETION_CARD_DESCRIPTION}</CardDescription>
       </CardHeader>
       <CardContent className="gap-3">
-        <Text className={BODY_TEXT_CLASS}>{ACCOUNT_DELETION_BILLING_NOTE}</Text>
+        <Text className={BODY_TEXT_CLASS}>{billingNote}</Text>
         <Text className={BODY_TEXT_CLASS}>
           {fullDataErasureSupportLine()}{' '}
           <Text className="text-sm leading-5 text-primary" onPress={openSupportEmail}>
@@ -129,7 +139,7 @@ export function AccountDeletionSettings() {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete your account?</AlertDialogTitle>
               <AlertDialogDescription className="leading-5">
-                {ACCOUNT_DELETION_DIALOG_BODY}
+                {dialogBody}
               </AlertDialogDescription>
             </AlertDialogHeader>
             {dialogError ? (

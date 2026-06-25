@@ -13,4 +13,4 @@ appId: ${APP_ID}
 - runFlow: subflows/tap-settings-tab.yaml
 - takeScreenshot: settings-tab-after
 
-- assertVisible: "Plan & billing|Help & support|Account"
+- assertVisible: "Plan & (billing|usage)|Help & support|Account"

@@ -25,7 +25,7 @@ Staging/local: same path on your deployed web origin if testing.
 
 - Account deletion: Settings → Delete account.
 - Sign in with Apple + Google + email on iOS.
-- Subscriptions: managed on web via Stripe (Plan & billing); not StoreKit. User should cancel before deleting account.
+- Subscriptions: on **Android**, managed on web via Stripe (Plan & billing). On **iOS**, not sold in-app — screen is **Plan & usage**; see [APP_STORE_BILLING_IOS.md](./APP_STORE_BILLING_IOS.md). Cancel any external subscription before deleting account.
 
 ## Copy source of truth
 
@@ -36,7 +36,7 @@ Staging/local: same path on your deployed web origin if testing.
 
 Keep both files in sync when changing strings.
 
-Web help page: [apps/webapp/src/app/account-deletion/page.tsx](../../webapp/src/app/account-deletion/page.tsx)
+Web help page: [apps/webapp/src/app/account-deletion/page.tsx](../../webapp/src/app/account-deletion/page.tsx) — public `/account-deletion` URL; subscription copy avoids mobile billing handoff (iOS App Store 3.1.1).
 
 Privacy policy: [apps/webapp/src/app/privacy/page.tsx](../../webapp/src/app/privacy/page.tsx)
 

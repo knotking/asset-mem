@@ -8,11 +8,12 @@ import type {
   SearchLocationInput,
 } from '@homeapp/common/types';
 import { createCorrelationId, proxyFetchWithAuth } from '@homeapp/common/lib/correlation-id';
-import {
-  compareCheckpointsFailureMessage,
-  planLimitMessageForErrorCode,
-} from '@homeapp/common/lib/document-analysis-errors';
+import { compareCheckpointsFailureMessage } from '@homeapp/common/lib/document-analysis-errors';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
+import {
+  mappPlanLimitMessageForErrorCode,
+  monthlyQuotaExceededMessage,
+} from '@/lib/ios-billing-compliance';
 import { createLogger, parseAgentErrorCode, truncateId } from '@/lib/logger';
 
 const log = createLogger('agent');
@@ -293,7 +294,7 @@ export async function streamAgentResponse({
       log.error('stream.httpError', { status: response.status, code });
       throw new Error(
         code === 'TOKEN_QUOTA_EXCEEDED'
-          ? 'Monthly AI token limit reached. Upgrade your plan or wait until next month.'
+          ? monthlyQuotaExceededMessage('tokens')
           : `Failed to stream response, status: ${response.status}`
       );
     }
@@ -465,14 +466,10 @@ export async function queueExtractDocInfo(
     const errorBody = await response.text();
     const code = parseAgentErrorCode(errorBody);
     if (code === 'DOCUMENT_QUOTA_EXCEEDED') {
-      throw new Error(
-        'Monthly document limit reached. Upgrade your plan or wait until next month.'
-      );
+      throw new Error(monthlyQuotaExceededMessage('documents'));
     }
     if (code === 'TOKEN_QUOTA_EXCEEDED') {
-      throw new Error(
-        'Monthly AI token limit reached. Upgrade your plan or wait until next month.'
-      );
+      throw new Error(monthlyQuotaExceededMessage('tokens'));
     }
     throw new Error(
       `Failed to queue document analysis, status: ${response.status}, body: ${errorBody}`
@@ -512,8 +509,7 @@ export async function postFileToAgent(
       if (code === 'DOCUMENT_QUOTA_EXCEEDED') {
         return {
           success: false,
-          error:
-            'Monthly document limit reached. Upgrade your plan or wait until next month.',
+          error: monthlyQuotaExceededMessage('documents'),
         };
       }
       // Don't throw - RAG failures shouldn't block document upload
@@ -566,14 +562,10 @@ export async function analyzeCheckpoint(
       const errorBody = await response.text();
       const code = parseAgentErrorCode(errorBody);
       if (code === 'CHECKPOINT_QUOTA_EXCEEDED') {
-        throw new Error(
-          'Monthly checkpoint limit reached. Upgrade your plan or wait until next month.'
-        );
+        throw new Error(monthlyQuotaExceededMessage('checkpoints'));
       }
       if (code === 'TOKEN_QUOTA_EXCEEDED') {
-        throw new Error(
-          'Monthly AI token limit reached. Upgrade your plan or wait until next month.'
-        );
+        throw new Error(monthlyQuotaExceededMessage('tokens'));
       }
       throw new Error(
         `Failed to analyze checkpoint, status: ${response.status}, body: ${errorBody}`
@@ -633,7 +625,7 @@ export async function compareCheckpoints(
     if (!response.ok) {
       const errorBody = await response.text();
       const code = parseAgentErrorCode(errorBody);
-      const quotaMessage = planLimitMessageForErrorCode(code);
+      const quotaMessage = mappPlanLimitMessageForErrorCode(code);
       if (quotaMessage) {
         throw new Error(quotaMessage);
       }

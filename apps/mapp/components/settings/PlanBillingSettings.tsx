@@ -24,6 +24,12 @@ import { WEB_SETTINGS_BILLING_PATH } from '@/lib/api';
 import { validateBillingWebConfig } from '@/lib/expo-extra';
 import { createWebBillingHandoffUrl, createWebBillingPortalHandoffUrl } from '@/lib/auth-handoff';
 import { openExternalWebUrl } from '@/lib/open-external-url';
+import {
+  IOS_FREE_PLAN_HINT,
+  IOS_PLAN_BILLING_DESCRIPTION,
+  isIosAppStoreBillingRestricted,
+  planSettingsScreenTitle,
+} from '@/lib/ios-billing-compliance';
 import { createLogger } from '@/lib/logger';
 
 const billingLog = createLogger('billing');
@@ -40,9 +46,11 @@ type BillingSummary = {
 function PlanOptionRow({
   tier,
   isCurrent,
+  showPrice,
 }: {
   tier: PlanTierKey;
   isCurrent: boolean;
+  showPrice: boolean;
 }) {
   return (
     <View
@@ -51,7 +59,9 @@ function PlanOptionRow({
         isCurrent ? 'border-primary bg-primary/5' : 'border-border bg-background',
       )}>
       <View className="flex-row items-center justify-between gap-2">
-        <Text className="text-sm font-semibold text-foreground">{planPriceLabel(tier)}</Text>
+        <Text className="text-sm font-semibold text-foreground">
+          {showPrice ? planPriceLabel(tier) : PLAN_NAMES[tier]}
+        </Text>
         {isCurrent ? (
           <View className="rounded-full bg-primary px-2 py-0.5">
             <Text className="text-[10px] font-semibold text-primary-foreground">Current</Text>
@@ -66,6 +76,8 @@ function PlanOptionRow({
 export function PlanBillingSettings() {
   const { user } = useAuth();
   const { colorScheme } = useColorScheme();
+  const iosBillingRestricted = isIosAppStoreBillingRestricted();
+  const screenTitle = planSettingsScreenTitle();
   const [summary, setSummary] = React.useState<BillingSummary | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState<'portal' | 'web' | null>(null);
@@ -99,7 +111,13 @@ export function PlanBillingSettings() {
       ? 'Paid plan'
       : PLAN_NAMES.free;
   const activePriceLabel =
-    currentTier != null ? planPriceLabel(currentTier) : isPaid ? null : planPriceLabel('free');
+    !iosBillingRestricted && currentTier != null
+      ? planPriceLabel(currentTier)
+      : !iosBillingRestricted && isPaid
+        ? null
+        : !iosBillingRestricted
+          ? planPriceLabel('free')
+          : null;
 
   const openWebBilling = async () => {
     setError(null);
@@ -161,7 +179,7 @@ export function PlanBillingSettings() {
         <CardHeader>
           <View className="flex-row items-center gap-2">
             <Icon as={CreditCard} className="size-5 text-foreground" />
-            <CardTitle>Plan &amp; billing</CardTitle>
+            <CardTitle>{screenTitle}</CardTitle>
           </View>
         </CardHeader>
         <CardContent>
@@ -176,10 +194,12 @@ export function PlanBillingSettings() {
       <CardHeader>
         <View className="flex-row items-center gap-2">
           <Icon as={CreditCard} className="size-5 text-foreground" />
-          <CardTitle>Plan &amp; billing</CardTitle>
+          <CardTitle>{screenTitle}</CardTitle>
         </View>
         <CardDescription>
-          Subscriptions are billed through Stripe. Limits reset at the start of each UTC month.
+          {iosBillingRestricted
+            ? IOS_PLAN_BILLING_DESCRIPTION
+            : 'Subscriptions are billed through Stripe. Limits reset at the start of each UTC month.'}
         </CardDescription>
       </CardHeader>
       <CardContent className="gap-4">
@@ -195,12 +215,16 @@ export function PlanBillingSettings() {
             <Text className="text-sm text-muted-foreground capitalize">
               Status: {status || 'active'}
             </Text>
+          ) : iosBillingRestricted ? (
+            <Text className="text-sm text-muted-foreground">{IOS_FREE_PLAN_HINT}</Text>
           ) : (
             <Text className="text-sm text-muted-foreground">
               Upgrade to {planPriceLabel('plus')} or {planPriceLabel('pro')} on the web app.
             </Text>
           )}
-          {isPaid && summary?.monthlyTokenLimit != null && summary.monthlyTokenLimit > 0 ? (
+          {(isPaid || iosBillingRestricted) &&
+          summary?.monthlyTokenLimit != null &&
+          summary.monthlyTokenLimit > 0 ? (
             <Text className="text-xs text-muted-foreground pt-1">
               Your allowance: {formatTokensCompact(summary.monthlyTokenLimit)} AI tokens
               {summary.monthlyDocumentLimit != null && summary.monthlyDocumentLimit > 0
@@ -216,26 +240,35 @@ export function PlanBillingSettings() {
               per month
             </Text>
           ) : null}
+          {!isPaid && iosBillingRestricted ? (
+            <Text className="text-xs text-muted-foreground pt-1">
+              Free plan includes monthly AI, document, checkpoint, and report limits. Open AI usage
+              under Settings to see your consumption.
+            </Text>
+          ) : null}
         </View>
 
-        <View className="gap-2">
-          <Text className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {isPaid ? 'Available plans' : 'Plans'}
-          </Text>
-          {PLAN_TIER_ORDER.map((tier) => (
-            <PlanOptionRow
-              key={tier}
-              tier={tier}
-              isCurrent={
-                currentTier != null
-                  ? currentTier === tier
-                  : !isPaid
-                    ? tier === 'free'
-                    : false
-              }
-            />
-          ))}
-        </View>
+        {!iosBillingRestricted ? (
+          <View className="gap-2">
+            <Text className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {isPaid ? 'Available plans' : 'Plans'}
+            </Text>
+            {PLAN_TIER_ORDER.map((tier) => (
+              <PlanOptionRow
+                key={tier}
+                tier={tier}
+                showPrice
+                isCurrent={
+                  currentTier != null
+                    ? currentTier === tier
+                    : !isPaid
+                      ? tier === 'free'
+                      : false
+                }
+              />
+            ))}
+          </View>
+        ) : null}
 
         {error ? (
           <Text className="text-sm text-destructive" accessibilityRole="alert">
@@ -243,7 +276,7 @@ export function PlanBillingSettings() {
           </Text>
         ) : null}
 
-        {!isPaid ? (
+        {!iosBillingRestricted && !isPaid ? (
           <Button className="w-full" disabled={busy != null} onPress={() => void openWebBilling()}>
             <Text className="font-semibold text-primary-foreground">
               {busy === 'web' ? 'Opening…' : 'Upgrade to Plus or Pro on web'}
@@ -251,7 +284,7 @@ export function PlanBillingSettings() {
           </Button>
         ) : null}
 
-        {isPaid && hasStripeCustomer ? (
+        {!iosBillingRestricted && isPaid && hasStripeCustomer ? (
           <Button className="w-full" disabled={busy != null} onPress={() => void openPortal()}>
             <Text className="font-semibold text-primary-foreground">
               {busy === 'portal' ? 'Opening billing…' : 'Manage subscription'}
@@ -259,7 +292,7 @@ export function PlanBillingSettings() {
           </Button>
         ) : null}
 
-        {isPaid ? (
+        {!iosBillingRestricted && isPaid ? (
           <Button
             variant="outline"
             className="w-full"
@@ -271,12 +304,14 @@ export function PlanBillingSettings() {
           </Button>
         ) : null}
 
-        <Text className="text-xs leading-snug text-muted-foreground">
-          {!isPaid
-            ? 'Checkout runs in your browser with the same account. '
-            : 'Change plan, payment method, or cancel in Stripe. '}
-          Plan changes are handled securely in Stripe.
-        </Text>
+        {!iosBillingRestricted ? (
+          <Text className="text-xs leading-snug text-muted-foreground">
+            {!isPaid
+              ? 'Checkout runs in your browser with the same account. '
+              : 'Change plan, payment method, or cancel in Stripe. '}
+            Plan changes are handled securely in Stripe.
+          </Text>
+        ) : null}
       </CardContent>
     </Card>
   );

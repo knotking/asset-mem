@@ -62,7 +62,7 @@ The following endpoints are constructed from the proxy base URL:
 | `billing/b2c/checkout-session` | Stripe Checkout (used by web; optional on mobile) |
 | `billing/b2c/portal-session`   | Stripe Customer Portal (opened from web after mobile handoff) |
 
-These are exposed in [app.config.js](apps/mapp/app.config.js) via `expo.extra`. **Upgrade** and **Manage subscription** open `WEB_APP_URL/auth/handoff` (one-time code from `mobileWebHandoffUrl`) so the mobile browser signs in as the same Firebase user. Upgrade lands on `/home/settings?tab=billing`; Manage subscription lands there with `portal=1`, which auto-opens the Stripe portal. Returning from Stripe goes back to `/home/settings` while still signed in.
+These are exposed in [app.config.js](apps/mapp/app.config.js) via `expo.extra`. On **Android**, **Upgrade** and **Manage subscription** open `WEB_APP_URL/auth/handoff` (one-time code from `mobileWebHandoffUrl`) so the mobile browser signs in as the same Firebase user. Upgrade lands on `/home/settings?tab=billing`; Manage subscription lands there with `portal=1`, which auto-opens the Stripe portal. **iOS** omits those flows — see [APP_STORE_BILLING_IOS.md](./APP_STORE_BILLING_IOS.md).
 
 ## Setup for Local Development
 
