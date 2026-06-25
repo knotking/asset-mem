@@ -421,7 +421,7 @@ def main() -> int:
         "--tier",
         "-t",
         required=True,
-        choices=["idle", "ph", "scale_10x", "scale_100x"],
+        choices=["idle", "warm", "ph", "scale_10x", "scale_100x"],
     )
     sub = parser.add_subparsers(dest="command", required=True)
 

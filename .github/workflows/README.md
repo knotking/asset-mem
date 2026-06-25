@@ -52,7 +52,7 @@ Scripts: [`.github/scripts/`](../scripts/README.md). Docs: [docs/deployment/OPER
 
 **Triggers:** Manual (`workflow_dispatch`)
 
-**Purpose:** Audit or apply traffic-tier hardware (`idle`, `ph`, `scale_10x`, `scale_100x`) for proxy, workers, agent, and App Hosting. Individual `deploy-*` workflows use the same tiers (default **idle**). See [README-apply-production-hardware.md](README-apply-production-hardware.md) and [PRODUCTION_HARDWARE_ALLOCATIONS.md](../../docs/deployment/PRODUCTION_HARDWARE_ALLOCATIONS.md).
+**Purpose:** Audit or apply traffic-tier hardware (`idle`, `warm`, `ph`, `scale_10x`, `scale_100x`) for proxy, workers, agent, and App Hosting. Individual `deploy-*` workflows use the same tiers (default **idle**). See [README-apply-production-hardware.md](README-apply-production-hardware.md) and [PRODUCTION_HARDWARE_ALLOCATIONS.md](../../docs/deployment/PRODUCTION_HARDWARE_ALLOCATIONS.md).
 
 **Usage:**
 ```bash

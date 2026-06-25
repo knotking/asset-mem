@@ -29,6 +29,7 @@ on:
         type: choice
         options:
           - idle
+          - warm
           - ph
           - scale_10x
           - scale_100x

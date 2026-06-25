@@ -36,6 +36,7 @@ Every hardware-aware deploy workflow runs [resolve-hardware-env.sh](../../.githu
 | Tier | When to use |
 |------|-------------|
 | **idle** | Default prod; low/no traffic; scale-to-zero |
+| **warm** | App Review / demos; **idle sizing** but proxy + agent `min_instances: 1` (no PH CPU/memory bump) |
 | **ph** | Product Hunt / marketing spike |
 | **scale_10x** | Sustained ~10× PH peak traffic |
 | **scale_100x** | Major scale; GCP quota review first |
@@ -45,6 +46,7 @@ Every hardware-aware deploy workflow runs [resolve-hardware-env.sh](../../.githu
 | Tier | Peak concurrent web | Peak concurrent chats (SSE) | Checkpoint analyses/hr | Doc uploads/hr |
 |------|--------------------:|----------------------------:|-------------------------:|---------------:|
 | idle | &lt;10 | &lt;5 | &lt;10 | &lt;5 |
+| warm | &lt;10 | &lt;5 | &lt;10 | &lt;5 |
 | ph | 500–2,000 | 50–200 | 200–500 | 50–150 |
 | scale_10x | 5,000–20,000 | 500–2,000 | 2,000–5,000 | 500–1,500 |
 | scale_100x | 50,000+ | 5,000+ | 20,000+ | 5,000+ |
@@ -54,7 +56,7 @@ Every hardware-aware deploy workflow runs [resolve-hardware-env.sh](../../.githu
 | Knob | Rule |
 |------|------|
 | `max_instances` | Scales with tier (~10× / ~100× from PH); see yaml |
-| `min_instances` | idle=0; ph=1 (web/proxy/agent); scale_10x=2; scale_100x=5 |
+| `min_instances` | idle=0; **warm=1 (proxy + agent only)**; ph=1 (web/proxy/agent); scale_10x=2; scale_100x=5 |
 | Memory / CPU | Step at tier boundaries; not linear |
 | Proxy `concurrency` | Lower at higher tiers (SSE): 80 → 40 → 30 → 20 |
 
@@ -75,15 +77,15 @@ AssetMem **idle** tiers keep `max_instances` low as a **cost circuit breaker**, 
 
 ### App Hosting, proxy, agent
 
-| Surface | idle | ph | scale_10x | scale_100x |
-|---------|------|-----|-----------|------------|
-| App Hosting cpu / MiB | default / 512 | 1 / 1024 | 2 / 2048 | 4 / 4096 |
-| App Hosting min / max | 0 / 2 | 1 / 10 | 2 / 20 | 5 / 100 |
-| Proxy cpu / memory | 1 / 1Gi | 2 / 2Gi | 4 / 4Gi | 8 / 8Gi |
-| Proxy min / max | 0 / 2 | 1 / 10 | 2 / 30 | 5 / 100 |
-| Proxy concurrency | 80 | 40 | 30 | 20 |
-| Agent min / max | 0 / 2 | 1 / 5 | 2 / 15 | 5 / 50 |
-| Agent CPU / memory / concurrency | default | 4 / 8Gi / 10 | 4 / 8Gi / 10 | 8 / 16Gi / 8 |
+| Surface | idle | warm | ph | scale_10x | scale_100x |
+|---------|------|------|-----|-----------|------------|
+| App Hosting cpu / MiB | default / 512 | default / 512 | 1 / 1024 | 2 / 2048 | 4 / 4096 |
+| App Hosting min / max | 0 / 2 | 0 / 2 | 1 / 10 | 2 / 20 | 5 / 100 |
+| Proxy cpu / memory | 1 / 1Gi | 1 / 1Gi | 2 / 2Gi | 4 / 4Gi | 8 / 8Gi |
+| Proxy min / max | 0 / 2 | 1 / 2 | 1 / 10 | 2 / 30 | 5 / 100 |
+| Proxy concurrency | 80 | 80 | 40 | 30 | 20 |
+| Agent min / max | 0 / 2 | 1 / 2 | 1 / 5 | 2 / 15 | 5 / 50 |
+| Agent CPU / memory / concurrency | default | default | 4 / 8Gi / 10 | 4 / 8Gi / 10 | 8 / 16Gi / 8 |
 
 `default` = not set in yaml (`null`); platform or Vertex decides. Agent CPU/memory/concurrency are only set from **ph** upward.
 

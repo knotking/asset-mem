@@ -4,7 +4,7 @@
 set -euo pipefail
 
 ENVIRONMENT="${1:?environment required (staging|prod)}"
-TIER="${2:?tier required (idle|ph|scale_10x|scale_100x)}"
+TIER="${2:?tier required (idle|warm|ph|scale_10x|scale_100x)}"
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"

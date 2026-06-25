@@ -9,7 +9,7 @@ Audits or applies **hardware-only** settings (CPU, memory, min/max instances, co
 | Input | Description |
 |-------|-------------|
 | `environment` | `staging` or `prod` |
-| `traffic_tier` | `idle` (default), `ph`, `scale_10x`, `scale_100x` |
+| `traffic_tier` | `idle` (default), `warm`, `ph`, `scale_10x`, `scale_100x` |
 | `mode` | `audit` — compare live GCP to [hardware-expectations.yaml](../../docs/deployment/hardware-expectations.yaml) (**fails** the workflow on mismatch); `apply` — orchestrate deploy workflows then **report-only** audit (mismatches are warnings + artifact, workflow stays green) |
 | `run_health_checks` | Optional curl web + proxy `/health` |
 | `skip_agent` / `skip_webapp` | Partial apply |
@@ -25,6 +25,15 @@ Audits or applies **hardware-only** settings (CPU, memory, min/max instances, co
 ### Post-PH wind-down
 
 `mode: apply`, `traffic_tier: idle`, `environment: prod`
+
+### App Store review week (warm path)
+
+Keep **idle** CPU/memory/worker caps; only avoid proxy + agent cold starts:
+
+1. `mode: apply`, `traffic_tier: warm`, `environment: prod` (optional: `skip_webapp: true` if you only care about mobile)
+2. After approval: `mode: apply`, `traffic_tier: idle`, `environment: prod`
+
+Or deploy only **Deploy Homecare Agent Proxy** + **Deploy Homecare Agent** with `environment: prod`, `traffic_tier: warm`.
 
 ### Normal monitoring
 
