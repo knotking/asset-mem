@@ -21,12 +21,13 @@ on:
           - staging
           - prod
       traffic_tier:
-        description: "Hardware traffic tier (idle, ph, scale_10x, scale_100x)"
+        description: "Hardware traffic tier (idle, warm, ph, scale_10x, scale_100x)"
         required: false
         default: "idle"
         type: choice
         options:
           - idle
+          - warm
           - ph
           - scale_10x
           - scale_100x

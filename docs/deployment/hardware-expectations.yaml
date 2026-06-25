@@ -1,11 +1,18 @@
 # Machine-readable hardware allocations by environment and traffic tier.
 # Used by .github/scripts/hardware_tier.py (audit, apply, deploy resolve).
 #
-# Tiers: idle | ph | scale_10x | scale_100x
+# Tiers: idle | warm | ph | scale_10x | scale_100x
 
 tier_meta:
   idle:
     description: Default prod; scale-to-zero; minimal cost
+    traffic:
+      peak_concurrent_web: 10
+      peak_concurrent_chats: 5
+      checkpoint_analyses_per_hour: 10
+      doc_uploads_per_hour: 5
+  warm:
+    description: Keep proxy and agent min 1 (idle sizing); App Review or low-traffic demos without PH caps
     traffic:
       peak_concurrent_web: 10
       peak_concurrent_chats: 5
@@ -52,6 +59,52 @@ staging:
         timeout_seconds: 300
       agent:
         min_instances: null
+        max_instances: null
+        resource_cpu: null
+        resource_memory: null
+        container_concurrency: null
+      workers:
+        pubsub-checkpoint-analysis:
+          memory: 512Mi
+          max_instances: 3
+          concurrency: 1
+          timeout_seconds: 300
+        pubsub-document-analysis:
+          memory: 512Mi
+          max_instances: 3
+          concurrency: 1
+          timeout_seconds: 300
+        pubsub-checkpoint-metrics:
+          memory: 256Mi
+          max_instances: 3
+          concurrency: 1
+          timeout_seconds: 60
+        pubsub-to-user-docs:
+          memory: 512Mi
+          max_instances: 1
+          concurrency: 1
+          timeout_seconds: 540
+        pubsub-report-generation:
+          memory: 2048Mi
+          max_instances: 2
+          concurrency: 1
+          timeout_seconds: 540
+    warm:
+      apphosting:
+        cpu: null
+        memory_mib: 512
+        min_instances: 0
+        max_instances: 2
+        concurrency: 80
+      proxy:
+        memory: 512Mi
+        cpu: "1"
+        min_instances: 1
+        max_instances: 2
+        concurrency: 80
+        timeout_seconds: 300
+      agent:
+        min_instances: 1
         max_instances: null
         resource_cpu: null
         resource_memory: null
@@ -148,6 +201,52 @@ prod:
         timeout_seconds: 300
       agent:
         min_instances: 0
+        max_instances: 2
+        resource_cpu: null
+        resource_memory: null
+        container_concurrency: null
+      workers:
+        pubsub-checkpoint-analysis:
+          memory: 512Mi
+          max_instances: 3
+          concurrency: 1
+          timeout_seconds: 300
+        pubsub-document-analysis:
+          memory: 512Mi
+          max_instances: 3
+          concurrency: 1
+          timeout_seconds: 300
+        pubsub-checkpoint-metrics:
+          memory: 256Mi
+          max_instances: 3
+          concurrency: 1
+          timeout_seconds: 60
+        pubsub-to-user-docs:
+          memory: 512Mi
+          max_instances: 1
+          concurrency: 1
+          timeout_seconds: 540
+        pubsub-report-generation:
+          memory: 2048Mi
+          max_instances: 2
+          concurrency: 1
+          timeout_seconds: 540
+    warm:
+      apphosting:
+        cpu: null
+        memory_mib: 512
+        min_instances: 0
+        max_instances: 2
+        concurrency: 80
+      proxy:
+        memory: 1Gi
+        cpu: "1"
+        min_instances: 1
+        max_instances: 2
+        concurrency: 80
+        timeout_seconds: 300
+      agent:
+        min_instances: 1
         max_instances: 2
         resource_cpu: null
         resource_memory: null
