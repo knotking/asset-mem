@@ -5,6 +5,7 @@ import {
   Animated,
   TouchableOpacity,
   Linking,
+  Platform,
   useWindowDimensions,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -1031,7 +1032,8 @@ export default function LandingPage() {
             </View>
           </LandingSectionBackground>
 
-          {/* Pricing */}
+          {/* Pricing — omitted on iOS (App Store 3.1.1: no external purchase links). */}
+          {Platform.OS !== 'ios' ? (
           <LandingSectionBackground
             backgroundColor={LANDING_COLORS.background}
             variant="pricing"
@@ -1086,6 +1088,7 @@ export default function LandingPage() {
               </TouchableOpacity>
             </View>
           </LandingSectionBackground>
+          ) : null}
 
           {/* Footer */}
           <View

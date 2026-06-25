@@ -32,4 +32,6 @@ Required for **App Store** when the app offers Google sign-in ([App Store Review
 
 ## App Review notes
 
-Mention parity: email/password, Google, and Sign in with Apple on iOS. External subscription billing is handled on the web (`WEB_APP_URL` / Stripe handoff), not StoreKit.
+Mention parity: email/password, Google, and Sign in with Apple on iOS.
+
+**Billing (3.1.1):** iOS does not sell subscriptions or link to Stripe checkout. See [APP_STORE_BILLING_IOS.md](./APP_STORE_BILLING_IOS.md) for review notes and the `isIosAppStoreBillingRestricted()` guard. Android still uses web handoff billing.
