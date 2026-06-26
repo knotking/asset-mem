@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useAuth } from "@/contexts/auth-context";
+import { useLandingAuth } from "@/hooks/use-landing-auth";
 import { LandingHeader } from "./landing-header";
 import { LandingPricingSection } from "./landing-pricing-section";
 import { trackLandingCta, trackEnterpriseCta } from "@/lib/analytics";
@@ -64,7 +64,7 @@ function scrollToLandingSection(
 }
 
 export default function LandingPageClient() {
-  const { user, loading } = useAuth();
+  const { isAuthenticated, hintReady } = useLandingAuth();
   const [activeSection, setActiveSection] = useState<string>("");
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [demoVideoUrls, setDemoVideoUrls] = useState<LandingDemoVideoUrls>(
@@ -160,9 +160,8 @@ export default function LandingPageClient() {
   }, []);
 
   // External deep links (e.g. mapp "View plans on the web" → asset-mem.com#pricing)
-  // arrive while auth is still loading, so the target section is not in the DOM yet.
   useEffect(() => {
-    if (loading || typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
 
     const hash = window.location.hash;
     if (!hash || hash === "#") return;
@@ -172,7 +171,7 @@ export default function LandingPageClient() {
     requestAnimationFrame(() => {
       requestAnimationFrame(scrollToHash);
     });
-  }, [loading]);
+  }, []);
 
   const handleButtonClick = (
     _e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
@@ -199,19 +198,15 @@ export default function LandingPageClient() {
 
   // IMPORTANT: All hooks must be called before any conditional returns (Rules of Hooks)
 
-  // While auth is loading, show minimal loading state to prevent flash
-  // Once loading is complete, show landing page (which will handle button display)
-  if (loading) {
+  // Wait for sync localStorage hint read (useLayoutEffect, before paint) — not Firebase.
+  if (!hintReady) {
     return (
       <div
-        className="min-h-screen w-full flex items-center justify-center"
+        className="min-h-screen w-full"
         style={{ backgroundColor: LANDING_COLORS.background }}
       />
     );
   }
-
-  // Auth check complete - show landing page
-  // Landing page will show "Dashboard" for logged-in users or "Sign In" for others
 
   return (
     <div
@@ -224,6 +219,7 @@ export default function LandingPageClient() {
     >
       {/* Header/Navigation */}
       <LandingHeader
+        isAuthenticated={isAuthenticated}
         activeSection={activeSection}
         onNavClick={(e, targetId) => {
           if (targetId === "#enterprise") {
@@ -238,8 +234,7 @@ export default function LandingPageClient() {
       <div className="fade-in-up flex flex-col flex-1 w-full">
       <LandingHero
         colors={LANDING_COLORS}
-        user={user}
-        loading={loading}
+        isAuthenticated={isAuthenticated}
         isMobile={isMobile}
         demoVideoUrls={demoVideoUrls}
         onPrimaryCta={handleButtonClick}
@@ -863,37 +858,20 @@ export default function LandingPageClient() {
                   </Link>
                 </li>
                 <li>
-                  {user ? (
-                    <Link
-                      href="/home"
-                      className="transition-colors hover:text-foreground"
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.color =
-                          LANDING_COLORS.foreground)
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.color =
-                          LANDING_COLORS.mutedForeground)
-                      }
-                    >
-                      Dashboard
-                    </Link>
-                  ) : (
-                    <Link
-                      href="/login"
-                      className="transition-colors hover:text-foreground"
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.color =
-                          LANDING_COLORS.foreground)
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.color =
-                          LANDING_COLORS.mutedForeground)
-                      }
-                    >
-                      Sign In
-                    </Link>
-                  )}
+                  <Link
+                    href={isAuthenticated ? '/home' : '/login'}
+                    className="transition-colors hover:text-foreground"
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.color =
+                        LANDING_COLORS.foreground)
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.color =
+                        LANDING_COLORS.mutedForeground)
+                    }
+                  >
+                    {isAuthenticated ? 'Dashboard' : 'Sign In'}
+                  </Link>
                 </li>
               </ul>
             </div>

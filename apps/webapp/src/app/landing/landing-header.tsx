@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Menu } from 'lucide-react';
-import { useAuth } from '@/contexts/auth-context';
 import { AssetMemWordmark } from '@/components/brand/asset-mem-wordmark';
 import {
   Sheet,
@@ -23,6 +22,7 @@ const NAV_LINKS = [
 ] as const;
 
 interface LandingHeaderProps {
+  isAuthenticated: boolean;
   activeSection: string;
   onNavClick: (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => void;
   onButtonClick: (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => void;
@@ -82,75 +82,42 @@ function DesktopNavLink({
 
 
 function LandingCta({
-  user,
-  loading,
+  isAuthenticated,
   onButtonClick,
-  onEnterpriseNavClick,
   className = '',
 }: {
-  user: ReturnType<typeof useAuth>['user'];
-  loading: boolean;
+  isAuthenticated: boolean;
   onButtonClick: (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => void;
-  onEnterpriseNavClick?: (e: React.MouseEvent<HTMLAnchorElement>, label: string) => void;
   className?: string;
 }) {
-  if (loading) {
-    return (
-      <div
-        className={`px-4 sm:px-6 py-2.5 text-sm font-medium rounded-lg ${className}`}
-        style={{ visibility: 'hidden' }}
-      >
-        Dashboard
-      </div>
-    );
-  }
-
-  if (user) {
-    return (
-      <Link
-        href="/home"
-        onClick={onButtonClick}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = LANDING_COLORS.primaryHover;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = LANDING_COLORS.primary;
-        }}
-        className={`px-4 sm:px-6 py-2.5 text-sm font-medium rounded-lg transition-all shadow-lg hover:shadow-xl whitespace-nowrap inline-flex items-center justify-center ${className}`}
-        style={{ backgroundColor: LANDING_COLORS.primary, color: LANDING_COLORS.background }}
-      >
-        Dashboard
-      </Link>
-    );
-  }
+  const href = isAuthenticated ? '/home' : '/login';
+  const label = isAuthenticated ? 'Dashboard' : 'Sign In';
 
   return (
     <Link
-      href="/login"
-      className={`px-4 sm:px-6 py-2.5 text-sm font-medium rounded-lg transition-all shadow-lg hover:shadow-xl whitespace-nowrap inline-flex items-center justify-center ${className}`}
-      style={{
-        backgroundColor: LANDING_COLORS.primary,
-        color: LANDING_COLORS.background,
-      }}
+      href={href}
+      onClick={isAuthenticated ? onButtonClick : undefined}
       onMouseEnter={(e) => {
         e.currentTarget.style.backgroundColor = LANDING_COLORS.primaryHover;
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.backgroundColor = LANDING_COLORS.primary;
       }}
+      className={`px-4 sm:px-6 py-2.5 text-sm font-medium rounded-lg transition-all shadow-lg hover:shadow-xl whitespace-nowrap inline-flex items-center justify-center ${className}`}
+      style={{ backgroundColor: LANDING_COLORS.primary, color: LANDING_COLORS.background }}
     >
-      Sign In
+      {label}
     </Link>
   );
 }
 
 export function LandingHeader({
+  isAuthenticated,
   activeSection,
   onNavClick,
   onButtonClick,
   onEnterpriseNavClick,
 }: LandingHeaderProps) {
-  const { user, loading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleMobileNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
@@ -260,8 +227,7 @@ export function LandingHeader({
                 </nav>
                 <div className="mt-8 border-t pt-6 space-y-3" style={{ borderColor: LANDING_COLORS.borderOverlay }}>
                   <LandingCta
-                    user={user}
-                    loading={loading}
+                    isAuthenticated={isAuthenticated}
                     onButtonClick={(e) => {
                       onButtonClick(e);
                       setMobileMenuOpen(false);
@@ -274,10 +240,8 @@ export function LandingHeader({
 
             <div className="hidden sm:block">
               <LandingCta
-                user={user}
-                loading={loading}
+                isAuthenticated={isAuthenticated}
                 onButtonClick={onButtonClick}
-                onEnterpriseNavClick={onEnterpriseNavClick}
               />
             </div>
           </div>

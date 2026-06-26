@@ -14,6 +14,7 @@ import {
   type Auth,
 } from 'firebase/auth';
 import { app } from '@/lib/firebase';
+import { clearAuthHint, setAuthHint } from '@/lib/auth-hint';
 
 const auth = getAuth(app);
 
@@ -40,6 +41,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
+      if (nextUser) {
+        setAuthHint(true);
+      } else {
+        clearAuthHint();
+      }
       setUser(nextUser);
       setLoading(false);
     });
@@ -72,6 +78,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = useCallback(async () => {
     setSigningOut(true);
     try {
+      clearAuthHint();
       await signOut(auth);
       router.replace('/');
     } catch (error) {
