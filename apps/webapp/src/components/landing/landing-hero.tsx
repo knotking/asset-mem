@@ -13,12 +13,17 @@ import {
 import AIGraphic from '@/app/landing/ai-graphic';
 import { AssetMemWordmark } from '@/components/brand/asset-mem-wordmark';
 
-/** Fallback before JS pins height — visible area below sticky header (h-14). */
-const MOBILE_HERO_SCREEN_FALLBACK = 'min-h-[calc(100svh-3.5rem)]';
+/** Fallback before JS pins height — visible area below sticky header (h-20). */
+const MOBILE_HEADER_FALLBACK_PX = 80;
+const MOBILE_HERO_SCREEN_FALLBACK = 'min-h-[calc(100dvh-5rem)]';
+
+/** iOS URL bar can report a tall viewport on first paint; sample the minimum briefly. */
+const MOBILE_VIEWPORT_STABILIZE_MS = 400;
 
 function measureMobileHeroHeight(): number {
   const headerEl = document.querySelector('header');
-  const headerHeight = headerEl?.getBoundingClientRect().height ?? 56;
+  const headerHeight =
+    headerEl?.getBoundingClientRect().height ?? MOBILE_HEADER_FALLBACK_PX;
   const visibleHeight = window.visualViewport?.height ?? window.innerHeight;
   return Math.round(Math.max(visibleHeight - headerHeight, 320));
 }
@@ -51,18 +56,64 @@ export function LandingHero({
 
   useLayoutEffect(() => {
     const desktopMq = window.matchMedia('(min-width: 1024px)');
+    let stabilizeUntil = performance.now() + MOBILE_VIEWPORT_STABILIZE_MS;
+    let rafId = 0;
+
+    const commitHeight = (height: number) => {
+      setMobileHeroMinHeight((prev) => {
+        if (prev == null) {
+          return height;
+        }
+        if (performance.now() < stabilizeUntil) {
+          return Math.min(prev, height);
+        }
+        return prev;
+      });
+    };
 
     const pinMobileHeroHeight = () => {
       if (desktopMq.matches) {
         setMobileHeroMinHeight(null);
         return;
       }
-      setMobileHeroMinHeight(measureMobileHeroHeight());
+      commitHeight(measureMobileHeroHeight());
+    };
+
+    const sampleUntilStable = () => {
+      if (performance.now() >= stabilizeUntil) {
+        return;
+      }
+      pinMobileHeroHeight();
+      rafId = requestAnimationFrame(sampleUntilStable);
     };
 
     pinMobileHeroHeight();
-    window.addEventListener('orientationchange', pinMobileHeroHeight);
-    return () => window.removeEventListener('orientationchange', pinMobileHeroHeight);
+    rafId = requestAnimationFrame(sampleUntilStable);
+
+    const viewport = window.visualViewport;
+    const onViewportChange = () => {
+      if (performance.now() < stabilizeUntil) {
+        pinMobileHeroHeight();
+      }
+    };
+    viewport?.addEventListener('resize', onViewportChange);
+    viewport?.addEventListener('scroll', onViewportChange);
+
+    const onOrientationChange = () => {
+      stabilizeUntil = performance.now() + MOBILE_VIEWPORT_STABILIZE_MS;
+      setMobileHeroMinHeight(null);
+      pinMobileHeroHeight();
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(sampleUntilStable);
+    };
+    window.addEventListener('orientationchange', onOrientationChange);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      viewport?.removeEventListener('resize', onViewportChange);
+      viewport?.removeEventListener('scroll', onViewportChange);
+      window.removeEventListener('orientationchange', onOrientationChange);
+    };
   }, []);
 
   const headlinePrimary = SITE_HERO_HEADLINE_PRIMARY;
