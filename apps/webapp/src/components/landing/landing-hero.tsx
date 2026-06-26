@@ -207,9 +207,9 @@ export function LandingHero({
         {/* Mobile: first screen, then graphic on scroll */}
         <div className="lg:hidden">
           <div
-            className={`flex flex-col gap-6 px-6 pb-9 pt-5 ${MOBILE_HERO_SCREEN_MIN}`}
+            className={`flex flex-col justify-between px-6 pb-9 pt-5 ${MOBILE_HERO_SCREEN_MIN}`}
           >
-            <div className="flex flex-col gap-6 py-4 text-center">
+            <div className="flex min-h-0 flex-1 flex-col justify-center gap-6 py-4 text-center">
               {headlineBlock}
               {descriptionBlock}
             </div>
