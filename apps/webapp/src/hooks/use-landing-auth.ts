@@ -5,21 +5,28 @@ import { useAuth } from '@/contexts/auth-context';
 import { readAuthHint } from '@/lib/auth-hint';
 
 /**
- * Landing CTAs: block until localStorage hint is read in useLayoutEffect (before paint),
- * then confirm with Firebase when auth finishes loading.
+ * Landing CTAs: read localStorage hint in useLayoutEffect (before paint), confirm with Firebase.
+ * No full-page gate — avoids blank flash on Android bfcache / tab restore.
  */
 export function useLandingAuth(): {
   isAuthenticated: boolean;
-  hintReady: boolean;
   authResolved: boolean;
 } {
   const { user, loading } = useAuth();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [hintReady, setHintReady] = useState(false);
 
   useLayoutEffect(() => {
     setIsAuthenticated(readAuthHint());
-    setHintReady(true);
+  }, []);
+
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        setIsAuthenticated(readAuthHint());
+      }
+    };
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
   }, []);
 
   useEffect(() => {
@@ -29,5 +36,5 @@ export function useLandingAuth(): {
     setIsAuthenticated(Boolean(user));
   }, [user, loading]);
 
-  return { isAuthenticated, hintReady, authResolved: !loading };
+  return { isAuthenticated, authResolved: !loading };
 }

@@ -64,7 +64,7 @@ function scrollToLandingSection(
 }
 
 export default function LandingPageClient() {
-  const { isAuthenticated, hintReady } = useLandingAuth();
+  const { isAuthenticated } = useLandingAuth();
   const [activeSection, setActiveSection] = useState<string>("");
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [demoVideoUrls, setDemoVideoUrls] = useState<LandingDemoVideoUrls>(
@@ -197,16 +197,6 @@ export default function LandingPageClient() {
   };
 
   // IMPORTANT: All hooks must be called before any conditional returns (Rules of Hooks)
-
-  // Wait for sync localStorage hint read (useLayoutEffect, before paint) — not Firebase.
-  if (!hintReady) {
-    return (
-      <div
-        className="min-h-screen w-full"
-        style={{ backgroundColor: LANDING_COLORS.background }}
-      />
-    );
-  }
 
   return (
     <div
