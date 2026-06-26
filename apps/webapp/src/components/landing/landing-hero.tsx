@@ -33,8 +33,7 @@ const MOBILE_CTA_SECONDARY =
 
 type LandingHeroProps = {
   colors: LandingColorPalette;
-  user: { uid: string } | null;
-  loading: boolean;
+  isAuthenticated: boolean;
   isMobile: boolean;
   demoVideoUrls: LandingDemoVideoUrls;
   onPrimaryCta: (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>, label?: string) => void;
@@ -42,7 +41,7 @@ type LandingHeroProps = {
 
 export function LandingHero({
   colors: c,
-  user,
+  isAuthenticated,
   isMobile,
   demoVideoUrls,
   onPrimaryCta,
@@ -115,8 +114,8 @@ export function LandingHero({
     </p>
   );
 
-  const primaryCtaLabel = user ? 'Dashboard' : 'Get Started';
-  const primaryCtaHref = user ? '/home' : '/login';
+  const primaryCtaLabel = isAuthenticated ? 'Dashboard' : 'Get Started';
+  const primaryCtaHref = isAuthenticated ? '/home' : '/login';
 
   const arrowIcon = (
     <svg
