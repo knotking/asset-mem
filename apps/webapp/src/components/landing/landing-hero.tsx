@@ -1,6 +1,5 @@
 'use client';
 
-import { useLayoutEffect, useState } from 'react';
 import Link from 'next/link';
 import { YouTubeModal } from '@/components/landing/youtube-modal';
 import type { LandingColorPalette } from '@/lib/landing-theme';
@@ -13,20 +12,9 @@ import {
 import AIGraphic from '@/app/landing/ai-graphic';
 import { AssetMemWordmark } from '@/components/brand/asset-mem-wordmark';
 
-/** Fallback before JS pins height — visible area below sticky header (h-20). */
-const MOBILE_HEADER_FALLBACK_PX = 80;
-const MOBILE_HERO_SCREEN_FALLBACK = 'min-h-[calc(100dvh-5rem)]';
+/** Visible area below sticky header (h-20). dvh tracks mobile browser chrome. */
+const MOBILE_HERO_SCREEN_MIN = 'min-h-[calc(100dvh-5rem)]';
 
-/** iOS URL bar can report a tall viewport on first paint; sample the minimum briefly. */
-const MOBILE_VIEWPORT_STABILIZE_MS = 400;
-
-function measureMobileHeroHeight(): number {
-  const headerEl = document.querySelector('header');
-  const headerHeight =
-    headerEl?.getBoundingClientRect().height ?? MOBILE_HEADER_FALLBACK_PX;
-  const visibleHeight = window.visualViewport?.height ?? window.innerHeight;
-  return Math.round(Math.max(visibleHeight - headerHeight, 320));
-}
 const MOBILE_HEADLINE =
   'text-[3.25rem] leading-[3.625rem] font-light tracking-tight text-center';
 const MOBILE_DESCRIPTION =
@@ -51,71 +39,6 @@ export function LandingHero({
   demoVideoUrls,
   onPrimaryCta,
 }: LandingHeroProps) {
-  /** Pinned once on mount so address-bar show/hide on scroll does not resize the hero. */
-  const [mobileHeroMinHeight, setMobileHeroMinHeight] = useState<number | null>(null);
-
-  useLayoutEffect(() => {
-    const desktopMq = window.matchMedia('(min-width: 1024px)');
-    let stabilizeUntil = performance.now() + MOBILE_VIEWPORT_STABILIZE_MS;
-    let rafId = 0;
-
-    const commitHeight = (height: number) => {
-      setMobileHeroMinHeight((prev) => {
-        if (prev == null) {
-          return height;
-        }
-        if (performance.now() < stabilizeUntil) {
-          return Math.min(prev, height);
-        }
-        return prev;
-      });
-    };
-
-    const pinMobileHeroHeight = () => {
-      if (desktopMq.matches) {
-        setMobileHeroMinHeight(null);
-        return;
-      }
-      commitHeight(measureMobileHeroHeight());
-    };
-
-    const sampleUntilStable = () => {
-      if (performance.now() >= stabilizeUntil) {
-        return;
-      }
-      pinMobileHeroHeight();
-      rafId = requestAnimationFrame(sampleUntilStable);
-    };
-
-    pinMobileHeroHeight();
-    rafId = requestAnimationFrame(sampleUntilStable);
-
-    const viewport = window.visualViewport;
-    const onViewportChange = () => {
-      if (performance.now() < stabilizeUntil) {
-        pinMobileHeroHeight();
-      }
-    };
-    viewport?.addEventListener('resize', onViewportChange);
-    viewport?.addEventListener('scroll', onViewportChange);
-
-    const onOrientationChange = () => {
-      stabilizeUntil = performance.now() + MOBILE_VIEWPORT_STABILIZE_MS;
-      setMobileHeroMinHeight(null);
-      pinMobileHeroHeight();
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(sampleUntilStable);
-    };
-    window.addEventListener('orientationchange', onOrientationChange);
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      viewport?.removeEventListener('resize', onViewportChange);
-      viewport?.removeEventListener('scroll', onViewportChange);
-      window.removeEventListener('orientationchange', onOrientationChange);
-    };
-  }, []);
-
   const headlinePrimary = SITE_HERO_HEADLINE_PRIMARY;
   const headlineAccent = SITE_HERO_HEADLINE_ACCENT;
   const description = SITE_HERO_DESCRIPTION;
@@ -284,14 +207,9 @@ export function LandingHero({
         {/* Mobile: first screen, then graphic on scroll */}
         <div className="lg:hidden">
           <div
-            className={`flex flex-col justify-between px-6 pb-9 pt-5 ${MOBILE_HERO_SCREEN_FALLBACK}`}
-            style={
-              mobileHeroMinHeight != null
-                ? { minHeight: mobileHeroMinHeight }
-                : undefined
-            }
+            className={`flex flex-col gap-6 px-6 pb-9 pt-5 ${MOBILE_HERO_SCREEN_MIN}`}
           >
-            <div className="flex flex-1 flex-col justify-center gap-6 py-4 text-center">
+            <div className="flex flex-col gap-6 py-4 text-center">
               {headlineBlock}
               {descriptionBlock}
             </div>
