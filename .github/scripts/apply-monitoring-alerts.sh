@@ -43,6 +43,21 @@ resource.labels.service_name=\"${PROXY_SERVICE}\"
   echo "✓ Log metric created"
 fi
 
+# Log-based HTTP request counter (drops to zero when idle; unlike run.googleapis.com/request_count).
+PROXY_REQUEST_METRIC="homeapp_proxy_http_requests_${ENV}"
+if gcloud logging metrics describe "${PROXY_REQUEST_METRIC}" --project="${PROJECT_ID}" &>/dev/null; then
+  echo "✓ Log metric exists: ${PROXY_REQUEST_METRIC}"
+else
+  echo "Creating log metric: ${PROXY_REQUEST_METRIC}"
+  gcloud logging metrics create "${PROXY_REQUEST_METRIC}" \
+    --project="${PROJECT_ID}" \
+    --description="HTTP requests to HomeApp proxy (${ENV})" \
+    --log-filter="resource.type=\"cloud_run_revision\"
+resource.labels.service_name=\"${PROXY_SERVICE}\"
+httpRequest.requestUrl!=\"\""
+  echo "✓ Log metric created"
+fi
+
 render_policy() {
   local template="$1"
   local out="$2"
@@ -52,6 +67,7 @@ render_policy() {
     -e "s/__REGION__/${REGION}/g" \
     -e "s/__PROXY_SERVICE__/${PROXY_SERVICE}/g" \
     -e "s/__TOKEN_METRIC__/${TOKEN_METRIC}/g" \
+    -e "s/__PROXY_REQUEST_METRIC__/${PROXY_REQUEST_METRIC}/g" \
     "${template}" > "${out}"
 }
 

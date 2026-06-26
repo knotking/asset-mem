@@ -68,7 +68,7 @@ Policies under [`monitoring/policies/`](./monitoring/policies/):
 | Policy | Purpose |
 |--------|---------|
 | HomeApp proxy 5xx rate | Cloud Run `homecare-agent-proxy-{ENV}` errors |
-| HomeApp proxy latency p95 | Slow proxy (Vertex / cold start) |
+| HomeApp proxy latency p95 | Slow proxy while receiving traffic (log-based request guard + missing-data inactive) |
 | HomeApp Pub/Sub backlog | `num_undelivered_messages` on `*-{ENV}` subscriptions |
 | HomeApp worker 5xx | Gen2 workers (`pubsub-*-{ENV}` on Cloud Run) |
 | HomeApp token quota exceeded | Log-based metric for `TOKEN_QUOTA_EXCEEDED` |
