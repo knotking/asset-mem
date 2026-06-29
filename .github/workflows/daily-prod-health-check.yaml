@@ -1,0 +1,105 @@
+# Daily homegeek-prod health check (keyless WIF) + Vertex AI summary.
+# Schedule: 9:00 AM IST = 03:30 UTC
+
+name: Daily Prod Health Check
+
+on:
+  schedule:
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+    inputs:
+      window_hours:
+        description: "Lookback window in hours"
+        required: false
+        default: "24"
+        type: string
+      skip_vertex:
+        description: "Collect metrics only (no LLM summary)"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: daily-prod-health-check
+  cancel-in-progress: false
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: prod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve project and service account
+        id: project
+        run: |
+          PROJECT_ID="${{ vars.GCP_PROJECT_ID }}"
+          HEALTH_CHECK_SA="${{ vars.GCP_HEALTH_CHECK_SERVICE_ACCOUNT_EMAIL }}"
+          if [ -z "$HEALTH_CHECK_SA" ]; then
+            HEALTH_CHECK_SA="github-health-check@homegeek-prod.iam.gserviceaccount.com"
+          fi
+          if [ -z "$PROJECT_ID" ]; then
+            echo "::error::Set GCP_PROJECT_ID on the prod GitHub environment"
+            exit 1
+          fi
+          echo "project_id=$PROJECT_ID" >> "$GITHUB_OUTPUT"
+          echo "health_check_sa=$HEALTH_CHECK_SA" >> "$GITHUB_OUTPUT"
+
+      - name: Google Auth (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ steps.project.outputs.health_check_sa }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-genai google-cloud-firestore
+
+      - name: Run daily health check
+        env:
+          GCP_PROJECT_ID: ${{ steps.project.outputs.project_id }}
+          GCP_REGION: ${{ vars.GCP_REGION }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          HEALTH_CHECK_ARTIFACT_PATH: ${{ runner.temp }}/prod-health-check.json
+        run: |
+          WINDOW_HOURS="${{ github.event.inputs.window_hours }}"
+          if [ -z "$WINDOW_HOURS" ]; then WINDOW_HOURS="24"; fi
+          MODEL="${{ vars.HEALTH_CHECK_LLM_MODEL }}"
+          if [ -z "$MODEL" ]; then MODEL="gemini-3.1-flash-lite"; fi
+          VERTEX_LOCATION="${{ vars.HEALTH_CHECK_VERTEX_LOCATION }}"
+          if [ -z "$VERTEX_LOCATION" ]; then VERTEX_LOCATION="global"; fi
+          EMAIL_TO="${{ vars.HEALTH_CHECK_EMAIL_TO }}"
+          if [ -z "$EMAIL_TO" ]; then EMAIL_TO="prakashbask@buildgeek.ai"; fi
+          EMAIL_FROM="${{ vars.HEALTH_CHECK_EMAIL_FROM }}"
+          if [ -z "$EMAIL_FROM" ]; then EMAIL_FROM="onboarding@resend.dev"; fi
+          ARGS=(
+            --project-id "$GCP_PROJECT_ID"
+            --window-hours "$WINDOW_HOURS"
+            --model "$MODEL"
+            --vertex-location "$VERTEX_LOCATION"
+            --email-to "$EMAIL_TO"
+            --email-from "$EMAIL_FROM"
+          )
+          if [ "${{ github.event.inputs.skip_vertex }}" = "true" ]; then
+            ARGS+=(--skip-vertex)
+          fi
+          python .github/scripts/prod-daily-health-check.py "${ARGS[@]}"
+
+      - name: Upload metrics artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prod-health-check-${{ github.run_id }}
+          path: ${{ runner.temp }}/prod-health-check.json
+          if-no-files-found: ignore
