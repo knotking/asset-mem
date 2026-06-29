@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Collect homegeek-prod health signals, summarize with Vertex AI, log token usage."""
+"""Collect AssetMem prod health signals (GCP project homegeek-prod), Vertex summary."""
 
 from __future__ import annotations
 
@@ -661,14 +661,14 @@ def build_health_email_bodies(
         'font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;">'
         '<tr><td>'
         '<h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#111827;">'
-        "HomeGeek Prod Daily Health Check</h1>"
+        "AssetMem Prod Daily Health Check</h1>"
         f"{summary_html}"
         '<h3 style="margin:20px 0 8px;font-size:15px;color:#111827;">LLM token usage</h3>'
         f"{token_html}{run_link_html}"
         "</td></tr></table></td></tr></table></body></html>"
     )
     plain_lines = [
-        "HomeGeek Prod Daily Health Check",
+        "AssetMem Prod Daily Health Check",
         "=" * 32,
         "",
         summary,
@@ -748,8 +748,8 @@ def summarize_with_vertex(
 
     client = genai.Client(vertexai=True, project=project_id, location=location)
     prompt = (
-        "You are an SRE writing a daily production health brief for homegeek-prod "
-        "(AssetMem AI). Use ONLY the JSON metrics below. Be concise (markdown, "
+        "You are an SRE writing a daily production health brief for AssetMem "
+        "(GCP project homegeek-prod). Use ONLY the JSON metrics below. Be concise (markdown, "
         "under 400 words). Sections: Overall status (one line), What went well, "
         "Issues / risks, Real user activity, Noise to ignore (bots/scanners), "
         "Action items (only if needed). Do not invent data.\n\n"
@@ -900,7 +900,7 @@ def write_github_step_summary(summary: str, token_usage: dict[str, Any]) -> None
     if not path:
         return
     with open(path, "a", encoding="utf-8") as fh:
-        fh.write("## HomeGeek Prod Daily Health Check\n\n")
+        fh.write("## AssetMem Prod Daily Health Check\n\n")
         fh.write(summary)
         fh.write("\n\n### LLM token usage\n\n")
         fh.write(f"- Model: `{token_usage.get('model')}`\n")
@@ -1011,7 +1011,7 @@ def main() -> int:
                 api_key=os.environ.get("RESEND_API_KEY", "").strip(),
                 from_addr=(args.email_from or DEFAULT_EMAIL_FROM).strip(),
                 to_addrs=recipients,
-                subject=f"homegeek-prod daily health — {date_label}",
+                subject=f"AssetMem prod daily health — {date_label}",
                 summary=summary,
                 token_usage=token_usage,
                 run_url=metrics.get("githubRunUrl"),

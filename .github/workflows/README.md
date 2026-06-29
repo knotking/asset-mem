@@ -49,7 +49,7 @@ Applies **operations** config to an existing environment (no full reprovision).
 Scripts: [`.github/scripts/`](../scripts/README.md). Docs: [docs/deployment/OPERATIONS.md](../docs/deployment/OPERATIONS.md).
 
 #### [daily-prod-health-check.yaml](daily-prod-health-check.yaml)
-Daily **homegeek-prod** health report via WIF and a **read-only** `github-health-check@…` SA (not the deploy SA). Vertex AI summary; token usage in Cloud Logging. See [README-daily-prod-health-check.md](README-daily-prod-health-check.md).
+Daily **AssetMem prod** health report (`homegeek-prod`) via WIF and a **read-only** `github-health-check@…` SA (not the deploy SA). Vertex AI summary; token usage in Cloud Logging. See [README-daily-prod-health-check.md](README-daily-prod-health-check.md).
 
 #### [apply-production-hardware.yaml](apply-production-hardware.yaml)
 
