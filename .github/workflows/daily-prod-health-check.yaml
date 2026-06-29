@@ -85,7 +85,7 @@ jobs:
           EMAIL_TO="${{ vars.HEALTH_CHECK_EMAIL_TO }}"
           if [ -z "$EMAIL_TO" ]; then EMAIL_TO="prakashbask@buildgeek.ai"; fi
           EMAIL_FROM="${{ vars.HEALTH_CHECK_EMAIL_FROM }}"
-          if [ -z "$EMAIL_FROM" ]; then EMAIL_FROM="AssetMem Ops <ops@buildgeek.ai>"; fi
+          if [ -z "$EMAIL_FROM" ]; then EMAIL_FROM="onboarding@resend.dev"; fi
           ARGS=(
             --project-id "$GCP_PROJECT_ID"
             --window-hours "$WINDOW_HOURS"
