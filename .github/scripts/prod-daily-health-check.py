@@ -318,6 +318,53 @@ def billing_export_table_ref(
     return f"{bq_project}.{dataset}.gcp_billing_export_v1_{suffix}"
 
 
+def _coerce_bq_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        cleaned = value.strip()
+        if not cleaned or cleaned.lower() == "null":
+            return None
+        return float(cleaned)
+    return None
+
+
+def _parse_bq_json_stdout(stdout: str) -> list[dict[str, Any]] | None:
+    text = stdout.strip()
+    if not text:
+        return None
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, list):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+
+    for line in reversed(text.splitlines()):
+        candidate = line.strip()
+        if not candidate.startswith("["):
+            continue
+        try:
+            parsed = json.loads(candidate)
+            if isinstance(parsed, list):
+                return parsed
+        except json.JSONDecodeError:
+            continue
+
+    start = text.find("[")
+    end = text.rfind("]")
+    if start >= 0 and end > start:
+        try:
+            parsed = json.loads(text[start : end + 1])
+            if isinstance(parsed, list):
+                return parsed
+        except json.JSONDecodeError:
+            pass
+    return None
+
+
 def query_mtd_spend_bigquery(
     *,
     bq_project: str,
@@ -343,6 +390,7 @@ WHERE project.id = @project_id
             "query",
             "--use_legacy_sql=false",
             "--format=json",
+            "--quiet",
             f"--project_id={bq_project}",
             f"--parameter=project_id:STRING:{project_id}",
             sql,
@@ -364,17 +412,22 @@ WHERE project.id = @project_id
         return {"error": detail.splitlines()[-1][:240]}
     if not out:
         return {"error": "BigQuery query returned no output"}
-    try:
-        rows = json.loads(out)
-    except json.JSONDecodeError:
+
+    rows = _parse_bq_json_stdout(out)
+    if rows is None:
+        preview = out.replace("\n", " ")[:160]
+        print(
+            f"::warning::Could not parse BigQuery JSON output: {preview}",
+            file=sys.stderr,
+        )
         return {"error": "Failed to parse BigQuery response"}
     if not rows:
         return {"netCost": 0.0, "currency": "USD"}
     row = rows[0]
-    net_cost = row.get("net_cost")
+    net_cost = _coerce_bq_float(row.get("net_cost"))
     if net_cost is None:
         return {"netCost": 0.0, "currency": row.get("currency") or "USD"}
-    return {"netCost": float(net_cost), "currency": row.get("currency") or "USD"}
+    return {"netCost": net_cost, "currency": row.get("currency") or "USD"}
 
 
 def _thresholds_crossed(spend_pct: float, thresholds: list[int]) -> list[int]:
