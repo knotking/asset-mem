@@ -72,14 +72,15 @@ jobs:
         env:
           GCP_PROJECT_ID: ${{ steps.project.outputs.project_id }}
           GCP_REGION: ${{ vars.GCP_REGION }}
-          HEALTH_CHECK_LLM_MODEL: ${{ vars.HEALTH_CHECK_LLM_MODEL }}
           VERTEX_LOCATION: ${{ vars.GCP_REGION }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEALTH_CHECK_ARTIFACT_PATH: ${{ runner.temp }}/prod-health-check.json
         run: |
           WINDOW_HOURS="${{ github.event.inputs.window_hours }}"
           if [ -z "$WINDOW_HOURS" ]; then WINDOW_HOURS="24"; fi
-          ARGS=(--project-id "$GCP_PROJECT_ID" --window-hours "$WINDOW_HOURS")
+          MODEL="${{ vars.HEALTH_CHECK_LLM_MODEL }}"
+          if [ -z "$MODEL" ]; then MODEL="gemini-3.1-flash-lite"; fi
+          ARGS=(--project-id "$GCP_PROJECT_ID" --window-hours "$WINDOW_HOURS" --model "$MODEL")
           if [ "${{ github.event.inputs.skip_vertex }}" = "true" ]; then
             ARGS+=(--skip-vertex)
           fi
