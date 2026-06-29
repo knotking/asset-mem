@@ -24,6 +24,7 @@ DEFAULT_WINDOW_HOURS = 24
 DEFAULT_EMAIL_TO = "prakashbask@buildgeek.ai"
 DEFAULT_EMAIL_FROM = "AssetMem Ops <ops@buildgeek.ai>"
 RESEND_API_URL = "https://api.resend.com/emails"
+RESEND_USER_AGENT = "HomeApp-daily-health-check/1.0 (BuildGeekAI/HomeApp)"
 
 WEBAPP_URL = "https://prod--homegeek-prod.us-central1.hosted.app/"
 PROXY_HEALTH_URL = "https://homecare-agent-proxy-prod-7qzcsllbxq-uc.a.run.app/health"
@@ -484,6 +485,7 @@ def send_resend_email(
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            "User-Agent": RESEND_USER_AGENT,
         },
         method="POST",
     )
@@ -494,6 +496,8 @@ def send_resend_email(
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
         raise RuntimeError(f"Resend API error ({exc.code}): {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"Resend API request failed: {exc}") from exc
 
 
 def write_github_step_summary(summary: str, token_usage: dict[str, Any]) -> None:
@@ -581,15 +585,18 @@ def main() -> int:
     if not args.skip_email:
         recipients = parse_email_recipients(args.email_to)
         date_label = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        send_resend_email(
-            api_key=os.environ.get("RESEND_API_KEY", "").strip(),
-            from_addr=(args.email_from or DEFAULT_EMAIL_FROM).strip(),
-            to_addrs=recipients,
-            subject=f"homegeek-prod daily health — {date_label}",
-            summary=summary,
-            token_usage=token_usage,
-            run_url=metrics.get("githubRunUrl"),
-        )
+        try:
+            send_resend_email(
+                api_key=os.environ.get("RESEND_API_KEY", "").strip(),
+                from_addr=(args.email_from or DEFAULT_EMAIL_FROM).strip(),
+                to_addrs=recipients,
+                subject=f"homegeek-prod daily health — {date_label}",
+                summary=summary,
+                token_usage=token_usage,
+                run_url=metrics.get("githubRunUrl"),
+            )
+        except RuntimeError as exc:
+            print(f"::warning::{exc}", file=sys.stderr)
 
     print("\n--- SUMMARY ---\n")
     print(summary)
