@@ -11,7 +11,9 @@ Operational scripts invoked by workflows and runnable locally after `gcloud auth
 | [`verify-production-hardware.sh`](./verify-production-hardware.sh) | Audit live hardware vs expectations |
 | [`apply-production-hardware.sh`](./apply-production-hardware.sh) | Orchestrate tier deploy workflows |
 | [`apply-apphosting-hardware.sh`](./apply-apphosting-hardware.sh) | gcloud run update for App Hosting backend |
+| [`prod-daily-health-check.py`](./prod-daily-health-check.py) | Daily prod metrics + Vertex summary + token logging |
+| [`grant-health-check-iam.sh`](./grant-health-check-iam.sh) | Create read-only `github-health-check@…` SA + WIF binding |
 
-**Workflows:** [`create-environment.yaml`](../workflows/create-environment.yaml), [`apply-operations-config.yaml`](../workflows/apply-operations-config.yaml), [`apply-production-hardware.yaml`](../workflows/apply-production-hardware.yaml)
+**Workflows:** [`create-environment.yaml`](../workflows/create-environment.yaml), [`apply-operations-config.yaml`](../workflows/apply-operations-config.yaml), [`apply-production-hardware.yaml`](../workflows/apply-production-hardware.yaml), [`daily-prod-health-check.yaml`](../workflows/daily-prod-health-check.yaml)
 
 **Docs:** [`docs/deployment/OPERATIONS.md`](../../docs/deployment/OPERATIONS.md)
