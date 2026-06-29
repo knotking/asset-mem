@@ -12,8 +12,6 @@ Uses a **dedicated read-only service account** — not the deployment SA.
 
 Manual run: **Actions → Daily Prod Health Check → Run workflow**.
 
-Also runs on **push** to `ops/daily-prod-health-check-gha` (for testing before merge).
-
 ## What it does
 
 1. Authenticates via WIF as `github-health-check@…` (read-only observability SA).
@@ -25,8 +23,9 @@ Also runs on **push** to `ops/daily-prod-health-check-gha` (for testing before m
    - Firestore `support_requests` new messages (read-only)
    - Failed GitHub Actions runs in the window
 3. Calls **Vertex AI** (`HEALTH_CHECK_LLM_MODEL`, default `gemini-3.1-flash-lite`) for a concise markdown summary.
-4. Emails the summary via **Resend** (default: `prakashbask@buildgeek.ai`).
-5. Persists:
+4. Appends a **Billing** section from the GCP Budget API (budget `homegeek-prod`, project-scoped).
+5. Emails the summary via **Resend** as **HTML + plain text** (mobile-friendly; not raw markdown in `<pre>`).
+6. Persists:
    - **Cloud Logging** `homeapp-daily-health-check` — summary, token usage, key counters
    - **GitHub Actions step summary** — human-readable report
    - **Artifact** — full JSON per run
@@ -51,6 +50,23 @@ Creates `github-health-check@homegeek-prod.iam.gserviceaccount.com` with:
 | `roles/datastore.viewer` | Read `support_requests` |
 | `roles/aiplatform.user` | Vertex summary (only non-read API) |
 
+On billing account `01CB48-B6126A-D1F2D7`:
+
+| Role | Purpose |
+|------|---------|
+| `roles/billing.viewer` | List/read `homegeek-prod` budget via Budget API |
+
+### 1b. Create prod billing budget (once)
+
+```bash
+chmod +x .github/scripts/apply-prod-billing-budget.sh
+./.github/scripts/apply-prod-billing-budget.sh homegeek-prod 01CB48-B6126A-D1F2D7 200
+```
+
+Creates budget display name **`homegeek-prod`**, scoped to project `homegeek-prod`, default **$200 USD/month** with 50/90/100% alert thresholds. Adjust the third argument for a different limit.
+
+GCP has no public “get MTD spend” API without BigQuery export; the daily report shows budget limit/thresholds plus a console link for current spend. Budget alert emails fire separately when thresholds are crossed.
+
 ### 2. GitHub environment (`prod`)
 
 | Variable | Example (prod) |
@@ -63,6 +79,8 @@ Creates `github-health-check@homegeek-prod.iam.gserviceaccount.com` with:
 | `HEALTH_CHECK_VERTEX_LOCATION` | _(optional)_ `global` _(required for `gemini-3.1-flash-lite`; do not use `us-central1`)_ |
 | `HEALTH_CHECK_EMAIL_TO` | _(optional)_ `prakashbask@buildgeek.ai` _(comma-separated)_ |
 | `HEALTH_CHECK_EMAIL_FROM` | _(optional)_ `onboarding@resend.dev` _(Resend test sender; no domain verify needed)_ |
+| `HEALTH_CHECK_BILLING_ACCOUNT` | _(optional)_ `01CB48-B6126A-D1F2D7` |
+| `HEALTH_CHECK_BUDGET_NAME` | _(optional)_ `homegeek-prod` |
 
 **Secret** (prod environment or repository):
 
@@ -79,6 +97,8 @@ Do **not** use `GCP_SERVICE_ACCOUNT_EMAIL` (deployment SA) for this workflow.
 3. Optional later: verify **buildgeek.ai** on Resend and set `HEALTH_CHECK_EMAIL_FROM` to e.g. `AssetMem Ops <ops@buildgeek.ai>` for branded mail.
 
 If email fails with Resend **403 / error code 1010**, the HTTP client is missing a `User-Agent` header (fixed in `prod-daily-health-check.py`).
+
+Emails are sent as **HTML + plain text** (`text` + `html` in Resend). Mobile clients that ignore markdown now get structured headings/lists in HTML, with a plain-text fallback.
 
 Local runs skip email unless you export `RESEND_API_KEY`, or pass `--skip-email`.
 
@@ -122,3 +142,4 @@ python .github/scripts/prod-daily-health-check.py --window-hours 24 --skip-email
 | [daily-prod-health-check.yaml](./daily-prod-health-check.yaml) | Workflow |
 | [../scripts/prod-daily-health-check.py](../scripts/prod-daily-health-check.py) | Collector + Vertex summary |
 | [../scripts/grant-health-check-iam.sh](../scripts/grant-health-check-iam.sh) | Create SA + read-only IAM + WIF |
+| [../scripts/apply-prod-billing-budget.sh](../scripts/apply-prod-billing-budget.sh) | Create `homegeek-prod` monthly budget |

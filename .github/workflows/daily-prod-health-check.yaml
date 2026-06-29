@@ -4,9 +4,6 @@
 name: Daily Prod Health Check
 
 on:
-  push:
-    branches:
-      - ops/daily-prod-health-check-gha
   schedule:
     - cron: "30 3 * * *"
   workflow_dispatch:

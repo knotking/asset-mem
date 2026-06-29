@@ -15,6 +15,7 @@ set -euo pipefail
 
 PROJECT_ID="${1:?project id required}"
 GITHUB_REPO="${2:-BuildGeekAI/HomeApp}"
+BILLING_ACCOUNT="${3:-01CB48-B6126A-D1F2D7}"
 SA_ID="github-health-check"
 SA_EMAIL="${SA_ID}@${PROJECT_ID}.iam.gserviceaccount.com"
 
@@ -50,6 +51,13 @@ bind_role "roles/logging.logWriter"
 bind_role "roles/datastore.viewer"
 bind_role "roles/aiplatform.user"
 
+echo "Granting billing account read access (Budget API):"
+gcloud billing accounts add-iam-policy-binding "$BILLING_ACCOUNT" \
+  --member="serviceAccount:${SA_EMAIL}" \
+  --role="roles/billing.viewer" \
+  --quiet >/dev/null
+echo "  + roles/billing.viewer on billingAccounts/${BILLING_ACCOUNT}"
+
 echo "Binding WIF principal for ${GITHUB_REPO}:"
 gcloud iam service-accounts add-iam-policy-binding "$SA_EMAIL" \
   --project="$PROJECT_ID" \
@@ -68,4 +76,7 @@ Set on GitHub → Environments → prod:
 Optional Firestore history (off by default): add roles/datastore.user and set
   HEALTH_CHECK_PERSIST_FIRESTORE=true
 on the workflow job if you want ops_daily_health_checks/{runId} documents.
+
+Create the prod billing budget (once):
+  ./.github/scripts/apply-prod-billing-budget.sh ${PROJECT_ID} ${BILLING_ACCOUNT}
 EOF
