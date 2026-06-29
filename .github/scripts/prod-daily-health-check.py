@@ -23,6 +23,8 @@ DEFAULT_VERTEX_LOCATION = "global"
 DEFAULT_WINDOW_HOURS = 24
 DEFAULT_EMAIL_TO = "prakashbask@buildgeek.ai"
 DEFAULT_EMAIL_FROM = "onboarding@resend.dev"
+DEFAULT_BILLING_ACCOUNT = "01CB48-B6126A-D1F2D7"
+DEFAULT_BUDGET_DISPLAY_NAME = "homegeek-prod"
 RESEND_API_URL = "https://api.resend.com/emails"
 RESEND_USER_AGENT = "HomeApp-daily-health-check/1.0 (BuildGeekAI/HomeApp)"
 
@@ -275,6 +277,289 @@ def collect_github_actions(repo: str, since_iso: str) -> dict[str, Any]:
     }
 
 
+def resolve_billing_account_id(project_id: str) -> str | None:
+    out = run_cmd(
+        [
+            "gcloud",
+            "billing",
+            "projects",
+            "describe",
+            project_id,
+            "--format=value(billingAccountName)",
+        ],
+        check=False,
+    )
+    if out.startswith("billingAccounts/"):
+        return out.split("/", 1)[1]
+    return None
+
+
+def _budget_amount_usd(budget: dict[str, Any]) -> tuple[float | None, str]:
+    amount = budget.get("amount") or {}
+    specified = amount.get("specifiedAmount") or {}
+    if specified:
+        units = specified.get("units", "0")
+        nanos = specified.get("nanos", 0) or 0
+        currency = specified.get("currencyCode", "USD")
+        try:
+            value = float(units) + float(nanos) / 1_000_000_000
+        except (TypeError, ValueError):
+            value = None
+        return value, currency
+    return None, "USD"
+
+
+def collect_billing(
+    project_id: str,
+    *,
+    billing_account: str | None = None,
+    budget_display_name: str = DEFAULT_BUDGET_DISPLAY_NAME,
+) -> dict[str, Any]:
+    account_id = (billing_account or resolve_billing_account_id(project_id) or "").strip()
+    if not account_id:
+        return {"found": False, "error": "No billing account linked to project"}
+
+    project_number = run_cmd(
+        ["gcloud", "projects", "describe", project_id, "--format=value(projectNumber)"],
+        check=False,
+    )
+    project_ref = f"projects/{project_number}" if project_number else None
+
+    out = run_cmd(
+        [
+            "gcloud",
+            "billing",
+            "budgets",
+            "list",
+            f"--billing-account={account_id}",
+            "--format=json",
+        ],
+        check=False,
+    )
+    if not out:
+        return {
+            "found": False,
+            "billingAccountId": account_id,
+            "error": "Could not list budgets (check roles/billing.viewer on billing account)",
+        }
+
+    budgets = json.loads(out)
+    matched: dict[str, Any] | None = None
+    for budget in budgets:
+        if budget.get("displayName") != budget_display_name:
+            continue
+        projects = (budget.get("budgetFilter") or {}).get("projects") or []
+        if projects and project_ref and project_ref not in projects:
+            continue
+        matched = budget
+        break
+
+    if not matched:
+        return {
+            "found": False,
+            "billingAccountId": account_id,
+            "displayName": budget_display_name,
+            "error": f'Budget "{budget_display_name}" not found',
+        }
+
+    name = matched.get("name", "")
+    budget_id = name.rsplit("/", 1)[-1] if name else None
+    monthly_limit, currency = _budget_amount_usd(matched)
+    threshold_rules = matched.get("thresholdRules") or []
+    thresholds = sorted(
+        {
+            int(round(float(rule.get("thresholdPercent", 0)) * 100))
+            for rule in threshold_rules
+            if rule.get("thresholdPercent") is not None
+        }
+    )
+    calendar_period = (matched.get("budgetFilter") or {}).get("calendarPeriod", "MONTH")
+    console_url = (
+        f"https://console.cloud.google.com/billing/{account_id}/budgets/{budget_id}"
+        f"?project={project_id}"
+        if budget_id
+        else f"https://console.cloud.google.com/billing/{account_id}/budgets?project={project_id}"
+    )
+
+    return {
+        "found": True,
+        "billingAccountId": account_id,
+        "budgetId": budget_id,
+        "displayName": matched.get("displayName"),
+        "monthlyLimit": monthly_limit,
+        "currencyCode": currency,
+        "calendarPeriod": calendar_period,
+        "thresholdPercentages": thresholds,
+        "consoleUrl": console_url,
+        "projectId": project_id,
+    }
+
+
+def format_billing_section(billing: dict[str, Any]) -> str:
+    if billing.get("error") and not billing.get("found"):
+        return (
+            "## Billing\n\n"
+            f"- Status: unavailable ({billing['error']})\n"
+        )
+
+    limit = billing.get("monthlyLimit")
+    currency = billing.get("currencyCode") or "USD"
+    limit_text = f"${limit:,.0f} {currency}" if isinstance(limit, (int, float)) else "unknown"
+    thresholds = billing.get("thresholdPercentages") or []
+    threshold_text = ", ".join(f"{pct}%" for pct in thresholds) if thresholds else "none"
+    console_url = billing.get("consoleUrl") or ""
+
+    lines = [
+        "## Billing",
+        "",
+        f"- **Budget:** {billing.get('displayName')} (scoped to `{billing.get('projectId')}`)",
+        f"- **Monthly limit:** {limit_text} ({billing.get('calendarPeriod', 'MONTH').lower()})",
+        f"- **Alert thresholds:** {threshold_text}",
+    ]
+    if console_url:
+        lines.append(f"- **View spend:** {console_url}")
+    lines.extend(
+        [
+            "",
+            "Month-to-date spend is shown in the GCP budget console (Budget API exposes "
+            "limits and alert rules, not live spend without BigQuery export).",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def append_billing_section(summary: str, billing: dict[str, Any]) -> str:
+    section = format_billing_section(billing)
+    summary = summary.rstrip()
+    if summary:
+        return f"{summary}\n\n{section}\n"
+    return f"{section}\n"
+
+
+def markdown_to_html(markdown_text: str) -> str:
+    """Lightweight markdown → HTML for email (headings, lists, bold, links, paragraphs)."""
+    lines = markdown_text.replace("\r\n", "\n").split("\n")
+    parts: list[str] = []
+    list_items: list[str] = []
+    in_list = False
+
+    def flush_list() -> None:
+        nonlocal in_list
+        if not list_items:
+            return
+        items = "".join(f"<li>{item}</li>" for item in list_items)
+        parts.append(
+            f'<ul style="margin:0 0 12px 20px;padding:0;line-height:1.5;">{items}</ul>'
+        )
+        list_items.clear()
+        in_list = False
+
+    def inline(text: str) -> str:
+        escaped = html.escape(text)
+        escaped = re.sub(
+            r"\[([^\]]+)\]\(([^)]+)\)",
+            r'<a href="\2" style="color:#2563eb;text-decoration:underline;">\1</a>',
+            escaped,
+        )
+        escaped = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", escaped)
+        escaped = re.sub(r"`([^`]+)`", r"<code>\1</code>", escaped)
+        escaped = re.sub(
+            r"(https?://[^\s<]+)",
+            r'<a href="\1" style="color:#2563eb;text-decoration:underline;word-break:break-all;">\1</a>',
+            escaped,
+        )
+        return escaped
+
+    for raw in lines:
+        line = raw.rstrip()
+        if not line.strip():
+            flush_list()
+            continue
+
+        heading = re.match(r"^(#{1,4})\s+(.+)$", line)
+        if heading:
+            flush_list()
+            level = len(heading.group(1))
+            tag = f"h{min(level + 1, 4)}"
+            parts.append(
+                f'<{tag} style="margin:18px 0 8px;font-size:{"20" if level == 1 else "17" if level == 2 else "15"}px;color:#111827;">'
+                f"{inline(heading.group(2))}</{tag}>"
+            )
+            continue
+
+        bullet = re.match(r"^[-*]\s+(.+)$", line)
+        if bullet:
+            if not in_list:
+                flush_list()
+                in_list = True
+            list_items.append(inline(bullet.group(1)))
+            continue
+
+        flush_list()
+        parts.append(
+            f'<p style="margin:0 0 12px;line-height:1.55;color:#374151;">{inline(line)}</p>'
+        )
+
+    flush_list()
+    return "".join(parts)
+
+
+def build_health_email_bodies(
+    summary: str,
+    *,
+    token_usage: dict[str, Any],
+    run_url: str | None,
+) -> tuple[str, str]:
+    summary_html = markdown_to_html(summary)
+    token_lines = [
+        f"Model: {token_usage.get('model')}",
+        f"Prompt tokens: {token_usage.get('promptTokenCount')}",
+        f"Output tokens: {token_usage.get('candidatesTokenCount')}",
+        f"Total tokens: {token_usage.get('totalTokenCount')}",
+    ]
+    token_html = "".join(
+        f'<div style="margin:0 0 4px;color:#374151;">{html.escape(line)}</div>'
+        for line in token_lines
+    )
+    run_link_html = (
+        f'<p style="margin:16px 0 0;"><a href="{html.escape(run_url)}" '
+        f'style="color:#2563eb;text-decoration:underline;">View GitHub Actions run</a></p>'
+        if run_url
+        else ""
+    )
+    body_html = (
+        '<!DOCTYPE html><html><head><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width, initial-scale=1"></head>'
+        '<body style="margin:0;padding:0;background:#f4f4f5;">'
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+        'style="background:#f4f4f5;padding:16px 0;">'
+        '<tr><td align="center">'
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+        'style="max-width:600px;background:#ffffff;border-radius:8px;padding:24px;'
+        'font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;">'
+        '<tr><td>'
+        '<h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#111827;">'
+        "HomeGeek Prod Daily Health Check</h1>"
+        f"{summary_html}"
+        '<h3 style="margin:20px 0 8px;font-size:15px;color:#111827;">LLM token usage</h3>'
+        f"{token_html}{run_link_html}"
+        "</td></tr></table></td></tr></table></body></html>"
+    )
+    plain_lines = [
+        "HomeGeek Prod Daily Health Check",
+        "=" * 32,
+        "",
+        summary,
+        "",
+        "LLM token usage",
+        "-" * 16,
+        *token_lines,
+    ]
+    if run_url:
+        plain_lines.extend(["", f"GitHub Actions run: {run_url}"])
+    return body_html, "\n".join(plain_lines)
+
+
 def collect_metrics(
     project_id: str, region: str, window_hours: int, repo: str
 ) -> dict[str, Any]:
@@ -454,23 +739,10 @@ def send_resend_email(
         print("::warning::HEALTH_CHECK_EMAIL_FROM not set; skipping email", file=sys.stderr)
         return
 
-    safe_summary = html.escape(summary)
-    token_lines = [
-        f"Model: {token_usage.get('model')}",
-        f"Prompt tokens: {token_usage.get('promptTokenCount')}",
-        f"Output tokens: {token_usage.get('candidatesTokenCount')}",
-        f"Total tokens: {token_usage.get('totalTokenCount')}",
-    ]
-    token_html = "<br>".join(html.escape(line) for line in token_lines)
-    run_link = (
-        f'<p><a href="{html.escape(run_url)}">View GitHub Actions run</a></p>'
-        if run_url
-        else ""
-    )
-    body_html = (
-        f"<h2>HomeGeek Prod Daily Health Check</h2>"
-        f"<pre style=\"white-space:pre-wrap;font-family:monospace\">{safe_summary}</pre>"
-        f"<h3>LLM token usage</h3><p>{token_html}</p>{run_link}"
+    body_html, body_text = build_health_email_bodies(
+        summary,
+        token_usage=token_usage,
+        run_url=run_url,
     )
 
     payload = {
@@ -478,6 +750,7 @@ def send_resend_email(
         "to": to_addrs,
         "subject": subject,
         "html": body_html,
+        "text": body_text,
     }
     request = urllib.request.Request(
         RESEND_API_URL,
@@ -540,6 +813,14 @@ def main() -> int:
         default=os.environ.get("HEALTH_CHECK_ARTIFACT_PATH"),
         help="Optional path to write full run JSON for CI artifacts",
     )
+    parser.add_argument(
+        "--billing-account",
+        default=env_or_default("HEALTH_CHECK_BILLING_ACCOUNT", DEFAULT_BILLING_ACCOUNT),
+    )
+    parser.add_argument(
+        "--budget-display-name",
+        default=env_or_default("HEALTH_CHECK_BUDGET_NAME", DEFAULT_BUDGET_DISPLAY_NAME),
+    )
     args = parser.parse_args()
     args.model = (args.model or DEFAULT_MODEL).strip()
 
@@ -566,6 +847,14 @@ def main() -> int:
             location=args.vertex_location,
             model=args.model,
         )
+
+    billing = collect_billing(
+        args.project_id,
+        billing_account=args.billing_account,
+        budget_display_name=args.budget_display_name,
+    )
+    metrics["billing"] = billing
+    summary = append_billing_section(summary, billing)
 
     run_id = persist_run(
         args.project_id, metrics=metrics, summary=summary, token_usage=token_usage
