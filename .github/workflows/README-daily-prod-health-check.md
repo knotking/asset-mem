@@ -25,7 +25,8 @@ Also runs on **push** to `ops/daily-prod-health-check-gha` (for testing before m
    - Firestore `support_requests` new messages (read-only)
    - Failed GitHub Actions runs in the window
 3. Calls **Vertex AI** (`HEALTH_CHECK_LLM_MODEL`, default `gemini-3.1-flash-lite`) for a concise markdown summary.
-4. Persists:
+4. Emails the summary via **Resend** (default: `prakashbask@buildgeek.ai`).
+5. Persists:
    - **Cloud Logging** `homeapp-daily-health-check` — summary, token usage, key counters
    - **GitHub Actions step summary** — human-readable report
    - **Artifact** — full JSON per run
@@ -60,10 +61,26 @@ Creates `github-health-check@homegeek-prod.iam.gserviceaccount.com` with:
 | `GCP_HEALTH_CHECK_SERVICE_ACCOUNT_EMAIL` | `github-health-check@homegeek-prod.iam.gserviceaccount.com` _(default if unset)_ |
 | `HEALTH_CHECK_LLM_MODEL` | _(optional)_ `gemini-3.1-flash-lite` _(script default if unset)_ |
 | `HEALTH_CHECK_VERTEX_LOCATION` | _(optional)_ `global` _(required for `gemini-3.1-flash-lite`; do not use `us-central1`)_ |
+| `HEALTH_CHECK_EMAIL_TO` | _(optional)_ `prakashbask@buildgeek.ai` _(comma-separated)_ |
+| `HEALTH_CHECK_EMAIL_FROM` | _(optional)_ `AssetMem Ops <ops@buildgeek.ai>` _(must be a verified Resend sender)_ |
+
+**Secret** (prod environment or repository):
+
+| Secret | Purpose |
+|--------|---------|
+| `RESEND_API_KEY` | Resend API key (`re_…`) |
 
 Do **not** use `GCP_SERVICE_ACCOUNT_EMAIL` (deployment SA) for this workflow.
 
-### 3. Optional Firestore history
+### 3. Resend setup
+
+1. Create a [Resend](https://resend.com) account and add/verify the **buildgeek.ai** domain.
+2. Create an API key and add `RESEND_API_KEY` to GitHub **prod** secrets.
+3. Ensure `HEALTH_CHECK_EMAIL_FROM` uses an address on the verified domain (default `ops@buildgeek.ai`).
+
+Local runs skip email unless you export `RESEND_API_KEY`, or pass `--skip-email`.
+
+### 4. Optional Firestore history
 
 Default: **disabled** (read-only SA). To also write `ops_daily_health_checks/{runId}`:
 
@@ -81,6 +98,7 @@ Then set on the workflow job env: `HEALTH_CHECK_PERSIST_FIRESTORE=true`.
 |----------|--------|
 | Cloud Logging `homeapp-daily-health-check` | `llm.promptTokenCount`, `llm.candidatesTokenCount`, `llm.totalTokenCount` |
 | GitHub run **Summary** tab | LLM token usage section |
+| **Resend email** | HTML summary + token usage + link to Actions run |
 | Firestore (optional) | same `llm` object on run doc |
 
 This is **ops telemetry**, not user billing (`llm_token_usage`).
@@ -92,7 +110,7 @@ gcloud auth application-default login
 gcloud config set project homegeek-prod
 export GCP_PROJECT_ID=homegeek-prod
 pip install google-genai google-cloud-firestore
-python .github/scripts/prod-daily-health-check.py --window-hours 24
+python .github/scripts/prod-daily-health-check.py --window-hours 24 --skip-email
 ```
 
 ## Files

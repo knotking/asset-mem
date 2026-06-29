@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import re
@@ -20,6 +21,9 @@ DEFAULT_MODEL = "gemini-3.1-flash-lite"
 DEFAULT_REGION = "us-central1"
 DEFAULT_VERTEX_LOCATION = "global"
 DEFAULT_WINDOW_HOURS = 24
+DEFAULT_EMAIL_TO = "prakashbask@buildgeek.ai"
+DEFAULT_EMAIL_FROM = "AssetMem Ops <ops@buildgeek.ai>"
+RESEND_API_URL = "https://api.resend.com/emails"
 
 WEBAPP_URL = "https://prod--homegeek-prod.us-central1.hosted.app/"
 PROXY_HEALTH_URL = "https://homecare-agent-proxy-prod-7qzcsllbxq-uc.a.run.app/health"
@@ -423,6 +427,75 @@ def persist_run(
     return str(run_id)
 
 
+def parse_email_recipients(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return [part.strip() for part in value.split(",") if part.strip()]
+
+
+def send_resend_email(
+    *,
+    api_key: str,
+    from_addr: str,
+    to_addrs: list[str],
+    subject: str,
+    summary: str,
+    token_usage: dict[str, Any],
+    run_url: str | None,
+) -> None:
+    if not to_addrs:
+        print("No email recipients configured; skipping Resend.", file=sys.stderr)
+        return
+    if not api_key:
+        print("::warning::RESEND_API_KEY not set; skipping email", file=sys.stderr)
+        return
+    if not from_addr:
+        print("::warning::HEALTH_CHECK_EMAIL_FROM not set; skipping email", file=sys.stderr)
+        return
+
+    safe_summary = html.escape(summary)
+    token_lines = [
+        f"Model: {token_usage.get('model')}",
+        f"Prompt tokens: {token_usage.get('promptTokenCount')}",
+        f"Output tokens: {token_usage.get('candidatesTokenCount')}",
+        f"Total tokens: {token_usage.get('totalTokenCount')}",
+    ]
+    token_html = "<br>".join(html.escape(line) for line in token_lines)
+    run_link = (
+        f'<p><a href="{html.escape(run_url)}">View GitHub Actions run</a></p>'
+        if run_url
+        else ""
+    )
+    body_html = (
+        f"<h2>HomeGeek Prod Daily Health Check</h2>"
+        f"<pre style=\"white-space:pre-wrap;font-family:monospace\">{safe_summary}</pre>"
+        f"<h3>LLM token usage</h3><p>{token_html}</p>{run_link}"
+    )
+
+    payload = {
+        "from": from_addr,
+        "to": to_addrs,
+        "subject": subject,
+        "html": body_html,
+    }
+    request = urllib.request.Request(
+        RESEND_API_URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            response.read()
+        print(f"Sent health summary email to {', '.join(to_addrs)} via Resend.")
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"Resend API error ({exc.code}): {detail}") from exc
+
+
 def write_github_step_summary(summary: str, token_usage: dict[str, Any]) -> None:
     path = os.environ.get("GITHUB_STEP_SUMMARY")
     if not path:
@@ -448,6 +521,16 @@ def main() -> int:
         default=env_or_default("VERTEX_LOCATION", DEFAULT_VERTEX_LOCATION),
     )
     parser.add_argument("--skip-vertex", action="store_true")
+    parser.add_argument("--skip-email", action="store_true")
+    parser.add_argument(
+        "--email-to",
+        default=env_or_default("HEALTH_CHECK_EMAIL_TO", DEFAULT_EMAIL_TO),
+        help="Comma-separated Resend recipients (empty to disable)",
+    )
+    parser.add_argument(
+        "--email-from",
+        default=env_or_default("HEALTH_CHECK_EMAIL_FROM", DEFAULT_EMAIL_FROM),
+    )
     parser.add_argument(
         "--artifact-path",
         default=os.environ.get("HEALTH_CHECK_ARTIFACT_PATH"),
@@ -494,6 +577,19 @@ def main() -> int:
             json.dump(artifact, fh, indent=2, default=str)
 
     write_github_step_summary(summary, token_usage)
+
+    if not args.skip_email:
+        recipients = parse_email_recipients(args.email_to)
+        date_label = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        send_resend_email(
+            api_key=os.environ.get("RESEND_API_KEY", "").strip(),
+            from_addr=(args.email_from or DEFAULT_EMAIL_FROM).strip(),
+            to_addrs=recipients,
+            subject=f"homegeek-prod daily health — {date_label}",
+            summary=summary,
+            token_usage=token_usage,
+            run_url=metrics.get("githubRunUrl"),
+        )
 
     print("\n--- SUMMARY ---\n")
     print(summary)
