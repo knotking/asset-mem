@@ -24,6 +24,13 @@ WEBAPP_URL = "https://prod--homegeek-prod.us-central1.hosted.app/"
 PROXY_HEALTH_URL = "https://homecare-agent-proxy-prod-7qzcsllbxq-uc.a.run.app/health"
 
 
+def env_or_default(name: str, default: str) -> str:
+    value = os.environ.get(name)
+    if value is None or not str(value).strip():
+        return default
+    return str(value).strip()
+
+
 def run_cmd(args: list[str], *, check: bool = True) -> str:
     result = subprocess.run(
         args,
@@ -322,6 +329,10 @@ def summarize_with_vertex(
 ) -> tuple[str, dict[str, Any]]:
     from google import genai
 
+    model = (model or DEFAULT_MODEL).strip()
+    if not model:
+        raise ValueError("Vertex model is required")
+
     client = genai.Client(vertexai=True, project=project_id, location=location)
     prompt = (
         "You are an SRE writing a daily production health brief for homegeek-prod "
@@ -430,10 +441,10 @@ def main() -> int:
     parser.add_argument("--project-id", default=os.environ.get("GCP_PROJECT_ID"))
     parser.add_argument("--region", default=os.environ.get("GCP_REGION", DEFAULT_REGION))
     parser.add_argument("--window-hours", type=int, default=DEFAULT_WINDOW_HOURS)
-    parser.add_argument("--model", default=os.environ.get("HEALTH_CHECK_LLM_MODEL", DEFAULT_MODEL))
+    parser.add_argument("--model", default=env_or_default("HEALTH_CHECK_LLM_MODEL", DEFAULT_MODEL))
     parser.add_argument(
         "--vertex-location",
-        default=os.environ.get("VERTEX_LOCATION", DEFAULT_REGION),
+        default=env_or_default("VERTEX_LOCATION", DEFAULT_REGION),
     )
     parser.add_argument("--skip-vertex", action="store_true")
     parser.add_argument(
@@ -442,6 +453,7 @@ def main() -> int:
         help="Optional path to write full run JSON for CI artifacts",
     )
     args = parser.parse_args()
+    args.model = (args.model or DEFAULT_MODEL).strip()
 
     if not args.project_id:
         print("::error::GCP_PROJECT_ID is required", file=sys.stderr)
