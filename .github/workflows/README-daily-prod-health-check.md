@@ -59,6 +59,7 @@ Creates `github-health-check@homegeek-prod.iam.gserviceaccount.com` with:
 | `WORKLOAD_IDENTITY_PROVIDER` | `projects/686746113874/locations/global/workloadIdentityPools/github-pool/providers/github-provider` |
 | `GCP_HEALTH_CHECK_SERVICE_ACCOUNT_EMAIL` | `github-health-check@homegeek-prod.iam.gserviceaccount.com` _(default if unset)_ |
 | `HEALTH_CHECK_LLM_MODEL` | _(optional)_ `gemini-3.1-flash-lite` _(script default if unset)_ |
+| `HEALTH_CHECK_VERTEX_LOCATION` | _(optional)_ `global` _(required for `gemini-3.1-flash-lite`; do not use `us-central1`)_ |
 
 Do **not** use `GCP_SERVICE_ACCOUNT_EMAIL` (deployment SA) for this workflow.
 

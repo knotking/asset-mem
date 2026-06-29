@@ -18,6 +18,7 @@ from typing import Any
 FIRESTORE_COLLECTION = "ops_daily_health_checks"
 DEFAULT_MODEL = "gemini-3.1-flash-lite"
 DEFAULT_REGION = "us-central1"
+DEFAULT_VERTEX_LOCATION = "global"
 DEFAULT_WINDOW_HOURS = 24
 
 WEBAPP_URL = "https://prod--homegeek-prod.us-central1.hosted.app/"
@@ -444,7 +445,7 @@ def main() -> int:
     parser.add_argument("--model", default=env_or_default("HEALTH_CHECK_LLM_MODEL", DEFAULT_MODEL))
     parser.add_argument(
         "--vertex-location",
-        default=env_or_default("VERTEX_LOCATION", DEFAULT_REGION),
+        default=env_or_default("VERTEX_LOCATION", DEFAULT_VERTEX_LOCATION),
     )
     parser.add_argument("--skip-vertex", action="store_true")
     parser.add_argument(
