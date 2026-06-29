@@ -12,6 +12,8 @@ Uses a **dedicated read-only service account** — not the deployment SA.
 
 Manual run: **Actions → Daily Prod Health Check → Run workflow**.
 
+Also runs on **push** to `ops/daily-prod-health-check-gha` (for testing before merge).
+
 ## What it does
 
 1. Authenticates via WIF as `github-health-check@…` (read-only observability SA).
