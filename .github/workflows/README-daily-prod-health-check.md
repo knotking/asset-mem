@@ -78,6 +78,8 @@ Do **not** use `GCP_SERVICE_ACCOUNT_EMAIL` (deployment SA) for this workflow.
 2. Create an API key and add `RESEND_API_KEY` to GitHub **prod** secrets.
 3. Ensure `HEALTH_CHECK_EMAIL_FROM` uses an address on the verified domain (default `ops@buildgeek.ai`).
 
+If email fails with Resend **403 / error code 1010**, the HTTP client is missing a `User-Agent` header (fixed in `prod-daily-health-check.py`). Other 403s usually mean an unverified `from` domain.
+
 Local runs skip email unless you export `RESEND_API_KEY`, or pass `--skip-email`.
 
 ### 4. Optional Firestore history
