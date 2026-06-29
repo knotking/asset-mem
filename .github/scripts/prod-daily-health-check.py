@@ -22,7 +22,7 @@ DEFAULT_REGION = "us-central1"
 DEFAULT_VERTEX_LOCATION = "global"
 DEFAULT_WINDOW_HOURS = 24
 DEFAULT_EMAIL_TO = "prakashbask@buildgeek.ai"
-DEFAULT_EMAIL_FROM = "AssetMem Ops <ops@buildgeek.ai>"
+DEFAULT_EMAIL_FROM = "onboarding@resend.dev"
 RESEND_API_URL = "https://api.resend.com/emails"
 RESEND_USER_AGENT = "HomeApp-daily-health-check/1.0 (BuildGeekAI/HomeApp)"
 
