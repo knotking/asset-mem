@@ -25,6 +25,8 @@ DEFAULT_EMAIL_TO = "prakashbask@buildgeek.ai"
 DEFAULT_EMAIL_FROM = "onboarding@resend.dev"
 DEFAULT_BILLING_ACCOUNT = "01CB48-B6126A-D1F2D7"
 DEFAULT_BUDGET_DISPLAY_NAME = "homegeek-prod"
+DEFAULT_BQ_BILLING_PROJECT = "homegeek-prod"
+DEFAULT_BQ_BILLING_DATASET = "billing_export"
 RESEND_API_URL = "https://api.resend.com/emails"
 RESEND_USER_AGENT = "HomeApp-daily-health-check/1.0 (BuildGeekAI/HomeApp)"
 
@@ -309,11 +311,90 @@ def _budget_amount_usd(budget: dict[str, Any]) -> tuple[float | None, str]:
     return None, "USD"
 
 
+def billing_export_table_ref(
+    bq_project: str, dataset: str, billing_account_id: str
+) -> str:
+    suffix = billing_account_id.replace("-", "_")
+    return f"{bq_project}.{dataset}.gcp_billing_export_v1_{suffix}"
+
+
+def query_mtd_spend_bigquery(
+    *,
+    bq_project: str,
+    dataset: str,
+    billing_account_id: str,
+    project_id: str,
+) -> dict[str, Any]:
+    table_ref = billing_export_table_ref(bq_project, dataset, billing_account_id)
+    sql = f"""
+SELECT
+  ROUND(
+    SUM(cost) + SUM(IFNULL((SELECT SUM(c.amount) FROM UNNEST(credits) c), 0)),
+    4
+  ) AS net_cost,
+  ANY_VALUE(currency) AS currency
+FROM `{table_ref}`
+WHERE project.id = @project_id
+  AND invoice.month = FORMAT_DATE('%Y%m', CURRENT_DATE())
+"""
+    result = subprocess.run(
+        [
+            "bq",
+            "query",
+            "--use_legacy_sql=false",
+            "--format=json",
+            f"--project_id={bq_project}",
+            f"--parameter=project_id:STRING:{project_id}",
+            sql,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    out = result.stdout.strip()
+    if result.returncode != 0:
+        detail = (result.stderr or out or "unknown BigQuery error").strip()
+        if "Not found: Table" in detail or "was not found" in detail:
+            return {
+                "error": (
+                    "billing export table not found — enable Standard usage cost "
+                    "export (apply-prod-billing-export.sh)"
+                )
+            }
+        return {"error": detail.splitlines()[-1][:240]}
+    if not out:
+        return {"error": "BigQuery query returned no output"}
+    try:
+        rows = json.loads(out)
+    except json.JSONDecodeError:
+        return {"error": "Failed to parse BigQuery response"}
+    if not rows:
+        return {"netCost": 0.0, "currency": "USD"}
+    row = rows[0]
+    net_cost = row.get("net_cost")
+    if net_cost is None:
+        return {"netCost": 0.0, "currency": row.get("currency") or "USD"}
+    return {"netCost": float(net_cost), "currency": row.get("currency") or "USD"}
+
+
+def _thresholds_crossed(spend_pct: float, thresholds: list[int]) -> list[int]:
+    return [pct for pct in thresholds if spend_pct >= pct]
+
+
+def _next_threshold(spend_pct: float, thresholds: list[int]) -> int | None:
+    for pct in thresholds:
+        if spend_pct < pct:
+            return pct
+    return None
+
+
 def collect_billing(
     project_id: str,
     *,
     billing_account: str | None = None,
     budget_display_name: str = DEFAULT_BUDGET_DISPLAY_NAME,
+    bq_project: str | None = None,
+    bq_dataset: str | None = None,
 ) -> dict[str, Any]:
     account_id = (billing_account or resolve_billing_account_id(project_id) or "").strip()
     if not account_id:
@@ -381,7 +462,7 @@ def collect_billing(
         else f"https://console.cloud.google.com/billing/{account_id}/budgets?project={project_id}"
     )
 
-    return {
+    result: dict[str, Any] = {
         "found": True,
         "billingAccountId": account_id,
         "budgetId": budget_id,
@@ -392,7 +473,31 @@ def collect_billing(
         "thresholdPercentages": thresholds,
         "consoleUrl": console_url,
         "projectId": project_id,
+        "bqTable": billing_export_table_ref(
+            bq_project or DEFAULT_BQ_BILLING_PROJECT,
+            bq_dataset or DEFAULT_BQ_BILLING_DATASET,
+            account_id,
+        ),
     }
+
+    spend = query_mtd_spend_bigquery(
+        bq_project=bq_project or DEFAULT_BQ_BILLING_PROJECT,
+        dataset=bq_dataset or DEFAULT_BQ_BILLING_DATASET,
+        billing_account_id=account_id,
+        project_id=project_id,
+    )
+    if spend.get("error"):
+        result["mtdSpendError"] = spend["error"]
+    else:
+        result["mtdSpend"] = spend.get("netCost", 0.0)
+        result["mtdCurrency"] = spend.get("currency") or currency
+        if isinstance(monthly_limit, (int, float)) and monthly_limit > 0:
+            pct = (result["mtdSpend"] / monthly_limit) * 100
+            result["budgetUsedPercent"] = round(pct, 1)
+            result["thresholdsCrossed"] = _thresholds_crossed(pct, thresholds)
+            result["nextThresholdPercent"] = _next_threshold(pct, thresholds)
+
+    return result
 
 
 def format_billing_section(billing: dict[str, Any]) -> str:
@@ -414,18 +519,35 @@ def format_billing_section(billing: dict[str, Any]) -> str:
         "",
         f"- **Budget:** {billing.get('displayName')} (scoped to `{billing.get('projectId')}`)",
         f"- **Monthly limit:** {limit_text} ({billing.get('calendarPeriod', 'MONTH').lower()})",
-        f"- **Alert thresholds:** {threshold_text}",
     ]
+
+    mtd = billing.get("mtdSpend")
+    mtd_currency = billing.get("mtdCurrency") or currency
+    if mtd is not None:
+        used_pct = billing.get("budgetUsedPercent")
+        pct_text = f" ({used_pct:.0f}% of budget)" if used_pct is not None else ""
+        lines.append(f"- **MTD spend:** ${mtd:,.2f} {mtd_currency}{pct_text}")
+        crossed = billing.get("thresholdsCrossed") or []
+        if crossed:
+            lines.append(
+                f"- **Thresholds crossed:** {', '.join(f'{pct}%' for pct in crossed)}"
+            )
+        else:
+            next_pct = billing.get("nextThresholdPercent")
+            if next_pct and isinstance(limit, (int, float)):
+                next_amount = limit * next_pct / 100
+                lines.append(
+                    f"- **Thresholds crossed:** none (next: {next_pct}% at ${next_amount:,.0f})"
+                )
+            else:
+                lines.append("- **Thresholds crossed:** none")
+    elif billing.get("mtdSpendError"):
+        lines.append(f"- **MTD spend:** unavailable ({billing['mtdSpendError']})")
+
+    lines.append(f"- **Alert thresholds:** {threshold_text}")
     if console_url:
         lines.append(f"- **View spend:** {console_url}")
-    lines.extend(
-        [
-            "",
-            "Month-to-date spend is shown in the GCP budget console (Budget API exposes "
-            "limits and alert rules, not live spend without BigQuery export).",
-        ]
-    )
-    return "\n".join(lines)
+    return "\n".join(lines) + "\n"
 
 
 def append_billing_section(summary: str, billing: dict[str, Any]) -> str:
@@ -821,6 +943,14 @@ def main() -> int:
         "--budget-display-name",
         default=env_or_default("HEALTH_CHECK_BUDGET_NAME", DEFAULT_BUDGET_DISPLAY_NAME),
     )
+    parser.add_argument(
+        "--bq-billing-project",
+        default=env_or_default("HEALTH_CHECK_BQ_BILLING_PROJECT", DEFAULT_BQ_BILLING_PROJECT),
+    )
+    parser.add_argument(
+        "--bq-billing-dataset",
+        default=env_or_default("HEALTH_CHECK_BQ_BILLING_DATASET", DEFAULT_BQ_BILLING_DATASET),
+    )
     args = parser.parse_args()
     args.model = (args.model or DEFAULT_MODEL).strip()
 
@@ -852,6 +982,8 @@ def main() -> int:
         args.project_id,
         billing_account=args.billing_account,
         budget_display_name=args.budget_display_name,
+        bq_project=args.bq_billing_project,
+        bq_dataset=args.bq_billing_dataset,
     )
     metrics["billing"] = billing
     summary = append_billing_section(summary, billing)

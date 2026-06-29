@@ -58,6 +58,12 @@ gcloud billing accounts add-iam-policy-binding "$BILLING_ACCOUNT" \
   --quiet >/dev/null
 echo "  + roles/billing.viewer on billingAccounts/${BILLING_ACCOUNT}"
 
+BQ_DATASET="${4:-billing_export}"
+echo "Granting BigQuery read access for billing export (${BQ_DATASET}):"
+bind_role "roles/bigquery.jobUser"
+bind_role "roles/bigquery.dataViewer"
+echo "  (project-level dataViewer; dataset IAM requires GCP allowlist)"
+
 echo "Binding WIF principal for ${GITHUB_REPO}:"
 gcloud iam service-accounts add-iam-policy-binding "$SA_EMAIL" \
   --project="$PROJECT_ID" \
@@ -79,4 +85,7 @@ on the workflow job if you want ops_daily_health_checks/{runId} documents.
 
 Create the prod billing budget (once):
   ./.github/scripts/apply-prod-billing-budget.sh ${PROJECT_ID} ${BILLING_ACCOUNT}
+
+Enable BigQuery billing export (once):
+  ./.github/scripts/apply-prod-billing-export.sh ${PROJECT_ID} ${BQ_DATASET} ${BILLING_ACCOUNT}
 EOF
