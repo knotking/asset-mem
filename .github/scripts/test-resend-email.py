@@ -27,7 +27,7 @@ def main() -> int:
     payload = {
         "from": from_addr,
         "to": [to_addr],
-        "subject": "Resend smoke test — homegeek-prod health check",
+        "subject": "Resend smoke test — AssetMem prod health check",
         "html": (
             "<p>This is a local smoke test from "
             "<code>.github/scripts/test-resend-email.py</code>.</p>"

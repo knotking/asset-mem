@@ -1,4 +1,4 @@
-# Daily homegeek-prod health check (keyless WIF) + Vertex AI summary.
+# Daily AssetMem prod health check (GCP: homegeek-prod, keyless WIF) + Vertex AI summary.
 # Schedule: 9:00 AM IST = 03:30 UTC
 
 name: Daily Prod Health Check

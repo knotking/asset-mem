@@ -1,6 +1,6 @@
 # Daily Prod Health Check
 
-Scheduled GitHub Actions workflow that checks **homegeek-prod** using **Workload Identity Federation** (no service account JSON keys), summarizes results with **Vertex AI**, and logs **LLM token usage**.
+Scheduled GitHub Actions workflow that checks **AssetMem** production (`homegeek-prod`) using **Workload Identity Federation** (no service account JSON keys), summarizes results with **Vertex AI**, and logs **LLM token usage**.
 
 Uses a **dedicated read-only service account** — not the deployment SA.
 
