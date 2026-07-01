@@ -5,7 +5,7 @@ This directory contains Playwright-based automation scripts that automatically n
 ## Overview
 
 The recording scripts automate the entire demo video recording process:
-- Walk the full marketing landing page (hero, how it works, AI intelligence, use cases, enterprise, pricing, footer)
+- Walk the full marketing landing page (hero, how it works, AI intelligence, use cases, enterprise, solutions, footer)
 - Navigate through all key in-app features of the webapp
 - Record high-quality videos (1920x1080)
 - Support both desktop and mobile device emulation
@@ -117,7 +117,7 @@ The videos are in WebM format and can be:
 The scripts record the following scenes (matching the demo guide):
 
 1. **Landing Page** (~20s)
-   - Quick pass: hero → workflow → AI → use cases → enterprise → pricing → footer
+   - Quick pass: hero → workflow → AI → use cases → enterprise → solutions → footer
    - One short avatar line per section in narration JSON (~4–5 lines total if read as one clip)
 
 1b. **Landing Page Static** (10s) — option `9` in `record:webapp`

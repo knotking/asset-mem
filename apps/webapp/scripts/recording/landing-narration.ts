@@ -9,7 +9,7 @@ export type LandingSectionId =
   | "ai-pipeline"
   | "use-cases"
   | "enterprise"
-  | "pricing"
+  | "solutions"
   | "footer";
 
 export type LandingNarrationSection = {
@@ -20,7 +20,7 @@ export type LandingNarrationSection = {
 
 /**
  * Main spoken script (~25s) — full sentences for avatar delivery.
- * Sections 1–5 align with on-screen scroll; pricing/footer are brief closers.
+ * Sections 1–5 align with on-screen scroll; solutions/footer are brief closers.
  */
 export const LANDING_SPOKEN_NARRATIVE = [
   "Welcome to AssetMem AI, timeline intelligence for property care.",
@@ -58,10 +58,10 @@ export const LANDING_NARRATION_SECTIONS: readonly LandingNarrationSection[] = [
     narration: LANDING_SPOKEN_NARRATIVE[4],
   },
   {
-    id: "pricing",
-    label: "Pricing",
+    id: "solutions",
+    label: "Solutions",
     narration:
-      "There is a plan for every team, from everyday home care to portfolio operations.",
+      "Explore solutions for every segment—from homeowners to portfolio operations.",
   },
   {
     id: "footer",
@@ -91,7 +91,7 @@ const MAESTRO_SECTION_WEIGHTS: Record<LandingSectionId, number> = {
   "ai-pipeline": 2,
   "use-cases": 6,
   enterprise: 2,
-  pricing: 2,
+  solutions: 2,
   footer: 2,
 };
 

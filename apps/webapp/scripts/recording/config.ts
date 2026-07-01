@@ -49,7 +49,7 @@ export interface RecordingConfig {
       aiPipelineSection: string;
       useCasesSection: string;
       enterpriseSection: string;
-      pricingSection: string;
+      solutionsHeading: string;
     };
     login: {
       emailInput: string;
@@ -129,7 +129,7 @@ export const config: RecordingConfig = {
       aiPipelineSection: '#ai-pipeline',
       useCasesSection: '#use-cases',
       enterpriseSection: '#enterprise',
-      pricingSection: '#pricing',
+      solutionsHeading: 'main h1',
     },
     login: {
       emailInput: '#email',

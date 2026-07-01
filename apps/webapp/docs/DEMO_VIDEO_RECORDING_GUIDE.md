@@ -63,7 +63,7 @@ This guide provides detailed scripts and instructions for recording a comprehens
 > Welcome to AssetMem AI, timeline intelligence for property care. Capture, see what changed, know what to do, and prove it—discover AI-assisted workflow where photos and questions feed a single intelligence layer that spots changes early and tells you what to do next. See visual checkpoint timelines, shareable reports, and questions grounded in your property's evidence. At the AI intelligence layer, field photos, policies, and team questions route through coordinated analysis on coverage, repairs, vendors, costs, and change detection—turning condition signals into clear next steps. Explore use cases from routine walkthroughs to contractor handoffs and renovation tracking. Whether you manage one home or a whole portfolio, AssetMem helps you capture, understand, act, and prove.
 
 **Key Points:**
-- Restructured landing: workflow → AI pipeline → use cases → enterprise → pricing
+- Restructured landing: workflow → AI pipeline → use cases → enterprise → solutions hub
 - Clear call-to-action buttons (Get Started / Watch Demo)
 - Professional branding
 

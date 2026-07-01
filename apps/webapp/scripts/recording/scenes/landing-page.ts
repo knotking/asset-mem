@@ -93,6 +93,41 @@ export async function recordLandingPage(page: Page): Promise<SceneResult> {
     }
   }
 
+  async function clickNavRoute(
+    href: string,
+    label: string,
+    readySelector: string,
+    viewDelayMs = SECTION_VIEW_DELAY_MS,
+  ): Promise<void> {
+    await waitForClickGap();
+    console.log(`  🔘 Clicking on ${label} navigation link...`);
+    try {
+      const link = page.locator(`a[href="${href}"]`).first();
+      await link.waitFor({ state: "visible", timeout: 5000 });
+      await link.hover();
+      await delay(200);
+      await Promise.all([
+        page.waitForURL(`**${href}**`, { timeout: 10000 }),
+        link.click(),
+      ]);
+      lastClickAt = Date.now();
+      await page.waitForSelector(readySelector, { timeout: 5000 }).catch(() => {});
+      console.log(`  ⏸️  Showing ${label} page...`);
+      await delay(viewDelayMs);
+      await waitForClickGap();
+    } catch {
+      console.log(
+        `  ⚠️  Could not click ${label} link, navigating directly...`,
+      );
+      await page.goto(`${config.baseUrl.replace(/\/$/, "")}${href}`, {
+        waitUntil: "networkidle",
+      });
+      lastClickAt = Date.now();
+      await delay(viewDelayMs);
+      await waitForClickGap();
+    }
+  }
+
   async function showSectionByScroll(
     sectionId: string,
     label: string,
@@ -119,7 +154,7 @@ export async function recordLandingPage(page: Page): Promise<SceneResult> {
     await delay(1400);
     tracker.end();
 
-    // Page order: hero → how-it-works → ai-pipeline → use-cases → enterprise → pricing → footer
+    // Page order: hero → how-it-works → ai-pipeline → use-cases → enterprise → solutions → footer
     tracker.start("how-it-works");
     await clickNavAnchor("#how-it-works", "#how-it-works", "How It Works");
     tracker.end();
@@ -144,10 +179,12 @@ export async function recordLandingPage(page: Page): Promise<SceneResult> {
     });
     tracker.end();
 
-    tracker.start("pricing");
-    await clickNavAnchor("#pricing", "#pricing", "Pricing", {
-      viewDelayMs: SECTION_VIEW_DELAY_MS,
-    });
+    tracker.start("solutions");
+    await clickNavRoute(
+      "/solutions",
+      "Solutions",
+      config.selectors.landing.solutionsHeading,
+    );
     tracker.end();
 
     tracker.start("footer");
