@@ -365,36 +365,27 @@ def _parse_bq_json_stdout(stdout: str) -> list[dict[str, Any]] | None:
     return None
 
 
-def query_mtd_spend_bigquery(
-    *,
+def _run_bq_json_query(
     bq_project: str,
-    dataset: str,
-    billing_account_id: str,
-    project_id: str,
+    sql: str,
+    *,
+    parameters: list[tuple[str, str, str]] | None = None,
 ) -> dict[str, Any]:
-    table_ref = billing_export_table_ref(bq_project, dataset, billing_account_id)
-    sql = f"""
-SELECT
-  ROUND(
-    SUM(cost) + SUM(IFNULL((SELECT SUM(c.amount) FROM UNNEST(credits) c), 0)),
-    4
-  ) AS net_cost,
-  ANY_VALUE(currency) AS currency
-FROM `{table_ref}`
-WHERE project.id = @project_id
-  AND invoice.month = FORMAT_DATE('%Y%m', CURRENT_DATE())
-"""
+    args = [
+        "bq",
+        "query",
+        "--use_legacy_sql=false",
+        "--format=json",
+        "--quiet",
+        f"--project_id={bq_project}",
+    ]
+    if parameters:
+        for param_type, name, value in parameters:
+            args.append(f"--parameter={name}:{param_type}:{value}")
+    args.append(sql)
+
     result = subprocess.run(
-        [
-            "bq",
-            "query",
-            "--use_legacy_sql=false",
-            "--format=json",
-            "--quiet",
-            f"--project_id={bq_project}",
-            f"--parameter=project_id:STRING:{project_id}",
-            sql,
-        ],
+        args,
         capture_output=True,
         text=True,
         check=False,
@@ -421,13 +412,140 @@ WHERE project.id = @project_id
             file=sys.stderr,
         )
         return {"error": "Failed to parse BigQuery response"}
+    return {"rows": rows}
+
+
+def _invoice_month_label(invoice_month: str) -> str:
+    if len(invoice_month) == 6 and invoice_month.isdigit():
+        year = int(invoice_month[:4])
+        month = int(invoice_month[4:6])
+        return datetime(year, month, 1, tzinfo=timezone.utc).strftime("%b %Y")
+    return invoice_month
+
+
+def query_billing_export_summary(
+    *,
+    bq_project: str,
+    dataset: str,
+    billing_account_id: str,
+    project_id: str,
+) -> dict[str, Any]:
+    table_ref = billing_export_table_ref(bq_project, dataset, billing_account_id)
+    summary_sql = f"""
+SELECT
+  MAX(DATE(usage_start_time)) AS max_usage_date,
+  MAX(DATE(export_time)) AS max_export_date,
+  ROUND(
+    SUM(
+      IF(
+        invoice.month = FORMAT_DATE('%Y%m', CURRENT_DATE()),
+        cost + IFNULL((SELECT SUM(c.amount) FROM UNNEST(credits) c), 0),
+        0
+      )
+    ),
+    4
+  ) AS current_month_cost,
+  ANY_VALUE(currency) AS currency
+FROM `{table_ref}`
+WHERE project.id = @project_id
+"""
+    summary = _run_bq_json_query(
+        bq_project,
+        summary_sql,
+        parameters=[("STRING", "project_id", project_id)],
+    )
+    if summary.get("error"):
+        return summary
+
+    rows = summary.get("rows") or []
     if not rows:
         return {"netCost": 0.0, "currency": "USD"}
+
     row = rows[0]
-    net_cost = _coerce_bq_float(row.get("net_cost"))
-    if net_cost is None:
-        return {"netCost": 0.0, "currency": row.get("currency") or "USD"}
-    return {"netCost": net_cost, "currency": row.get("currency") or "USD"}
+    max_usage_date = row.get("max_usage_date")
+    max_export_date = row.get("max_export_date")
+    currency = row.get("currency") or "USD"
+    current_month_cost = _coerce_bq_float(row.get("current_month_cost"))
+
+    result: dict[str, Any] = {
+        "netCost": current_month_cost if current_month_cost is not None else 0.0,
+        "currency": currency,
+    }
+
+    if max_usage_date:
+        result["exportDataThrough"] = str(max_usage_date)
+        try:
+            usage_day = datetime.strptime(str(max_usage_date), "%Y-%m-%d").replace(
+                tzinfo=timezone.utc
+            )
+            result["exportLagDays"] = (
+                datetime.now(timezone.utc).date() - usage_day.date()
+            ).days
+            result["exportStale"] = result["exportLagDays"] > 2
+        except ValueError:
+            pass
+    if max_export_date:
+        result["exportLoadedThrough"] = str(max_export_date)
+
+    current_invoice_month = datetime.now(timezone.utc).strftime("%Y%m")
+    usage_invoice_month = None
+    if max_usage_date:
+        usage_invoice_month = str(max_usage_date).replace("-", "")[:6]
+
+    needs_recent_month = (
+        (current_month_cost is None or current_month_cost == 0.0)
+        and usage_invoice_month
+        and usage_invoice_month != current_invoice_month
+    )
+    if needs_recent_month and max_usage_date:
+        recent_sql = f"""
+SELECT
+  invoice.month AS invoice_month,
+  ROUND(
+    SUM(cost) + SUM(IFNULL((SELECT SUM(c.amount) FROM UNNEST(credits) c), 0)),
+    4
+  ) AS month_cost
+FROM `{table_ref}`
+WHERE project.id = @project_id
+  AND invoice.month = FORMAT_DATE('%Y%m', DATE(@max_usage_date))
+GROUP BY invoice.month
+"""
+        recent = _run_bq_json_query(
+            bq_project,
+            recent_sql,
+            parameters=[
+                ("STRING", "project_id", project_id),
+                ("STRING", "max_usage_date", str(max_usage_date)),
+            ],
+        )
+        if not recent.get("error"):
+            recent_rows = recent.get("rows") or []
+            if recent_rows:
+                recent_cost = _coerce_bq_float(recent_rows[0].get("month_cost"))
+                recent_month = recent_rows[0].get("invoice_month")
+                if recent_cost is not None:
+                    result["recentInvoiceMonth"] = str(recent_month)
+                    result["recentInvoiceMonthLabel"] = _invoice_month_label(
+                        str(recent_month)
+                    )
+                    result["recentInvoiceMonthSpend"] = recent_cost
+
+    return result
+
+
+def query_mtd_spend_bigquery(
+    *,
+    bq_project: str,
+    dataset: str,
+    billing_account_id: str,
+    project_id: str,
+) -> dict[str, Any]:
+    return query_billing_export_summary(
+        bq_project=bq_project,
+        dataset=dataset,
+        billing_account_id=billing_account_id,
+        project_id=project_id,
+    )
 
 
 def _thresholds_crossed(spend_pct: float, thresholds: list[int]) -> list[int]:
@@ -544,6 +662,17 @@ def collect_billing(
     else:
         result["mtdSpend"] = spend.get("netCost", 0.0)
         result["mtdCurrency"] = spend.get("currency") or currency
+        for key in (
+            "exportDataThrough",
+            "exportLoadedThrough",
+            "exportLagDays",
+            "exportStale",
+            "recentInvoiceMonth",
+            "recentInvoiceMonthLabel",
+            "recentInvoiceMonthSpend",
+        ):
+            if key in spend:
+                result[key] = spend[key]
         if isinstance(monthly_limit, (int, float)) and monthly_limit > 0:
             pct = (result["mtdSpend"] / monthly_limit) * 100
             result["budgetUsedPercent"] = round(pct, 1)
@@ -576,10 +705,27 @@ def format_billing_section(billing: dict[str, Any]) -> str:
 
     mtd = billing.get("mtdSpend")
     mtd_currency = billing.get("mtdCurrency") or currency
+    current_month_label = datetime.now(timezone.utc).strftime("%b %Y")
     if mtd is not None:
         used_pct = billing.get("budgetUsedPercent")
         pct_text = f" ({used_pct:.0f}% of budget)" if used_pct is not None else ""
-        lines.append(f"- **MTD spend:** ${mtd:,.2f} {mtd_currency}{pct_text}")
+        lines.append(
+            f"- **MTD spend ({current_month_label} invoice):** "
+            f"${mtd:,.2f} {mtd_currency}{pct_text}"
+        )
+        recent_spend = billing.get("recentInvoiceMonthSpend")
+        recent_label = billing.get("recentInvoiceMonthLabel")
+        data_through = billing.get("exportDataThrough")
+        if (
+            recent_spend is not None
+            and recent_label
+            and (mtd == 0 or mtd == 0.0)
+        ):
+            through_text = f" through {data_through}" if data_through else ""
+            lines.append(
+                f"- **Latest exported month ({recent_label}):** "
+                f"${recent_spend:,.2f} {mtd_currency}{through_text}"
+            )
         crossed = billing.get("thresholdsCrossed") or []
         if crossed:
             lines.append(
@@ -596,6 +742,19 @@ def format_billing_section(billing: dict[str, Any]) -> str:
                 lines.append("- **Thresholds crossed:** none")
     elif billing.get("mtdSpendError"):
         lines.append(f"- **MTD spend:** unavailable ({billing['mtdSpendError']})")
+
+    data_through = billing.get("exportDataThrough")
+    if data_through:
+        lag_days = billing.get("exportLagDays")
+        stale_suffix = ""
+        if isinstance(lag_days, int):
+            if lag_days > 2:
+                stale_suffix = (
+                    f" ({lag_days} days behind; GCP export is usually ~24–48h)"
+                )
+            elif lag_days >= 0:
+                stale_suffix = f" ({lag_days} day(s) behind)"
+        lines.append(f"- **Billing export data through:** {data_through}{stale_suffix}")
 
     lines.append(f"- **Alert thresholds:** {threshold_text}")
     if console_url:
