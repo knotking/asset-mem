@@ -35,6 +35,7 @@ import {
 import { LandingDemoVideoModal } from '@/components/landing/LandingDemoVideoModal';
 import { openExternalWebUrl } from '@/lib/open-external-url';
 import { getWebAppOrigin } from '@/lib/expo-extra';
+import { isIosIapAvailable } from '@/lib/ios-billing-compliance';
 import { getYouTubeVideoId } from '@/lib/youtube-utils';
 import { DEFAULT_LANDING_DEMO_VIDEO_URLS } from '@/lib/landing-demo-video-constants';
 import {
@@ -1032,8 +1033,8 @@ export default function LandingPage() {
             </View>
           </LandingSectionBackground>
 
-          {/* Pricing — omitted on iOS (App Store 3.1.1: no external purchase links). */}
-          {Platform.OS !== 'ios' ? (
+          {/* Pricing — web/Android use web checkout; iOS uses in-app subscriptions when configured. */}
+          {Platform.OS !== 'ios' || isIosIapAvailable() ? (
           <LandingSectionBackground
             backgroundColor={LANDING_COLORS.background}
             variant="pricing"
@@ -1074,7 +1075,13 @@ export default function LandingPage() {
                 Enterprise for portfolios and field operations.
               </Text>
               <TouchableOpacity
-                onPress={() => Linking.openURL(`${webAppOrigin}#pricing`)}
+                onPress={() => {
+                  if (Platform.OS === 'ios' && isIosIapAvailable()) {
+                    router.push(user ? '/(tabs)/settings/billing' : '/auth/login');
+                    return;
+                  }
+                  void Linking.openURL(`${webAppOrigin}#pricing`);
+                }}
                 style={{
                   paddingVertical: 14,
                   paddingHorizontal: 28,
@@ -1083,7 +1090,9 @@ export default function LandingPage() {
                   borderColor: LANDING_COLORS.border,
                 }}>
                 <Text style={{ fontSize: 16, fontWeight: '500', color: LANDING_COLORS.foreground }}>
-                  View plans on the web
+                  {Platform.OS === 'ios' && isIosIapAvailable()
+                    ? 'View subscription plans'
+                    : 'View plans on the web'}
                 </Text>
               </TouchableOpacity>
             </View>

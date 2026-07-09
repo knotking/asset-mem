@@ -48,6 +48,12 @@ class Settings:
     STRIPE_B2C_PRICE_TOKEN_CAPS_JSON = plans_json_from_env()
     # Public web origin for Checkout / Portal return URLs, e.g. https://app.example.com (no trailing slash).
     BILLING_PUBLIC_APP_BASE_URL = os.environ.get("BILLING_PUBLIC_APP_BASE_URL", "").strip().rstrip("/")
+    # Apple App Store (optional until iOS IAP is configured)
+    APPLE_APP_STORE_KEY_ID = os.environ.get("APPLE_APP_STORE_KEY_ID", "").strip()
+    APPLE_APP_STORE_ISSUER_ID = os.environ.get("APPLE_APP_STORE_ISSUER_ID", "").strip()
+    APPLE_APP_STORE_PRIVATE_KEY = os.environ.get("APPLE_APP_STORE_PRIVATE_KEY", "").strip()
+    APPLE_BUNDLE_ID = os.environ.get("APPLE_BUNDLE_ID", "").strip()
+    APPLE_APP_STORE_ENVIRONMENT = os.environ.get("APPLE_APP_STORE_ENVIRONMENT", "Production").strip()
     # Opt-in RAG indexing for report markdown companions in Docs chat (default off).
     REPORT_DOCS_CHAT_RAG_ENABLED = _env_bool("REPORT_DOCS_CHAT_RAG_ENABLED", default=False)
 

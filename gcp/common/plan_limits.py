@@ -106,7 +106,7 @@ def _billing_summary(db: firestore.Client, user_id: str) -> Optional[dict]:
             return None
         data = snap.to_dict() or {}
         status = str(data.get("subscriptionStatus") or "").lower()
-        if status not in ("active", "trialing"):
+        if status not in ("active", "trialing", "grace_period", "billing_retry"):
             return None
         return data
     except Exception as e:

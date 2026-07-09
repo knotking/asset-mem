@@ -32,6 +32,7 @@ import {
   IOS_ACCOUNT_DELETION_BILLING_NOTE,
   IOS_ACCOUNT_DELETION_DIALOG_BODY,
   isIosAppStoreBillingRestricted,
+  isIosIapAvailable,
 } from '@/lib/ios-billing-compliance';
 import { useSupportEmail } from '@/hooks/useSupportEmail';
 import { createLogger } from '@/lib/logger';
@@ -45,10 +46,14 @@ export function AccountDeletionSettings() {
   const router = useRouter();
   const supportEmail = useSupportEmail();
   const iosBillingRestricted = isIosAppStoreBillingRestricted();
-  const billingNote = iosBillingRestricted
-    ? IOS_ACCOUNT_DELETION_BILLING_NOTE
-    : ACCOUNT_DELETION_BILLING_NOTE;
-  const dialogBody = iosBillingRestricted ? IOS_ACCOUNT_DELETION_DIALOG_BODY : ACCOUNT_DELETION_DIALOG_BODY;
+  const billingNote =
+    isIosIapAvailable() || !iosBillingRestricted
+      ? ACCOUNT_DELETION_BILLING_NOTE
+      : IOS_ACCOUNT_DELETION_BILLING_NOTE;
+  const dialogBody =
+    isIosIapAvailable() || !iosBillingRestricted
+      ? ACCOUNT_DELETION_DIALOG_BODY
+      : IOS_ACCOUNT_DELETION_DIALOG_BODY;
   const [open, setOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);

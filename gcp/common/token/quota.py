@@ -60,7 +60,7 @@ def _b2c_billing_monthly_limit(db: firestore.Client, user_id: str) -> Optional[i
             return None
         data = snap.to_dict() or {}
         status = str(data.get("subscriptionStatus") or "").lower()
-        if status not in ("active", "trialing"):
+        if status not in ("active", "trialing", "grace_period", "billing_retry"):
             return None
         raw = data.get("monthlyTokenLimit")
         if raw is None:

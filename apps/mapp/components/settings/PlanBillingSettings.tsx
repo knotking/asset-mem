@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { View } from 'react-native';
+import { Linking, View } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { CreditCard } from 'lucide-react-native';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -26,31 +26,52 @@ import { createWebBillingHandoffUrl, createWebBillingPortalHandoffUrl } from '@/
 import { openExternalWebUrl } from '@/lib/open-external-url';
 import {
   IOS_FREE_PLAN_HINT,
+  IOS_IAP_BILLING_DESCRIPTION,
   IOS_PLAN_BILLING_DESCRIPTION,
+  IOS_STRIPE_SUBSCRIBER_HINT,
   isIosAppStoreBillingRestricted,
+  isIosExternalBillingRestricted,
+  isIosIapAvailable,
   planSettingsScreenTitle,
 } from '@/lib/ios-billing-compliance';
+import { useIosSubscriptions } from '@/hooks/useIosSubscriptions';
+import {
+  IOS_BILLING_PRIVACY_URL,
+  IOS_BILLING_TERMS_URL,
+  IOS_SUBSCRIPTION_MANAGE_URL,
+} from '@/lib/ios-iap-products';
 import { createLogger } from '@/lib/logger';
 
 const billingLog = createLogger('billing');
 
+const ACTIVE_SUBSCRIPTION_STATUSES = new Set([
+  'active',
+  'trialing',
+  'grace_period',
+  'billing_retry',
+]);
+
 type BillingSummary = {
+  billingProvider?: string | null;
   subscriptionStatus?: string | null;
   monthlyTokenLimit?: number | null;
   monthlyDocumentLimit?: number | null;
   monthlyCheckpointLimit?: number | null;
   monthlyReportGenerationsLimit?: number | null;
   stripeCustomerId?: string | null;
+  appleProductId?: string | null;
 };
+
+const PAID_TIERS = PLAN_TIER_ORDER.filter((tier): tier is Exclude<PlanTierKey, 'free'> => tier !== 'free');
 
 function PlanOptionRow({
   tier,
   isCurrent,
-  showPrice,
+  priceLabel,
 }: {
   tier: PlanTierKey;
   isCurrent: boolean;
-  showPrice: boolean;
+  priceLabel: string | null;
 }) {
   return (
     <View
@@ -60,7 +81,7 @@ function PlanOptionRow({
       )}>
       <View className="flex-row items-center justify-between gap-2">
         <Text className="text-sm font-semibold text-foreground">
-          {showPrice ? planPriceLabel(tier) : PLAN_NAMES[tier]}
+          {priceLabel ?? PLAN_NAMES[tier]}
         </Text>
         {isCurrent ? (
           <View className="rounded-full bg-primary px-2 py-0.5">
@@ -76,8 +97,11 @@ function PlanOptionRow({
 export function PlanBillingSettings() {
   const { user } = useAuth();
   const { colorScheme } = useColorScheme();
-  const iosBillingRestricted = isIosAppStoreBillingRestricted();
+  const iosIapAvailable = isIosIapAvailable();
+  const iosReaderOnly = isIosAppStoreBillingRestricted();
+  const iosExternalBillingRestricted = isIosExternalBillingRestricted();
   const screenTitle = planSettingsScreenTitle();
+  const iosIap = useIosSubscriptions();
   const [summary, setSummary] = React.useState<BillingSummary | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState<'portal' | 'web' | null>(null);
@@ -101,23 +125,38 @@ export function PlanBillingSettings() {
     );
   }, [user]);
 
+  React.useEffect(() => {
+    if (iosIap.error) {
+      setError(iosIap.error);
+    }
+  }, [iosIap.error]);
+
   const status = (summary?.subscriptionStatus || '').toLowerCase();
-  const isPaid = status === 'active' || status === 'trialing';
+  const isPaid = ACTIVE_SUBSCRIPTION_STATUSES.has(status);
+  const billingProvider = (summary?.billingProvider || '').toLowerCase();
+  const isAppleSubscriber = billingProvider === 'apple' && isPaid;
+  const isStripeSubscriber =
+    (billingProvider === 'stripe' || Boolean(summary?.stripeCustomerId)) && isPaid;
   const hasStripeCustomer = Boolean(summary?.stripeCustomerId);
+  const canUseIosIap = iosIapAvailable && !isStripeSubscriber;
   const currentTier = inferPlanTierFromLimits(summary?.monthlyTokenLimit, isPaid);
   const activePlanLabel = currentTier
     ? PLAN_NAMES[currentTier]
     : isPaid
       ? 'Paid plan'
       : PLAN_NAMES.free;
+
+  const priceLabelForTier = (tier: PlanTierKey): string | null => {
+    if (tier === 'free') return planPriceLabel('free');
+    if (canUseIosIap) {
+      return iosIap.priceForTier(tier) ?? PLAN_NAMES[tier];
+    }
+    if (iosReaderOnly) return null;
+    return planPriceLabel(tier);
+  };
+
   const activePriceLabel =
-    !iosBillingRestricted && currentTier != null
-      ? planPriceLabel(currentTier)
-      : !iosBillingRestricted && isPaid
-        ? null
-        : !iosBillingRestricted
-          ? planPriceLabel('free')
-          : null;
+    currentTier != null ? priceLabelForTier(currentTier) : iosReaderOnly ? null : planPriceLabel('free');
 
   const openWebBilling = async () => {
     setError(null);
@@ -173,7 +212,13 @@ export function PlanBillingSettings() {
     }
   };
 
-  if (loading) {
+  const openAppleSubscriptions = () => {
+    void Linking.openURL(IOS_SUBSCRIPTION_MANAGE_URL);
+  };
+
+  const combinedBusy = busy != null || iosIap.busy != null;
+
+  if (loading || (canUseIosIap && iosIap.loading)) {
     return (
       <Card>
         <CardHeader>
@@ -189,6 +234,12 @@ export function PlanBillingSettings() {
     );
   }
 
+  const description = canUseIosIap
+    ? IOS_IAP_BILLING_DESCRIPTION
+    : iosReaderOnly
+      ? IOS_PLAN_BILLING_DESCRIPTION
+      : 'Subscriptions are billed through Stripe. Limits reset at the start of each UTC month.';
+
   return (
     <Card>
       <CardHeader>
@@ -196,11 +247,7 @@ export function PlanBillingSettings() {
           <Icon as={CreditCard} className="size-5 text-foreground" />
           <CardTitle>{screenTitle}</CardTitle>
         </View>
-        <CardDescription>
-          {iosBillingRestricted
-            ? IOS_PLAN_BILLING_DESCRIPTION
-            : 'Subscriptions are billed through Stripe. Limits reset at the start of each UTC month.'}
-        </CardDescription>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="gap-4">
         <View className="rounded-md border border-border bg-muted/30 px-3 py-3 gap-2">
@@ -215,14 +262,21 @@ export function PlanBillingSettings() {
             <Text className="text-sm text-muted-foreground capitalize">
               Status: {status || 'active'}
             </Text>
-          ) : iosBillingRestricted ? (
+          ) : iosReaderOnly ? (
             <Text className="text-sm text-muted-foreground">{IOS_FREE_PLAN_HINT}</Text>
+          ) : canUseIosIap ? (
+            <Text className="text-sm text-muted-foreground">
+              Subscribe to Plus or Pro with your Apple ID below.
+            </Text>
           ) : (
             <Text className="text-sm text-muted-foreground">
               Upgrade to {planPriceLabel('plus')} or {planPriceLabel('pro')} on the web app.
             </Text>
           )}
-          {(isPaid || iosBillingRestricted) &&
+          {isStripeSubscriber && iosExternalBillingRestricted ? (
+            <Text className="text-sm text-muted-foreground">{IOS_STRIPE_SUBSCRIBER_HINT}</Text>
+          ) : null}
+          {(isPaid || iosReaderOnly || canUseIosIap) &&
           summary?.monthlyTokenLimit != null &&
           summary.monthlyTokenLimit > 0 ? (
             <Text className="text-xs text-muted-foreground pt-1">
@@ -240,7 +294,7 @@ export function PlanBillingSettings() {
               per month
             </Text>
           ) : null}
-          {!isPaid && iosBillingRestricted ? (
+          {!isPaid && iosReaderOnly ? (
             <Text className="text-xs text-muted-foreground pt-1">
               Free plan includes monthly AI, document, checkpoint, and report limits. Open AI usage
               under Settings to see your consumption.
@@ -248,7 +302,7 @@ export function PlanBillingSettings() {
           ) : null}
         </View>
 
-        {!iosBillingRestricted ? (
+        {!iosReaderOnly ? (
           <View className="gap-2">
             <Text className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {isPaid ? 'Available plans' : 'Plans'}
@@ -257,7 +311,7 @@ export function PlanBillingSettings() {
               <PlanOptionRow
                 key={tier}
                 tier={tier}
-                showPrice
+                priceLabel={priceLabelForTier(tier)}
                 isCurrent={
                   currentTier != null
                     ? currentTier === tier
@@ -276,27 +330,70 @@ export function PlanBillingSettings() {
           </Text>
         ) : null}
 
-        {!iosBillingRestricted && !isPaid ? (
-          <Button className="w-full" disabled={busy != null} onPress={() => void openWebBilling()}>
+        {canUseIosIap && !isPaid
+          ? PAID_TIERS.map((tier) => (
+              <Button
+                key={tier}
+                className="w-full"
+                disabled={combinedBusy || currentTier === tier}
+                onPress={() => {
+                  if (!user) return;
+                  setError(null);
+                  void iosIap.purchaseTier(tier, user.uid);
+                }}>
+                <Text className="font-semibold text-primary-foreground">
+                  {iosIap.busy === 'purchase'
+                    ? 'Processing…'
+                    : `Subscribe to ${PLAN_NAMES[tier]}${
+                        iosIap.priceForTier(tier) ? ` (${iosIap.priceForTier(tier)})` : ''
+                      }`}
+                </Text>
+              </Button>
+            ))
+          : null}
+
+        {canUseIosIap ? (
+          <Button
+            variant="outline"
+            className="w-full"
+            disabled={combinedBusy}
+            onPress={() => {
+              setError(null);
+              void iosIap.restore();
+            }}>
+            <Text className="font-semibold text-foreground">
+              {iosIap.busy === 'restore' ? 'Restoring…' : 'Restore purchases'}
+            </Text>
+          </Button>
+        ) : null}
+
+        {canUseIosIap && isAppleSubscriber ? (
+          <Button className="w-full" disabled={combinedBusy} onPress={openAppleSubscriptions}>
+            <Text className="font-semibold text-primary-foreground">Manage subscription</Text>
+          </Button>
+        ) : null}
+
+        {!iosExternalBillingRestricted && !isPaid ? (
+          <Button className="w-full" disabled={combinedBusy} onPress={() => void openWebBilling()}>
             <Text className="font-semibold text-primary-foreground">
               {busy === 'web' ? 'Opening…' : 'Upgrade to Plus or Pro on web'}
             </Text>
           </Button>
         ) : null}
 
-        {!iosBillingRestricted && isPaid && hasStripeCustomer ? (
-          <Button className="w-full" disabled={busy != null} onPress={() => void openPortal()}>
+        {!iosExternalBillingRestricted && isPaid && hasStripeCustomer ? (
+          <Button className="w-full" disabled={combinedBusy} onPress={() => void openPortal()}>
             <Text className="font-semibold text-primary-foreground">
               {busy === 'portal' ? 'Opening billing…' : 'Manage subscription'}
             </Text>
           </Button>
         ) : null}
 
-        {!iosBillingRestricted && isPaid ? (
+        {!iosExternalBillingRestricted && isPaid && !isAppleSubscriber ? (
           <Button
             variant="outline"
             className="w-full"
-            disabled={busy != null}
+            disabled={combinedBusy}
             onPress={() => void openWebBilling()}>
             <Text className="font-semibold text-foreground">
               {busy === 'web' ? 'Opening…' : 'Compare plans on web'}
@@ -304,7 +401,28 @@ export function PlanBillingSettings() {
           </Button>
         ) : null}
 
-        {!iosBillingRestricted ? (
+        {canUseIosIap ? (
+          <View className="gap-1">
+            <Text className="text-xs leading-snug text-muted-foreground">
+              Payment is charged to your Apple ID. Subscriptions renew automatically unless
+              canceled at least 24 hours before the end of the period.
+            </Text>
+            <View className="flex-row flex-wrap gap-x-3 gap-y-1 pt-1">
+              <Text
+                className="text-xs text-primary underline"
+                onPress={() => void Linking.openURL(IOS_BILLING_TERMS_URL)}>
+                Terms of Use
+              </Text>
+              <Text
+                className="text-xs text-primary underline"
+                onPress={() => void Linking.openURL(IOS_BILLING_PRIVACY_URL)}>
+                Privacy Policy
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {!iosExternalBillingRestricted ? (
           <Text className="text-xs leading-snug text-muted-foreground">
             {!isPaid
               ? 'Checkout runs in your browser with the same account. '

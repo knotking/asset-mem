@@ -217,6 +217,11 @@ jobs:
             STRIPE_WEBHOOK_SIGNING_SECRET=${{ secrets.STRIPE_WEBHOOK_SIGNING_SECRET }}
             STRIPE_B2C_PRICE_TOKEN_CAPS_JSON=${{ env.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}
             BILLING_PUBLIC_APP_BASE_URL=${{ vars.BILLING_PUBLIC_APP_BASE_URL }}
+            APPLE_APP_STORE_KEY_ID=${{ secrets.APPLE_APP_STORE_KEY_ID }}
+            APPLE_APP_STORE_ISSUER_ID=${{ secrets.APPLE_APP_STORE_ISSUER_ID }}
+            APPLE_APP_STORE_PRIVATE_KEY=${{ secrets.APPLE_APP_STORE_PRIVATE_KEY }}
+            APPLE_BUNDLE_ID=${{ vars.APPLE_BUNDLE_ID }}
+            APPLE_APP_STORE_ENVIRONMENT=${{ vars.APPLE_APP_STORE_ENVIRONMENT }}
 
       # Firestore: Cloud Run uses vars.GCP_SERVICE_ACCOUNT_EMAIL at runtime. That SA needs
       # roles/datastore.user on the project. The workflow identity usually cannot call setIamPolicy;

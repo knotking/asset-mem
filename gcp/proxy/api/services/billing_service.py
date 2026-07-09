@@ -136,6 +136,7 @@ def sync_subscription_to_firestore(
     status_l = (subscription_status or "").lower()
     payload: dict[str, Any] = {
         "updatedAt": firestore.SERVER_TIMESTAMP,
+        "billingProvider": "stripe",
         "stripeCustomerId": stripe_customer_id,
         "stripeSubscriptionId": stripe_subscription_id,
         "subscriptionStatus": subscription_status,

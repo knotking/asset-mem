@@ -39,7 +39,7 @@ from core.firebase_auth_middleware import FirebaseAuthLoggingMiddleware
 from core.correlation_middleware import CorrelationIdMiddleware
 from core.config import settings
 from core.events import lifespan
-from routers import agent, documents, telegram, service_broker, checkpoint, token_quota, billing, auth_handoff, stripe_webhook, deletion, reports
+from routers import agent, documents, telegram, service_broker, checkpoint, token_quota, billing, auth_handoff, stripe_webhook, apple_billing, apple_webhook, deletion, reports
 from services.vertex_service import reasoning_engine_resource
 
 # Configure logging (auth uid on every line via ContextVar + Filter).
@@ -95,12 +95,13 @@ def _mount_user_routers(prefix: str = "") -> None:
     app.include_router(checkpoint.router, prefix=prefix)
     app.include_router(token_quota.router, prefix=prefix)
     app.include_router(billing.router, prefix=prefix)
+    app.include_router(apple_billing.router, prefix=prefix)
     app.include_router(auth_handoff.router, prefix=prefix)
     app.include_router(deletion.router, prefix=prefix)
     app.include_router(reports.router, prefix=prefix)
     label = prefix or "/"
     logger.info(
-        "Mounted agent, documents, checkpoint, token_quota, billing, auth_handoff, deletion, reports at %s (Firebase auth%s)",
+        "Mounted agent, documents, checkpoint, token_quota, billing, apple_billing, auth_handoff, deletion, reports at %s (Firebase auth%s)",
         label,
         " disabled" if settings.DISABLE_FIREBASE_AUTH else "",
     )
@@ -109,6 +110,10 @@ def _mount_user_routers(prefix: str = "") -> None:
 # Stripe (B2C): webhook must stay on a fixed path for Stripe Dashboard (no Firebase secret prefix).
 app.include_router(stripe_webhook.router)
 logger.info("Mounted stripe_webhook at /stripe/webhook")
+
+# Apple App Store Server Notifications V2 (fixed path for App Store Connect).
+app.include_router(apple_webhook.router)
+logger.info("Mounted apple_webhook at /apple/app-store-notifications")
 
 _mount_user_routers()
 

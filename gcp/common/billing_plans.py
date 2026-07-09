@@ -12,6 +12,7 @@ Shape (recommended — checkout by tier):
     },
     "plus": {
       "stripePriceId": "price_xxx",
+      "appleProductId": "com.assetmem.app.plus.monthly",
       "monthlyTokenLimit": 10000000,
       "monthlyDocumentLimit": 10,
       "monthlyCheckpointLimit": 30
@@ -54,13 +55,14 @@ _LEGACY_MONTHLY_REPORT_GENERATIONS_KEY = "monthlyReportGenerations"
 
 @dataclass(frozen=True)
 class B2CPricePlan:
-    """Resolved plan; ``stripe_price_id`` is set for paid tiers (Checkout + webhooks)."""
+    """Resolved plan; ``stripe_price_id`` / ``apple_product_id`` set for paid tiers."""
 
     monthly_token_limit: int
     monthly_document_limit: int
     monthly_checkpoint_limit: int
     monthly_report_generations: int = 0
     stripe_price_id: Optional[str] = None
+    apple_product_id: Optional[str] = None
 
 
 # Align with apps/common plan-defaults.ts and create-environment.yaml when env omits "free".
@@ -152,6 +154,13 @@ def _stripe_price_id_from_entry(plan_key: str, value: dict[str, Any]) -> Optiona
     return None
 
 
+def _apple_product_id_from_entry(value: dict[str, Any]) -> Optional[str]:
+    raw = value.get("appleProductId") or value.get("apple_product_id")
+    if raw is not None and str(raw).strip():
+        return str(raw).strip()
+    return None
+
+
 def parse_stripe_b2c_price_plans_json(raw: str) -> dict[str, B2CPricePlan]:
     """Return plan key (tier or legacy price id) -> limits. Empty dict if raw is empty or invalid."""
     if not (raw or "").strip():
@@ -222,6 +231,7 @@ def parse_stripe_b2c_price_plans_json(raw: str) -> dict[str, B2CPricePlan]:
                     value, plan_key=key
                 ),
                 stripe_price_id=_stripe_price_id_from_entry(key, value),
+                apple_product_id=_apple_product_id_from_entry(value),
             )
             continue
         logger.warning("Skipping invalid plan entry for key %s: %r", key, value)
@@ -297,3 +307,31 @@ def is_stripe_checkout_price_id(price_id: str, raw: str | None = None) -> bool:
         and plan.monthly_token_limit > 0
         and bool(plan.stripe_price_id)
     )
+
+
+def plan_for_apple_product(raw: str | None, product_id: str | None) -> Optional[B2CPricePlan]:
+    """App Store product id lookup (iOS IAP + ASN webhooks)."""
+    if not product_id:
+        return None
+    source = plans_json_from_env() if raw is None else (raw or "").strip()
+    if not source:
+        return None
+    pid = str(product_id).strip()
+    for plan in parse_stripe_b2c_price_plans_json(source).values():
+        if plan.apple_product_id == pid:
+            return plan
+    return None
+
+
+def apple_product_id_for_tier(raw: str | None, tier: str) -> Optional[str]:
+    """App Store product id for a tier, or None if tier is missing / not billable on iOS."""
+    plan = plan_for_tier(raw, tier)
+    if plan is None or plan.monthly_token_limit <= 0:
+        return None
+    return plan.apple_product_id
+
+
+def is_apple_iap_product_id(product_id: str, raw: str | None = None) -> bool:
+    """True if product_id is configured for iOS IAP."""
+    plan = plan_for_apple_product(raw, product_id)
+    return plan is not None and plan.monthly_token_limit > 0 and bool(plan.apple_product_id)

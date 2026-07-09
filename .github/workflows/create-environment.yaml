@@ -1627,7 +1627,7 @@ jobs:
           set_or_update_var "FIREBASE_SERVICE_ACCOUNT_EMAIL" "${{ needs.create-infrastructure.outputs.firebase_service_account_email }}"
 
           # Plan limits JSON (free tier + Stripe Price ids). Only set if missing.
-          set_var_if_not_exists "STRIPE_B2C_PRICE_TOKEN_CAPS_JSON" '{"free":{"monthlyTokenLimit":1000000,"monthlyDocumentLimit":2,"monthlyCheckpointLimit":5,"monthlyReportGenerationsLimit":2},"plus":{"stripePriceId":"price_REPLACE_PLUS","monthlyTokenLimit":10000000,"monthlyDocumentLimit":10,"monthlyCheckpointLimit":30,"monthlyReportGenerationsLimit":10},"pro":{"stripePriceId":"price_REPLACE_PRO","monthlyTokenLimit":25000000,"monthlyDocumentLimit":30,"monthlyCheckpointLimit":100,"monthlyReportGenerationsLimit":30}}'
+          set_var_if_not_exists "STRIPE_B2C_PRICE_TOKEN_CAPS_JSON" '{"free":{"monthlyTokenLimit":1000000,"monthlyDocumentLimit":2,"monthlyCheckpointLimit":5,"monthlyReportGenerationsLimit":2},"plus":{"stripePriceId":"price_REPLACE_PLUS","appleProductId":"com.assetmem.app.plus.monthly","monthlyTokenLimit":10000000,"monthlyDocumentLimit":10,"monthlyCheckpointLimit":30,"monthlyReportGenerationsLimit":10},"pro":{"stripePriceId":"price_REPLACE_PRO","appleProductId":"com.assetmem.app.pro.monthly","monthlyTokenLimit":25000000,"monthlyDocumentLimit":30,"monthlyCheckpointLimit":100,"monthlyReportGenerationsLimit":30}}'
 
           echo ""
           echo "✅ GitHub environment '${{ inputs.environment_name }}' configured"

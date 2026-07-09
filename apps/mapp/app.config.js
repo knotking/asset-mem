@@ -147,6 +147,7 @@ module.exports = {
             { iosUrlScheme: googleIosUrlSchemeForBuild },
           ]
         : '@react-native-google-signin/google-signin',
+      'react-native-iap',
       [
         'expo-navigation-bar',
         {
@@ -189,6 +190,12 @@ module.exports = {
       tokenQuotaStatusUrl: buildProxyUrl(proxyBaseUrl, 'token-quota-status'),
       billingB2cCheckoutUrl: buildProxyUrl(proxyBaseUrl, 'billing/b2c/checkout-session'),
       billingB2cPortalUrl: buildProxyUrl(proxyBaseUrl, 'billing/b2c/portal-session'),
+      billingIosVerifyUrl: buildProxyUrl(proxyBaseUrl, 'billing/ios/verify-transaction'),
+      billingIosRestoreUrl: buildProxyUrl(proxyBaseUrl, 'billing/ios/restore'),
+      iosIapProducts: {
+        plus: process.env.IOS_IAP_PRODUCT_PLUS || 'com.assetmem.app.plus.monthly',
+        pro: process.env.IOS_IAP_PRODUCT_PRO || 'com.assetmem.app.pro.monthly',
+      },
       mobileWebHandoffUrl: buildProxyUrl(proxyBaseUrl, 'auth/mobile-web-handoff'),
       webAppUrl: process.env.WEB_APP_URL,
       iosStoreUrl: storeUrls.iosStoreUrl ?? undefined,

@@ -103,7 +103,8 @@ Clients (mapp / webapp) listen to Firestore and render via `@homeapp/common` `re
 ### Token quota (rate limit)
 
 - **`STRIPE_B2C_PRICE_TOKEN_CAPS_JSON`:** reserved **`free`** key for non-subscribers; Stripe **Price ids** for Plus/Pro. Sets tokens + monthly document/checkpoint/report creation limits.
-- **B2C Stripe (optional):** `users/{userId}/billing/summary` — when `subscriptionStatus` is `active` or `trialing`, limits are copied from the Price id entry on webhook.
+- **B2C Stripe (optional):** `users/{userId}/billing/summary` — when `subscriptionStatus` is `active`, `trialing`, `grace_period`, or `billing_retry`, limits are copied from the Price id or Apple product id entry on webhook.
+- **Apple IAP (optional):** `POST /billing/ios/verify-transaction` (Firebase auth) validates StoreKit transactions; `POST /apple/app-store-notifications` receives ASN V2. Sets `billingProvider: apple` on `billing/summary`. Product ids map via `appleProductId` in `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON`.
 - **Per-user override:** `users/{userId}/preferences/user` → **`monthlyTokenLimit`**, **`monthlyDocumentLimit`**, **`monthlyCheckpointLimit`**, **`monthlyReportGenerationsLimit`** (positive numbers). Used when no active Stripe cap applies for that dimension. Legacy **`monthlyReportGenerations`** is still read as a fallback.
 
 **Token** enforcement: proxy before `stream_query` / session creation and **`POST /compare-checkpoints`** (`gcp/common/token/quota.py`); workers for checkpoint/document Gemini. Compare records `usage_metadata` after each sync Gemini call. **`TOKEN_QUOTA_EXCEEDED`** on over-limit streams and compare (HTTP **429**).
