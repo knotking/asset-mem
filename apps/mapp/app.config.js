@@ -95,6 +95,7 @@ module.exports = {
         'expo-build-properties',
         {
           ios: {
+            buildReactNativeFromSource: true,
             extraPods: [
               { name: 'GoogleUtilities', modular_headers: true },
               { name: 'RecaptchaInterop', modular_headers: true },
@@ -147,7 +148,14 @@ module.exports = {
             { iosUrlScheme: googleIosUrlSchemeForBuild },
           ]
         : '@react-native-google-signin/google-signin',
-      'react-native-iap',
+      [
+        'react-native-iap',
+        {
+          ios: {
+            'with-folly-no-coroutines': true,
+          },
+        },
+      ],
       [
         'expo-navigation-bar',
         {
