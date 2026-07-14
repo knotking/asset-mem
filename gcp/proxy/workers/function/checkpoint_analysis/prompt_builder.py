@@ -24,7 +24,7 @@ def get_asset_category(detected_asset: Optional[str], asset_features: Optional[l
         asset_features: Optional list of detected features
         
     Returns:
-        One of: "vehicle", "appliance", "property", or "generic"
+        One of: "vehicle", "appliance", "landscape_irrigation", "property", or "generic"
     """
     if not detected_asset:
         return "generic"
@@ -45,15 +45,7 @@ def get_asset_category(detected_asset: Optional[str], asset_features: Optional[l
     ]
     if any(keyword in detected_lower for keyword in appliance_keywords):
         return "appliance"
-    
-    # Check asset_features for additional context
-    if asset_features:
-        features_lower = " ".join([f.lower() for f in asset_features])
-        if any(keyword in features_lower for keyword in vehicle_keywords):
-            return "vehicle"
-        if any(keyword in features_lower for keyword in appliance_keywords):
-            return "appliance"
-    
+
     # Check for landscape/irrigation indicators
     landscape_keywords = [
         "lawn", "turf", "garden bed", "garden beds", "raised bed", "raised beds",
@@ -67,6 +59,16 @@ def get_asset_category(detected_asset: Optional[str], asset_features: Optional[l
     ]
     if any(keyword in detected_lower for keyword in landscape_keywords):
         return "landscape_irrigation"
+    
+    # Check asset_features for additional context
+    if asset_features:
+        features_lower = " ".join([f.lower() for f in asset_features])
+        if any(keyword in features_lower for keyword in vehicle_keywords):
+            return "vehicle"
+        if any(keyword in features_lower for keyword in appliance_keywords):
+            return "appliance"
+        if any(keyword in features_lower for keyword in landscape_keywords):
+            return "landscape_irrigation"
 
     # Default to property/generic
     return "property"

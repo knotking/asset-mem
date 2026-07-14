@@ -768,7 +768,7 @@ export function PropertyCheckpointsTab({
 
   const handleCreateCheckpoint = async (data: {
     name: string;
-    assetType: 'real_estate' | 'vehicle' | 'appliance' | 'other';
+    assetType: 'real_estate' | 'vehicle' | 'appliance' | 'landscape_irrigation' | 'other';
     location: string;
     mediaAsset: ImagePicker.ImagePickerAsset;
     mediaType: 'image' | 'video';

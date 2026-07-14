@@ -395,7 +395,7 @@ export function CreateCheckpointDialog({
             <Label htmlFor="asset-type">Asset Type</Label>
             <Select
               value={assetType}
-              onValueChange={(value: 'real_estate' | 'vehicle' | 'appliance' | 'other') => {
+              onValueChange={(value: 'real_estate' | 'vehicle' | 'appliance' | 'landscape_irrigation' | 'other') => {
                 setAssetType(value);
                 setLocation(''); // Reset location when asset type changes
               }}

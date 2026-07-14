@@ -1,4 +1,6 @@
 > **Archived (May 2026):** Historical checkpoint docs. Current behavior: `gcp/agents/homecare/property_agent/checkpoint/` and [property_agent/ARCHITECTURE.md](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md).
+>
+> **Update (Jul 2026):** `assetType` and analysis prompts also include `landscape_irrigation` (lawns, irrigation, drainage, hardscape). See `.claude/plans/landscape-irrigation-checkpoints.md`.
 
 # Checkpoint Asset Type Feature - Change Summary
 
@@ -8,7 +10,7 @@
 
 ## Overview
 
-Extended the checkpoint creation system to support multiple asset types (Real Estate, Vehicle, Appliance, Other) with appropriate location/tag options for each type. This enables users to create checkpoints for different types of assets beyond just real estate properties.
+Extended the checkpoint creation system to support multiple asset types (Real Estate, Vehicle, Appliance, Landscape & Irrigation, Other) with appropriate location/tag options for each type. This enables users to create checkpoints for different types of assets beyond just real estate properties.
 
 ## Problem Statement
 
@@ -31,7 +33,7 @@ Implemented a dynamic asset type selection system that:
 **File:** `apps/common/src/types.ts`
 
 **Changes:**
-- Added `assetType?: 'real_estate' | 'vehicle' | 'appliance' | 'other'` field to the `Checkpoint` type
+- Added `assetType?: 'real_estate' | 'vehicle' | 'appliance' | 'landscape_irrigation' | 'other'` field to the `Checkpoint` type
 - Positioned after `media` field and before `location` field for logical grouping
 
 **Impact:**
@@ -95,7 +97,7 @@ const LOCATION_OPTIONS = {
 ```typescript
 const handleCreateCheckpoint = async (data: {
   name: string;
-  assetType: 'real_estate' | 'vehicle' | 'appliance' | 'other';
+  assetType: 'real_estate' | 'vehicle' | 'appliance' | 'landscape_irrigation' | 'other';
   location: string;
   mediaAsset: ImagePicker.ImagePickerAsset;
   mediaType: 'image' | 'video';
@@ -123,7 +125,7 @@ export interface AnalyzeCheckpointInput {
   imageUrl: string;
   contentType: string;
   location?: string;
-  assetType?: 'real_estate' | 'vehicle' | 'appliance' | 'other';
+  assetType?: 'real_estate' | 'vehicle' | 'appliance' | 'landscape_irrigation' | 'other';
   checkpointId: string;
   userId: string;
   propertyId: string;
@@ -216,7 +218,7 @@ const checkpointData = {
 export async function analyzeCheckpoint(
   checkpointId: string, 
   mediaGsURI: string,
-  assetType?: 'real_estate' | 'vehicle' | 'appliance' | 'other'
+  assetType?: 'real_estate' | 'vehicle' | 'appliance' | 'landscape_irrigation' | 'other'
 )
 ```
 
@@ -237,7 +239,7 @@ The backend already has comprehensive support for asset-specific analysis:
 **File:** `gcp/proxy/workers/function/checkpoint_analysis/prompt_builder.py`
 
 **Existing Functions:**
-1. `get_asset_category()` - Categorizes assets as "vehicle", "appliance", "property", or "generic"
+1. `get_asset_category()` - Categorizes assets as "vehicle", "appliance", "landscape_irrigation", "property", or "generic"
 2. `build_analysis_prompt()` - Generates asset-specific analysis prompts with appropriate:
    - Condition scores (e.g., exterior, interior, mechanical for vehicles)
    - Damage scores (e.g., rust, dents, scratches for vehicles)

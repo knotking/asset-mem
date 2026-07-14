@@ -96,6 +96,38 @@ def analyze_checkpoint_image(
         detected_asset=detected_asset_info.get("detectedAsset") if detected_asset_info else None
     )
 
+    score_properties = {
+        "overall": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Overall visible condition (100 = perfect, 0 = failed)",
+        }
+    }
+    if asset_category == "landscape_irrigation":
+        score_properties.update(
+            {
+                "plant_health": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Plant health (100 = thriving, 0 = dead/failed)",
+                },
+                "irrigation_coverage": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Irrigation coverage (100 = uniform full coverage)",
+                },
+                "drainage": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Drainage quality (100 = excellent)",
+                },
+            }
+        )
+
     response_schema = {
         "type": "object",
         "properties": {
@@ -116,14 +148,7 @@ def analyze_checkpoint_image(
             "condition_scores": {
                 "type": "object",
                 "description": "Condition scores (0-100). overall is required; add component scores when visible.",
-                "properties": {
-                    "overall": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100,
-                        "description": "Overall visible condition (100 = perfect, 0 = failed)",
-                    }
-                },
+                "properties": score_properties,
                 "required": ["overall"],
                 "additionalProperties": {"type": "number", "minimum": 0, "maximum": 100},
             },
@@ -160,6 +185,26 @@ def analyze_checkpoint_image(
 
     contents = [prompt, media_part]
 
+    def _response_text(response) -> str:
+        text = getattr(response, "text", None)
+        if isinstance(text, str) and text.strip():
+            return text
+        try:
+            parts = response.candidates[0].content.parts or []
+            joined = "".join(getattr(part, "text", "") or "" for part in parts)
+            if joined.strip():
+                return joined
+        except Exception:
+            pass
+        finish_reason = None
+        try:
+            finish_reason = response.candidates[0].finish_reason
+        except Exception:
+            pass
+        raise ValueError(
+            f"Gemini returned empty analysis text (finish_reason={finish_reason})"
+        )
+
     def _request_analysis(temperature: float):
         logger.info(f"Sending checkpoint {media_type} to Gemini for analysis (temp={temperature})...")
         response = client.models.generate_content(
@@ -168,14 +213,14 @@ def analyze_checkpoint_image(
             config={
                 "temperature": temperature,
                 "top_p": 0.95,
-                "max_output_tokens": 2048,
+                "max_output_tokens": 8192,
                 "response_mime_type": "application/json",
                 "response_schema": response_schema,
             },
         )
         if usage_sink is not None:
             accumulate_google_genai_generate_response(usage_sink, response)
-        return json.loads(response.text)
+        return json.loads(_response_text(response))
 
     result_json = _request_analysis(0.4)
     logger.info("Checkpoint analysis complete")
