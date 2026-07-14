@@ -54,6 +54,20 @@ def get_asset_category(detected_asset: Optional[str], asset_features: Optional[l
         if any(keyword in features_lower for keyword in appliance_keywords):
             return "appliance"
     
+    # Check for landscape/irrigation indicators
+    landscape_keywords = [
+        "lawn", "turf", "garden bed", "garden beds", "raised bed", "raised beds",
+        "vegetable garden", "flower bed", "flower beds", "planter",
+        "irrigation", "sprinkler", "drip line", "drip lines",
+        "landscape", "landscaping",
+        "french drain", "swale", "drainage system",
+        "shrub", "hedge", "ground cover", "mulch", "rock bed",
+        "backflow", "irrigation controller",
+        "retaining wall", "pathway", "edging",
+    ]
+    if any(keyword in detected_lower for keyword in landscape_keywords):
+        return "landscape_irrigation"
+
     # Default to property/generic
     return "property"
 
@@ -157,6 +171,50 @@ def build_analysis_prompt(
             * maintenance_annual: Estimated annual maintenance cost in USD
         """
     
+    elif asset_category == "landscape_irrigation":
+        return f"""
+        Analyze this {media_type} of a landscape and irrigation checkpoint.
+        {base_context}
+
+        Provide a structured analysis in JSON format with the following fields:
+        - summary: A brief summary of the landscape/irrigation area's condition and what is visible.
+        - conditions: A list of conditions specific to landscape and irrigation (e.g., "healthy", "drought stressed", "overgrown", "well-maintained", "weed-infested", "bare patches", "good coverage", "irrigation failure", "waterlogged", "erosion present").
+        - detectedItems: A list of landscape/irrigation components identified (e.g., "lawn", "garden beds", "shrubs", "trees", "sprinkler heads", "drip lines", "irrigation controller", "mulch", "retaining wall", "drainage grate", etc.).
+        - issues: A list of issue objects, each with:
+          * description: Description of the issue
+          * severity: "minor", "moderate", "major", or "critical"
+          Examples:
+          * Plant health: yellowing/browning foliage, bare patches, disease signs, pest damage, drought stress, overwatering symptoms
+          * Irrigation: broken or misaligned sprinkler heads, leaks, uneven water coverage, dry spots despite irrigation, ponding
+          * Drainage: erosion, standing water, grading problems, washouts, soil displacement
+          * Weeds: weed presence and infestation severity
+          * Hardscape: retaining wall cracks, heaving, mulch depletion, pathway/edging displacement
+          If none, return empty array.
+
+        Additionally, provide structured condition and damage scores:
+        - condition_scores: An object with component names as keys and scores (0-100) as values:
+            * plant_health: 0-100 (100 = thriving, 0 = dead/failed)
+            * irrigation_coverage: 0-100 (100 = uniform full coverage, 0 = no functional coverage)
+            * drainage: 0-100 (100 = excellent drainage, 0 = severe standing water/erosion)
+            * overall: 0-100 (weighted average of all components)
+            * lawn: 0-100 (if lawn visible)
+            * garden_beds: 0-100 (if garden beds visible)
+            * trees_shrubs: 0-100 (if trees/shrubs visible)
+            * hardscape: 0-100 (if retaining walls, edging, or pathways visible)
+
+        - damage_scores: An object with damage types as keys and severity (0-100) as values:
+            * drought_stress: 0-100 (0 = none, 100 = severe)
+            * pest_damage: 0-100
+            * disease: 0-100
+            * erosion: 0-100
+            * irrigation_failure: 0-100
+            * weed_infestation: 0-100
+
+        - cost_estimates: An object with cost estimates:
+            * repairs_immediate: Estimated immediate repair cost in USD (0 if none needed)
+            * maintenance_annual: Estimated annual maintenance cost in USD
+        """
+
     else:  # property or generic
         return f"""
         Analyze this {media_type} of a property checkpoint.
@@ -244,6 +302,21 @@ def build_comparison_prompt(
     Provide a structured comparison in JSON format with the following fields:
     """
     
+    elif asset_category == "landscape_irrigation":
+        return f"""
+    Compare these two images/videos of a landscape and irrigation checkpoint (Image 1 is 'Before' or 'Previous', Image 2 is 'After' or 'Current').
+    {base_context}
+
+    Identify the differences between the two images, focusing on landscape and irrigation-specific changes:
+    1. Plant health changes: growth or die-back, disease spread or recovery, pest damage progression or treatment effects, drought stress improvement or worsening, seasonal changes vs. structural damage.
+    2. Irrigation changes: new leaks, repaired or broken sprinkler heads, shifts in water coverage patterns, dry spots appearing or resolving, ponding or runoff.
+    3. Drainage changes: erosion progression or stabilisation, standing water appearing or clearing, grading work effects, soil displacement or washouts.
+    4. Weed or pest changes: infestation growth or treatment results.
+    5. Hardscape changes: retaining wall movement or repair, mulch depletion or replenishment, edging or pathway displacement.
+
+    Provide a structured comparison in JSON format with the following fields:
+    """
+
     else:  # property or generic
         return f"""
     Compare these two images/videos of a property checkpoint (Image 1 is 'Before' or 'Previous', Image 2 is 'After' or 'Current').

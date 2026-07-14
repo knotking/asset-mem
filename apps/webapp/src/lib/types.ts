@@ -399,7 +399,7 @@ export type Checkpoint = {
   createdAt: Timestamp;
   capturedAt?: Timestamp; // When the media was captured (vs when uploaded)
   media: CheckpointMedia[];
-  assetType?: "real_estate" | "vehicle" | "appliance" | "other"; // User-selected asset type
+  assetType?: "real_estate" | "vehicle" | "appliance" | "landscape_irrigation" | "other"; // User-selected asset type
   location?: string; // e.g., "Kitchen", "Living Room", "Exterior" (user-provided or auto-detected)
   detectedAsset?: string; // Auto-detected asset name from AI (e.g., "Kitchen", "Refrigerator", "Car")
   assetConfidence?: number; // 0-1 confidence score for asset detection
