@@ -57,6 +57,7 @@ const ASSET_TYPES = [
   { label: 'Real Estate', value: 'real_estate' as const },
   { label: 'Vehicle', value: 'vehicle' as const },
   { label: 'Appliance', value: 'appliance' as const },
+  { label: 'Landscape & Irrigation', value: 'landscape_irrigation' as const },
   { label: 'Other', value: 'other' as const },
 ];
 
@@ -110,6 +111,22 @@ const LOCATION_SUGGESTIONS = {
   ],
   vehicle: ['Exterior', 'Interior', 'Engine Bay', 'Tires/Wheels', 'Undercarriage', 'Trunk', 'Dashboard', 'Other'],
   appliance: ['Exterior', 'Interior', 'Controls', 'Seals/Gaskets', 'Filters', 'Connections', 'Other'],
+  landscape_irrigation: [
+    // Lawn & Turf
+    'Front Lawn', 'Back Lawn', 'Side Yard', 'Lawn Overall',
+    // Garden & Planting
+    'Garden Beds', 'Raised Beds', 'Vegetable Garden', 'Flower Beds', 'Planters',
+    // Trees & Shrubs
+    'Trees', 'Shrubs & Hedges', 'Ground Cover',
+    // Irrigation Infrastructure
+    'Sprinkler Zone', 'Sprinkler Heads', 'Drip Lines', 'Irrigation Controller', 'Backflow Preventer',
+    // Drainage
+    'Drainage System', 'French Drain', 'Swale / Grading',
+    // Hardscape & Edging
+    'Retaining Wall', 'Mulch / Rock Beds', 'Pathway & Edging',
+    // Custom
+    'Other',
+  ],
   other: ['Other'],
 };
 
@@ -133,7 +150,7 @@ export function CreateCheckpointDialog({
     !limitsLoading && isAtPlanLimit(checkpointsLimit, 1);
 
   const [name, setName] = useState('');
-  const [assetType, setAssetType] = useState<'real_estate' | 'vehicle' | 'appliance' | 'other'>('real_estate');
+  const [assetType, setAssetType] = useState<'real_estate' | 'vehicle' | 'appliance' | 'landscape_irrigation' | 'other'>('real_estate');
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<FileWithPreview[]>([]);

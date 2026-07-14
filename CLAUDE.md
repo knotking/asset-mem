@@ -47,7 +47,9 @@ cd apps/webapp && npm run typecheck
 cd apps/webapp && npm run test         # Jest unit/component tests
 cd apps/webapp && npm run build        # next build, then scripts/fix-firebase-standalone.js
 
-cd apps/mapp && npx tsc --noEmit       # mapp has no separate lint script
+cd apps/mapp && npm run lint            # ESLint
+cd apps/mapp && npm run test           # Jest (--ci); npm run test:watch for interactive
+cd apps/mapp && npx tsc --noEmit      # type check
 ```
 
 ### Backend (Python, uv)

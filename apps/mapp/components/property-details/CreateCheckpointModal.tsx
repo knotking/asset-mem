@@ -29,7 +29,7 @@ interface CreateCheckpointModalProps {
   onClose: () => void;
   onCreate: (data: {
     name: string;
-    assetType: 'real_estate' | 'vehicle' | 'appliance' | 'other';
+    assetType: 'real_estate' | 'vehicle' | 'appliance' | 'landscape_irrigation' | 'other';
     location: string;
     mediaAsset: ImagePicker.ImagePickerAsset;
     mediaType: 'image' | 'video';
@@ -40,6 +40,7 @@ const ASSET_TYPES = [
   { label: 'Real Estate', value: 'real_estate' as const },
   { label: 'Vehicle', value: 'vehicle' as const },
   { label: 'Appliance', value: 'appliance' as const },
+  { label: 'Landscape & Irrigation', value: 'landscape_irrigation' as const },
   { label: 'Other', value: 'other' as const },
 ];
 
@@ -110,6 +111,39 @@ const LOCATION_OPTIONS = {
     { label: 'Connections', value: 'Connections' },
     { label: 'Other', value: 'Other' },
   ],
+  landscape_irrigation: [
+    // Lawn & Turf
+    { label: 'Front Lawn', value: 'Front Lawn' },
+    { label: 'Back Lawn', value: 'Back Lawn' },
+    { label: 'Side Yard', value: 'Side Yard' },
+    { label: 'Lawn Overall', value: 'Lawn Overall' },
+    // Garden & Planting
+    { label: 'Garden Beds', value: 'Garden Beds' },
+    { label: 'Raised Beds', value: 'Raised Beds' },
+    { label: 'Vegetable Garden', value: 'Vegetable Garden' },
+    { label: 'Flower Beds', value: 'Flower Beds' },
+    { label: 'Planters', value: 'Planters' },
+    // Trees & Shrubs
+    { label: 'Trees', value: 'Trees' },
+    { label: 'Shrubs & Hedges', value: 'Shrubs & Hedges' },
+    { label: 'Ground Cover', value: 'Ground Cover' },
+    // Irrigation Infrastructure
+    { label: 'Sprinkler Zone', value: 'Sprinkler Zone' },
+    { label: 'Sprinkler Heads', value: 'Sprinkler Heads' },
+    { label: 'Drip Lines', value: 'Drip Lines' },
+    { label: 'Irrigation Controller', value: 'Irrigation Controller' },
+    { label: 'Backflow Preventer', value: 'Backflow Preventer' },
+    // Drainage
+    { label: 'Drainage System', value: 'Drainage System' },
+    { label: 'French Drain', value: 'French Drain' },
+    { label: 'Swale / Grading', value: 'Swale / Grading' },
+    // Hardscape & Edging
+    { label: 'Retaining Wall', value: 'Retaining Wall' },
+    { label: 'Mulch / Rock Beds', value: 'Mulch / Rock Beds' },
+    { label: 'Pathway & Edging', value: 'Pathway & Edging' },
+    // Custom
+    { label: 'Other', value: 'Other' },
+  ],
   other: [
     { label: 'Other', value: 'Other' },
   ],
@@ -123,7 +157,7 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
   const createBlockedByLimit =
     !limitsLoading && isAtPlanLimit(checkpointsLimit, 1);
   const [name, setName] = React.useState('');
-  const [assetType, setAssetType] = React.useState<'real_estate' | 'vehicle' | 'appliance' | 'other'>('real_estate');
+  const [assetType, setAssetType] = React.useState<'real_estate' | 'vehicle' | 'appliance' | 'landscape_irrigation' | 'other'>('real_estate');
   const [location, setLocation] = React.useState<string>('');
   const [customLocation, setCustomLocation] = React.useState<string>('');
   const [useCustomLocation, setUseCustomLocation] = React.useState(false);

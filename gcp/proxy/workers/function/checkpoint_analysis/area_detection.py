@@ -58,26 +58,33 @@ def detect_room_area(
     prompt = f"""
         Analyze this checkpoint {media_type} and identify the primary asset type and location.
         
-        First, determine if this is a PROPERTY/ROOM checkpoint, a VEHICLE/ASSET checkpoint, or an APPLIANCE checkpoint:
-        - PROPERTY/ROOM: Rooms within a property (Kitchen, Living Room, Bedroom, Bathroom, 
+        First, determine if this is a PROPERTY/ROOM checkpoint, a VEHICLE/ASSET checkpoint, an APPLIANCE checkpoint, or a LANDSCAPE/IRRIGATION checkpoint:
+        - PROPERTY/ROOM: Rooms within a property (Kitchen, Living Room, Bedroom, Bathroom,
           Dining Room, Office, Garage, Exterior Front, Exterior Back, Basement, Attic, etc.)
         - VEHICLE/ASSET: Vehicles or other movable assets (Car, Truck, Motorcycle, Boat, RV, etc.)
-        - APPLIANCE: Home appliances or systems (Refrigerator, Washer, Dryer, Dishwasher, Oven, 
+        - APPLIANCE: Home appliances or systems (Refrigerator, Washer, Dryer, Dishwasher, Oven,
           HVAC, Water Heater, Furnace, etc.). These may be part of a room or standalone.
-        
+        - LANDSCAPE/IRRIGATION: Outdoor landscape areas or irrigation infrastructure (Front Lawn,
+          Back Lawn, Garden Beds, Raised Beds, Flower Beds, Vegetable Garden, Trees, Shrubs,
+          Hedges, Ground Cover, Sprinkler Heads, Drip Lines, Irrigation Controller, Backflow
+          Preventer, Drainage System, French Drain, Swale, Retaining Wall, Mulch/Rock Beds,
+          Pathway, Edging, etc.)
+
         Provide a structured analysis in JSON format with the following fields:
         - detectedAsset: A concise location/asset name:
           * For property: Room/area name (e.g., "Kitchen", "Master Bedroom", "Bathroom", "Exterior Front")
           * For vehicle: Asset type (e.g., "Car", "Truck", "Motorcycle", "Vehicle - Exterior", "Vehicle - Interior")
           * For appliance: Appliance type (e.g., "Refrigerator", "Washer", "HVAC Unit", "Water Heater", "Oven")
+          * For landscape/irrigation: Area or component name (e.g., "Front Lawn", "Garden Beds", "Sprinkler Zone", "Drainage System", "Retaining Wall")
         - assetConfidence: A float between 0.0 and 1.0 indicating confidence in the detection
         - assetFeatures: A list of key features/objects that identify this location/asset:
           * For property: Room features (e.g., ["stove", "sink", "refrigerator"] for kitchen)
           * For vehicle: Vehicle features (e.g., ["wheels", "windshield", "doors"] for car exterior, or ["dashboard", "seats", "steering wheel"] for interior)
           * For appliance: Appliance features (e.g., ["control panel", "door seals", "coils"] for refrigerator, or ["filter", "vents", "electrical connections"] for HVAC)
-        - areaDescription: A brief description (e.g., "Kitchen with island and modern appliances", "SUV exterior view showing front and side", or "Front-loading washing machine showing control panel and door")
-        
-        Be specific when possible. For vehicles, specify if it's exterior, interior, or specific part. For appliances, specify the appliance type clearly.
+          * For landscape/irrigation: Visible elements (e.g., ["sprinkler heads", "turf", "mulch"] for a lawn zone, or ["drip emitters", "garden bed", "plants"] for irrigation)
+        - areaDescription: A brief description (e.g., "Kitchen with island and modern appliances", "SUV exterior view showing front and side", "Front-loading washing machine showing control panel and door", or "Back lawn with irrigation sprinkler heads and dry patches near the fence")
+
+        Be specific when possible. For vehicles, specify if it's exterior, interior, or specific part. For appliances, specify the appliance type clearly. For landscape/irrigation, identify the specific zone or component.
     """
 
     response_schema = {
@@ -166,22 +173,23 @@ def compare_room_similarity(
         room_context = f"Note: First image was detected as '{room1}', second as '{room2}'. "
 
     prompt = f"""
-        {room_context}Compare these two property checkpoint images/videos to determine if they show 
-        the SAME room or area of the property.
-        
+        {room_context}Compare these two checkpoint images/videos to determine if they show
+        the SAME room, area, or landscape zone.
+
         Consider:
-        1. Room type (Kitchen, Bedroom, Bathroom, etc.)
-        2. Layout and furniture arrangement
-        3. Visible fixtures and features (sinks, appliances, windows, doors)
-        4. Wall color, flooring, architectural details
-        5. Overall spatial layout
-        
+        1. Area type (Kitchen, Bedroom, Bathroom, Front Lawn, Garden Beds, Sprinkler Zone, etc.)
+        2. Layout and spatial arrangement (furniture, plantings, hardscape elements)
+        3. Visible fixtures and features (sinks, appliances, windows, doors, sprinkler heads, drip lines, irrigation components)
+        4. Surface characteristics (wall color, flooring, turf condition, mulch, soil)
+        5. Overall spatial layout and orientation
+
         Provide a structured analysis in JSON format:
-        - isSameArea: boolean - true if these images show the same room/area
-        - similarityScore: float 0.0-1.0 - how similar the areas are (1.0 = identical room, 
-          0.0 = completely different rooms). Use 0.8+ for same room with different angles/lighting.
-        - reasoning: string - brief explanation of your decision (e.g., "Same kitchen, different viewing angle" 
-          or "Different rooms - first is kitchen with stove visible, second is living room with couch")
+        - isSameArea: boolean - true if these images show the same room/area/landscape zone
+        - similarityScore: float 0.0-1.0 - how similar the areas are (1.0 = identical area,
+          0.0 = completely different areas). Use 0.8+ for same area with different angles/lighting/seasons.
+        - reasoning: string - brief explanation of your decision (e.g., "Same kitchen, different viewing angle",
+          "Different rooms - first is kitchen with stove visible, second is living room with couch",
+          or "Same front lawn zone, seasonal variation in grass colour but same sprinkler heads and fence visible")
     """
 
     response_schema = {
