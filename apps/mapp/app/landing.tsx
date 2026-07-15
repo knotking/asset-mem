@@ -1139,6 +1139,7 @@ export default function LandingPage() {
                 }}>
                 {[
                   { label: 'Solutions', href: `${webAppOrigin}/solutions` },
+                  { label: 'Stories', href: `${webAppOrigin}/blog` },
                   { label: 'About', href: `${webAppOrigin}/about` },
                   { label: 'Privacy', href: `${webAppOrigin}/privacy` },
                   { label: 'Terms', href: `${webAppOrigin}/terms` },

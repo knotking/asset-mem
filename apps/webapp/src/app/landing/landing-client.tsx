@@ -20,7 +20,14 @@ import {
   type LandingDemoVideoUrls,
 } from "@/lib/landing-demo-video";
 import { SITE_FOOTER_TAGLINE } from "@/lib/site";
+import { BLOG_POSTS } from "@/lib/blog-posts";
 import "./landing-animations.css";
+
+const BLOG_CATEGORY_COLORS: Record<string, string> = {
+  primary: LANDING_COLORS.primary,
+  accent: LANDING_COLORS.accent,
+  green: '#4ade80',
+};
 
 function scrollToLandingSection(
   targetId: string,
@@ -769,6 +776,155 @@ export default function LandingPageClient() {
 
       <LandingPricingSection colors={LANDING_COLORS} enterprise={enterpriseConfig} />
 
+      {/* Blog / Stories Section */}
+      <section
+        id="stories"
+        className="relative w-full py-16 sm:py-24 lg:py-32"
+        style={{ backgroundColor: "#0f0f14" }}
+      >
+        <div
+          className="absolute inset-0 w-full"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+        <div
+          className="container relative mx-auto px-4"
+          style={{ maxWidth: "1400px" }}
+        >
+          <div className="text-center mb-14 space-y-4">
+            <div
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm"
+              style={{
+                backgroundColor: LANDING_COLORS.primaryLight,
+                borderColor: LANDING_COLORS.primaryBorder,
+              }}
+            >
+              <span
+                className="text-sm font-semibold tracking-wide"
+                style={{ color: LANDING_COLORS.primary }}
+              >
+                FROM THE FIELD
+              </span>
+            </div>
+            <h2
+              className={LANDING_SECTION_HEADING_CLASS}
+              style={{ color: LANDING_COLORS.foreground }}
+            >
+              Stories from people who{" "}
+              <span className="font-bold landing-gradient-text">
+                use it every day
+              </span>
+            </h2>
+            <p
+              className="text-lg max-w-2xl mx-auto font-light"
+              style={{ color: LANDING_COLORS.mutedForeground }}
+            >
+              Real accounts from property managers, landlords, and HOA teams — how
+              they caught problems early, won insurance claims, and simplified
+              compliance audits.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {BLOG_POSTS.map((post) => {
+              const color =
+                BLOG_CATEGORY_COLORS[post.categoryColor] ??
+                LANDING_COLORS.primary;
+              return (
+                <Link
+                  key={post.slug}
+                  href={`/blog/${post.slug}`}
+                  className="group flex flex-col rounded-2xl border p-7 transition-all duration-200"
+                  style={{
+                    backgroundColor: LANDING_COLORS.card,
+                    borderColor: LANDING_COLORS.border,
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.borderColor =
+                      color + "44";
+                    (e.currentTarget as HTMLElement).style.backgroundColor =
+                      LANDING_COLORS.muted;
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.borderColor =
+                      LANDING_COLORS.border;
+                    (e.currentTarget as HTMLElement).style.backgroundColor =
+                      LANDING_COLORS.card;
+                  }}
+                >
+                  <div className="space-y-3 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className="text-xs font-semibold tracking-wider px-3 py-1 rounded-full"
+                        style={{
+                          backgroundColor: color + "18",
+                          color,
+                        }}
+                      >
+                        {post.category.toUpperCase()}
+                      </span>
+                      <span
+                        className="text-xs"
+                        style={{ color: LANDING_COLORS.mutedForeground }}
+                      >
+                        {post.readTime}
+                      </span>
+                    </div>
+                    <h3
+                      className="text-base font-medium leading-snug"
+                      style={{ color: LANDING_COLORS.foreground }}
+                    >
+                      {post.title}
+                    </h3>
+                    <p
+                      className="text-sm leading-relaxed"
+                      style={{ color: LANDING_COLORS.mutedForeground }}
+                    >
+                      {post.excerpt}
+                    </p>
+                  </div>
+                  <div className="mt-5 flex items-center gap-1">
+                    <span
+                      className="text-sm font-medium transition-all duration-200 group-hover:underline"
+                      style={{ color }}
+                    >
+                      Read story
+                    </span>
+                    <svg
+                      className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      style={{ color }}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="mt-10 text-center">
+            <Link
+              href="/blog"
+              className="inline-flex items-center gap-2 text-sm font-medium transition-opacity hover:opacity-80"
+              style={{ color: LANDING_COLORS.mutedForeground }}
+            >
+              View all stories →
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Footer - dark */}
       <footer
         className="mt-auto border-t py-12 w-full"
@@ -921,6 +1077,21 @@ export default function LandingPageClient() {
                 className="space-y-2 text-sm"
                 style={{ color: LANDING_COLORS.mutedForeground }}
               >
+                <li>
+                  <Link
+                    href="/blog"
+                    className="transition-colors hover:text-foreground"
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.color = LANDING_COLORS.foreground)
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.color =
+                        LANDING_COLORS.mutedForeground)
+                    }
+                  >
+                    Stories
+                  </Link>
+                </li>
                 <li>
                   <Link
                     href="/about"
