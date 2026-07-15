@@ -169,6 +169,19 @@ export function LandingHeader({
             >
               Solutions
             </Link>
+            <Link
+              href="/blog"
+              className="text-sm font-medium whitespace-nowrap transition-all duration-300"
+              style={{ color: LANDING_COLORS.foreground70 }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = LANDING_COLORS.primary;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = LANDING_COLORS.foreground70;
+              }}
+            >
+              Stories
+            </Link>
           </nav>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -223,6 +236,14 @@ export function LandingHeader({
                     style={{ color: LANDING_COLORS.foreground70 }}
                   >
                     Solutions
+                  </Link>
+                  <Link
+                    href="/blog"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-lg px-3 py-3 text-base font-medium transition-colors"
+                    style={{ color: LANDING_COLORS.foreground70 }}
+                  >
+                    Stories
                   </Link>
                 </nav>
                 <div className="mt-8 border-t pt-6 space-y-3" style={{ borderColor: LANDING_COLORS.borderOverlay }}>
