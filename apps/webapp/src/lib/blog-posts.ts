@@ -106,7 +106,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
   {
     slug: 'insurance-claim-settled-in-4-days',
-    title: 'Our Insurance Adjuster Called It the Best-Documented Claim She'd Seen in 12 Years',
+    title: "Our Insurance Adjuster Called It the Best-Documented Claim She'd Seen in 12 Years",
     subtitle:
       'When a burst pipe flooded two units in January, we had 18 months of timestamped, AI-analyzed condition evidence ready to share. The claim settled in 4 days.',
     category: 'Insurance & Claims',
@@ -164,7 +164,7 @@ export const BLOG_POSTS: BlogPost[] = [
       },
       {
         type: 'heading',
-        text: 'What I'd tell other landlords',
+        text: "What I'd tell other landlords",
       },
       {
         type: 'paragraph',
@@ -248,7 +248,7 @@ export const BLOG_POSTS: BlogPost[] = [
           '4 properties had irrigation issues requiring owner follow-up',
           '2 properties had weed infestation scores above the acceptable threshold',
           'Average front-lawn plant health score: 81/100',
-          'We issued courtesy notices to 6 homeowners with specific photographic evidence and AI descriptions — no arguments about what was or wasn't there',
+          "We issued courtesy notices to 6 homeowners with specific photographic evidence and AI descriptions — no arguments about what was or wasn't there",
         ],
       },
       {
@@ -257,7 +257,7 @@ export const BLOG_POSTS: BlogPost[] = [
       },
       {
         type: 'heading',
-        text: 'What we'll do differently next year',
+        text: "What we'll do differently next year",
       },
       {
         type: 'paragraph',
