@@ -162,3 +162,11 @@ For detailed setup, local development, and deployment instructions for the backe
 ## Deployment
 
 Infrastructure and releases are managed via **GitHub Actions** (`create-environment.yaml`, `deploy-*.yaml`) using `gcloud`. See [`.github/workflows/README.md`](./.github/workflows/README.md), [`docs/deployment/README.md`](./docs/deployment/README.md), and [`gcp/docs/SETUP_AND_DEPLOYMENT.md`](./gcp/docs/SETUP_AND_DEPLOYMENT.md).
+
+## License
+
+Licensed under the [Apache License, Version 2.0](./LICENSE).
+
+Portions of the backend are derived from Google LLC sample code for the Agent
+Development Kit and Vertex AI, also Apache-2.0; see [`NOTICE`](./NOTICE) for
+attribution details.
