@@ -1,6 +1,6 @@
 import { doc, getDoc } from 'firebase/firestore';
 import { Platform } from 'react-native';
-import { db } from '@homeapp/common/firebase';
+import { db } from '@asset-mem/common/firebase';
 import { getExpoExtra } from '@/lib/expo-extra';
 import { getNativeAppVersion } from '@/lib/native-app-version';
 import { isVersionLessThan } from '@/lib/semver';

@@ -14,14 +14,14 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { Property } from '@homeapp/common/types';
-import { usePreferences } from '@homeapp/common/contexts/preferences-context';
+import type { Property } from '@asset-mem/common/types';
+import { usePreferences } from '@asset-mem/common/contexts/preferences-context';
 import {
   getDiscoveryStepStates,
   resolveDiscoveryProperty,
   shouldShowDiscoveryChecklist,
   type DiscoveryStepId,
-} from '@homeapp/common/lib/feature-discovery';
+} from '@asset-mem/common/lib/feature-discovery';
 
 type DiscoveryChecklistProps = {
   properties: Property[];

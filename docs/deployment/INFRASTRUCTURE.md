@@ -1,10 +1,10 @@
 # Infrastructure Setup and Management
 
-This guide covers the infrastructure setup, configuration, and management for HomeApp on Google Cloud Platform.
+This guide covers the infrastructure setup, configuration, and management for AssetMem on Google Cloud Platform.
 
 ## Overview
 
-HomeApp infrastructure is built on Google Cloud Platform (GCP) with:
+AssetMem infrastructure is built on Google Cloud Platform (GCP) with:
 
 - Firebase App Hosting for web application
 - Cloud Run for API services
@@ -76,7 +76,7 @@ gcloud --version
 
 ```bash
 # Create new project (if needed)
-gcloud projects create PROJECT_ID --name="HomeApp"
+gcloud projects create PROJECT_ID --name="AssetMem"
 
 # Set default project
 gcloud config set project PROJECT_ID
@@ -437,7 +437,7 @@ gcloud run services update homecare-agent-proxy-staging \
 ```bash
 # Create security policy
 gcloud compute security-policies create homeapp-policy \
-  --description="Security policy for HomeApp"
+  --description="Security policy for AssetMem"
 
 # Add rate limiting rule
 gcloud compute security-policies rules create 1000 \
@@ -472,7 +472,7 @@ gcloud compute project-info describe --project=PROJECT_ID
 # Or use gcloud (if available)
 gcloud billing budgets create \
   --billing-account=BILLING_ACCOUNT_ID \
-  --display-name="HomeApp Monthly Budget" \
+  --display-name="AssetMem Monthly Budget" \
   --budget-amount=1000 \
   --threshold-rule=percent=50 \
   --threshold-rule=percent=90 \

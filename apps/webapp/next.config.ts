@@ -27,7 +27,7 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Removed @homeapp/common dependency - types and contexts are now local to webapp
+  // Removed @asset-mem/common dependency - types and contexts are now local to webapp
   // for Firebase App Hosting compatibility
   images: {
     remotePatterns: [

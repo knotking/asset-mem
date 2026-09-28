@@ -23,7 +23,7 @@ export function proxyJsonHeaders(
   return headers;
 }
 
-/** `fetch` to the HomeApp proxy with `X-Request-ID` (one id per call unless overridden). */
+/** `fetch` to the AssetMem proxy with `X-Request-ID` (one id per call unless overridden). */
 export async function proxyFetch(
   input: RequestInfo | URL,
   init: RequestInit & { correlationId?: string } = {}

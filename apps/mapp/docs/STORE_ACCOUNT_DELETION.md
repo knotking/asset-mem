@@ -32,7 +32,7 @@ Staging/local: same path on your deployed web origin if testing.
 | App | File |
 | --- | ---- |
 | **mapp** | [apps/common/src/lib/account-deletion.ts](../../common/src/lib/account-deletion.ts) |
-| **webapp** | [apps/webapp/src/lib/account-deletion.ts](../../webapp/src/lib/account-deletion.ts) (local; no `@homeapp/common`) |
+| **webapp** | [apps/webapp/src/lib/account-deletion.ts](../../webapp/src/lib/account-deletion.ts) (local; no `@asset-mem/common`) |
 
 Keep both files in sync when changing strings.
 

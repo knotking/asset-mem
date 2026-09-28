@@ -2,7 +2,7 @@
 
 /**
  * Mirrors `apps/common/src/contexts/saved-service-providers-context.tsx`.
- * The webapp does not depend on `@homeapp/common` (Firebase App Hosting); uses local
+ * The webapp does not depend on `@asset-mem/common` (Firebase App Hosting); uses local
  * `@/contexts/auth-context`, `@/contexts/firebase-context`, and `@/lib/types` instead.
  * Keep both files in sync when changing save/list behavior.
  */

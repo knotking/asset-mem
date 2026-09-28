@@ -1,10 +1,10 @@
-# HomeApp Deployment Documentation
+# AssetMem Deployment Documentation
 
-This directory contains comprehensive documentation for deploying all components of the HomeApp project.
+This directory contains comprehensive documentation for deploying all components of the AssetMem project.
 
 ## Overview
 
-HomeApp is a full-stack application deployed on Google Cloud Platform (GCP) with the following main components:
+AssetMem is a full-stack application deployed on Google Cloud Platform (GCP) with the following main components:
 
 1. **Web Application** - Next.js webapp deployed on Firebase App Hosting
 2. **Mobile Application** - React Native/Expo app deployed via EAS (Expo Application Services)

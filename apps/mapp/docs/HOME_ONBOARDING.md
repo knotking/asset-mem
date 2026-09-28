@@ -1,6 +1,6 @@
 # Home onboarding checklist (mapp + web)
 
-Four-step checklist on the properties home screen. Step logic: `@homeapp/common/lib/home-onboarding` (mapp); `apps/webapp/src/lib/home-onboarding.ts` (web mirror — keep in sync).
+Four-step checklist on the properties home screen. Step logic: `@asset-mem/common/lib/home-onboarding` (mapp); `apps/webapp/src/lib/home-onboarding.ts` (web mirror — keep in sync).
 
 ## Steps
 

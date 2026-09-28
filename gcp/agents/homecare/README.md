@@ -391,7 +391,7 @@ ADK web-recorded `*.evalset.json` files and `make test-eval*` were **removed**. 
 - **`make eval-dashboard`** — aggregate CI baselines + weblog latency (Phase 4)
 - **`uv run adk web`** — manual staging QA against `property_agent`
 - **`make conformance-web-record`** / **`make conformance-web`** — adk web with record/replay plugins
-- **`make conformance-record`** / **`make conformance-test`** — ADK conformance fixtures (test uses HomeApp replay compare)
+- **`make conformance-record`** / **`make conformance-test`** — ADK conformance fixtures (test uses AssetMem replay compare)
 
 See **`property_agent/evals/README.md`** for command details.
 

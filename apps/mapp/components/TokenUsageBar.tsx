@@ -5,8 +5,8 @@ import Svg, { Circle } from 'react-native-svg';
 import { Sparkles } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { Icon } from '@/components/ui/icon';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
-import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
+import { useLlmTokenUsage } from '@asset-mem/common/contexts/llm-token-usage-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   type SettingsReturnContext,

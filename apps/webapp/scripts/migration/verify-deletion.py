@@ -531,7 +531,7 @@ def cmd_verify(args) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Verify HomeApp delete flows completed in Firebase/Storage.",
+        description="Verify AssetMem delete flows completed in Firebase/Storage.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )

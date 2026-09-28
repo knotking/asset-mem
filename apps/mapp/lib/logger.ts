@@ -1,6 +1,6 @@
 /**
  * Mapp logging utility. Namespaced, level-gated debug, structured metadata.
- * Not shared with @homeapp/common — mapp keeps its own copy (parallel to webapp).
+ * Not shared with @asset-mem/common — mapp keeps its own copy (parallel to webapp).
  *
  * Levels in release builds (__DEV__=false):
  * - debug, info: off unless EXPO_PUBLIC_DEBUG_LOGS=true (or extra.debugLogs)

@@ -1,6 +1,6 @@
 /**
  * Mirrors `apps/common/src/lib/saved-service-provider-dedupe.ts`.
- * The webapp does not depend on `@homeapp/common` (Firebase App Hosting); keep both files in sync.
+ * The webapp does not depend on `@asset-mem/common` (Firebase App Hosting); keep both files in sync.
  */
 
 import type { ServiceProvider } from '@/lib/types';

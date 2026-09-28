@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Configure Pub/Sub dead-letter topics and policies for HomeApp worker pipelines.
+# Configure Pub/Sub dead-letter topics and policies for AssetMem worker pipelines.
 #
 # Usage:
 #   ./.github/scripts/apply-pubsub-dlq.sh PROJECT_ID ENV [MAX_DELIVERY_ATTEMPTS]

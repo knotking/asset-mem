@@ -12,7 +12,7 @@ import {
   type InputToolbarProps,
 } from 'react-native-gifted-chat';
 import { ChevronDown } from 'lucide-react-native';
-import { useMessages } from '@homeapp/common/contexts/messages-context';
+import { useMessages } from '@asset-mem/common/contexts/messages-context';
 import {
   shouldUpdateGiftedChatMessage,
   transformMessagesToGiftedChatCached,
@@ -21,10 +21,10 @@ import {
 import GiftedChatBubble from '@/components/GiftedChatBubble';
 import { GiftedChatInputToolbar } from '@/components/GiftedChatInputToolbar';
 import { CheckpointAnalysisProgressFooter } from '@/components/CheckpointAnalysisProgressFooter';
-import { getInFlightCheckpointProgressFromMessages } from '@homeapp/common/lib/checkpoint-branch-progress';
-import { countPriorAssistantTurnsInSession } from '@homeapp/common/lib/agent-lifecycle-ui';
-import { getActiveStreamingAssistantMessageId } from '@homeapp/common/lib/sort-messages';
-import { buildSuppressRepeatedContextRefsByMessageId } from '@homeapp/common/lib/chat-message-context-refs';
+import { getInFlightCheckpointProgressFromMessages } from '@asset-mem/common/lib/checkpoint-branch-progress';
+import { countPriorAssistantTurnsInSession } from '@asset-mem/common/lib/agent-lifecycle-ui';
+import { getActiveStreamingAssistantMessageId } from '@asset-mem/common/lib/sort-messages';
+import { buildSuppressRepeatedContextRefsByMessageId } from '@asset-mem/common/lib/chat-message-context-refs';
 import { giftedChatListViewPropsForPlatform } from '@/lib/property-chat-list-props';
 import {
   ChatListScrollAnchorProvider,
@@ -36,12 +36,12 @@ import { giftedChatBottomOffset } from '@/lib/tab-bar-metrics';
 import {
   CHAT_SESSION_EMPTY_INTRO,
   getSuggestedPrompts,
-} from '@homeapp/common/lib/feature-discovery';
+} from '@asset-mem/common/lib/feature-discovery';
 import type {
   AnalysisOptionalAgent,
   CheckpointOptionalAgent,
   PrimaryAgent,
-} from '@homeapp/common/types';
+} from '@asset-mem/common/types';
 
 interface PropertyChatTabProps {
   sessionId: string | null;
@@ -56,16 +56,16 @@ interface PropertyChatTabProps {
   onStop: () => void;
   onSend: (messages: IMessage[]) => void;
   onSuggestedAction?: (
-    action: import('@homeapp/common/lib/suggested-actions').SuggestedAction
+    action: import('@asset-mem/common/lib/suggested-actions').SuggestedAction
   ) => void;
   onOpenAddContext: () => void;
   contextChipStrip?: React.ReactNode;
   sendBlockHint?: string | null;
   readyContextCount?: number;
   pendingContextCount?: number;
-  searchLocation?: import('@homeapp/common/types').SearchLocationInput;
+  searchLocation?: import('@asset-mem/common/types').SearchLocationInput;
   onSearchLocationChange?: (
-    searchLocation: import('@homeapp/common/types').SearchLocationInput | undefined
+    searchLocation: import('@asset-mem/common/types').SearchLocationInput | undefined
   ) => void;
   propertyAddress?: string;
 }

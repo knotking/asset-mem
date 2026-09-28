@@ -116,7 +116,7 @@ If no web app exists:
 
 1. Click **Add app** button
 2. Click **Web** icon (`</>`)
-3. App nickname: `HomeApp Web`
+3. App nickname: `AssetMem Web`
 4. Check **"Also set up Firebase Hosting"** (optional)
 5. Click **Register app**
 6. Copy the Firebase configuration (you already have this)

@@ -25,9 +25,9 @@ import { cn } from '@/lib/utils';
 import { getAppThemeColors } from '@/lib/css-theme-tokens';
 import { usePropertyReports } from '@/hooks/usePropertyReports';
 import { DateInput } from '@/components/ui/date-input';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
-import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
-import { useProperty } from '@homeapp/common/contexts/property-context';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
+import { useCheckpoint } from '@asset-mem/common/contexts/checkpoint-context';
+import { useProperty } from '@asset-mem/common/contexts/property-context';
 import {
   generatePropertyReport,
   previewPropertyReport,
@@ -42,24 +42,24 @@ import type {
   PropertyReportPurpose,
   PropertyReportTemplate,
   ReportPreviewPair,
-} from '@homeapp/common/types';
+} from '@asset-mem/common/types';
 import {
   checkpointIdsForComparisonPair,
   comparisonPairKey,
   previewHasPendingAnalysis,
   type ReportComparisonDateRanges,
-} from '@homeapp/common/lib/report-preview';
+} from '@asset-mem/common/lib/report-preview';
 import {
   useReportWizardCheckpointPreview,
   type ReportPreviewFetchPayload,
-} from '@homeapp/common/hooks/use-report-wizard-checkpoint-preview';
-import type { PropertyReportLayoutId } from '@homeapp/common/lib/report-templates';
+} from '@asset-mem/common/hooks/use-report-wizard-checkpoint-preview';
+import type { PropertyReportLayoutId } from '@asset-mem/common/lib/report-templates';
 import {
   REPORT_SECTION_TOGGLES,
   buildReportTemplate,
   defaultPurposeForMode,
   sectionTogglesFromTemplate,
-} from '@homeapp/common/lib/report-templates';
+} from '@asset-mem/common/lib/report-templates';
 import {
   DEFAULT_REPORT_INTENT_ID,
   REPORT_INTENT_OPTIONS,
@@ -77,15 +77,15 @@ import {
   rentalComparisonRangesFromAnchors,
   type ReportIntentId,
   type ReportWizardStep,
-} from '@homeapp/common/lib/report-wizard';
-import { buildReportLayoutPreviewHtml } from '@homeapp/common/lib/report-preview-html';
-import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
-import { REPORT_QUOTA_USER_MESSAGE } from '@homeapp/common/lib/document-analysis-errors';
+} from '@asset-mem/common/lib/report-wizard';
+import { buildReportLayoutPreviewHtml } from '@asset-mem/common/lib/report-preview-html';
+import { useLlmTokenUsage } from '@asset-mem/common/contexts/llm-token-usage-context';
+import { REPORT_QUOTA_USER_MESSAGE } from '@asset-mem/common/lib/document-analysis-errors';
 import {
   isAtPlanLimit,
   planLimitBlockMessage,
   planLimitUsageHint,
-} from '@homeapp/common/lib/plan-limit-slice';
+} from '@asset-mem/common/lib/plan-limit-slice';
 import { Switch } from '@/components/ui/switch';
 import { WebView } from 'react-native-webview';
 

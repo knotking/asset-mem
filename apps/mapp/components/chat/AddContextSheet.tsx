@@ -30,14 +30,14 @@ import type {
   PendingContextItem,
   PrimaryAgent,
   PropertyReport,
-} from '@homeapp/common/types';
-import type { ToggleSelectionResult } from '@homeapp/common/contexts/chat-context-context';
+} from '@asset-mem/common/types';
+import type { ToggleSelectionResult } from '@asset-mem/common/contexts/chat-context-context';
 import {
   getCheckpointThumbnail,
   isCheckpointReady,
   isDocumentReady,
   isDocumentImage,
-} from '@homeapp/common/lib/chat-context-readiness';
+} from '@asset-mem/common/lib/chat-context-readiness';
 import {
   ADD_CONTEXT_TITLE,
   ADD_CONTEXT_RECENT_LABEL,
@@ -55,25 +55,25 @@ import {
   CONTEXT_SELECTION_CHECKPOINT_LIMIT,
   CONTEXT_SELECTION_DOCUMENT_LIMIT,
   type AddContextCaptureAction,
-} from '@homeapp/common/lib/chat-context-labels';
+} from '@asset-mem/common/lib/chat-context-labels';
 import {
   ADD_CONTEXT_DOC_BROWSE_PAGE_SIZE,
   MAX_SELECTED_CHECKPOINTS,
   MAX_SELECTED_DOCUMENTS,
-} from '@homeapp/common/lib/chat-context-limits';
+} from '@asset-mem/common/lib/chat-context-limits';
 import {
   filterCheckpointsBySearch,
   filterDocumentsBySearch,
   filterReportsBySearch,
   getRecentReadyCheckpoints,
   getRecentReadyDocuments,
-} from '@homeapp/common/lib/chat-context-picker';
-import { MAX_SELECTED_REPORTS } from '@homeapp/common/lib/chat-context-reports';
+} from '@asset-mem/common/lib/chat-context-picker';
+import { MAX_SELECTED_REPORTS } from '@asset-mem/common/lib/chat-context-reports';
 import {
   reportSelectionKey,
   toRevisionSelectionReport,
-} from '@homeapp/common/lib/report-revisions';
-import { buildCurrentRevisionReportPickerRows } from '@homeapp/common/lib/report-picker-rows';
+} from '@asset-mem/common/lib/report-revisions';
+import { buildCurrentRevisionReportPickerRows } from '@asset-mem/common/lib/report-picker-rows';
 import { cn } from '@/lib/utils';
 
 type ContextTab = 'timeline' | 'documents';

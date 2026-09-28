@@ -34,19 +34,19 @@ import {
   MapPin,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
-import { useFirebase } from '@homeapp/common/contexts/firebase-context';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
+import { useFirebase } from '@asset-mem/common/contexts/firebase-context';
 import {
   startPropertyDeletion,
   retryPropertyDeletionJob,
   propertyRemovingLabel,
   deletionErrorLabel,
   markPropertyDeletionFailed,
-} from '@homeapp/common/lib/deletion';
+} from '@asset-mem/common/lib/deletion';
 import { createLogger } from '@/lib/logger';
 import { getMappDeletionApiUrls } from '@/lib/deletion-api';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
-import { PROPERTY_STAT_LABELS } from '@homeapp/common/lib/feature-discovery';
+import { PROPERTY_STAT_LABELS } from '@asset-mem/common/lib/feature-discovery';
 
 const propertyLog = createLogger('property');
 

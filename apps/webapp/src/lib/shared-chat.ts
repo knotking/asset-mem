@@ -1,5 +1,5 @@
 /**
- * Shared chat helpers — local copy for App Hosting (webapp does not depend on @homeapp/common).
+ * Shared chat helpers — local copy for App Hosting (webapp does not depend on @asset-mem/common).
  * Keep in sync with apps/common/src/lib/shared-chat.ts.
  */
 import {

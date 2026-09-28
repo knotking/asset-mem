@@ -20,7 +20,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"]
-      // Removed @homeapp/common path mapping - types are now local for App Hosting compatibility
+      // Removed @asset-mem/common path mapping - types are now local for App Hosting compatibility
     },
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

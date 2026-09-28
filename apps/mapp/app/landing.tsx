@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
 import { Text } from '../components/ui/text';
 import { Icon } from '../components/ui/icon';
 import {

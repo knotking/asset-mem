@@ -29,16 +29,16 @@ export default defineConfig(
         {
           paths: [
             {
-              name: "@homeapp/common",
+              name: "@asset-mem/common",
               message:
-                "Webapp must not import @homeapp/common (Firebase App Hosting). Mirror under src/lib or src/hooks and keep in sync — see apps/webapp/docs/CHAT.md.",
+                "Webapp must not import @asset-mem/common (Firebase App Hosting). Mirror under src/lib or src/hooks and keep in sync — see apps/webapp/docs/CHAT.md.",
             },
           ],
           patterns: [
             {
-              group: ["@homeapp/common/*"],
+              group: ["@asset-mem/common/*"],
               message:
-                "Webapp must not import @homeapp/common (Firebase App Hosting). Mirror under src/lib or src/hooks and keep in sync — see apps/webapp/docs/CHAT.md.",
+                "Webapp must not import @asset-mem/common (Firebase App Hosting). Mirror under src/lib or src/hooks and keep in sync — see apps/webapp/docs/CHAT.md.",
             },
           ],
         },

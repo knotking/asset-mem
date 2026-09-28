@@ -376,6 +376,6 @@ For technical issues:
 
 ## Navigation
 
-**← Back to:** [HomeApp Documentation](../)  
+**← Back to:** [AssetMem Documentation](../)  
 **→ Next:** [README](./README.md) - Start here for overview
 

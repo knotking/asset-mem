@@ -260,7 +260,7 @@ const nextConfig = {
   },
 
   // Monorepo support
-  transpilePackages: ["@homeapp/common"],
+  transpilePackages: ["@asset-mem/common"],
 };
 ```
 

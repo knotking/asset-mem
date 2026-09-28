@@ -17,15 +17,15 @@ jest.mock('@/components/ui/dropdown-menu', () => {
   };
 });
 
-jest.mock('@homeapp/common/contexts/session-context', () => ({
+jest.mock('@asset-mem/common/contexts/session-context', () => ({
   useSession: jest.fn(),
 }));
 
-jest.mock('@homeapp/common/contexts/auth-context', () => ({
+jest.mock('@asset-mem/common/contexts/auth-context', () => ({
   useAuth: () => ({ user: { uid: 'user-1' } }),
 }));
 
-jest.mock('@homeapp/common/contexts/firebase-context', () => ({
+jest.mock('@asset-mem/common/contexts/firebase-context', () => ({
   useFirebase: () => ({ db: {} }),
 }));
 
@@ -42,7 +42,7 @@ jest.mock('@/lib/deletion-api', () => ({
   getMappDeletionApiUrls: jest.fn(() => null),
 }));
 
-jest.mock('@homeapp/common/hooks/use-optimistic-deletion-overlay', () => ({
+jest.mock('@asset-mem/common/hooks/use-optimistic-deletion-overlay', () => ({
   useOptimisticDeletionOverlay: () => ({
     markDeleting: jest.fn(),
     clearDeleting: jest.fn(),
@@ -52,7 +52,7 @@ jest.mock('@homeapp/common/hooks/use-optimistic-deletion-overlay', () => ({
 }));
 
 const mockUseSession = jest.mocked(
-  require('@homeapp/common/contexts/session-context').useSession
+  require('@asset-mem/common/contexts/session-context').useSession
 );
 
 describe('SessionsList', () => {

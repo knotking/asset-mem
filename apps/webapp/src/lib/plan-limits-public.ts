@@ -2,7 +2,7 @@
  * Marketing / UI defaults for monthly creation limits (UTC month).
  * Enforcement uses proxy `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` (tiers plus/pro); keep marketing copy in sync.
  *
- * Local copy for Firebase App Hosting — webapp does not depend on `@homeapp/common`.
+ * Local copy for Firebase App Hosting — webapp does not depend on `@asset-mem/common`.
  * Keep free-tier numbers in sync with `apps/common/src/lib/plan-defaults.ts` and `apps/mapp/lib/plan-limits.ts`.
  */
 

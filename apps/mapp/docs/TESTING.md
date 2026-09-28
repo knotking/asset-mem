@@ -6,7 +6,7 @@ Jest + `jest-expo` + `@testing-library/react-native` for chat perf regression te
 
 ```bash
 # From repo root (after npm ci)
-npm test --workspace=@homeapp/common
+npm test --workspace=@asset-mem/common
 npm test --workspace=mapp
 
 # From apps/mapp

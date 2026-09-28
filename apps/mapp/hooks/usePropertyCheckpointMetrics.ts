@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
-import { useProperty } from '@homeapp/common/contexts/property-context';
-import { useFirebase } from '@homeapp/common/contexts/firebase-context';
-import type { PropertyCheckpointMetrics } from '@homeapp/common/types';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
+import { useProperty } from '@asset-mem/common/contexts/property-context';
+import { useFirebase } from '@asset-mem/common/contexts/firebase-context';
+import type { PropertyCheckpointMetrics } from '@asset-mem/common/types';
 
 export function usePropertyCheckpointMetrics() {
   const { db } = useFirebase();

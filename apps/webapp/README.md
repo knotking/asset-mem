@@ -1,6 +1,6 @@
-# HomeApp Web Application (`webapp`)
+# AssetMem Web Application (`webapp`)
 
-The HomeApp web application allows property managers and homeowners to access their property data, manage documents, and view diagnostics from a desktop or tablet interface. Built with **Next.js** and **React**.
+The AssetMem web application allows property managers and homeowners to access their property data, manage documents, and view diagnostics from a desktop or tablet interface. Built with **Next.js** and **React**.
 
 ## Key Features
 

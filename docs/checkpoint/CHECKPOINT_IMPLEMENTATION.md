@@ -16,10 +16,10 @@ The checkpoint feature allows users to:
 
 ## Architecture
 
-The implementation leverages shared code from `@homeapp/common` to ensure consistency between mobile and web:
+The implementation leverages shared code from `@asset-mem/common` to ensure consistency between mobile and web:
 
 ```
-webapp → @homeapp/common → Firebase/Firestore
+webapp → @asset-mem/common → Firebase/Firestore
   ↓
   ├─ CheckpointContext (shared)
   ├─ PreferencesContext (shared)
@@ -118,7 +118,7 @@ webapp → @homeapp/common → Firebase/Firestore
 
 ## Context Integration
 
-The webapp now uses these shared contexts from `@homeapp/common`:
+The webapp now uses these shared contexts from `@asset-mem/common`:
 
 1. **FirebaseProvider** - Provides Firebase instances (app, auth, db, storage)
 2. **CheckpointProvider** - Manages checkpoint CRUD operations and state
@@ -128,7 +128,7 @@ These are wrapped in `AppContextProvider` (`contexts/firebase-context.tsx`) for 
 
 ## Type Safety
 
-All checkpoint-related types are imported from `@homeapp/common/types`:
+All checkpoint-related types are imported from `@asset-mem/common/types`:
 - `Checkpoint`
 - `CheckpointMedia`
 - `CheckpointAnalysis`
@@ -173,7 +173,7 @@ This ensures type consistency between mobile and web applications.
 
 The implementation maintains full backward compatibility:
 
-1. **Shared Types**: Uses types from `@homeapp/common` which are already used by mapp
+1. **Shared Types**: Uses types from `@asset-mem/common` which are already used by mapp
 2. **Shared Contexts**: Uses the same CheckpointContext and PreferencesContext as mapp
 3. **Firestore Structure**: Works with the existing Firestore data structure
 4. **No Migration Needed**: Existing checkpoints work as-is
@@ -201,7 +201,7 @@ All checkpoint data uses Firestore listeners for real-time updates:
 
 ## Testing Checklist
 
-- [x] Types align with @homeapp/common
+- [x] Types align with @asset-mem/common
 - [x] Contexts properly integrated
 - [x] Checkpoint list displays real data
 - [x] Create checkpoint workflow works

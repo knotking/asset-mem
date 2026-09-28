@@ -2,7 +2,7 @@
 
 import { ensureFirebaseRemoteConfigEnvironment } from './firebase-remote-config-setup';
 import { fetchAndActivate, getRemoteConfig, getValue } from 'firebase/remote-config';
-import { app } from '@homeapp/common/firebase';
+import { app } from '@asset-mem/common/firebase';
 import Constants from 'expo-constants';
 import {
   DEFAULT_LANDING_DEMO_VIDEO_URLS,

@@ -1,5 +1,5 @@
 /**
- * Shared logger for @homeapp/common (consumed by mapp).
+ * Shared logger for @asset-mem/common (consumed by mapp).
  * Webapp uses its own copy under apps/webapp/src/lib/logger.ts.
  *
  * Verbose levels (debug, info) follow __DEV__ or EXPO_PUBLIC_DEBUG_LOGS at build time.

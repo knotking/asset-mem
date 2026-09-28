@@ -35,7 +35,7 @@ jest.mock('@/components/ui/accordion', () => ({
     return <View>{children}</View>;
   },
 }));
-jest.mock('@homeapp/common/contexts/saved-service-providers-context', () => ({
+jest.mock('@asset-mem/common/contexts/saved-service-providers-context', () => ({
   useSavedServiceProviders: () => ({
     savedProviders: [],
     loading: false,

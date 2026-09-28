@@ -45,8 +45,8 @@ gcloud config set project YOUR_PROJECT_ID
 
 # Create service account
 gcloud iam service-accounts create homecare-proxy-sa \
-  --display-name="HomeApp Proxy Service Account" \
-  --description="Service account for HomeApp proxy API"
+  --display-name="AssetMem Proxy Service Account" \
+  --description="Service account for AssetMem proxy API"
 ```
 
 ### Grant Required Roles

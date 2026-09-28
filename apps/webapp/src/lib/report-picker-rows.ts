@@ -1,4 +1,4 @@
-/** Mirrored from @homeapp/common — webapp cannot import common (App Hosting). */
+/** Mirrored from @asset-mem/common — webapp cannot import common (App Hosting). */
 import type { PropertyReport } from '@/lib/types';
 import {
   buildReportRevisionListItems,

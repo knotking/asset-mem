@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Create or update Cloud Monitoring alert policies and optional uptime checks for HomeApp.
+# Create or update Cloud Monitoring alert policies and optional uptime checks for AssetMem.
 #
 # Usage:
 #   export MONITORING_NOTIFICATION_CHANNEL_IDS="projects/PROJECT/notificationChannels/123,..."
@@ -36,7 +36,7 @@ else
   echo "Creating log metric: ${TOKEN_METRIC}"
   gcloud logging metrics create "${TOKEN_METRIC}" \
     --project="${PROJECT_ID}" \
-    --description="TOKEN_QUOTA_EXCEEDED on HomeApp proxy (${ENV})" \
+    --description="TOKEN_QUOTA_EXCEEDED on AssetMem proxy (${ENV})" \
     --log-filter="resource.type=\"cloud_run_revision\"
 resource.labels.service_name=\"${PROXY_SERVICE}\"
 (jsonPayload.code=\"TOKEN_QUOTA_EXCEEDED\" OR textPayload=~\"TOKEN_QUOTA_EXCEEDED\")"
@@ -51,7 +51,7 @@ else
   echo "Creating log metric: ${PROXY_REQUEST_METRIC}"
   gcloud logging metrics create "${PROXY_REQUEST_METRIC}" \
     --project="${PROJECT_ID}" \
-    --description="HTTP requests to HomeApp proxy (${ENV})" \
+    --description="HTTP requests to AssetMem proxy (${ENV})" \
     --log-filter="resource.type=\"cloud_run_revision\"
 resource.labels.service_name=\"${PROXY_SERVICE}\"
 httpRequest.requestUrl!=\"\""
@@ -136,7 +136,7 @@ else
       gcloud monitoring uptime create "${uptime_id}" \
         --project="${PROJECT_ID}" \
         --resource-type=uptime-url \
-        --display-name="HomeApp proxy health (${ENV})" \
+        --display-name="AssetMem proxy health (${ENV})" \
         --http-check-path="/health" \
         --hostname="${host}" \
         --period=300 \

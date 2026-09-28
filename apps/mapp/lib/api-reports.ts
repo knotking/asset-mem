@@ -1,9 +1,9 @@
 import Constants from 'expo-constants';
-import { createCorrelationId, proxyFetchWithAuth } from '@homeapp/common/lib/correlation-id';
-import { parseAgentErrorCode } from '@homeapp/common/lib/document-analysis-errors';
+import { createCorrelationId, proxyFetchWithAuth } from '@asset-mem/common/lib/correlation-id';
+import { parseAgentErrorCode } from '@asset-mem/common/lib/document-analysis-errors';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import { mappPlanLimitMessageForErrorCode } from '@/lib/ios-billing-compliance';
-import type { ReportPreviewResponse } from '@homeapp/common/types';
+import type { ReportPreviewResponse } from '@asset-mem/common/types';
 
 const extra = Constants.expoConfig?.extra || {};
 const REPORTS_PREVIEW_URL = (extra.reportsPreviewUrl as string) || '';

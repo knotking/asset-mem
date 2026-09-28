@@ -1,5 +1,5 @@
 {
-  "displayName": "HomeApp proxy latency p95 (__ENV__)",
+  "displayName": "AssetMem proxy latency p95 (__ENV__)",
   "combiner": "AND_WITH_MATCHING_RESOURCE",
   "enabled": true,
   "documentation": {

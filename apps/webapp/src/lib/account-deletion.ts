@@ -1,5 +1,5 @@
 /**
- * Account-deletion copy — local for Firebase App Hosting (webapp does not depend on @homeapp/common).
+ * Account-deletion copy — local for Firebase App Hosting (webapp does not depend on @asset-mem/common).
  * Keep in sync with apps/common/src/lib/account-deletion.ts and /privacy, /account-deletion pages.
  */
 

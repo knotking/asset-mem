@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useSession } from '@homeapp/common/contexts/session-context';
+import { useSession } from '@asset-mem/common/contexts/session-context';
 
 export function useSessionSelection(propertyId: string, sessionIdParam?: string) {
   const { draftsByProperty, sessionsByProperty } = useSession();

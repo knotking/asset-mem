@@ -223,7 +223,7 @@ const response = await queryDocuments({
 **React Native Example**:
 
 ```typescript
-import { streamAgentResponse } from "@homeapp/common/api";
+import { streamAgentResponse } from "@asset-mem/common/api";
 
 async function queryDocuments(
   userId: string,

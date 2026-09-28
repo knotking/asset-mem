@@ -1,5 +1,5 @@
-import type { UploadingDocument } from '@homeapp/common/contexts/document-upload-context';
-import type { Document } from '@homeapp/common/types';
+import type { UploadingDocument } from '@asset-mem/common/contexts/document-upload-context';
+import type { Document } from '@asset-mem/common/types';
 
 export type MergedPropertyDocument =
   | (UploadingDocument & { source: 'uploading' })

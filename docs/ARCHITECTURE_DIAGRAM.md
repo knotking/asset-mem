@@ -1,9 +1,9 @@
-# HomeApp Architecture Diagram
+# AssetMem Architecture Diagram
 
 <img width="2752" height="1536" alt="architecture" src="https://github.com/user-attachments/assets/2f646c02-d69e-4f62-8f08-a3b23460032d" />
 
 
-A visual representation of the HomeApp platform architecture, showing the relationships between frontend applications, backend services, and AI components.
+A visual representation of the AssetMem platform architecture, showing the relationships between frontend applications, backend services, and AI components.
 
 ---
 

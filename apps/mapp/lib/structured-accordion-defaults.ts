@@ -5,7 +5,7 @@ import {
   type StructuredAccordionSection,
   type StructuredAccordionVisibility,
   STRUCTURED_ACCORDION_COLLAPSED,
-} from "@homeapp/common/lib/structured-accordion-defaults";
+} from "@asset-mem/common/lib/structured-accordion-defaults";
 
 export type { StructuredAccordionSection, StructuredAccordionVisibility };
 export { STRUCTURED_ACCORDION_COLLAPSED };

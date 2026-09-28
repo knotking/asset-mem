@@ -1,11 +1,11 @@
 ---
 name: run-frontends
-description: Run, build, lint, or typecheck the HomeApp frontends — apps/mapp (Expo / React Native) and apps/webapp (Next.js 15). Use whenever the user wants to start a dev server, debug a build, or work on either client. Covers the order-of-operations with the shared @homeapp/common package, the unusual webapp port, and the env-injection paths.
+description: Run, build, lint, or typecheck the AssetMem frontends — apps/mapp (Expo / React Native) and apps/webapp (Next.js 15). Use whenever the user wants to start a dev server, debug a build, or work on either client. Covers the order-of-operations with the shared @asset-mem/common package, the unusual webapp port, and the env-injection paths.
 ---
 
-# Running the HomeApp frontends
+# Running the AssetMem frontends
 
-Both apps are part of the npm workspaces declared at `package.json` (root). The shared package is `@homeapp/common` at `apps/common`.
+Both apps are part of the npm workspaces declared at `package.json` (root). The shared package is `@asset-mem/common` at `apps/common`.
 
 ## One-time install
 
@@ -90,7 +90,7 @@ Typical chain when changing shared code:
 4. (Optional) `npx tsc --noEmit` in mapp and `npm run typecheck` in webapp to confirm types still resolve via the new exports.
 
 ## Common gotchas
-- **`Cannot find module '@homeapp/common/...'`** — you forgot to build common, or the new export isn't in `apps/common/package.json` `exports`. See the **add-shared-context** skill.
+- **`Cannot find module '@asset-mem/common/...'`** — you forgot to build common, or the new export isn't in `apps/common/package.json` `exports`. See the **add-shared-context** skill.
 - **Webapp listening on 3000** — that's not this repo. It's 9002.
 - **Mapp can't reach the proxy** — `Constants.expoConfig.extra.agentSessionUrl` is `undefined`. Check `PROXY_BASE_URL` is set in `apps/mapp/.env` (or the EAS profile).
 - **Stale dist after a rebase** — `cd apps/common && rm -rf dist && npm run build`.

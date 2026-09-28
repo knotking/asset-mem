@@ -6,15 +6,15 @@ import type { FirebaseStorage } from 'firebase/storage';
 import {
   useDocumentUpload,
   type DocumentPickerAsset,
-} from '@homeapp/common/contexts/document-upload-context';
+} from '@asset-mem/common/contexts/document-upload-context';
 import { queueExtractDocInfo, postFileToAgent } from '@/lib/api';
 import {
   DOCUMENT_QUOTA_USER_MESSAGE,
   getDocumentAnalysisFailureMessage,
   isDocumentQuotaMessage,
-} from '@homeapp/common/lib/document-analysis-errors';
-import { isAtPlanLimit } from '@homeapp/common/lib/plan-limit-slice';
-import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
+} from '@asset-mem/common/lib/document-analysis-errors';
+import { isAtPlanLimit } from '@asset-mem/common/lib/plan-limit-slice';
+import { useLlmTokenUsage } from '@asset-mem/common/contexts/llm-token-usage-context';
 import { waitForUserDocAnalysis } from '@/lib/wait-user-doc-analysis';
 import { isPlaceholderPropertyAddress } from '@/lib/property-address-placeholder';
 import {

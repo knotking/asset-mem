@@ -1,6 +1,6 @@
-# HomeApp Mobile Application (`mapp`)
+# AssetMem Mobile Application (`mapp`)
 
-The HomeApp mobile application is a comprehensive property care tool built with **React Native** and **Expo**. It empowers homeowners to manage their properties, track maintenance, and leverage AI for diagnostics and advice.
+The AssetMem mobile application is a comprehensive property care tool built with **React Native** and **Expo**. It empowers homeowners to manage their properties, track maintenance, and leverage AI for diagnostics and advice.
 
 ## Key Features
 

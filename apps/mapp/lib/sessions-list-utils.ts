@@ -1,10 +1,10 @@
-import type { Session } from '@homeapp/common/types';
+import type { Session } from '@asset-mem/common/types';
 import {
   formatSessionDisplayDate,
   getSessionActivitySortTime,
   getSessionMessageCountLabel,
   getSessionSidebarActivityLabel,
-} from '@homeapp/common/lib/session-timestamps';
+} from '@asset-mem/common/lib/session-timestamps';
 
 export const SESSIONS_LIST_FLAT_LIST_PROPS = {
   initialNumToRender: 10,

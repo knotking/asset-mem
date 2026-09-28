@@ -1,13 +1,13 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { CollectionReference, Firestore } from 'firebase/firestore';
-import { deleteAllInCollection } from '@homeapp/common/lib/deletion/delete-collection';
+import { deleteAllInCollection } from '@asset-mem/common/lib/deletion/delete-collection';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/** @deprecated Prefer deleteAllInCollection from @homeapp/common/lib/deletion */
+/** @deprecated Prefer deleteAllInCollection from @asset-mem/common/lib/deletion */
 export async function deleteCollection(db: Firestore, collectionRef: CollectionReference) {
   await deleteAllInCollection(db, collectionRef);
 }

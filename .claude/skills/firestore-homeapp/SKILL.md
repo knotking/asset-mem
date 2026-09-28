@@ -1,13 +1,13 @@
 ---
 name: firestore-homeapp
 description: >-
-  Query HomeApp Firestore via the Firebase MCP server (firestore_get_document,
+  Query AssetMem Firestore via the Firebase MCP server (firestore_get_document,
   firestore_list_documents, firestore_query_collection). Use for llm_token_usage,
   billing/summary, user preferences, debugging TOKEN_QUOTA_EXCEEDED, or Stripe
   webhook state. Requires firebase login and .cursor/mcp.json firebase server.
 ---
 
-# HomeApp Firestore (Firebase MCP)
+# AssetMem Firestore (Firebase MCP)
 
 ## Prerequisites
 

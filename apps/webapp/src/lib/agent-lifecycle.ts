@@ -1,6 +1,6 @@
 /**
  * Mirrors `apps/common/src/lib/agent-lifecycle-stream.ts` for Firebase App Hosting:
- * the webapp does not depend on `@homeapp/common`. Keep both files in sync.
+ * the webapp does not depend on `@asset-mem/common`. Keep both files in sync.
  */
 
 import type { ThinkingStatus } from "@/lib/agent-display";

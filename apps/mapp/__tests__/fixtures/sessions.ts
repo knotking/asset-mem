@@ -1,4 +1,4 @@
-import type { Session } from '@homeapp/common/types';
+import type { Session } from '@asset-mem/common/types';
 
 /** In-memory sessions for list performance / scale tests (not Firestore-backed). */
 export function generateMockSessions(count: number): Session[] {

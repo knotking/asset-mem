@@ -117,7 +117,7 @@ PropertyChatSessionPage
 - Fully backward compatible with existing chat functionality
 - Analysis agent works exactly as before
 - No breaking changes to existing APIs
-- Checkpoint data structure matches mobile app (shared via @homeapp/common)
+- Checkpoint data structure matches mobile app (shared via @asset-mem/common)
 
 ## Testing Recommendations
 1. Test agent switching (Analysis ↔ Checkpoint)

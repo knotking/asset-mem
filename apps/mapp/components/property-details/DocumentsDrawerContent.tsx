@@ -4,13 +4,13 @@ import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { FileText, X } from 'lucide-react-native';
-import type { Document } from '@homeapp/common/types';
-import { useProperty } from '@homeapp/common/contexts/property-context';
+import type { Document } from '@asset-mem/common/types';
+import { useProperty } from '@asset-mem/common/contexts/property-context';
 import {
   isResourceDeletionFailed,
   resourceDeletingLabel,
   deletionErrorLabel,
-} from '@homeapp/common/lib/deletion';
+} from '@asset-mem/common/lib/deletion';
 
 interface DocumentsDrawerContentProps {
   documents: Document[];

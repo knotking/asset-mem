@@ -3,7 +3,7 @@ import { Animated, View } from 'react-native';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Sparkles } from 'lucide-react-native';
-import type { CheckpointBranchProgress } from '@homeapp/common/lib/checkpoint-branch-progress';
+import type { CheckpointBranchProgress } from '@asset-mem/common/lib/checkpoint-branch-progress';
 
 type Props = {
   progress: CheckpointBranchProgress;

@@ -19,7 +19,7 @@ User messages set both `content` and `contentMarkdown` on send (`chat/[sessionId
 
 ## Local lib copies (App Hosting)
 
-Webapp does **not** import `@homeapp/common` at runtime. Keep these in sync with common/mapp:
+Webapp does **not** import `@asset-mem/common` at runtime. Keep these in sync with common/mapp:
 
 **Guardrails:** ESLint `no-restricted-imports`, `npm run check:no-common`, CI workflow `test-webapp.yaml`.
 
@@ -99,7 +99,7 @@ Uses contentJson/contentMarkdown — not raw `message.content` alone.
 | `src/components/chat/structured-checkpoint-summary-card.tsx` | Inline always-visible checkpoint summary preview |
 | `src/components/chat/checkpoint-summary-fields.tsx` | Label/value helpers for checkpoint summary sections |
 | `src/components/chat/checkpoint-summary-content.tsx` | Shared checkpoint summary body (inline card + full report) |
-| `src/lib/checkpoint-summary-display.ts` | Overall-condition first-letter formatting (local copy; sync with `@homeapp/common` for mapp) |
+| `src/lib/checkpoint-summary-display.ts` | Overall-condition first-letter formatting (local copy; sync with `@asset-mem/common` for mapp) |
 | `src/components/chat/structured-report-sheet.tsx` | Full-report side sheet for structured messages |
 | `src/components/chat/diy-video-tutorials-section.tsx` | DIY video preview list + side sheet with embedded players |
 | `src/components/chat/chat-list.tsx` | Scroll + `isLoading` for streaming placeholder |

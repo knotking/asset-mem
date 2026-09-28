@@ -496,7 +496,7 @@ Reports live **under Timeline / Checkpoints**, not as a top-level property tab.
 
 | Surface | Location |
 |---------|----------|
-| **Generate report** | 3-step wizard (intent → dates/checkpoints → layout/sections). Shared helpers in `@homeapp/common/lib/report-wizard`. |
+| **Generate report** | 3-step wizard (intent → dates/checkpoints → layout/sections). Shared helpers in `@asset-mem/common/lib/report-wizard`. |
 | **Regenerate** | Confirm screen (title/notes) + optional “Change layout & sections” — checkpoints and ranges unchanged. |
 | **Reports library** | Compact cards: title, purpose, status chip, overflow menu (edit, share, regenerate, delete). |
 | **Report detail** | Open PDF, share, regenerate, delete (unchanged) |
@@ -509,7 +509,7 @@ Reports live **under Timeline / Checkpoints**, not as a top-level property tab.
 - [x] Rental move-in/out → `comparison` + `rental_security` + prior-month ranges
 - [x] Insurance / claim → `snapshot` + `insurance` + today (dates editable in step 2)
 
-### Shared components (`@homeapp/common`)
+### Shared components (`@asset-mem/common`)
 
 - Types in `apps/common/src/types.ts`
 - `lib/report-wizard.ts` — intent cards, `applyReportIntent`, `suggestReportTitle`, step labels

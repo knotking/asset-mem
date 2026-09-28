@@ -518,4 +518,4 @@ For issues or questions:
 
 ## License
 
-Part of the HomeApp AI Agent System.
+Part of the AssetMem AI Agent System.

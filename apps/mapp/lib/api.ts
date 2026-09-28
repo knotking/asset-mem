@@ -1,14 +1,14 @@
 import { fetch } from 'expo/fetch';
 import Constants from 'expo-constants';
-import { buildAgentSearchLocation } from '@homeapp/common/lib/search-location';
+import { buildAgentSearchLocation } from '@asset-mem/common/lib/search-location';
 import type {
   AgentStep,
   LocationData,
   PrimaryAgent,
   SearchLocationInput,
-} from '@homeapp/common/types';
-import { createCorrelationId, proxyFetchWithAuth } from '@homeapp/common/lib/correlation-id';
-import { compareCheckpointsFailureMessage } from '@homeapp/common/lib/document-analysis-errors';
+} from '@asset-mem/common/types';
+import { createCorrelationId, proxyFetchWithAuth } from '@asset-mem/common/lib/correlation-id';
+import { compareCheckpointsFailureMessage } from '@asset-mem/common/lib/document-analysis-errors';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import {
   mappPlanLimitMessageForErrorCode,
@@ -178,7 +178,7 @@ export interface StreamAgentResponseParams {
   assistantMessageId?: string;
   chatIntent?: 'discuss_analysis' | 'new_analysis' | 'replay_analysis';
   /** Structured chip tap — routes deterministically on the agent (single-loop pre-routing). */
-  chipAction?: import('@homeapp/common/lib/suggested-actions').ChipAction;
+  chipAction?: import('@asset-mem/common/lib/suggested-actions').ChipAction;
   onChunk?: (content: string) => void;
   onAgentStep?: (step: AgentStep) => void;
   onComplete?: (finalResponse: string, agentSteps: AgentStep[]) => void;

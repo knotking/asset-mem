@@ -29,11 +29,11 @@ import {
 import {
   CHECKPOINT_PAGE_SIZE,
   useCheckpoint,
-} from '@homeapp/common/contexts/checkpoint-context';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
-import { useProperty } from '@homeapp/common/contexts/property-context';
-import { usePreferences } from '@homeapp/common/contexts/preferences-context';
-import { Checkpoint } from '@homeapp/common/types';
+} from '@asset-mem/common/contexts/checkpoint-context';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
+import { useProperty } from '@asset-mem/common/contexts/property-context';
+import { usePreferences } from '@asset-mem/common/contexts/preferences-context';
+import { Checkpoint } from '@asset-mem/common/types';
 import { format } from 'date-fns';
 import { CreateCheckpointModal } from './CreateCheckpointModal';
 import { CheckpointDetailModal } from './CheckpointDetailModal';
@@ -45,8 +45,8 @@ import {
   CHECKPOINT_QUOTA_USER_MESSAGE,
   checkpointFailureBadgeLabel,
   getPlanLimitFailureMessage,
-} from '@homeapp/common/lib/document-analysis-errors';
-import { deleteCheckpointsBatch } from '@homeapp/common/lib/deletion/delete-checkpoint';
+} from '@asset-mem/common/lib/document-analysis-errors';
+import { deleteCheckpointsBatch } from '@asset-mem/common/lib/deletion/delete-checkpoint';
 import {
   checkpointBulkDeleteFailed,
   deletionRetryLabel,
@@ -54,8 +54,8 @@ import {
   markResourcesDeletionFailed,
   resourceDeletingLabel,
   deletionErrorLabel,
-} from '@homeapp/common/lib/deletion';
-import { useFirebase } from '@homeapp/common/contexts/firebase-context';
+} from '@asset-mem/common/lib/deletion';
+import { useFirebase } from '@asset-mem/common/contexts/firebase-context';
 import { doc } from 'firebase/firestore';
 import { getMappDeletionApiUrls } from '@/lib/deletion-api';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
@@ -63,11 +63,11 @@ import {
   isAtPlanLimit,
   planLimitBlockMessage,
   planLimitUsageHint,
-} from '@homeapp/common/lib/plan-limit-slice';
-import { getCheckpointListConditionBadge } from '@homeapp/common/lib/checkpoint-list-badge';
+} from '@asset-mem/common/lib/plan-limit-slice';
+import { getCheckpointListConditionBadge } from '@asset-mem/common/lib/checkpoint-list-badge';
 import { checkpointListBadgeStyles } from '@/lib/checkpoint-list-badge-styles';
 import { Input } from '@/components/ui/input';
-import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
+import { useLlmTokenUsage } from '@asset-mem/common/contexts/llm-token-usage-context';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -91,8 +91,8 @@ import {
   INSIGHTS_MISSING_SUMMARY_HINT,
   INSIGHTS_MISSING_SUMMARY_MESSAGE,
   resolveInsightsViewState,
-} from '@homeapp/common/lib/checkpoint-metrics-display';
-import type { PropertyCheckpointIssueRow } from '@homeapp/common/types';
+} from '@asset-mem/common/lib/checkpoint-metrics-display';
+import type { PropertyCheckpointIssueRow } from '@asset-mem/common/types';
 
 type IssueSeverity = 'critical' | 'major' | 'moderate' | 'minor';
 type IssueRow = {

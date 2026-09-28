@@ -3,13 +3,13 @@
  * Enforcement uses proxy STRIPE_B2C_PRICE_TOKEN_CAPS_JSON + Firestore billing/summary.
  */
 
-import { formatTokensCompact } from '@homeapp/common/lib/format-tokens';
+import { formatTokensCompact } from '@asset-mem/common/lib/format-tokens';
 import {
   FREE_PLAN_CHECKPOINTS_PER_MONTH,
   FREE_PLAN_DOCUMENTS_PER_MONTH,
   FREE_PLAN_REPORTS_PER_MONTH,
   FREE_PLAN_TOKENS_PER_MONTH,
-} from '@homeapp/common/lib/plan-defaults';
+} from '@asset-mem/common/lib/plan-defaults';
 
 export { FREE_PLAN_TOKENS_PER_MONTH as FREE_TOKENS_PER_MONTH };
 export const PLUS_TOKENS_PER_MONTH = 10_000_000;

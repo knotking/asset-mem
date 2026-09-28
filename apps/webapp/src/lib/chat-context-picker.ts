@@ -1,5 +1,5 @@
 /**
- * Mirrored from @homeapp/common — webapp cannot import common (App Hosting).
+ * Mirrored from @asset-mem/common — webapp cannot import common (App Hosting).
  */
 import type { Checkpoint, Document, PrimaryAgent, PropertyReport } from "@/lib/types";
 import { filterReadyReports, pickDefaultReadyReport } from "@/lib/chat-context-reports";

@@ -37,7 +37,7 @@ assetType?: "real_estate" | "vehicle" | "appliance" | "landscape_irrigation" | "
 ```
 
 ### [x] 2. `apps/webapp/src/lib/types.ts`
-**What:** Mirror the same union change (webapp cannot import from `@homeapp/common`).
+**What:** Mirror the same union change (webapp cannot import from `@asset-mem/common`).
 
 Same one-line change as above.
 

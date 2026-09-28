@@ -2,7 +2,7 @@
 
 ## Symptoms
 
-- Alert: **HomeApp Pub/Sub backlog** or **worker 5xx**
+- Alert: **AssetMem Pub/Sub backlog** or **worker 5xx**
 - Checkpoints/documents stuck in `processing` in Firestore
 - Growth on topic `worker-dlq-{ENV}`
 

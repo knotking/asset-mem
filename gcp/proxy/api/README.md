@@ -1,6 +1,6 @@
 # GCP Proxy API
 
-This directory contains the FastAPI application that serves as the backend proxy for the HomeApp ecosystem. It handles agent interactions, document analysis, and third-party integrations (Telegram, Service Broker).
+This directory contains the FastAPI application that serves as the backend proxy for the AssetMem ecosystem. It handles agent interactions, document analysis, and third-party integrations (Telegram, Service Broker).
 
 ## Architecture
 
@@ -98,7 +98,7 @@ On each throttled persist during `POST /firebase-agent-stream`, `services/vertex
 2. **Merges** patches with monotonic `revision` and schema validation (`contentSchemaVersion: 2`)
 3. Enforces size limits via `utils/message_patch_state.constrain_content_json_size`
 
-Clients (mapp / webapp) listen to Firestore and render via `@homeapp/common` `resolveMessageContentParts`. Canonical contract: [`gcp/agents/homecare/property_agent/ARCHITECTURE.md`](../../agents/homecare/property_agent/ARCHITECTURE.md).
+Clients (mapp / webapp) listen to Firestore and render via `@asset-mem/common` `resolveMessageContentParts`. Canonical contract: [`gcp/agents/homecare/property_agent/ARCHITECTURE.md`](../../agents/homecare/property_agent/ARCHITECTURE.md).
 
 ### Token quota (rate limit)
 

@@ -9,8 +9,8 @@ import {
   ACCOUNT_DELETION_DIALOG_BODY,
   ACCOUNT_DELETION_REAUTH_MESSAGE,
   fullDataErasureSupportLine,
-} from '@homeapp/common/lib/account-deletion';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
+} from '@asset-mem/common/lib/account-deletion';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';

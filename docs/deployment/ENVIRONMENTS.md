@@ -4,7 +4,7 @@ This guide covers the different deployment environments and their configurations
 
 ## Overview
 
-HomeApp supports three deployment environments:
+AssetMem supports three deployment environments:
 
 ### Brand vs infrastructure naming
 

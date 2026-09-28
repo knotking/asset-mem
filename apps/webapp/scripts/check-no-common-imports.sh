@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Fail if webapp src imports @homeapp/common (App Hosting does not bundle it).
+# Fail if webapp src imports @asset-mem/common (App Hosting does not bundle it).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-# Match import/require lines only (not doc comments mentioning @homeapp/common).
-IMPORT_PATTERN='(from|import|require\()[[:space:]]*['\''"]@homeapp/common'
+# Match import/require lines only (not doc comments mentioning @asset-mem/common).
+IMPORT_PATTERN='(from|import|require\()[[:space:]]*['\''"]@asset-mem/common'
 
 find_imports() {
   if command -v rg >/dev/null 2>&1; then
@@ -18,10 +18,10 @@ find_imports() {
 
 matches="$(find_imports)"
 if [ -n "$matches" ]; then
-  echo "error: webapp must not import @homeapp/common (Firebase App Hosting)." >&2
+  echo "error: webapp must not import @asset-mem/common (Firebase App Hosting)." >&2
   echo "Mirror the module under src/lib or src/hooks — see docs/CHAT.md." >&2
   echo "$matches" >&2
   exit 1
 fi
 
-echo "OK: no @homeapp/common imports in apps/webapp/src"
+echo "OK: no @asset-mem/common imports in apps/webapp/src"

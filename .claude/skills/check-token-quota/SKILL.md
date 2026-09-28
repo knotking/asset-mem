@@ -1,6 +1,6 @@
 ---
 name: check-token-quota
-description: Inspect, test, or debug the LLM token-quota system that gates Reasoning Engine and Gemini calls in the HomeApp proxy and workers. Use whenever the user asks about TOKEN_QUOTA_EXCEEDED, monthlyTokenLimit, llm_token_usage Firestore docs, the AI usage bar in the webapp/mapp settings, or wants to verify quota end-to-end.
+description: Inspect, test, or debug the LLM token-quota system that gates Reasoning Engine and Gemini calls in the AssetMem proxy and workers. Use whenever the user asks about TOKEN_QUOTA_EXCEEDED, monthlyTokenLimit, llm_token_usage Firestore docs, the AI usage bar in the webapp/mapp settings, or wants to verify quota end-to-end.
 ---
 
 # Inspecting and testing the token-quota system

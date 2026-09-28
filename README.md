@@ -1,7 +1,7 @@
 
-# HomeApp 
+# AssetMem 
 
-This repository contains the complete source code for the HomeApp platform, a comprehensive AI-powered property care system. It integrates frontend applications (Mobile & Web) with a sophisticated backend built on Google Cloud Platform.
+This repository contains the complete source code for the AssetMem platform, a comprehensive AI-powered property care system. It integrates frontend applications (Mobile & Web) with a sophisticated backend built on Google Cloud Platform.
 
 > 📚 **Technology Stack**: For a comprehensive overview of all technologies used across backend, mobile, and web applications, see [TECH_STACK.md](./docs/TECH_STACK.md).
 >

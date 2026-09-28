@@ -6,15 +6,15 @@ import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { X, Loader2 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
-import { useProperty } from '@homeapp/common/contexts/property-context';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
+import { useProperty } from '@asset-mem/common/contexts/property-context';
 import { updatePropertyReportMetadata } from '@/lib/api-reports';
-import type { PropertyReport, PropertyReportTemplate } from '@homeapp/common/types';
-import type { PropertyReportLayoutId } from '@homeapp/common/lib/report-templates';
+import type { PropertyReport, PropertyReportTemplate } from '@asset-mem/common/types';
+import type { PropertyReportLayoutId } from '@asset-mem/common/lib/report-templates';
 import {
   REPORT_SECTION_TOGGLES,
   buildReportTemplate,
-} from '@homeapp/common/lib/report-templates';
+} from '@asset-mem/common/lib/report-templates';
 import { Switch } from '@/components/ui/switch';
 
 type EditReportMetadataModalProps = {

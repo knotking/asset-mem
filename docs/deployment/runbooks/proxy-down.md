@@ -2,7 +2,7 @@
 
 ## Symptoms
 
-- Alert: **HomeApp proxy 5xx rate** or **proxy latency p95**
+- Alert: **AssetMem proxy 5xx rate** or **proxy latency p95**
 - Uptime check failing on `{proxy}/health`
 - Web/mapp: network errors, 502/503/504 on agent/checkpoint/document routes
 - `/health` returns `503` with `reasoning_engine_not_initialized`

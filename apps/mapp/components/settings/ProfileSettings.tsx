@@ -3,13 +3,13 @@ import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { updateProfile } from 'firebase/auth';
 import { ChevronRight, Loader2, LogOut } from 'lucide-react-native';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
 import {
   DISPLAY_NAME_MAX_LENGTH,
   displayNameFromEmail,
   getProfileDisplayPresentation,
   getSignInMethodLabel,
-} from '@homeapp/common/lib/user-display';
+} from '@asset-mem/common/lib/user-display';
 import { cn } from '@/lib/utils';
 import { UserProfileAvatar } from '@/components/UserProfileAvatar';
 import { Button } from '@/components/ui/button';

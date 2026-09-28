@@ -1,5 +1,5 @@
 {
-  "displayName": "HomeApp Pub/Sub backlog (__ENV__)",
+  "displayName": "AssetMem Pub/Sub backlog (__ENV__)",
   "combiner": "OR",
   "enabled": true,
   "documentation": {

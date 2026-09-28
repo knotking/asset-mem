@@ -7,11 +7,11 @@ import { Button } from '@//components/ui/button';
 import { BookOpen, SunIcon, MoonStarIcon } from 'lucide-react-native';
 import { AssetMemWordmark } from '@/components/AssetMemWordmark';
 import { useColorScheme } from 'nativewind';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
-import { usePreferences } from '@homeapp/common/contexts/preferences-context';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
+import { usePreferences } from '@asset-mem/common/contexts/preferences-context';
 import { UserProfileAvatar } from '@/components/UserProfileAvatar';
 import { TokenUsageBar } from '@/components/TokenUsageBar';
-import { ThemePreference } from '@homeapp/common/types';
+import { ThemePreference } from '@asset-mem/common/types';
 import {
   navigateToSettingsSubScreen,
   resolveAppHeaderReturnContext,

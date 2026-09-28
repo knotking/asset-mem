@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Check, X } from 'lucide-react-native';
 import { reportStatusLabel } from '@/hooks/usePropertyReports';
-import { REPORT_PURPOSE_OPTIONS } from '@homeapp/common/lib/report-templates';
-import type { PropertyReportPurpose, PropertyReportStatus } from '@homeapp/common/types';
+import { REPORT_PURPOSE_OPTIONS } from '@asset-mem/common/lib/report-templates';
+import type { PropertyReportPurpose, PropertyReportStatus } from '@asset-mem/common/types';
 
 const STATUS_OPTIONS = ['all', 'ready', 'generating', 'failed', 'draft'] as const;
 

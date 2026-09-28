@@ -1,4 +1,4 @@
-import type { Message } from '@homeapp/common/types';
+import type { Message } from '@asset-mem/common/types';
 import { areChatMessagePropsEqual } from '@/lib/chat-message-equal';
 import { messageFixtures } from './fixtures/messages';
 

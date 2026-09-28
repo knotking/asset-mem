@@ -1,6 +1,6 @@
 /**
  * Mirrors `apps/common/src/hooks/use-assistant-loading-ui.ts` for Firebase App Hosting:
- * the webapp does not depend on `@homeapp/common`. Keep both files in sync.
+ * the webapp does not depend on `@asset-mem/common`. Keep both files in sync.
  */
 
 import { useEffect, useMemo, useState } from "react";

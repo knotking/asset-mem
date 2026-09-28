@@ -46,7 +46,7 @@ make conformance-test
 CONFORMANCE_USER_ID=NHnSq8V6BsWpREpm56tpCheADsr1 make conformance-test
 ```
 
-`make conformance-test` uses HomeApp-aware compare (`evals/conformance/replay_validators.py`) that ignores volatile `homeappLifecycle`, timing, and UUID fields.
+`make conformance-test` uses AssetMem-aware compare (`evals/conformance/replay_validators.py`) that ignores volatile `homeappLifecycle`, timing, and UUID fields.
 
 For manual record + replay in one server: `make conformance-web-both`.
 

@@ -1,4 +1,4 @@
-import type { AgentStep } from '@homeapp/common/types';
+import type { AgentStep } from '@asset-mem/common/types';
 import type { IMessage, BubbleProps } from 'react-native-gifted-chat';
 import {
   giftedChatCreatedAtMillis,

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides a detailed technical explanation of how AI-powered cost estimation works in the HomeApp system, including the AI model, prompting strategies, response parsing, and validation mechanisms.
+This document provides a detailed technical explanation of how AI-powered cost estimation works in the AssetMem system, including the AI model, prompting strategies, response parsing, and validation mechanisms.
 
 ## AI Model & Configuration
 

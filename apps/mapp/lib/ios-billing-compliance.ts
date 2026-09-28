@@ -33,7 +33,7 @@ export function monthlyQuotaExceededMessage(kind: QuotaLimitKind): string {
   return isIosAppStoreBillingRestricted() ? IOS_QUOTA_MESSAGES[kind] : DEFAULT_QUOTA_MESSAGES[kind];
 }
 
-/** Mapp quota copy — iOS-safe; use instead of @homeapp/common planLimitMessageForErrorCode. */
+/** Mapp quota copy — iOS-safe; use instead of @asset-mem/common planLimitMessageForErrorCode. */
 export function mappPlanLimitMessageForErrorCode(code: string | undefined): string | undefined {
   if (code === 'DOCUMENT_QUOTA_EXCEEDED') return monthlyQuotaExceededMessage('documents');
   if (code === 'CHECKPOINT_QUOTA_EXCEEDED') return monthlyQuotaExceededMessage('checkpoints');

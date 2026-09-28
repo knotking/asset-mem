@@ -1,5 +1,5 @@
 /**
- * Mirrored from @homeapp/common — webapp cannot import common (App Hosting).
+ * Mirrored from @asset-mem/common — webapp cannot import common (App Hosting).
  */
 export const SESSION_NAME_MIN_MESSAGE_CHARS = 4;
 export const SESSION_NAME_MAX_LENGTH = 60;

@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
-import { usePreferences } from '@homeapp/common/contexts/preferences-context';
-import type { FeatureTipId } from '@homeapp/common/lib/feature-discovery';
+import { usePreferences } from '@asset-mem/common/contexts/preferences-context';
+import type { FeatureTipId } from '@asset-mem/common/lib/feature-discovery';
 
 export function useDismissFeatureTip() {
   const { preferences, updatePreferences } = usePreferences();

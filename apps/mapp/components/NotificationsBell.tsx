@@ -5,15 +5,15 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Bell, X } from 'lucide-react-native';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
-import { useFirebase } from '@homeapp/common/contexts/firebase-context';
-import { useNotifications } from '@homeapp/common/hooks/use-notifications';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
+import { useFirebase } from '@asset-mem/common/contexts/firebase-context';
+import { useNotifications } from '@asset-mem/common/hooks/use-notifications';
 import {
   formatDeletionErrorMessage,
   propertyDeleteFailedBody,
   propertyDeleteFailedTitle,
   propertyRemovedToast,
-} from '@homeapp/common/lib/deletion';
+} from '@asset-mem/common/lib/deletion';
 
 function notificationTitle(type: string, propertyName?: string): string {
   if (type === 'property_deletion_failed') return propertyDeleteFailedTitle;

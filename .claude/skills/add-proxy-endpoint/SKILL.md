@@ -1,6 +1,6 @@
 ---
 name: add-proxy-endpoint
-description: Add a new endpoint to the HomeApp FastAPI proxy under gcp/proxy/api. Use whenever the user asks to add, expose, or wire up a new API route on the proxy — covers router/service/schema layering, secret-prefix mounting, token-quota integration, and where the URL gets surfaced to mapp/webapp.
+description: Add a new endpoint to the AssetMem FastAPI proxy under gcp/proxy/api. Use whenever the user asks to add, expose, or wire up a new API route on the proxy — covers router/service/schema layering, secret-prefix mounting, token-quota integration, and where the URL gets surfaced to mapp/webapp.
 ---
 
 # Adding a new endpoint to gcp/proxy/api

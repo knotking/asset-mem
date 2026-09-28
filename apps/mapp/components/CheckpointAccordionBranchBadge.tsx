@@ -3,8 +3,8 @@ import { ActivityIndicator, View } from 'react-native';
 import { Check } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import type { CheckpointOptionalAgent } from '@homeapp/common/types';
-import { getCheckpointBranchAccordionBadge } from '@homeapp/common/lib/checkpoint-branch-progress';
+import type { CheckpointOptionalAgent } from '@asset-mem/common/types';
+import { getCheckpointBranchAccordionBadge } from '@asset-mem/common/lib/checkpoint-branch-progress';
 
 type Props = {
   branch: CheckpointOptionalAgent;

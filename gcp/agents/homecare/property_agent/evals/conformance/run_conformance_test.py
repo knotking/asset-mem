@@ -1,5 +1,5 @@
 """
-Run ADK conformance replay with HomeApp-aware session/event compare.
+Run ADK conformance replay with AssetMem-aware session/event compare.
 
 Requires ``make conformance-web`` on :8000.
 

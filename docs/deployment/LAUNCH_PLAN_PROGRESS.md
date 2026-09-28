@@ -148,7 +148,7 @@ See [PRODUCT_HUNT_LAUNCH.md §1](./PRODUCT_HUNT_LAUNCH.md#1-product-hunt-listing
 | Pub/Sub DLQ | `[x]` | `create-environment.yaml` + `.github/scripts/apply-pubsub-dlq.sh` |
 | Graceful Pub/Sub shutdown (proxy) | `[x]` | `gcp/proxy/api/core/events.py` |
 | Webapp lint/typecheck + E2E in CI | `[ ]` | |
-| Checkpoint pagination / shared chat hardening | `[x]` | Cursor pagination in `@homeapp/common` + webapp context; share `expiresAt` + `noindex` + rules |
+| Checkpoint pagination / shared chat hardening | `[x]` | Cursor pagination in `@asset-mem/common` + webapp context; share `expiresAt` + `noindex` + rules |
 | Agent production disclaimer resolved | `[ ]` | `gcp/agents/homecare/README.md` |
 
 **Operational TODOs after Phase 3:**

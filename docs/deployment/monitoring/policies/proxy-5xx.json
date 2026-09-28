@@ -1,5 +1,5 @@
 {
-  "displayName": "HomeApp proxy 5xx rate (__ENV__)",
+  "displayName": "AssetMem proxy 5xx rate (__ENV__)",
   "combiner": "OR",
   "enabled": true,
   "documentation": {

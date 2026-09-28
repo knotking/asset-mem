@@ -1,7 +1,7 @@
 /**
  * User-facing copy when plan limits or analysis failures block AI features.
  *
- * Local copy for Firebase App Hosting — webapp does not depend on `@homeapp/common`.
+ * Local copy for Firebase App Hosting — webapp does not depend on `@asset-mem/common`.
  * Keep in sync with `apps/common/src/lib/document-analysis-errors.ts`.
  */
 

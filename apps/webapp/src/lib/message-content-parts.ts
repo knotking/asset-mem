@@ -1,5 +1,5 @@
 /**
- * Chat content resolver — local copy for App Hosting (webapp does not depend on @homeapp/common).
+ * Chat content resolver — local copy for App Hosting (webapp does not depend on @asset-mem/common).
  * Keep in sync with apps/common/src/lib/message-content-parts.ts.
  * Display gating (structured vs markdown) lives in message-display-parts.ts (sync with mapp chat-content-parse.ts).
  */

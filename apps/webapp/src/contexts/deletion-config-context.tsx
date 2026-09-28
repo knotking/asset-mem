@@ -1,5 +1,5 @@
 /**
- * Mirrored from @homeapp/common — webapp cannot import common (App Hosting).
+ * Mirrored from @asset-mem/common — webapp cannot import common (App Hosting).
  * Keep in sync with apps/common/src/contexts/deletion-config-context.tsx
  */
 import React, { createContext, useContext, useMemo, type ReactNode } from 'react';

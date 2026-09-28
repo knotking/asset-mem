@@ -1,11 +1,11 @@
 ---
 name: add-shared-context
-description: Add a new React context (or any new module) to the @homeapp/common shared package consumed by both mapp and webapp. Use whenever the user wants to share state, types, hooks, or Firebase logic between the mobile and web apps. Covers the package exports map, build step, conditional Firebase resolution, and how consumers pick it up.
+description: Add a new React context (or any new module) to the @asset-mem/common shared package consumed by both mapp and webapp. Use whenever the user wants to share state, types, hooks, or Firebase logic between the mobile and web apps. Covers the package exports map, build step, conditional Firebase resolution, and how consumers pick it up.
 ---
 
 # Adding a shared module to apps/common
 
-`apps/common` is published as `@homeapp/common` via npm workspaces. **mapp** imports it directly. **webapp does not** — Firebase App Hosting builds only `apps/webapp` and cannot bundle `@homeapp/common` (see `.cursor/rules/webapp-no-common-imports.mdc`). For any new/changed common module used on web, **mirror it under `apps/webapp/src/lib/` or `src/hooks/`** and keep both files in sync.
+`apps/common` is published as `@asset-mem/common` via npm workspaces. **mapp** imports it directly. **webapp does not** — Firebase App Hosting builds only `apps/webapp` and cannot bundle `@asset-mem/common` (see `.cursor/rules/webapp-no-common-imports.mdc`). For any new/changed common module used on web, **mirror it under `apps/webapp/src/lib/` or `src/hooks/`** and keep both files in sync.
 
 **It is NOT a transparent shared folder** — every mapp entry point must be declared in `apps/common/package.json` `exports`.
 
@@ -58,15 +58,15 @@ cd apps/common && npm run build      # tsc --build → dist/
 **mapp** (direct import):
 
 ```ts
-import { FooProvider, useFoo } from '@homeapp/common/contexts/foo-context';
+import { FooProvider, useFoo } from '@asset-mem/common/contexts/foo-context';
 ```
 
 Use the **subpath you declared in `exports`**, not a deep relative path into `dist/`.
 
-**webapp** (local mirror — never `@homeapp/common`):
+**webapp** (local mirror — never `@asset-mem/common`):
 
 1. Copy/sync the module to `apps/webapp/src/lib/` or `apps/webapp/src/hooks/`.
-2. Header: `Mirrored from @homeapp/common — webapp cannot import common (App Hosting).`
+2. Header: `Mirrored from @asset-mem/common — webapp cannot import common (App Hosting).`
 3. Import with `@/` aliases.
 4. Add a row to the sync table in `apps/webapp/docs/CHAT.md`.
 5. Run `npm run check:no-common` in `apps/webapp` before merging.
@@ -92,8 +92,8 @@ If the context depends on another context, mount it inside that one.
 - [ ] File added under `apps/common/src/...`
 - [ ] `exports` entry added to `apps/common/package.json`
 - [ ] `npm run build` run in `apps/common`
-- [ ] **mapp** imports via `@homeapp/common/...` subpath
-- [ ] **webapp** has a mirrored copy under `src/lib/` or `src/hooks/` (no `@homeapp/common` imports)
+- [ ] **mapp** imports via `@asset-mem/common/...` subpath
+- [ ] **webapp** has a mirrored copy under `src/lib/` or `src/hooks/` (no `@asset-mem/common` imports)
 - [ ] Sync table updated in `apps/webapp/docs/CHAT.md`
 - [ ] `npm run check:no-common` passes in `apps/webapp`
 - [ ] Provider wrapped in mapp `_layout.tsx` and webapp `layout.tsx` if it's global

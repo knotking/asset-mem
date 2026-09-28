@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { OPEN_MY_PROS_PARAM } from '@homeapp/common/lib/my-pros-navigation';
+import { OPEN_MY_PROS_PARAM } from '@asset-mem/common/lib/my-pros-navigation';
 
 /** Legacy route — opens property chat with the My pros drawer. */
 export default function SavedProvidersRedirect() {

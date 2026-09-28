@@ -16,10 +16,10 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
-// Add the @common and @homeapp/common aliases
+// Add the @common and @asset-mem/common aliases
 config.resolver.extraNodeModules = {
   '@common': path.resolve(__dirname, '../common'),
-  '@homeapp/common': path.resolve(__dirname, '../common'),
+  '@asset-mem/common': path.resolve(__dirname, '../common'),
 };
 
 module.exports = withNativeWind(config, { input: './global.css', inlineRem: 16 });

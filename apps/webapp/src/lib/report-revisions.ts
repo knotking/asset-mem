@@ -1,4 +1,4 @@
-/** Mirrored from @homeapp/common — webapp cannot import common (App Hosting). */
+/** Mirrored from @asset-mem/common — webapp cannot import common (App Hosting). */
 import type { Firestore } from 'firebase/firestore';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import type { PropertyReport, PropertyReportMode } from '@/lib/types';
