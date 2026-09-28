@@ -1,4 +1,4 @@
-# Cursor MCP — HomeApp (AssetMem AI)
+# Cursor MCP — AssetMem (AssetMem AI)
 
 Project MCP config for **GCP Cloud Logging** and **Firebase / Firestore** (token usage, billing, user data). Firebase/GCP project IDs use legacy `homegeek-*` names; see [docs/deployment/ENVIRONMENTS.md](../docs/deployment/ENVIRONMENTS.md#brand-vs-infrastructure-naming).
 
@@ -39,7 +39,7 @@ IAM: your user needs Firestore read (e.g. `roles/datastore.viewer` or `roles/dat
 
 **MCP Logs:** Output panel (Cmd+Shift+U) → “MCP Logs”.
 
-### Common Firestore paths (HomeApp)
+### Common Firestore paths (AssetMem)
 
 | Path | Notes |
 | ---- | ----- |
@@ -63,7 +63,7 @@ Agent skill: [`.cursor/skills/firestore-homeapp/SKILL.md`](skills/firestore-home
 
 ## GCP Cloud Logging MCP
 
-Query HomeApp logs via [Google Cloud Logging MCP](https://cloud.google.com/logging/docs/use-logging-mcp).
+Query AssetMem logs via [Google Cloud Logging MCP](https://cloud.google.com/logging/docs/use-logging-mcp).
 
 ### One-time GCP setup
 

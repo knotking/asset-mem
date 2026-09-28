@@ -29,14 +29,14 @@ import type {
   CheckpointOptionalAgent,
   SearchLocationInput,
   SearchLocationSource,
-} from '@homeapp/common/types';
+} from '@asset-mem/common/types';
 import * as Location from 'expo-location';
 import { createLogger } from '@/lib/logger';
 import {
   getSettingsAttachmentActionLabel,
   getSettingsAttachmentCountLabel,
   getSettingsAttachmentHint,
-} from '@homeapp/common/lib/chat-context-labels';
+} from '@asset-mem/common/lib/chat-context-labels';
 
 const chatLog = createLogger('chat');
 // Note: Using button-based radius selector instead of slider for better cross-platform compatibility

@@ -4,7 +4,7 @@ This document describes the architecture, design patterns, and technical impleme
 
 ## System Overview
 
-The GCP Proxy API is a FastAPI-based microservice that serves as a unified API gateway for the HomeApp ecosystem. It provides a clean abstraction layer between client applications and Google Cloud Platform services.
+The GCP Proxy API is a FastAPI-based microservice that serves as a unified API gateway for the AssetMem ecosystem. It provides a clean abstraction layer between client applications and Google Cloud Platform services.
 
 ### Core Responsibilities
 
@@ -387,8 +387,8 @@ except Exception as e:
 **Initialization:**
 ```python
 app = FastAPI(
-    title="HomeApp Proxy API",
-    description="API for handling HomeApp proxy requests",
+    title="AssetMem Proxy API",
+    description="API for handling AssetMem proxy requests",
     version="1.0.0",
     lifespan=lifespan
 )

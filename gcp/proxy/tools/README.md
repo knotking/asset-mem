@@ -1,6 +1,6 @@
-# E2E Client for HomeApp Proxy
+# E2E Client for AssetMem Proxy
 
-A simple command-line interface to interact with the HomeApp Proxy API.
+A simple command-line interface to interact with the AssetMem Proxy API.
 
 ## Setup
 

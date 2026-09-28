@@ -1,6 +1,6 @@
 # B2C Stripe configuration
 
-Step-by-step guide to wire **HomeApp Plus ($19/mo)** and **Pro ($39/mo)** subscriptions after Products and Prices are created in the [Stripe Dashboard](https://dashboard.stripe.com).
+Step-by-step guide to wire **AssetMem Plus ($19/mo)** and **Pro ($39/mo)** subscriptions after Products and Prices are created in the [Stripe Dashboard](https://dashboard.stripe.com).
 
 **Related docs**
 

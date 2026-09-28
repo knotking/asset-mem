@@ -1,6 +1,6 @@
 /**
  * Mirrors `apps/common/src/lib/agent-lifecycle-ui.ts` for Firebase App Hosting:
- * the webapp does not depend on `@homeapp/common`. Keep both files in sync.
+ * the webapp does not depend on `@asset-mem/common`. Keep both files in sync.
  */
 
 import type { AgentLifecycle } from "@/lib/agent-lifecycle";

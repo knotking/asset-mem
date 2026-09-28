@@ -1,5 +1,5 @@
 import Constants from 'expo-constants';
-import { buildDeletionApiUrls, type DeletionApiUrls } from '@homeapp/common/lib/deletion/api-client';
+import { buildDeletionApiUrls, type DeletionApiUrls } from '@asset-mem/common/lib/deletion/api-client';
 
 function proxyBaseFromExtra(): string {
   const extra = Constants.expoConfig?.extra || {};

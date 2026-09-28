@@ -15,11 +15,11 @@ import {
   NativeSelectScrollView,
 } from '@/components/ui/select';
 import { FileText, MapPin, Pencil, Upload, Trash2, AlertCircle, Loader2, Heart, ChevronRight } from 'lucide-react-native';
-import { useSavedServiceProviders } from '@homeapp/common/contexts/saved-service-providers-context';
-import { useProperty } from '@homeapp/common/contexts/property-context';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
-import { useFirebase } from '@homeapp/common/contexts/firebase-context';
-import { useDocumentUpload } from '@homeapp/common/contexts/document-upload-context';
+import { useSavedServiceProviders } from '@asset-mem/common/contexts/saved-service-providers-context';
+import { useProperty } from '@asset-mem/common/contexts/property-context';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
+import { useFirebase } from '@asset-mem/common/contexts/firebase-context';
+import { useDocumentUpload } from '@asset-mem/common/contexts/document-upload-context';
 import {
   collection,
   addDoc,
@@ -29,7 +29,7 @@ import {
   getDoc,
   deleteDoc,
 } from 'firebase/firestore';
-import { deleteDocumentAsset } from '@homeapp/common/lib/deletion/delete-document';
+import { deleteDocumentAsset } from '@asset-mem/common/lib/deletion/delete-document';
 import {
   documentDeleteConfirm,
   deletionRetryLabel,
@@ -37,12 +37,12 @@ import {
   markDocumentDeletionFailed,
   resourceDeletingLabel,
   deletionErrorLabel,
-} from '@homeapp/common/lib/deletion';
+} from '@asset-mem/common/lib/deletion';
 import { getMappDeletionApiUrls } from '@/lib/deletion-api';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import * as DocumentPicker from 'expo-document-picker';
-import type { Document } from '@homeapp/common/types';
-import { PROPERTY_TYPES, getSubTypesForType, type PropertyType, type PropertySubType } from '@homeapp/common/constants/property-types';
+import type { Document } from '@asset-mem/common/types';
+import { PROPERTY_TYPES, getSubTypesForType, type PropertyType, type PropertySubType } from '@asset-mem/common/constants/property-types';
 import { queueExtractDocInfo, postFileToAgent } from '@/lib/api';
 import { createLogger } from '@/lib/logger';
 
@@ -53,20 +53,20 @@ import {
   getDocumentAnalysisFailureMessage,
   getFailedDocumentSummary,
   isDocumentQuotaMessage,
-} from '@homeapp/common/lib/document-analysis-errors';
+} from '@asset-mem/common/lib/document-analysis-errors';
 import {
   isAtPlanLimit,
   planLimitBlockMessage,
   planLimitUsageHint,
-} from '@homeapp/common/lib/plan-limit-slice';
-import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
+} from '@asset-mem/common/lib/plan-limit-slice';
+import { useLlmTokenUsage } from '@asset-mem/common/contexts/llm-token-usage-context';
 import { isPlaceholderPropertyAddress } from '@/lib/property-address-placeholder';
 import { mergePropertyDocuments } from '@/lib/merge-property-documents';
 import { waitForUserDocAnalysis } from '@/lib/wait-user-doc-analysis';
 import { RotatingSparkles } from './RotatingSparkles';
 import { AlertDialogWrapper } from './AlertDialogWrapper';
-import { usePreferences } from '@homeapp/common/contexts/preferences-context';
-import { shouldShowFeatureTip } from '@homeapp/common/lib/feature-discovery';
+import { usePreferences } from '@asset-mem/common/contexts/preferences-context';
+import { shouldShowFeatureTip } from '@asset-mem/common/lib/feature-discovery';
 import { FeatureTipBanner } from '@/components/feature-discovery/FeatureTipBanner';
 import { useDismissFeatureTip } from '@/hooks/use-dismiss-feature-tip';
 import { useRouter } from 'expo-router';

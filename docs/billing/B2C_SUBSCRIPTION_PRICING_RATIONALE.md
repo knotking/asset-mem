@@ -4,7 +4,7 @@
 **Last updated:** 2026-05-21  
 **Environment referenced:** `homegeek-staging` (Firestore via Firebase MCP)
 
-This document explains how HomeApp arrived at recommended **B2C tiered subscription** pricing: **Plus** (10M AI tokens/month) and **Pro** (25M AI tokens/month), with suggested list prices of **$19/month** and **$39/month** respectively. It ties together **observed usage**, **GCP LLM unit economics**, **shared infrastructure**, and **payment processing**.
+This document explains how AssetMem arrived at recommended **B2C tiered subscription** pricing: **Plus** (10M AI tokens/month) and **Pro** (25M AI tokens/month), with suggested list prices of **$19/month** and **$39/month** respectively. It ties together **observed usage**, **GCP LLM unit economics**, **shared infrastructure**, and **payment processing**.
 
 ---
 
@@ -80,7 +80,7 @@ On **2026-05-21**, Firestore was read via Firebase MCP for project **`homegeek-s
 
 ## 3. What counts as a “token” for billing
 
-HomeApp increments **`periodTotalTokens`** from API `usage_metadata` on:
+AssetMem increments **`periodTotalTokens`** from API `usage_metadata` on:
 
 - **Proxy:** Vertex AI Reasoning Engine **`stream_query`** (aggregated per stream in [`gcp/proxy/api/services/token_usage_service.py`](../../gcp/proxy/api/services/token_usage_service.py)).
 - **Workers:** Gemini **`generate_content`** / **`embed_content`** (checkpoint analysis, document analysis, embeddings)—see [`gcp/common/token/genai.py`](../../gcp/common/token/genai.py).
@@ -95,7 +95,7 @@ HomeApp increments **`periodTotalTokens`** from API `usage_metadata` on:
 
 Source: [Vertex AI Generative AI pricing](https://cloud.google.com/vertex-ai/generative-ai/pricing) (Standard tier, subject to change).
 
-| Model (HomeApp usage)     | Input (USD / 1M tokens) | Output (USD / 1M tokens) |
+| Model (AssetMem usage)     | Input (USD / 1M tokens) | Output (USD / 1M tokens) |
 | ------------------------- | ----------------------- | ------------------------ |
 | **Gemini 3.1 Flash-Lite** | ~0.25                   | ~1.50                    |
 | **Gemini 2.5 Flash**      | ~0.30                   | ~2.50                    |

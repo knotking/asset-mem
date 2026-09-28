@@ -14,14 +14,14 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { Property } from '@homeapp/common/types';
-import { usePreferences } from '@homeapp/common/contexts/preferences-context';
+import type { Property } from '@asset-mem/common/types';
+import { usePreferences } from '@asset-mem/common/contexts/preferences-context';
 import {
   getOnboardingStepStates,
   shouldHideOnboardingChecklist,
   ONBOARDING_CHAT_OPEN_PARAM,
   type OnboardingStepId,
-} from '@homeapp/common/lib/home-onboarding';
+} from '@asset-mem/common/lib/home-onboarding';
 
 type HomeOnboardingChecklistProps = {
   properties: Property[];

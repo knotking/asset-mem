@@ -8,7 +8,7 @@ import {
   statusCodes,
 } from '@react-native-google-signin/google-signin';
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
-import { auth, firebaseConfig } from '@homeapp/common/firebase';
+import { auth, firebaseConfig } from '@asset-mem/common/firebase';
 import { GoogleIcon } from '@/components/auth/GoogleIcon';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';

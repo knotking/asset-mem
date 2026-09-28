@@ -5,17 +5,17 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Plus, MoreVertical, Share2, Trash2, Copy, Loader2, Pencil } from 'lucide-react-native';
-import type { Session, Message } from '@homeapp/common/types';
+import type { Session, Message } from '@asset-mem/common/types';
 import {
   SHARED_CHAT_TTL_DAYS,
   buildSharedChatPath,
   sharedChatExpiresAtFromNow,
   deleteAllInCollection,
   writeSharedChatMessages,
-} from '@homeapp/common/lib/shared-chat';
-import { useSession } from '@homeapp/common/contexts/session-context';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
-import { useFirebase } from '@homeapp/common/contexts/firebase-context';
+} from '@asset-mem/common/lib/shared-chat';
+import { useSession } from '@asset-mem/common/contexts/session-context';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
+import { useFirebase } from '@asset-mem/common/contexts/firebase-context';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,8 +53,8 @@ import {
   markSessionDeletionFailed,
   resourceDeletingLabel,
   deletionErrorLabel,
-} from '@homeapp/common/lib/deletion';
-import { useOptimisticDeletionOverlay } from '@homeapp/common/hooks/use-optimistic-deletion-overlay';
+} from '@asset-mem/common/lib/deletion';
+import { useOptimisticDeletionOverlay } from '@asset-mem/common/hooks/use-optimistic-deletion-overlay';
 import { cn } from '@/lib/utils';
 import { WEB_APP_URL } from '@/lib/api';
 import { getMappDeletionApiUrls } from '@/lib/deletion-api';

@@ -50,7 +50,7 @@ Implementation is deliberately **phased**: ship high-value signals from data tha
 1. Help users **prioritize** which property needs attention (issues, failed jobs, stale checkpoints).
 2. Help users **resume** work (last chat, in-progress analysis, latest checkpoint).
 3. Make cards **scannable** at a glance (health score, trend, cover image, type icon).
-4. Keep **mapp and webapp** visually and behaviorally aligned (shared types in `@homeapp/common` where possible).
+4. Keep **mapp and webapp** visually and behaviorally aligned (shared types in `@asset-mem/common` where possible).
 5. Scale to **5–10+ properties** without N×many Firestore listeners per user on home.
 
 ### Non-goals (v1)
@@ -274,7 +274,7 @@ flowchart TB
   Card --> Grid
 ```
 
-- Extend `PropertiesListProvider` (mapp / `@homeapp/common`) and `PropertiesDashboardProvider` (web) **or** introduce `PropertyCardSummaryProvider` that composes existing property list + new subscriptions.
+- Extend `PropertiesListProvider` (mapp / `@asset-mem/common`) and `PropertiesDashboardProvider` (web) **or** introduce `PropertyCardSummaryProvider` that composes existing property list + new subscriptions.
 - Shared pure functions: `derivePropertyAttention()`, `formatLastActivity()`, `pickCardDisplayFields()` in `apps/common/src/lib/property-card-display.ts` (new); web mirrors only if needed for App Hosting import rules.
 
 ### Phase 3: Denormalized summary
@@ -528,7 +528,7 @@ Document new indexes in `apps/webapp/firestore.indexes.json` when Phase 2 querie
 | L1 | Default card tap opens **chat** | Matches current behavior; avoids surprising navigation change. |
 | L2 | Health score sourced from **`metrics/summary`** | Single source of truth from metrics worker; no client scoring. |
 | L3 | Phase 1 requires **no backend deploy** | Faster iteration; validates UX before `cardSummary` investment. |
-| L4 | Shared display logic lives in **`@homeapp/common`** | mapp consumes directly; webapp mirrors only when import rules require. |
+| L4 | Shared display logic lives in **`@asset-mem/common`** | mapp consumes directly; webapp mirrors only when import rules require. |
 | L5 | At most **one** attention badge per card | Reduces visual noise on portfolio home. |
 | L6 | `cardSummary` path is `cardSummary/summary` | Parallels `metrics/summary` convention. |
 
@@ -550,7 +550,7 @@ Resolve in PR review before Phase 2 starts.
 
 ### Phase 1
 
-- [ ] Add `property-card-display.ts` + types in `@homeapp/common`
+- [ ] Add `property-card-display.ts` + types in `@asset-mem/common`
 - [ ] Extend `properties-list-context` with `metrics/summary` listener
 - [ ] Extend `properties-dashboard-context` (web) with same
 - [ ] Update `PropertyCard` (mapp) and `property-card.tsx` (web)

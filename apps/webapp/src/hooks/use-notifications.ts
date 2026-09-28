@@ -1,5 +1,5 @@
 /**
- * Mirrored from @homeapp/common — webapp cannot import common (App Hosting).
+ * Mirrored from @asset-mem/common — webapp cannot import common (App Hosting).
  * Keep in sync with apps/common/src/hooks/use-notifications.ts
  */
 import { useEffect, useMemo, useState } from 'react';

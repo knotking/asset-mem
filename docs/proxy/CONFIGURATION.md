@@ -464,8 +464,8 @@ app.add_middleware(
 
 ```python
 app = FastAPI(
-    title="HomeApp Proxy API",
-    description="API for handling HomeApp proxy requests",
+    title="AssetMem Proxy API",
+    description="API for handling AssetMem proxy requests",
     version="1.0.0",
     docs_url="/docs" if os.environ.get("ENABLE_DOCS") else None,
     redoc_url="/redoc" if os.environ.get("ENABLE_DOCS") else None,

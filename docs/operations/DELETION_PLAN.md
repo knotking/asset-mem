@@ -1,6 +1,6 @@
 # Deletion plan (unified)
 
-**Single source of truth** for HomeApp delete flows: user actions, proxy API, ops erasure, audit, UX, compliance, and roadmap.
+**Single source of truth** for AssetMem delete flows: user actions, proxy API, ops erasure, audit, UX, compliance, and roadmap.
 
 Supersedes the Cursor plan `complete_delete_flows` and the former standalone ops runbook. Script how-tos remain in `apps/webapp/scripts/migration/` (linked below).
 
@@ -27,7 +27,7 @@ Supersedes the Cursor plan `complete_delete_flows` and the former standalone ops
 
 | Phase | Scope | Status |
 |-------|--------|--------|
-| **1** | `@homeapp/common/lib/deletion` — paginated deletes, orchestrators, types | Done |
+| **1** | `@asset-mem/common/lib/deletion` — paginated deletes, orchestrators, types | Done |
 | **2** | Wire mapp/webapp delete call sites to common module | Done |
 | **3** | Proxy deletion API (`gcp/proxy/api/routers/deletion.py`) | Done |
 | **4** | Shared chats, RAG, metrics on delete | Done |

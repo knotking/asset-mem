@@ -1,4 +1,4 @@
-import type { AgentStep, Message } from '@homeapp/common/types';
+import type { AgentStep, Message } from '@asset-mem/common/types';
 import { messageCreatedAtMillis } from '@/lib/gifted-chat-utils';
 
 export interface ChatMessageCompareProps {

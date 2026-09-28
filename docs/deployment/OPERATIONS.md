@@ -67,11 +67,11 @@ Policies under [`monitoring/policies/`](./monitoring/policies/):
 
 | Policy | Purpose |
 |--------|---------|
-| HomeApp proxy 5xx rate | Cloud Run `homecare-agent-proxy-{ENV}` errors |
-| HomeApp proxy latency p95 | Slow proxy while receiving traffic (log-based request guard + missing-data inactive) |
-| HomeApp Pub/Sub backlog | `num_undelivered_messages` on `*-{ENV}` subscriptions |
-| HomeApp worker 5xx | Gen2 workers (`pubsub-*-{ENV}` on Cloud Run) |
-| HomeApp token quota exceeded | Log-based metric for `TOKEN_QUOTA_EXCEEDED` |
+| AssetMem proxy 5xx rate | Cloud Run `homecare-agent-proxy-{ENV}` errors |
+| AssetMem proxy latency p95 | Slow proxy while receiving traffic (log-based request guard + missing-data inactive) |
+| AssetMem Pub/Sub backlog | `num_undelivered_messages` on `*-{ENV}` subscriptions |
+| AssetMem worker 5xx | Gen2 workers (`pubsub-*-{ENV}` on Cloud Run) |
+| AssetMem token quota exceeded | Log-based metric for `TOKEN_QUOTA_EXCEEDED` |
 
 Script: [`.github/scripts/apply-monitoring-alerts.sh`](../../.github/scripts/apply-monitoring-alerts.sh)
 
@@ -101,7 +101,7 @@ On Cloud Run scale-in or deploy, the proxy [`lifespan`](../../gcp/proxy/api/core
 
 ## Shared chat links (Phase 3.4)
 
-- New shares set `expiresAt` (**30 days**, extended on update) via [`@homeapp/common/lib/shared-chat`](../../apps/common/src/lib/shared-chat.ts).
+- New shares set `expiresAt` (**30 days**, extended on update) via [`@asset-mem/common/lib/shared-chat`](../../apps/common/src/lib/shared-chat.ts).
 - Public page: [`apps/webapp/src/app/share/chat/[shareId]/page.tsx`](../../apps/webapp/src/app/share/chat/[shareId]/page.tsx) rejects expired links; legacy [`share/[shareId]/page.tsx`](../../apps/webapp/src/app/share/[shareId]/page.tsx) redirects to `/share/chat/…`; [`share/chat/layout.tsx`](../../apps/webapp/src/app/share/chat/layout.tsx) sets chat OG metadata and `robots: noindex`.
 - Firestore rules deny public read when `expiresAt` is in the past; owners can still list/read their own `sharedChats` docs (including expired) so share/update flows work. **Deploy rules** after merge: `firebase deploy --only firestore:rules`.
 - Composite index on `sharedChats` (`originalUserId`, `originalSessionId`) supports the existing-share lookup query. **Deploy indexes** after merge: `firebase deploy --only firestore:indexes`.

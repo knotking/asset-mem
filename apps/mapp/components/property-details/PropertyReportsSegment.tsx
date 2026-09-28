@@ -18,10 +18,10 @@ import {
   ListFilter,
   Copy,
 } from 'lucide-react-native';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
-import { useProperty } from '@homeapp/common/contexts/property-context';
-import { useOptimisticDeletionOverlay } from '@homeapp/common/hooks/use-optimistic-deletion-overlay';
-import { resourceDeletingLabel } from '@homeapp/common/lib/deletion';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
+import { useProperty } from '@asset-mem/common/contexts/property-context';
+import { useOptimisticDeletionOverlay } from '@asset-mem/common/hooks/use-optimistic-deletion-overlay';
+import { resourceDeletingLabel } from '@asset-mem/common/lib/deletion';
 import {
   reportDateRangeLabel,
   reportStatusLabel,
@@ -34,15 +34,15 @@ import {
 } from '@/lib/api-reports';
 import { Switch } from '@/components/ui/switch';
 import { getMappDeletionApiUrls } from '@/lib/deletion-api';
-import { deleteReportViaProxy } from '@homeapp/common/lib/deletion/api-client';
+import { deleteReportViaProxy } from '@asset-mem/common/lib/deletion/api-client';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
-import { parseFeatureFlagEnv } from '@homeapp/common/lib/feature-flags';
-import { purposeLabel } from '@homeapp/common/lib/report-templates';
+import { parseFeatureFlagEnv } from '@asset-mem/common/lib/feature-flags';
+import { purposeLabel } from '@asset-mem/common/lib/report-templates';
 import type {
   PropertyReport,
   PropertyReportPurpose,
   PropertyReportStatus,
-} from '@homeapp/common/types';
+} from '@asset-mem/common/types';
 import { Input } from '@/components/ui/input';
 import { GenerateReportModal } from '@/components/property-details/GenerateReportModal';
 import { EditReportMetadataModal } from '@/components/property-details/EditReportMetadataModal';
@@ -61,7 +61,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { SHARED_REPORT_TTL_DAYS } from '@homeapp/common/lib/shared-report';
+import { SHARED_REPORT_TTL_DAYS } from '@asset-mem/common/lib/shared-report';
 
 type ReportShareState = 'idle' | 'creating' | 'refreshing' | 'done';
 

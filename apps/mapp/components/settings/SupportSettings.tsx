@@ -7,9 +7,9 @@ import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
-import { useFirebase } from '@homeapp/common/contexts/firebase-context';
-import { submitSupportRequest } from '@homeapp/common/lib/support';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
+import { useFirebase } from '@asset-mem/common/contexts/firebase-context';
+import { submitSupportRequest } from '@asset-mem/common/lib/support';
 import { createLogger } from '@/lib/logger';
 
 const supportLog = createLogger('support');

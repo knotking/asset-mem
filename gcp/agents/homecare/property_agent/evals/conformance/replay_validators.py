@@ -1,4 +1,4 @@
-"""HomeApp-aware conformance replay validators (volatile lifecycle/timing fields)."""
+"""AssetMem-aware conformance replay validators (volatile lifecycle/timing fields)."""
 
 from __future__ import annotations
 

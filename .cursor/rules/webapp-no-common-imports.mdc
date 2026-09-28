@@ -1,19 +1,19 @@
 ---
-description: Webapp must not import @homeapp/common (Firebase App Hosting)
+description: Webapp must not import @asset-mem/common (Firebase App Hosting)
 globs: apps/webapp/**/*.{ts,tsx}
 alwaysApply: false
 ---
 
-# Webapp — no @homeapp/common imports
+# Webapp — no @asset-mem/common imports
 
-Firebase App Hosting builds **only** `apps/webapp`. It does **not** bundle `@homeapp/common`, even though the monorepo workspace resolves it locally.
+Firebase App Hosting builds **only** `apps/webapp`. It does **not** bundle `@asset-mem/common`, even though the monorepo workspace resolves it locally.
 
 ## Do not
 
 ```typescript
 // BAD — fails App Hosting deploy
-import { foo } from "@homeapp/common/lib/foo";
-import { useBar } from "@homeapp/common/hooks/use-bar";
+import { foo } from "@asset-mem/common/lib/foo";
+import { useBar } from "@asset-mem/common/hooks/use-bar";
 ```
 
 ## Do instead

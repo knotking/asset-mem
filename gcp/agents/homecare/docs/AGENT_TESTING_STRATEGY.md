@@ -8,7 +8,7 @@ Audit and phased plan to align homecare agent tests with industry-standard LLM/a
 
 ## Executive summary
 
-HomeApp’s homecare agent has **strong L0/L1 coverage** (~70 pytest modules, CI-safe, heavily mocked). That matches industry practice for deterministic agent plumbing (guards, state merge, parsers, parallel orchestration).
+AssetMem’s homecare agent has **strong L0/L1 coverage** (~70 pytest modules, CI-safe, heavily mocked). That matches industry practice for deterministic agent plumbing (guards, state merge, parsers, parallel orchestration).
 
 The main gap versus production-grade agent testing is now **L4**: qualitative eval and nightly replay with committed recordings are still manual. Phases 1–3 deterministic gates (routing, contract, trajectory, conformance guard) run in CI.
 
@@ -80,7 +80,7 @@ Use a **4-tier agent test pyramid** (common across Google ADK, LangSmith, Braint
 
 ### LLM usage by strategy
 
-Terms like **trajectory** and **LLM-as-judge** are common in agent eval; **conformance** is ADK-specific (Google replay harness). Layer labels (L0–L4) are HomeApp framing, not a single official standard.
+Terms like **trajectory** and **LLM-as-judge** are common in agent eval; **conformance** is ADK-specific (Google replay harness). Layer labels (L0–L4) are AssetMem framing, not a single official standard.
 
 | Strategy | Command / artifact | Real Vertex/Gemini? | Mocked LLM? | When | Notes |
 |----------|-------------------|---------------------|-------------|------|-------|

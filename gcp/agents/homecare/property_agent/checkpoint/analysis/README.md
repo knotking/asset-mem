@@ -56,7 +56,7 @@ Serving path output is **not** a dual-format string (markdown + ```json fence). 
 | `analysisRunId` | Pipeline idempotency key |
 | `agentSteps` | Branch progress ticker |
 
-Clients render via `@homeapp/common` `resolveMessageContentParts` — accordions from `contentJson`, prose from `contentMarkdown`. Do **not** parse fenced JSON from `message.content` or use `properties/{id}/analysis/current` for chat UI.
+Clients render via `@asset-mem/common` `resolveMessageContentParts` — accordions from `contentJson`, prose from `contentMarkdown`. Do **not** parse fenced JSON from `message.content` or use `properties/{id}/analysis/current` for chat UI.
 
 ## ADK dev streaming
 

@@ -1,5 +1,5 @@
 /**
- * Mirrored from @homeapp/common — webapp cannot import common (App Hosting).
+ * Mirrored from @asset-mem/common — webapp cannot import common (App Hosting).
  */
 export const MAX_SELECTED_CHECKPOINTS = 5;
 export const MAX_SELECTED_DOCUMENTS = 10;

@@ -1,5 +1,5 @@
 /**
- * Assistant message copy export — local copy for App Hosting (webapp does not depend on @homeapp/common).
+ * Assistant message copy export — local copy for App Hosting (webapp does not depend on @asset-mem/common).
  * Keep in sync with apps/common/src/lib/message-copy-text.ts.
  */
 

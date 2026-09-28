@@ -3,8 +3,8 @@ import { View } from 'react-native';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Sparkles } from 'lucide-react-native';
-import type { StructuredResponseData } from '@homeapp/common/types';
-import { formatCheckpointOverallCondition } from '@homeapp/common/lib/checkpoint-summary-display';
+import type { StructuredResponseData } from '@asset-mem/common/types';
+import { formatCheckpointOverallCondition } from '@asset-mem/common/lib/checkpoint-summary-display';
 import {
   CheckpointSummaryField,
   CheckpointSummaryListSection,

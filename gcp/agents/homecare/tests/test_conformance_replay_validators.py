@@ -1,4 +1,4 @@
-"""Tests for HomeApp conformance replay compare exclusions."""
+"""Tests for AssetMem conformance replay compare exclusions."""
 
 from __future__ import annotations
 

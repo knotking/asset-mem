@@ -9,7 +9,7 @@ import { PreferencesProvider } from "./preferences-context";
 import { ThemePreferenceSync } from "@/components/theme-preference-sync";
 import { app, auth, db, storage } from "@/lib/firebase";
 
-// Local Firebase context implementation (copied from @homeapp/common for App Hosting compatibility)
+// Local Firebase context implementation (copied from @asset-mem/common for App Hosting compatibility)
 interface FirebaseContextType {
   app: FirebaseApp;
   auth: Auth;

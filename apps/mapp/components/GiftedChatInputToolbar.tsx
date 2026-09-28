@@ -7,7 +7,7 @@ import type { IMessage } from 'react-native-gifted-chat';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Send as SendIcon, Square, Settings } from 'lucide-react-native';
-import type { AnalysisOptionalAgent, CheckpointOptionalAgent, PrimaryAgent } from '@homeapp/common/types';
+import type { AnalysisOptionalAgent, CheckpointOptionalAgent, PrimaryAgent } from '@asset-mem/common/types';
 import { ChatSettingsModal } from './ChatSettingsModal';
 import {
   CustomGiftedComposer,
@@ -49,9 +49,9 @@ interface GiftedChatInputToolbarProps extends InputToolbarProps<IMessage>, Compo
   onOpenAddContext: () => void;
   readyContextCount?: number;
   pendingContextCount?: number;
-  searchLocation?: import('@homeapp/common/types').SearchLocationInput;
+  searchLocation?: import('@asset-mem/common/types').SearchLocationInput;
   onSearchLocationChange?: (
-    searchLocation: import('@homeapp/common/types').SearchLocationInput | undefined
+    searchLocation: import('@asset-mem/common/types').SearchLocationInput | undefined
   ) => void;
   propertyAddress?: string;
 }

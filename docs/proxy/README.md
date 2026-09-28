@@ -1,6 +1,6 @@
 # GCP Proxy API Documentation
 
-This directory contains comprehensive documentation for the GCP Proxy API, a FastAPI-based microservice that acts as a unified API gateway for the HomeApp ecosystem.
+This directory contains comprehensive documentation for the GCP Proxy API, a FastAPI-based microservice that acts as a unified API gateway for the AssetMem ecosystem.
 
 ## Overview
 

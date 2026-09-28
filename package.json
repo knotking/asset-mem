@@ -1,6 +1,7 @@
 {
-  "name": "homeapp",
+  "name": "asset-mem",
   "version": "1.0.0",
+  "license": "Apache-2.0",
   "private": true,
   "workspaces": [
     "apps/*"

@@ -1,6 +1,6 @@
 # Shared Observability Module
 
-This module provides unified observability capabilities (metrics, logs, traces) across all features of the HomeApp platform. It supports both platform-wide analysis and feature-specific reporting.
+This module provides unified observability capabilities (metrics, logs, traces) across all features of the AssetMem platform. It supports both platform-wide analysis and feature-specific reporting.
 
 ## Logging context vs ADK agents
 

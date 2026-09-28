@@ -1,4 +1,4 @@
-/** Mirrored from @homeapp/common — webapp cannot import common (App Hosting). */
+/** Mirrored from @asset-mem/common — webapp cannot import common (App Hosting). */
 import type { PropertyReportPurpose, ReportPreviewResponse } from '@/lib/types';
 import { applyReportQuickPreset, defaultReportMonthRange } from '@/lib/report-quick-presets';
 import { defaultPurposeForMode } from '@/lib/report-templates';

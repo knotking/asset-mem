@@ -92,7 +92,7 @@ class E2EClient:
             print(f"Session Create Failed: {e}")
 
 def main():
-    parser = argparse.ArgumentParser(description="HomeApp Proxy E2E Client")
+    parser = argparse.ArgumentParser(description="AssetMem Proxy E2E Client")
     parser.add_argument("--url", default=os.environ.get("PROXY_URL", DEFAULT_BASE_URL), help="Base URL of the proxy")
     parser.add_argument("--secret", default=os.environ.get("WEBHOOK_SECRET", DEFAULT_SECRET), help="Webhook secret for auth")
     parser.add_argument("--user-id", default="e2e-tester", help="User ID for the session")

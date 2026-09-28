@@ -1,6 +1,6 @@
-# HomeApp Technology Stack
+# AssetMem Technology Stack
 
-This document provides a comprehensive overview of the technologies and frameworks used to build the HomeApp platform across backend, mobile, and web applications.
+This document provides a comprehensive overview of the technologies and frameworks used to build the AssetMem platform across backend, mobile, and web applications.
 
 ---
 

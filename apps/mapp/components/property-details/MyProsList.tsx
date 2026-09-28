@@ -8,8 +8,8 @@ import { Heart, Map, Phone, Search, Star, Users } from 'lucide-react-native';
 import {
   savedProviderSavedAtDate,
   useSavedServiceProviders,
-} from '@homeapp/common/contexts/saved-service-providers-context';
-import type { SavedServiceProvider } from '@homeapp/common/types';
+} from '@asset-mem/common/contexts/saved-service-providers-context';
+import type { SavedServiceProvider } from '@asset-mem/common/types';
 import { format } from 'date-fns';
 import {
   AlertDialog,
@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { savedProviderDeleteConfirm } from '@homeapp/common/lib/deletion';
+import { savedProviderDeleteConfirm } from '@asset-mem/common/lib/deletion';
 
 function hasValue(val: unknown): boolean {
   if (!val) return false;

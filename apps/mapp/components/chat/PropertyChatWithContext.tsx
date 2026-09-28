@@ -12,38 +12,38 @@ import {
   clientMessageTimestampAfter,
   clientStartedAtTimestamp,
   sessionActivityOnUserMessagePatch,
-} from '@homeapp/common/lib/session-timestamps';
-import { deriveSessionNameFromFirstMessage } from '@homeapp/common/lib/session-name';
+} from '@asset-mem/common/lib/session-timestamps';
+import { deriveSessionNameFromFirstMessage } from '@asset-mem/common/lib/session-name';
 import type { IMessage } from 'react-native-gifted-chat';
 import { PropertyChatTab } from '@/components/property-details/PropertyChatTab';
 import { AddContextSheet } from '@/components/chat/AddContextSheet';
 import { ChatContextChipStrip } from '@/components/chat/ChatContextChipStrip';
-import { ChatContextProvider, useChatContext } from '@homeapp/common/contexts/chat-context-context';
-import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
-import { useProperty } from '@homeapp/common/contexts/property-context';
-import { useDocumentUpload } from '@homeapp/common/contexts/document-upload-context';
+import { ChatContextProvider, useChatContext } from '@asset-mem/common/contexts/chat-context-context';
+import { useCheckpoint } from '@asset-mem/common/contexts/checkpoint-context';
+import { useProperty } from '@asset-mem/common/contexts/property-context';
+import { useDocumentUpload } from '@asset-mem/common/contexts/document-upload-context';
 import type {
   AnalysisOptionalAgent,
   CheckpointOptionalAgent,
   PrimaryAgent,
   SearchLocationInput,
-} from '@homeapp/common/types';
+} from '@asset-mem/common/types';
 import {
   buildAgentRequestContext,
   buildMessageContextRefs,
   canSendChatMessage,
   getRequiredContextEmptyPillLabel,
   getSendBlockReason,
-} from '@homeapp/common/lib/chat-send-context';
+} from '@asset-mem/common/lib/chat-send-context';
 import { analyzeCheckpoint, queueExtractDocInfo, postFileToAgent, streamAgentResponse } from '@/lib/api';
 import { usePropertyReports } from '@/hooks/usePropertyReports';
-import { getDocumentAnalysisFailureMessage, CHECKPOINT_QUOTA_USER_MESSAGE, DOCUMENT_QUOTA_USER_MESSAGE } from '@homeapp/common/lib/document-analysis-errors';
-import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
+import { getDocumentAnalysisFailureMessage, CHECKPOINT_QUOTA_USER_MESSAGE, DOCUMENT_QUOTA_USER_MESSAGE } from '@asset-mem/common/lib/document-analysis-errors';
+import { useLlmTokenUsage } from '@asset-mem/common/contexts/llm-token-usage-context';
 import {
   isAtPlanLimit,
   planLimitBlockMessage,
   planLimitUsageHint,
-} from '@homeapp/common/lib/plan-limit-slice';
+} from '@asset-mem/common/lib/plan-limit-slice';
 import { waitForUserDocAnalysis } from '@/lib/wait-user-doc-analysis';
 import { createLogger } from '@/lib/logger';
 
@@ -181,7 +181,7 @@ function PropertyChatInner(props: Props) {
       text: string,
       options?: {
         chatIntent?: 'discuss_analysis' | 'new_analysis' | 'replay_analysis';
-        chipAction?: import('@homeapp/common/lib/suggested-actions').ChipAction;
+        chipAction?: import('@asset-mem/common/lib/suggested-actions').ChipAction;
       }
     ) => {
       if (!userId || !sessionId || isSending) return;
@@ -342,7 +342,7 @@ function PropertyChatInner(props: Props) {
   );
 
   const handleSuggestedAction = React.useCallback(
-    (action: import('@homeapp/common/lib/suggested-actions').SuggestedAction) => {
+    (action: import('@asset-mem/common/lib/suggested-actions').SuggestedAction) => {
       void runSend(action.userQuery, {
         chatIntent: action.chatIntent,
         chipAction: action.action,

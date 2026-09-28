@@ -4,7 +4,7 @@ import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Camera, X, MapPin, Calendar } from 'lucide-react-native';
-import type { Checkpoint } from '@homeapp/common/types';
+import type { Checkpoint } from '@asset-mem/common/types';
 import { format } from 'date-fns';
 
 interface CheckpointsDrawerContentProps {

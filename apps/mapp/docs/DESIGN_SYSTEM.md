@@ -1,6 +1,6 @@
 # Design System Documentation
 
-This document outlines the design system conventions and guidelines for the HomeApp mobile application.
+This document outlines the design system conventions and guidelines for the AssetMem mobile application.
 
 ## Table of Contents
 - [Color System](#color-system)

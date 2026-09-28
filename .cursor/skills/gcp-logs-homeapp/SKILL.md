@@ -1,13 +1,13 @@
 ---
 name: gcp-logs-homeapp
 description: >-
-  Query HomeApp GCP logs via the Cloud Logging MCP server (list_log_entries) or
+  Query AssetMem GCP logs via the Cloud Logging MCP server (list_log_entries) or
   gcloud logging read. Use when debugging staging/prod, Cloud Run proxy errors,
   checkpoint/document workers, Vertex Reasoning Engine, TOKEN_QUOTA_EXCEEDED,
   deployment failures, or when the user asks to pull/fetch/check GCP logs.
 ---
 
-# HomeApp GCP logs
+# AssetMem GCP logs
 
 ## Prerequisites
 
@@ -42,7 +42,7 @@ Use **`list_log_entries`** on server `gcp-cloud-logging`:
 
 Discover logs: **`list_log_names`** when unsure which log streams exist.
 
-## HomeApp log filters
+## AssetMem log filters
 
 Replace `ENV` with `staging` or `prod` (and adjust project if prod uses a different GCP project).
 
@@ -145,6 +145,6 @@ timestamp>="YYYY-MM-DDTHH:MM:00Z"
 
 → Filter `function_name="pubsub-checkpoint-analysis-staging"` and `severity>=ERROR`.
 
-**User:** “Pull GCP logs for HomeApp.”
+**User:** “Pull GCP logs for AssetMem.”
 
 → Ask staging vs prod if unclear, then use MCP with the matching filter; do not query multiple projects in one MCP call.

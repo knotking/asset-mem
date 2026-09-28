@@ -4,7 +4,7 @@
 
 ## Executive Summary
 
-Successfully updated the HomeApp presentation documentation to comprehensively include the checkpoint feature implementation across both infrastructure and applications. The presentation now provides a complete view of this production-ready feature that enables property condition tracking with AI-powered analysis.
+Successfully updated the AssetMem presentation documentation to comprehensively include the checkpoint feature implementation across both infrastructure and applications. The presentation now provides a complete view of this production-ready feature that enables property condition tracking with AI-powered analysis.
 
 ## Changes Made
 
@@ -144,7 +144,7 @@ Executive summary of all documentation updates.
    - Metrics dashboard
    - Settings page
 
-3. **Shared Code (`@homeapp/common`)**:
+3. **Shared Code (`@asset-mem/common`)**:
    - CheckpointContext
    - PreferencesContext
    - Shared types
@@ -257,7 +257,7 @@ All checkpoint documentation is now cross-referenced:
 
 ## Conclusion
 
-The HomeApp presentation documentation now comprehensively covers the checkpoint feature implementation across all layers:
+The AssetMem presentation documentation now comprehensively covers the checkpoint feature implementation across all layers:
 
 - **Infrastructure**: Cloud Functions, Pub/Sub, Firestore, observability
 - **Applications**: Mobile and web with full feature parity

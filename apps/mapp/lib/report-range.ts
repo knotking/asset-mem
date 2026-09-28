@@ -1,4 +1,4 @@
-import type { PropertyReport } from '@homeapp/common/types';
+import type { PropertyReport } from '@asset-mem/common/types';
 
 export function reportRangeBound(value: unknown): string | undefined {
   if (typeof value === 'string') return value.slice(0, 10);

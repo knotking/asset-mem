@@ -8,10 +8,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   useLlmTokenUsage,
   type PlanLimitSlice,
-} from '@homeapp/common/contexts/llm-token-usage-context';
-import { formatTokensCompact, formatTokensFull } from '@homeapp/common/lib/format-tokens';
-import { FREE_PLAN_TOKENS_PER_MONTH } from '@homeapp/common/lib/plan-defaults';
-import { usePreferences } from '@homeapp/common/contexts/preferences-context';
+} from '@asset-mem/common/contexts/llm-token-usage-context';
+import { formatTokensCompact, formatTokensFull } from '@asset-mem/common/lib/format-tokens';
+import { FREE_PLAN_TOKENS_PER_MONTH } from '@asset-mem/common/lib/plan-defaults';
+import { usePreferences } from '@asset-mem/common/contexts/preferences-context';
 import { cn } from '@/lib/utils';
 import { planSettingsScreenTitle } from '@/lib/ios-billing-compliance';
 

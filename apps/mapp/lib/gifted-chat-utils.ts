@@ -1,6 +1,6 @@
 import type { IMessage, MessageProps } from 'react-native-gifted-chat';
-import type { Message } from '@homeapp/common/types';
-import { areMessagesEqual } from '@homeapp/common/lib/merge-messages-snapshot';
+import type { Message } from '@asset-mem/common/types';
+import { areMessagesEqual } from '@asset-mem/common/lib/merge-messages-snapshot';
 
 /** Milliseconds for Message.createdAt (Firestore Timestamp or Date). */
 export function messageCreatedAtMillis(

@@ -1,9 +1,9 @@
 ---
 name: run-proxy-local
-description: Run the HomeApp FastAPI proxy (gcp/proxy/api) locally with the right env file, sys.path, and secret-prefixed routes. Use when the user asks to start, debug, or hit the proxy API on their machine, or when they get import errors like "No module named 'common'" or 404s on routes that should exist.
+description: Run the AssetMem FastAPI proxy (gcp/proxy/api) locally with the right env file, sys.path, and secret-prefixed routes. Use when the user asks to start, debug, or hit the proxy API on their machine, or when they get import errors like "No module named 'common'" or 404s on routes that should exist.
 ---
 
-# Running the HomeApp proxy locally
+# Running the AssetMem proxy locally
 
 ## TL;DR
 ```bash

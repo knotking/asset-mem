@@ -3,7 +3,7 @@
  * Many pipelines return `serpAPIResults` / `googleSearchResults` as arrays of
  * human-readable strings; the chat UIs expect objects with `name`, `contact_info`, etc.
  *
- * **mapp** imports this module. **webapp** cannot depend on `@homeapp/common` (Firebase App
+ * **mapp** imports this module. **webapp** cannot depend on `@asset-mem/common` (Firebase App
  * Hosting); it keeps copies under `apps/webapp/src/lib/` and `apps/webapp/src/contexts/` — update
  * both sides when changing parsing or saved-provider behavior (`service-providers.ts`,
  * `saved-service-provider-dedupe.ts`, `saved-service-providers-context.tsx`, related types).

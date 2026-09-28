@@ -1,5 +1,5 @@
 /**
- * Deletion helpers — local copy for App Hosting (webapp does not depend on @homeapp/common).
+ * Deletion helpers — local copy for App Hosting (webapp does not depend on @asset-mem/common).
  * Keep in sync with apps/common/src/lib/deletion/
  */
 export * from './types';

@@ -1,7 +1,7 @@
 
-# HomeApp 
+# AssetMem 
 
-This repository contains the complete source code for the HomeApp platform, a comprehensive AI-powered property care system. It integrates frontend applications (Mobile & Web) with a sophisticated backend built on Google Cloud Platform.
+This repository contains the complete source code for the AssetMem platform, a comprehensive AI-powered property care system. It integrates frontend applications (Mobile & Web) with a sophisticated backend built on Google Cloud Platform.
 
 > 📚 **Technology Stack**: For a comprehensive overview of all technologies used across backend, mobile, and web applications, see [TECH_STACK.md](./docs/TECH_STACK.md).
 >
@@ -162,3 +162,11 @@ For detailed setup, local development, and deployment instructions for the backe
 ## Deployment
 
 Infrastructure and releases are managed via **GitHub Actions** (`create-environment.yaml`, `deploy-*.yaml`) using `gcloud`. See [`.github/workflows/README.md`](./.github/workflows/README.md), [`docs/deployment/README.md`](./docs/deployment/README.md), and [`gcp/docs/SETUP_AND_DEPLOYMENT.md`](./gcp/docs/SETUP_AND_DEPLOYMENT.md).
+
+## License
+
+Licensed under the [Apache License, Version 2.0](./LICENSE).
+
+Portions of the backend are derived from Google LLC sample code for the Agent
+Development Kit and Vertex AI, also Apache-2.0; see [`NOTICE`](./NOTICE) for
+attribution details.

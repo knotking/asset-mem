@@ -1,6 +1,6 @@
 # Client logging (webapp & mapp)
 
-HomeApp frontends use small, app-local loggers (not shared with each other for webapp). Logs are **namespaced**, **structured**, and **gated in production** so routine `info`/`debug` noise does not appear in user browsers or production bundles unless explicitly enabled.
+AssetMem frontends use small, app-local loggers (not shared with each other for webapp). Logs are **namespaced**, **structured**, and **gated in production** so routine `info`/`debug` noise does not appear in user browsers or production bundles unless explicitly enabled.
 
 Backend Python services use `gcp/common/observability/` (OpenTelemetry, Cloud Logging). This document covers **TypeScript clients only**.
 
@@ -10,9 +10,9 @@ Backend Python services use `gcp/common/observability/` (OpenTelemetry, Cloud Lo
 |-----|--------|---------|
 | Webapp | `apps/webapp/src/lib/logger.ts` | Webapp only |
 | Mapp | `apps/mapp/lib/logger.ts` | Mapp app code (`@/lib/logger`) |
-| Mapp contexts | `apps/common/src/lib/logger.ts` | `@homeapp/common` contexts (document upload, sessions, etc.) |
+| Mapp contexts | `apps/common/src/lib/logger.ts` | `@asset-mem/common` contexts (document upload, sessions, etc.) |
 
-Webapp does **not** import `@homeapp/common/lib/logger`; the two mobile/web copies stay in sync by convention.
+Webapp does **not** import `@asset-mem/common/lib/logger`; the two mobile/web copies stay in sync by convention.
 
 ## API
 
@@ -156,8 +156,8 @@ Every proxy `fetch` should send **`X-Request-ID`** so Cloud Run logs, structured
 | Layer | Module / behavior |
 |-------|-------------------|
 | Webapp | `apps/webapp/src/lib/correlation-id.ts` — `proxyFetch()`, `createCorrelationId()` |
-| Mapp | `@homeapp/common/lib/correlation-id` via `apps/mapp/lib/api.ts` — `proxyFetchWithAuth()`, `createCorrelationId()` |
-| Common (mapp quota) | `@homeapp/common/lib/correlation-id` |
+| Mapp | `@asset-mem/common/lib/correlation-id` via `apps/mapp/lib/api.ts` — `proxyFetchWithAuth()`, `createCorrelationId()` |
+| Common (mapp quota) | `@asset-mem/common/lib/correlation-id` |
 | Proxy | `CorrelationIdMiddleware` — reads header (or `X-Correlation-ID`), echoes on response |
 | Python logs | `[req=…]` via `gcp/common/observability/logging_context.py`; JSON `log_event` adds `correlation_id` |
 

@@ -130,7 +130,7 @@ Many PH items are tracked in [LAUNCH_PLAN_PROGRESS.md § Phase 1](./LAUNCH_PLAN_
 | 6.1 | **High** | Webapp `maxInstances` sized for expected load | Load test or PH spike plan | [ ] | [ ] | Eng | [PRODUCTION_HARDWARE_ALLOCATIONS.md](./PRODUCTION_HARDWARE_ALLOCATIONS.md), tier `ph` |
 | 6.2 | **High** | Proxy Cloud Run min/max instances appropriate | | [ ] | [ ] | Eng | [apply-production-hardware.yaml](../../.github/workflows/apply-production-hardware.yaml) |
 | 6.3 | **High** | Plan limits JSON configured for prod | `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` (`free` + Price ids) | [ ] | [ ] | Eng | `docs/billing/B2C_STRIPE_CONFIGURATION.md` |
-| 6.4 | **Medium** | Checkpoint list pagination | No unbounded Firestore listener | [x] | [ ] | Eng | `CHECKPOINT_PAGE_SIZE=20`, cursor `loadMore` in `@homeapp/common` + webapp |
+| 6.4 | **Medium** | Checkpoint list pagination | No unbounded Firestore listener | [x] | [ ] | Eng | `CHECKPOINT_PAGE_SIZE=20`, cursor `loadMore` in `@asset-mem/common` + webapp |
 | 6.5 | **Medium** | Load test: concurrent signups + chats | Document p95 latency | [ ] | [ ] | Eng | |
 
 ---

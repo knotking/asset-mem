@@ -1,6 +1,6 @@
 /**
  * Mirrors `apps/common/src/lib/home-onboarding.ts` for Firebase App Hosting:
- * the webapp does not depend on `@homeapp/common`. Keep both files in sync.
+ * the webapp does not depend on `@asset-mem/common`. Keep both files in sync.
  */
 
 import { Timestamp } from "firebase/firestore";

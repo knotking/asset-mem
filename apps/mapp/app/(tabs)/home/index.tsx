@@ -8,12 +8,12 @@ import PropertyCard from '@/components/PropertyCard';
 import PropertyListSkeleton from '@/components/PropertyListSkeleton';
 import { HomeOnboardingChecklist } from '@/components/onboarding/HomeOnboardingChecklist';
 import { DiscoveryChecklist } from '@/components/feature-discovery/DiscoveryChecklist';
-import { usePropertiesList } from '@homeapp/common/contexts/properties-list-context';
-import { usePreferences } from '@homeapp/common/contexts/preferences-context';
+import { usePropertiesList } from '@asset-mem/common/contexts/properties-list-context';
+import { usePreferences } from '@asset-mem/common/contexts/preferences-context';
 import { Input } from '@/components/ui/input';
 import { Icon } from '@/components/ui/icon';
 import { Search, X } from 'lucide-react-native';
-import { useDocumentUpload } from '@homeapp/common/contexts/document-upload-context';
+import { useDocumentUpload } from '@asset-mem/common/contexts/document-upload-context';
 import { setPendingPropertyUpload } from '@/lib/pending-property-upload';
 
 function normalizeRouteParam(value: string | string[] | undefined): string | undefined {

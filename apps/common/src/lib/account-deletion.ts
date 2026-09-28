@@ -1,5 +1,5 @@
 /**
- * Account-deletion copy for mapp (via @homeapp/common).
+ * Account-deletion copy for mapp (via @asset-mem/common).
  * Webapp uses a local copy: apps/webapp/src/lib/account-deletion.ts — keep both in sync.
  */
 

@@ -15,12 +15,12 @@ import {
   Clock,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { usePropertiesList } from '@homeapp/common/contexts/properties-list-context';
-import { useProperty } from '@homeapp/common/contexts/property-context';
-import { useSession } from '@homeapp/common/contexts/session-context';
-import { MessagesProvider } from '@homeapp/common/contexts/messages-context';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
-import { useFirebase } from '@homeapp/common/contexts/firebase-context';
+import { usePropertiesList } from '@asset-mem/common/contexts/properties-list-context';
+import { useProperty } from '@asset-mem/common/contexts/property-context';
+import { useSession } from '@asset-mem/common/contexts/session-context';
+import { MessagesProvider } from '@asset-mem/common/contexts/messages-context';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
+import { useFirebase } from '@asset-mem/common/contexts/firebase-context';
 import { serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import * as Location from 'expo-location';
 import PushDrawer from '@/components/PushDrawer';
@@ -32,9 +32,9 @@ import type {
   SearchLocationInput,
   Checkpoint,
   PrimaryAgent,
-} from '@homeapp/common/types';
-import { ANALYSIS_OPTIONAL_AGENTS, CHECKPOINT_OPTIONAL_AGENTS } from '@homeapp/common/types';
-import { defaultSearchLocationInput } from '@homeapp/common/lib/search-location';
+} from '@asset-mem/common/types';
+import { ANALYSIS_OPTIONAL_AGENTS, CHECKPOINT_OPTIONAL_AGENTS } from '@asset-mem/common/types';
+import { defaultSearchLocationInput } from '@asset-mem/common/lib/search-location';
 import { PropertyDetailsTab } from '@/components/property-details/PropertyDetailsTab';
 import { MyProsDrawerContent } from '@/components/property-details/MyProsDrawerContent';
 import { PropertyMoreMenu } from '@/components/property-details/PropertyMoreMenu';
@@ -45,15 +45,15 @@ import {
   type PropertyScreenTab,
   type TimelineSubTab,
 } from '@/components/property-details/property-screen-tab';
-import { OPEN_MY_PROS_PARAM } from '@homeapp/common/lib/my-pros-navigation';
+import { OPEN_MY_PROS_PARAM } from '@asset-mem/common/lib/my-pros-navigation';
 import { PropertyChatWithContext } from '@/components/chat/PropertyChatWithContext';
-import { useSavedServiceProviders } from '@homeapp/common/contexts/saved-service-providers-context';
+import { useSavedServiceProviders } from '@asset-mem/common/contexts/saved-service-providers-context';
 import { SessionsDrawerContent } from '@/components/property-details/SessionsDrawerContent';
 import { DocumentsDrawerContent } from '@/components/property-details/DocumentsDrawerContent';
 import { AlertDialogWrapper } from '@/components/property-details/AlertDialogWrapper';
 import { useDocumentAutoUpload } from '@/hooks/useDocumentAutoUpload';
 import { useSessionSelection } from '@/hooks/useSessionSelection';
-import { CheckpointProvider, useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
+import { CheckpointProvider, useCheckpoint } from '@asset-mem/common/contexts/checkpoint-context';
 import { PropertyCheckpointsTab } from '@/components/property-details/PropertyCheckpointsTab';
 import { CheckpointsDrawerContent } from '@/components/property-details/CheckpointsDrawerContent';
 import { TokenUsageBar } from '@/components/TokenUsageBar';
@@ -64,8 +64,8 @@ import {
 import PropertyListSkeleton from '@/components/PropertyListSkeleton';
 import { peekPendingPropertyUpload } from '@/lib/pending-property-upload';
 import { PENDING_PROPERTY_ADDRESS } from '@/lib/property-address-placeholder';
-import { usePreferences } from '@homeapp/common/contexts/preferences-context';
-import { ONBOARDING_CHAT_OPEN_PARAM } from '@homeapp/common/lib/home-onboarding';
+import { usePreferences } from '@asset-mem/common/contexts/preferences-context';
+import { ONBOARDING_CHAT_OPEN_PARAM } from '@asset-mem/common/lib/home-onboarding';
 
 function normalizeRouteParam(value: string | string[] | undefined): string | undefined {
   if (value === undefined) return undefined;

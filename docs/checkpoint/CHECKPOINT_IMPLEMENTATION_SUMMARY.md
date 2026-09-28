@@ -6,7 +6,7 @@
 
 ### Phase 1: Core Data Models & State Management
 
-- **Checkpoint Types**: Defined `Checkpoint`, `CheckpointMedia`, `CheckpointAnalysis`, etc. in `@homeapp/common/types`.
+- **Checkpoint Types**: Defined `Checkpoint`, `CheckpointMedia`, `CheckpointAnalysis`, etc. in `@asset-mem/common/types`.
 - **CheckpointContext**: Implemented `CheckpointContext` to manage fetching, creating, updating, and deleting checkpoints.
 - **Firebase Integration**: Connected to Firestore `checkpoints` subcollection and Storage.
 

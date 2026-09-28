@@ -1,6 +1,6 @@
 # Property Health Insights — V2 Spec
 
-**Status:** In progress (P0–P3 implemented in repo; deploy workers + `npm run build` in `@homeapp/common` before release)  
+**Status:** In progress (P0–P3 implemented in repo; deploy workers + `npm run build` in `@asset-mem/common` before release)  
 **Audience:** Product, mobile/web, backend (checkpoint analysis + metrics workers)  
 **Firestore doc:** `users/{userId}/properties/{propertyId}/metrics/summary`  
 **Clients:** `MetricsDashboard` (web), `PropertyMetricsCard` (mapp), `usePropertyCheckpointMetrics`, `CheckpointComparisonDialog` / `CheckpointComparisonModal`, `checkpoint-detail-dialog`
@@ -396,7 +396,7 @@ Shared across dialog/modal/detail entry:
 3. Manual compare on web **writes** `visualDiff` on after checkpoint (parity with mapp).
 4. Re-opening same pair does not call Gemini unless user re-runs.
 5. Analysis completion produces **one** metrics Pub/Sub message even when comparison runs.
-6. `VisualDiffAnalysis` in `@homeapp/common` includes optional `summary` and `matchReason`.
+6. `VisualDiffAnalysis` in `@asset-mem/common` includes optional `summary` and `matchReason`.
 
 ### 8.8 Comparison implementation notes
 
@@ -418,7 +418,7 @@ Shared across dialog/modal/detail entry:
 | **P0** | `normalize_condition_scores` in analysis worker; stop double metrics publish; remove comparison metrics publish | Backend |
 | **P0b** | Remove auto-compare location fallback; wire web View comparison + web manual `visualDiff` persist | Backend + web |
 | **P1** | `metrics_aggregator` v2 + `version: 2` doc + unit tests | Backend |
-| **P2** | `PropertyCheckpointMetrics` + `VisualDiffAnalysis` types in `@homeapp/common`; client mapping v1→v2 | Common + clients |
+| **P2** | `PropertyCheckpointMetrics` + `VisualDiffAnalysis` types in `@asset-mem/common`; client mapping v1→v2 | Common + clients |
 | **P3** | Insights UI states (no `?? 0`), web footer alignment, mapp modal → `issues.recent` | Web + mapp |
 | **P4** | Docs + manual prod verification checklist (scores + comparison) | QA |
 

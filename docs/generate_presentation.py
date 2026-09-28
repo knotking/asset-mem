@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate HomeApp PPTX presentation from PRESENTATION.md content."""
+"""Generate AssetMem PPTX presentation from PRESENTATION.md content."""
 
 from pptx import Presentation
 from pptx.util import Inches, Pt, Emu
@@ -100,7 +100,7 @@ slide = prs.slides.add_slide(prs.slide_layouts[6])  # blank
 set_slide_bg(slide)
 add_shape_bg(slide, Inches(0), Inches(0), Inches(0.15), H, ACCENT_BLUE)
 add_text_box(slide, Inches(1.5), Inches(1.8), Inches(10), Inches(1.2),
-             "HomeApp", font_size=60, color=WHITE, bold=True)
+             "AssetMem", font_size=60, color=WHITE, bold=True)
 add_text_box(slide, Inches(1.5), Inches(3.2), Inches(10), Inches(0.8),
              "AI-Powered Home Care & Property Diagnostics Platform",
              font_size=28, color=LIGHT_BLUE)
@@ -130,7 +130,7 @@ add_content_slide(slide, "Problem Statement",
 
 # ─── SLIDE 3: Solution Overview ───
 slide = prs.slides.add_slide(prs.slide_layouts[6])
-add_content_slide(slide, "Solution Overview — HomeApp Platform",
+add_content_slide(slide, "Solution Overview — AssetMem Platform",
     [
         "Analyzes multimodal inputs (photos, videos, documents) using Gemini 2.5 Flash",
         "Retrieves relevant info from user documents and knowledge base via RAG",
@@ -297,7 +297,7 @@ add_content_slide(slide, "Technology Stack",
     [
         "MOBILE — React Native 0.81 · Expo SDK 54 · NativeWind · Firebase SDK",
         "WEB — Next.js 15 · React 19 · Tailwind CSS · Radix UI · Genkit",
-        "SHARED — TypeScript · @homeapp/common · React Contexts · Firebase Config",
+        "SHARED — TypeScript · @asset-mem/common · React Contexts · Firebase Config",
         "API — FastAPI 0.116 · Python 3.11 · Uvicorn · Pydantic",
     ],
     [
@@ -416,7 +416,7 @@ slide = prs.slides.add_slide(prs.slide_layouts[6])
 set_slide_bg(slide)
 add_shape_bg(slide, Inches(0), Inches(0), Inches(0.15), H, ACCENT_BLUE)
 add_text_box(slide, Inches(1.5), Inches(2.0), Inches(10), Inches(1),
-             "HomeApp", font_size=52, color=WHITE, bold=True)
+             "AssetMem", font_size=52, color=WHITE, bold=True)
 add_text_box(slide, Inches(1.5), Inches(3.2), Inches(10), Inches(0.7),
              "Transforming how homeowners manage and maintain their properties.",
              font_size=24, color=LIGHT_BLUE)

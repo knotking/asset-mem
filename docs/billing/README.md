@@ -1,6 +1,6 @@
 # Billing documentation
 
-Product and technical documentation for HomeApp monetization.
+Product and technical documentation for AssetMem monetization.
 
 | Document | Description |
 |----------|-------------|

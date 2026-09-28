@@ -5,8 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Camera, Info } from 'lucide-react-native';
-import { usePreferences } from '@homeapp/common/contexts/preferences-context';
-import { CheckpointComparisonPreferences } from '@homeapp/common/types';
+import { usePreferences } from '@asset-mem/common/contexts/preferences-context';
+import { CheckpointComparisonPreferences } from '@asset-mem/common/types';
 import { createLogger } from '@/lib/logger';
 
 const prefsLog = createLogger('preferences');

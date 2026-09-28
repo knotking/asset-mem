@@ -2,6 +2,7 @@
   "name": "mapp",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "license": "Apache-2.0",
   "scripts": {
     "dev": "expo start -c",
     "android": "expo start -c --android",
@@ -24,7 +25,7 @@
     "generate:adaptive-icon": "python3 scripts/generate-adaptive-icon.py"
   },
   "dependencies": {
-    "@homeapp/common": "*",
+    "@asset-mem/common": "*",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-native-community/netinfo": "11.4.1",

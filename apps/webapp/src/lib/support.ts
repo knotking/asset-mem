@@ -1,5 +1,5 @@
 /**
- * Support helpers — local copy for App Hosting (webapp does not depend on @homeapp/common).
+ * Support helpers — local copy for App Hosting (webapp does not depend on @asset-mem/common).
  * Keep in sync with apps/common/src/lib/support.ts.
  */
 

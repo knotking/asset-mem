@@ -241,7 +241,7 @@ export type ServiceProvider = {
   link?: string;
 };
 
-// Saved service provider types — copied from @homeapp/common/types for App Hosting compatibility.
+// Saved service provider types — copied from @asset-mem/common/types for App Hosting compatibility.
 export type SavedServiceProviderSource = 'chat' | 'manual';
 
 export type SaveServiceProviderMeta = {
@@ -385,7 +385,7 @@ export type Service = {
   createdAt: Date;
 };
 
-// Checkpoint types - copied from @homeapp/common/types for Firebase App Hosting compatibility
+// Checkpoint types - copied from @asset-mem/common/types for Firebase App Hosting compatibility
 export type Checkpoint = {
   deletionStatus?: 'deleting' | 'failed';
   deletionBatchId?: string;

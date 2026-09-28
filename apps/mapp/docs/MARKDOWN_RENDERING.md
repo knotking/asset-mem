@@ -104,11 +104,11 @@ The markdown rendering is integrated throughout the message flow:
 
 #### A. MessageContent Component
 
-The main `MessageContent` component resolves content via `@homeapp/common/lib/message-content-parts`.
+The main `MessageContent` component resolves content via `@asset-mem/common/lib/message-content-parts`.
 Markdown is passed through `normalizeChatMarkdownSpacing` (collapses 3+ blank lines and tightens spacing around `---` rules) before render so replay prose like “Show full analysis” does not show large gaps between sections.
 
 ```typescript
-import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
+import { resolveMessageContentParts } from '@asset-mem/common/lib/message-content-parts';
 
 const { markdown, contentJson } = resolveMessageContentParts(message);
 

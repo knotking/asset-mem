@@ -59,7 +59,7 @@ This section outlines the recommended observability stack for the checkpoint ana
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    HomeApp Observability Stack                  │
+│                    AssetMem Observability Stack                  │
 └─────────────────────────────────────────────────────────────────┘
 
 Application Layer:

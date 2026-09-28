@@ -42,27 +42,27 @@ import {
   ListChecks,
   Maximize2,
 } from 'lucide-react-native';
-import { useSavedServiceProviders } from '@homeapp/common/contexts/saved-service-providers-context';
-import { buildServiceProviderDedupeKey } from '@homeapp/common/lib/saved-service-provider-dedupe';
-import type { SaveServiceProviderMeta } from '@homeapp/common/types';
+import { useSavedServiceProviders } from '@asset-mem/common/contexts/saved-service-providers-context';
+import { buildServiceProviderDedupeKey } from '@asset-mem/common/lib/saved-service-provider-dedupe';
+import type { SaveServiceProviderMeta } from '@asset-mem/common/types';
 import type {
   Message,
   StructuredResponseData,
   ServiceProvider,
   Product,
   DiyCostEstimatesSummary,
-} from '@homeapp/common/types';
-import { useAssistantLoadingUi } from '@homeapp/common/hooks/use-assistant-loading-ui';
+} from '@asset-mem/common/types';
+import { useAssistantLoadingUi } from '@asset-mem/common/hooks/use-assistant-loading-ui';
 import {
   collectServiceProviderCandidates,
   isDisplayableServiceProvider,
   isVertexGroundingRedirectUrl,
   stripVertexGroundingUrls,
-} from '@homeapp/common/lib/service-providers';
+} from '@asset-mem/common/lib/service-providers';
 import {
   serviceSearchFailed,
   serviceSearchFailureMessage,
-} from '@homeapp/common/lib/service-search-status';
+} from '@asset-mem/common/lib/service-search-status';
 import {
   Accordion,
   AccordionItem,
@@ -82,12 +82,12 @@ import {
   getSummaryAccordionPreview,
   getCostEstimateRecommendation,
   SUMMARY_ACCORDION_PLACEHOLDER_PREVIEW,
-} from '@homeapp/common/lib/executive-summary-display';
-import { formatCheckpointOverallCondition } from '@homeapp/common/lib/checkpoint-summary-display';
+} from '@asset-mem/common/lib/executive-summary-display';
+import { formatCheckpointOverallCondition } from '@asset-mem/common/lib/checkpoint-summary-display';
 import {
   getSuggestedActionsFromContentJson,
   type SuggestedAction,
-} from '@homeapp/common/lib/suggested-actions';
+} from '@asset-mem/common/lib/suggested-actions';
 import { DiyVideoTutorialsSection } from '@/components/chat/DiyVideoTutorialsSection';
 import { markdownToWhatsapp } from '@/lib/utils';
 import TypingIndicator from './TypingIndicator';
@@ -109,19 +109,19 @@ import {
   type StructuredSection,
 } from '@/components/chat/StructuredSectionNav';
 import { areChatMessagePropsEqual } from '@/lib/chat-message-equal';
-import { buildAssistantMessageCopyText } from '@homeapp/common/lib/message-copy-text';
-import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
+import { buildAssistantMessageCopyText } from '@asset-mem/common/lib/message-copy-text';
+import { resolveMessageContentParts } from '@asset-mem/common/lib/message-content-parts';
 import {
   hasPostContentPipelineWork,
   resolveStructuredAnalysis,
   shouldShowDisplayTitleGradient,
   shouldShowSummaryAccordionPlaceholder,
-} from '@homeapp/common/lib/checkpoint-branch-progress';
+} from '@asset-mem/common/lib/checkpoint-branch-progress';
 import { DisplayTitleGradientText } from '@/components/DisplayTitleGradientText';
 import {
   listMessageContextRefItems,
   splitMessageContextRefItems,
-} from '@homeapp/common/lib/chat-message-context-refs';
+} from '@asset-mem/common/lib/chat-message-context-refs';
 import { createLogger } from '@/lib/logger';
 
 const chatLog = createLogger('chat');

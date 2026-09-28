@@ -17,14 +17,14 @@ import {
   Tag,
   Award,
 } from 'lucide-react-native';
-import { Checkpoint, CheckpointMedia } from '@homeapp/common/types';
+import { Checkpoint, CheckpointMedia } from '@asset-mem/common/types';
 import { createLogger } from '@/lib/logger';
 import { showThemedAlert } from '@/contexts/themed-alert-context';
 
 const checkpointLog = createLogger('checkpoint');
 import { format } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
+import { useCheckpoint } from '@asset-mem/common/contexts/checkpoint-context';
 import { PortalHost } from '@rn-primitives/portal';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import {
@@ -37,7 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { getCheckpointAnalysisFailureMessage } from '@homeapp/common/lib/document-analysis-errors';
+import { getCheckpointAnalysisFailureMessage } from '@asset-mem/common/lib/document-analysis-errors';
 import { AnalysisResults } from './AnalysisResults';
 import { Separator } from '@/components/ui/separator';
 

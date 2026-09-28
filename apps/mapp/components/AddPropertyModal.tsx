@@ -10,14 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { X, Upload, AlertCircle, Camera, File } from 'lucide-react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
-import { useFirebase } from '@homeapp/common/contexts/firebase-context';
-import { useSession } from '@homeapp/common/contexts/session-context';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
+import { useFirebase } from '@asset-mem/common/contexts/firebase-context';
+import { useSession } from '@asset-mem/common/contexts/session-context';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { PROPERTY_TYPES, getSubTypesForType, type PropertyType, type PropertySubType } from '@homeapp/common/constants/property-types';
-import { DOCUMENT_QUOTA_USER_MESSAGE } from '@homeapp/common/lib/document-analysis-errors';
-import { isAtPlanLimit } from '@homeapp/common/lib/plan-limit-slice';
-import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
+import { PROPERTY_TYPES, getSubTypesForType, type PropertyType, type PropertySubType } from '@asset-mem/common/constants/property-types';
+import { DOCUMENT_QUOTA_USER_MESSAGE } from '@asset-mem/common/lib/document-analysis-errors';
+import { isAtPlanLimit } from '@asset-mem/common/lib/plan-limit-slice';
+import { useLlmTokenUsage } from '@asset-mem/common/contexts/llm-token-usage-context';
 import { PENDING_PROPERTY_ADDRESS } from '@/lib/property-address-placeholder';
 import { createLogger } from '@/lib/logger';
 

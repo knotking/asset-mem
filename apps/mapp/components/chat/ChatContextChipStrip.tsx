@@ -11,17 +11,17 @@ import type {
   PendingContextItem,
   PrimaryAgent,
   PropertyReport,
-} from '@homeapp/common/types';
+} from '@asset-mem/common/types';
 import {
   getCheckpointThumbnail,
   isDocumentImage,
-} from '@homeapp/common/lib/chat-context-readiness';
+} from '@asset-mem/common/lib/chat-context-readiness';
 import {
   ASK_WHEN_READY_HINT,
   ASK_WHEN_READY_LABEL,
-} from '@homeapp/common/lib/chat-context-labels';
-import { buildCollapsedComposerSummary } from '@homeapp/common/lib/composer-collapse';
-import { getRequiredContextEmptyPillLabel } from '@homeapp/common/lib/chat-send-context';
+} from '@asset-mem/common/lib/chat-context-labels';
+import { buildCollapsedComposerSummary } from '@asset-mem/common/lib/composer-collapse';
+import { getRequiredContextEmptyPillLabel } from '@asset-mem/common/lib/chat-send-context';
 import { cn } from '@/lib/utils';
 
 const PEEK_THUMB_COUNT = 3;

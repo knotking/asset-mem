@@ -1,5 +1,5 @@
 {
-  "displayName": "HomeApp token quota exceeded (__ENV__)",
+  "displayName": "AssetMem token quota exceeded (__ENV__)",
   "combiner": "OR",
   "enabled": true,
   "documentation": {

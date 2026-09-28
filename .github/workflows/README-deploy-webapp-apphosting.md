@@ -60,7 +60,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 ```bash
 export PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
 export GITHUB_ORG="BuildGeekAI"  # Replace with your GitHub org/username
-export GITHUB_REPO="HomeApp"
+export GITHUB_REPO="AssetMem"
 
 # Allow GitHub Actions to impersonate this service account
 gcloud iam service-accounts add-iam-policy-binding $SA_EMAIL \
@@ -251,7 +251,7 @@ export SERVICE_ACCOUNT_EMAIL="firebase-app-hosting-compute@${PROJECT_ID}.iam.gse
 ```bash
 # Replace with your GitHub organization/username
 export GITHUB_ORG="BuildGeekAI"
-export GITHUB_REPO="HomeApp"
+export GITHUB_REPO="AssetMem"
 ```
 
 #### Step 4: Create Workload Identity Pool

@@ -6,8 +6,8 @@ Post-onboarding UX that helps users understand checkpoints, chat modes, comparis
 
 | Client | Module |
 |--------|--------|
-| **mapp + tests** | `apps/common/src/lib/feature-discovery.ts` (`@homeapp/common`) |
-| **webapp** | `apps/webapp/src/lib/feature-discovery.ts` — **local mirror only** (Firebase App Hosting does not bundle `@homeapp/common`; ESLint + `npm run check:no-common`) |
+| **mapp + tests** | `apps/common/src/lib/feature-discovery.ts` (`@asset-mem/common`) |
+| **webapp** | `apps/webapp/src/lib/feature-discovery.ts` — **local mirror only** (Firebase App Hosting does not bundle `@asset-mem/common`; ESLint + `npm run check:no-common`) |
 
 Keep the two files in sync when changing copy, counts, or tip IDs:
 

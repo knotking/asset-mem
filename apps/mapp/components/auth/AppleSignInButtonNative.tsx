@@ -2,7 +2,7 @@ import * as React from 'react';
 import { InteractionManager, View } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { OAuthProvider, signInWithCredential } from 'firebase/auth';
-import { auth } from '@homeapp/common/firebase';
+import { auth } from '@asset-mem/common/firebase';
 import { createLogger } from '@/lib/logger';
 import type { AppleSignInButtonProps } from './AppleSignInButton';
 

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useColorScheme } from 'nativewind';
-import { ThemePreference } from '@homeapp/common/types';
-import { useThemePreference } from '@homeapp/common/hooks/use-theme-preference';
+import { ThemePreference } from '@asset-mem/common/types';
+import { useThemePreference } from '@asset-mem/common/hooks/use-theme-preference';
 
 /**
  * Applies Firestore theme preference to nativewind when the user signs in

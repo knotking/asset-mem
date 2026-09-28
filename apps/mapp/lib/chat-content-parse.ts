@@ -1,8 +1,8 @@
-import { extractExecutiveSummaryNarrative } from '@homeapp/common/lib/executive-summary-display';
-import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
-import { normalizeChatMarkdownSpacing } from '@homeapp/common/lib/normalize-chat-markdown';
-import { serviceSearchFailed } from '@homeapp/common/lib/service-search-status';
-import type { Message, StructuredResponseData } from '@homeapp/common/types';
+import { extractExecutiveSummaryNarrative } from '@asset-mem/common/lib/executive-summary-display';
+import { resolveMessageContentParts } from '@asset-mem/common/lib/message-content-parts';
+import { normalizeChatMarkdownSpacing } from '@asset-mem/common/lib/normalize-chat-markdown';
+import { serviceSearchFailed } from '@asset-mem/common/lib/service-search-status';
+import type { Message, StructuredResponseData } from '@asset-mem/common/types';
 
 export type MessageDisplayParts = {
   structuredData: StructuredResponseData | null;

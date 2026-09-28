@@ -184,7 +184,7 @@ When updating this documentation:
 
 ## License
 
-This documentation is part of the HomeApp project.
+This documentation is part of the AssetMem project.
 
 ---
 

@@ -1,5 +1,5 @@
 /**
- * Message display resolution for chat UI — local copy for App Hosting (webapp does not depend on @homeapp/common).
+ * Message display resolution for chat UI — local copy for App Hosting (webapp does not depend on @asset-mem/common).
  * Keep in sync with apps/mapp/lib/chat-content-parse.ts.
  */
 import { extractExecutiveSummaryNarrative } from "@/lib/executive-summary-display";

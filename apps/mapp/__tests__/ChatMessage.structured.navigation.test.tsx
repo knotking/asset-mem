@@ -24,7 +24,7 @@ jest.mock('@/components/ui/icon', () => ({
   Icon: () => null,
 }));
 
-jest.mock('@homeapp/common/contexts/saved-service-providers-context', () => ({
+jest.mock('@asset-mem/common/contexts/saved-service-providers-context', () => ({
   useSavedServiceProviders: () => ({
     savedProviders: [],
     loading: false,

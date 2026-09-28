@@ -68,7 +68,7 @@ export function CheckpointCard({
       return <Badge variant="outline">No Analysis</Badge>;
     }
 
-    // Severity-tier labels — keep in sync with @homeapp/common/lib/checkpoint-list-badge (mapp uses shared helper).
+    // Severity-tier labels — keep in sync with @asset-mem/common/lib/checkpoint-list-badge (mapp uses shared helper).
     const issues = checkpoint.aiAnalysis?.issues || [];
     const hasCritical = issues.some((i: any) => typeof i === 'object' && i.severity === 'critical');
     const hasMajor = issues.some((i: any) => typeof i === 'object' && i.severity === 'major');

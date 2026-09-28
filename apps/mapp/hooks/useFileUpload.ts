@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as VideoThumbnails from 'expo-video-thumbnails';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import type { FileAttachment } from '@homeapp/common/types';
+import type { FileAttachment } from '@asset-mem/common/types';
 import type { FirebaseStorage } from 'firebase/storage';
 import { createLogger } from '@/lib/logger';
 

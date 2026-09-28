@@ -13,7 +13,7 @@ import {
   CheckCircle,
 } from 'lucide-react-native';
 import { format } from 'date-fns';
-import type { Checkpoint } from '@homeapp/common/types';
+import type { Checkpoint } from '@asset-mem/common/types';
 
 interface Issue {
   description?: string;

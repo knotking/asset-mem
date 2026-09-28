@@ -1,6 +1,6 @@
 # Session Management
 
-This document explains how chat sessions are managed in the HomeApp application, covering both the mobile app (mapp) and web app (webapp).
+This document explains how chat sessions are managed in the AssetMem application, covering both the mobile app (mapp) and web app (webapp).
 
 ## Overview
 
@@ -147,7 +147,7 @@ sequenceDiagram
     end
 ```
 
-**Code locations**: `deriveSessionNameFromFirstMessage` in `@homeapp/common/lib/session-name` (webapp mirror: `apps/webapp/src/lib/session-name.ts`). Called on first send when `name === 'draft'` (`PropertyChatWithContext` mapp, `property-chat-with-context` webapp) and when claiming a draft on New Session (`session-context`).
+**Code locations**: `deriveSessionNameFromFirstMessage` in `@asset-mem/common/lib/session-name` (webapp mirror: `apps/webapp/src/lib/session-name.ts`). Called on first send when `name === 'draft'` (`PropertyChatWithContext` mapp, `property-chat-with-context` webapp) and when claiming a draft on New Session (`session-context`).
 
 ### 3. Auto-Selection on Property Load
 
@@ -282,7 +282,7 @@ The `agentSessionId` links the Firestore chat session to a backend AI agent sess
 Use `beginNewPropertyChatSession` for the **New Session** button. It selects the property draft when one exists, or claims the current draft (if it has messages) and creates a fresh draft.
 
 ```typescript
-import { useSession } from '@homeapp/common/contexts/session-context';
+import { useSession } from '@asset-mem/common/contexts/session-context';
 
 function PropertyChat({ propertyId, currentSessionId }: { propertyId: string; currentSessionId?: string }) {
   const { beginNewPropertyChatSession } = useSession();
@@ -301,7 +301,7 @@ function PropertyChat({ propertyId, currentSessionId }: { propertyId: string; cu
 ### Listing Property Sessions
 
 ```typescript
-import { useSession } from '@homeapp/common/contexts/session-context';
+import { useSession } from '@asset-mem/common/contexts/session-context';
 
 function SessionsList({ propertyId }: { propertyId: string }) {
   const { sessionsByProperty } = useSession();
@@ -535,17 +535,17 @@ async function createAgentSession(
 
 ## Session deletion cascade
 
-Deleting a chat session uses `@homeapp/common/lib/deletion` (`deleteChatSession`) today:
+Deleting a chat session uses `@asset-mem/common/lib/deletion` (`deleteChatSession`) today:
 
 1. Scans `messages` for attachment `file.gsURI` and deletes Storage objects (client)
 2. `POST /deletion/agent-sessions` — Vertex Reasoning Engine session (awaited for bulk delete; best-effort for single delete)
 3. `POST /deletion/session-shared-chats` — removes `sharedChats` copies (Firestore rules block client delete)
 4. Paginated delete of all `messages` docs, then the `chats/{sessionId}` doc (client)
 
-Bulk delete in the session list uses `POST /deletion/sessions` via `deleteChatSessionsBatch` in `@homeapp/common/lib/deletion`. See [DELETION_PLAN.md](../../../docs/operations/DELETION_PLAN.md).
+Bulk delete in the session list uses `POST /deletion/sessions` via `deleteChatSessionsBatch` in `@asset-mem/common/lib/deletion`. See [DELETION_PLAN.md](../../../docs/operations/DELETION_PLAN.md).
 
 ---
 
 **Last Updated**: June 2026
-**Maintainer**: HomeApp Team
+**Maintainer**: AssetMem Team
 **Version**: 1.0

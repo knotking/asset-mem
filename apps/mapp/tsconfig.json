@@ -12,11 +12,11 @@
       "@/*": ["./*"],
       "@common/*": ["../common/src/*"],
       "@common/firebase/*": ["../common/src/firebase/*"],
-      "@homeapp/common/firebase": ["../common/src/firebase/firebase-native.ts"],
-      "@homeapp/common/firebase-config": ["../common/src/firebase/firebase-config.ts"],
-      "@homeapp/common/types": ["../common/src/types.ts"],
-      "@homeapp/common/contexts/*": ["../common/src/contexts/*"],
-      "@homeapp/common/constants/*": ["../common/src/constants/*"]
+      "@asset-mem/common/firebase": ["../common/src/firebase/firebase-native.ts"],
+      "@asset-mem/common/firebase-config": ["../common/src/firebase/firebase-config.ts"],
+      "@asset-mem/common/types": ["../common/src/types.ts"],
+      "@asset-mem/common/contexts/*": ["../common/src/contexts/*"],
+      "@asset-mem/common/constants/*": ["../common/src/constants/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts", "nativewind-env.d.ts"],

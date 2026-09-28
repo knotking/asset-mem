@@ -1,5 +1,5 @@
 {
-  "displayName": "HomeApp worker 5xx (__ENV__)",
+  "displayName": "AssetMem worker 5xx (__ENV__)",
   "combiner": "OR",
   "enabled": true,
   "documentation": {

@@ -1,4 +1,4 @@
-import type { Message } from '@homeapp/common/types';
+import type { Message } from '@asset-mem/common/types';
 
 const now = new Date('2026-01-15T12:00:00.000Z');
 

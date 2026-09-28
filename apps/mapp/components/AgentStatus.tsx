@@ -2,8 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { View, Animated } from 'react-native';
 import { Icon } from '@/components/ui/icon';
 import { Sparkles } from 'lucide-react-native';
-import type { AgentStep } from '@homeapp/common/types';
-import { useDebouncedThinkingStatus } from '@homeapp/common/hooks/use-debounced-thinking-status';
+import type { AgentStep } from '@asset-mem/common/types';
+import { useDebouncedThinkingStatus } from '@asset-mem/common/hooks/use-debounced-thinking-status';
 import { Text } from '@/components/ui/text';
 import TypingIndicator from './TypingIndicator';
 

@@ -1,6 +1,6 @@
 /**
  * Webapp logging utility. Namespaced, level-gated debug, structured metadata.
- * Not shared with @homeapp/common — webapp keeps its own copy.
+ * Not shared with @asset-mem/common — webapp keeps its own copy.
  *
  * Levels in production (NODE_ENV=production):
  * - debug, info: off unless NEXT_PUBLIC_DEBUG_LOGS=true

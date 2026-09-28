@@ -10,9 +10,9 @@ import {
   HELP_ARTICLES,
   hasDismissedFeatureTips,
   resolveDiscoveryProperty,
-} from '@homeapp/common/lib/feature-discovery';
-import { usePreferences } from '@homeapp/common/contexts/preferences-context';
-import { usePropertiesList } from '@homeapp/common/contexts/properties-list-context';
+} from '@asset-mem/common/lib/feature-discovery';
+import { usePreferences } from '@asset-mem/common/contexts/preferences-context';
+import { usePropertiesList } from '@asset-mem/common/contexts/properties-list-context';
 import { useThemedAlert } from '@/contexts/themed-alert-context';
 
 export function HelpHubSettings() {

@@ -1,4 +1,4 @@
-import type { UserPreferences, PrimaryAgent, CheckpointOptionalAgent, AnalysisOptionalAgent } from '@homeapp/common/types';
+import type { UserPreferences, PrimaryAgent, CheckpointOptionalAgent, AnalysisOptionalAgent } from '@asset-mem/common/types';
 
 export function buildDiscoveryMilestoneUpdates(input: {
   preferences: UserPreferences | null | undefined;

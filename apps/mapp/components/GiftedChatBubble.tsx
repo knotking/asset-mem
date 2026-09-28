@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import type { IMessage, BubbleProps } from 'react-native-gifted-chat';
-import type { Message } from '@homeapp/common/types';
+import type { Message } from '@asset-mem/common/types';
 import { areGiftedChatBubblePropsEqual } from '@/lib/gifted-chat-bubble-equal';
 import { mergeMessageWithGiftedCreatedAt } from '@/lib/gifted-chat-utils';
 import ChatMessage from './ChatMessage';
@@ -12,7 +12,7 @@ interface CustomBubbleProps extends BubbleProps<IMessage> {
   isActiveLoading?: boolean;
   hideRepeatedContextRefs?: boolean;
   onSuggestedAction?: (
-    action: import('@homeapp/common/lib/suggested-actions').SuggestedAction
+    action: import('@asset-mem/common/lib/suggested-actions').SuggestedAction
   ) => void;
   isSendDisabled?: boolean;
 }

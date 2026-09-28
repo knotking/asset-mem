@@ -5,7 +5,7 @@ import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react-native';
 import SessionsList from '@/components/SessionsList';
-import type { Session } from '@homeapp/common/types';
+import type { Session } from '@asset-mem/common/types';
 
 interface SessionsDrawerContentProps {
   propertyId: string;

@@ -1,4 +1,4 @@
-# HomeApp Platform Presentation
+# AssetMem Platform Presentation
 
 > **AI-Powered Home Care & Property Diagnostics Platform**
 
@@ -24,7 +24,7 @@
 
 ## Executive Summary
 
-**HomeApp** is a comprehensive AI-powered platform that provides intelligent home care diagnostics, property maintenance guidance, and service recommendations through multimodal AI analysis and retrieval-augmented generation (RAG).
+**AssetMem** is a comprehensive AI-powered platform that provides intelligent home care diagnostics, property maintenance guidance, and service recommendations through multimodal AI analysis and retrieval-augmented generation (RAG).
 
 ### Key Highlights
 
@@ -68,9 +68,9 @@
 
 ## Solution Overview
 
-### HomeApp Platform
+### AssetMem Platform
 
-HomeApp addresses these challenges through an integrated AI platform that:
+AssetMem addresses these challenges through an integrated AI platform that:
 
 - **Analyzes** multimodal inputs (photos, videos, documents) using advanced AI
 - **Retrieves** relevant information from user documents and checkpoint history
@@ -1066,7 +1066,7 @@ gcloud functions deploy pubsub_checkpoint_metrics_aggregate \
 
 - ✅ Mobile app (iOS, Android, Web via Expo)
 - ✅ Web app (Next.js with full feature parity)
-- ✅ Shared contexts and types (`@homeapp/common`)
+- ✅ Shared contexts and types (`@asset-mem/common`)
 
 ### 🚧 In Progress / Planned
 
@@ -1112,7 +1112,7 @@ gcloud functions deploy pubsub_checkpoint_metrics_aggregate \
 
 ## Conclusion
 
-HomeApp represents a comprehensive solution to modern home care challenges, leveraging cutting-edge AI technology to provide:
+AssetMem represents a comprehensive solution to modern home care challenges, leveraging cutting-edge AI technology to provide:
 
 ✅ **Intelligent Diagnostics** through multimodal AI analysis  
 ✅ **Property Condition Tracking** with AI-powered checkpoint analysis  
@@ -1122,7 +1122,7 @@ HomeApp represents a comprehensive solution to modern home care challenges, leve
 ✅ **Seamless Experience** across mobile and web platforms  
 ✅ **Scalable Infrastructure** with async processing and real-time updates
 
-Built on a robust, scalable cloud architecture with a sophisticated multi-agent AI system and advanced property monitoring capabilities, HomeApp is positioned to transform how homeowners manage and maintain their properties.
+Built on a robust, scalable cloud architecture with a sophisticated multi-agent AI system and advanced property monitoring capabilities, AssetMem is positioned to transform how homeowners manage and maintain their properties.
 
 ---
 
@@ -1159,4 +1159,4 @@ Built on a robust, scalable cloud architecture with a sophisticated multi-agent 
 
 ---
 
-**For questions or more information, please refer to the documentation or contact the HomeApp platform team.**
+**For questions or more information, please refer to the documentation or contact the AssetMem platform team.**

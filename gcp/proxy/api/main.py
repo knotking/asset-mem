@@ -51,8 +51,8 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 # --- FastAPI App ---
 app = FastAPI(
-    title="HomeApp Proxy API",
-    description="API for handling HomeApp proxy requests, including Firebase and Telegram webhooks.",
+    title="AssetMem Proxy API",
+    description="API for handling AssetMem proxy requests, including Firebase and Telegram webhooks.",
     version="1.0.0",
     lifespan=lifespan
 )

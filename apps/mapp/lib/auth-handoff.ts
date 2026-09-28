@@ -2,7 +2,7 @@
  * One-time auth handoff so the mobile browser opens the web app as the same Firebase user.
  */
 
-import { proxyFetchWithAuth } from '@homeapp/common/lib/correlation-id';
+import { proxyFetchWithAuth } from '@asset-mem/common/lib/correlation-id';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import { getMobileWebHandoffUrl, getWebAppUrl } from '@/lib/expo-extra';
 import { createLogger } from '@/lib/logger';

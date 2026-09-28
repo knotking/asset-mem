@@ -1,4 +1,4 @@
-/** Mirrored from @homeapp/common — webapp cannot import common (App Hosting). */
+/** Mirrored from @asset-mem/common — webapp cannot import common (App Hosting). */
 import type { PropertyReportPurpose } from '@/lib/types';
 
 export type ReportQuickPresetId = 'showing-today' | 'move-in-out';

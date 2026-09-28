@@ -167,7 +167,7 @@ Property Agent Architecture uses persisted `contentJson` as the single source fo
 
 **Content resolution:**
 ```typescript
-import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
+import { resolveMessageContentParts } from '@asset-mem/common/lib/message-content-parts';
 import { getMessageDisplayParts } from '@/lib/chat-content-parse';
 
 const { markdown, contentJson } = resolveMessageContentParts(message);

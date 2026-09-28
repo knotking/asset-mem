@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository overview
 
-HomeApp is a monorepo for **AssetMem AI**, an AI-powered property care platform. It contains three TypeScript clients (mobile, web, shared library) and a Python backend (FastAPI proxy + Vertex AI agent + Pub/Sub workers) deployed to Google Cloud Platform.
+AssetMem is a monorepo for **AssetMem AI**, an AI-powered property care platform. It contains three TypeScript clients (mobile, web, shared library) and a Python backend (FastAPI proxy + Vertex AI agent + Pub/Sub workers) deployed to Google Cloud Platform.
 
 **Naming:** User-facing brand is AssetMem AI (`asset-mem.com`). GCP/Firebase project IDs remain `homegeek-staging` / `homegeek-prod` and buckets `homegeek-user-data-*` by design — do not rename those in code without an infra migration plan. See [docs/deployment/ENVIRONMENTS.md](docs/deployment/ENVIRONMENTS.md#brand-vs-infrastructure-naming).
 
 ```
 apps/                Frontend (npm workspaces, root package.json declares workspaces: apps/*)
-├── common/          @homeapp/common — shared TS types, Firebase init, React contexts
+├── common/          @asset-mem/common — shared TS types, Firebase init, React contexts
 ├── mapp/            React Native + Expo SDK 54 mobile app
 └── webapp/          Next.js 15 (App Router) web app
 gcp/
@@ -108,7 +108,7 @@ Quota resolution order, enforced by `gcp/common/token/quota.py`:
 Over-limit responses use `code: TOKEN_QUOTA_EXCEEDED`. The webapp queries `POST /token-quota-status` to render the AI usage bar (limits from proxy JSON including `free`).
 
 ### Shared frontend package (`apps/common`)
-`@homeapp/common` is the seam for **mapp** (direct imports). **Webapp does not import it** — Firebase App Hosting builds only `apps/webapp`; mirror any shared module under `apps/webapp/src/lib/` or `src/hooks/` and keep in sync (`.cursor/rules/webapp-no-common-imports.mdc`, `npm run check:no-common`). Common exports per-context entry points (see `apps/common/package.json` `exports`) and uses **conditional exports** for Firebase: `./firebase` resolves to `firebase-native.ts` for React Native and `firebase-web.ts` elsewhere. After editing anything under `apps/common/src`, run `npm run build` in that package; mapp picks it up via the workspace symlink. Firebase project config is hardcoded per environment (`dev`/`staging`/`prod`) in `apps/common/src/firebase/firebase-config.ts` and selected via `Constants.expoConfig.extra.appEnv`.
+`@asset-mem/common` is the seam for **mapp** (direct imports). **Webapp does not import it** — Firebase App Hosting builds only `apps/webapp`; mirror any shared module under `apps/webapp/src/lib/` or `src/hooks/` and keep in sync (`.cursor/rules/webapp-no-common-imports.mdc`, `npm run check:no-common`). Common exports per-context entry points (see `apps/common/package.json` `exports`) and uses **conditional exports** for Firebase: `./firebase` resolves to `firebase-native.ts` for React Native and `firebase-web.ts` elsewhere. After editing anything under `apps/common/src`, run `npm run build` in that package; mapp picks it up via the workspace symlink. Firebase project config is hardcoded per environment (`dev`/`staging`/`prod`) in `apps/common/src/firebase/firebase-config.ts` and selected via `Constants.expoConfig.extra.appEnv`.
 
 React contexts are the main state-management mechanism in both clients (auth, session, property, properties-list, checkpoint, document upload, llm token usage, preferences). When you add a new context, add an entry to the `exports` map in `apps/common/package.json`.
 

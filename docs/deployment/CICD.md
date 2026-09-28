@@ -1,10 +1,10 @@
 # CI/CD Pipeline Documentation
 
-This guide covers the Continuous Integration and Continuous Deployment (CI/CD) pipelines for HomeApp.
+This guide covers the Continuous Integration and Continuous Deployment (CI/CD) pipelines for AssetMem.
 
 ## Overview
 
-HomeApp uses GitHub Actions for automated CI/CD workflows with:
+AssetMem uses GitHub Actions for automated CI/CD workflows with:
 - Automated deployments on code changes
 - Manual deployment triggers for production
 - Environment-specific configurations
@@ -271,7 +271,7 @@ Details: [.github/workflows/README-deploy-orchestrator.md](../../.github/workflo
 
 ### Workload Identity Federation
 
-HomeApp uses Workload Identity Federation for secure, keyless authentication from GitHub Actions to GCP.
+AssetMem uses Workload Identity Federation for secure, keyless authentication from GitHub Actions to GCP.
 
 **Benefits**:
 - No service account keys to manage

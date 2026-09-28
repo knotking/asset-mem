@@ -4,14 +4,14 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { X, ArrowRight, Calendar } from 'lucide-react-native';
-import { Checkpoint } from '@homeapp/common/types';
+import { Checkpoint } from '@asset-mem/common/types';
 import { format } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { compareCheckpoints, CompareCheckpointsOutput } from '../../lib/api';
-import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
+import { useCheckpoint } from '@asset-mem/common/contexts/checkpoint-context';
 import { Timestamp } from 'firebase/firestore';
 import { ActivityIndicator } from 'react-native';
-import { getPlanLimitFailureMessage } from '@homeapp/common/lib/document-analysis-errors';
+import { getPlanLimitFailureMessage } from '@asset-mem/common/lib/document-analysis-errors';
 import { createLogger } from '@/lib/logger';
 
 const checkpointLog = createLogger('checkpoint');

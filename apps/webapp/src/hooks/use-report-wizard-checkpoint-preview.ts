@@ -1,4 +1,4 @@
-/** Mirrored from @homeapp/common — webapp cannot import common (App Hosting). */
+/** Mirrored from @asset-mem/common — webapp cannot import common (App Hosting). */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Checkpoint, PropertyReportPurpose, ReportPreviewResponse } from '@/lib/types';
 import {

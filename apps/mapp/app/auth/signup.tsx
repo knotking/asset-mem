@@ -1,7 +1,7 @@
 import React, { useReducer } from 'react';
 import { View } from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@homeapp/common/firebase';
+import { auth } from '@asset-mem/common/firebase';
 import { Link, useRouter } from 'expo-router';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { AuthFieldLabel, AuthScreenShell } from '@/components/auth/AuthScreenShell';

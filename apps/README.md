@@ -1,6 +1,6 @@
-# HomeApp Frontend Guide
+# AssetMem Frontend Guide
 
-This repository hosts two client-facing applications that sit on top of the HomeApp platform:
+This repository hosts two client-facing applications that sit on top of the AssetMem platform:
 
 - `apps/webapp`: the responsive Next.js experience served to desktop browsers.
 - `apps/mapp`: the Expo / React Native application distributed to mobile devices (iOS, Android, web preview).
@@ -22,7 +22,7 @@ running each app locally.
 - **Firebase project access** with credentials for development and staging environments.
 - **Proxy / agent backend** reachable via the URLs exposed in the `.env` files (see below).
 
-> ℹ️ HomeApp developers typically keep a `.env` file per app with the Firebase config, proxy URLs, and Gemini
+> ℹ️ AssetMem developers typically keep a `.env` file per app with the Firebase config, proxy URLs, and Gemini
 > agent endpoints. See `apps/mapp/docs/ENV_CONFIG.md` for the full variable matrix.
 
 ---
@@ -130,7 +130,7 @@ npm run web     # Expo dev server + React DOM preview
 - Expo reads config from `app.config.js`, which merges `.env` variables. Confirm `PROXY_BASE_URL` resolves to a reachable backend; otherwise triage and session creation will fail.
 - To override the default Firebase project for local testing, set `EXPO_PUBLIC_FIREBASE_PROJECT_ID` and friends in
   `.env`.
-- The mobile app assumes the shared `@homeapp/common` package is built in place. Reinstall or re-run
+- The mobile app assumes the shared `@asset-mem/common` package is built in place. Reinstall or re-run
   `npm install` after changing shared code.
 
 ### 5.3 Debugging tips
@@ -164,5 +164,5 @@ npm run web     # Expo dev server + React DOM preview
 
 ---
 
-For questions, open a discussion in the repository or reach out to the HomeApp platform team.
+For questions, open a discussion in the repository or reach out to the AssetMem platform team.
 

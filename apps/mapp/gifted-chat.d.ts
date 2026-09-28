@@ -1,5 +1,5 @@
 import 'react-native-gifted-chat';
-import type { AgentStep, Message, PrimaryAgent } from '@homeapp/common/types';
+import type { AgentStep, Message, PrimaryAgent } from '@asset-mem/common/types';
 
 declare module 'react-native-gifted-chat' {
   export interface IMessage {

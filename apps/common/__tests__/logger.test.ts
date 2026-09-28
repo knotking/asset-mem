@@ -8,7 +8,7 @@ function setDev(value: boolean) {
   (global as { __DEV__?: boolean }).__DEV__ = value;
 }
 
-describe('@homeapp/common logger', () => {
+describe('@asset-mem/common logger', () => {
   beforeEach(() => {
     jest.resetModules();
     jest.spyOn(console, 'debug').mockImplementation(() => {});

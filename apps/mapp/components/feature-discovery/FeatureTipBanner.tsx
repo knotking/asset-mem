@@ -4,7 +4,7 @@ import { X } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
-import type { FeatureTipId } from '@homeapp/common/lib/feature-discovery';
+import type { FeatureTipId } from '@asset-mem/common/lib/feature-discovery';
 
 type FeatureTipBannerProps = {
   tipId: FeatureTipId;

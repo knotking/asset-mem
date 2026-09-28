@@ -1,5 +1,5 @@
 import LandingPage from './landing';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useEffect } from 'react';
 import { createLogger } from '@/lib/logger';

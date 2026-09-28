@@ -71,7 +71,7 @@ Picker options: `apps/mapp/lib/add-context-media-picker.ts`.
 
 ## Architecture
 
-### 1. Message Types (`@homeapp/common/types.ts`)
+### 1. Message Types (`@asset-mem/common/types.ts`)
 
 ```typescript
 export type AgentStep = {
@@ -170,7 +170,7 @@ export type StructuredResponseData = {
 };
 ```
 
-### 2. Messages Context (`@homeapp/common/contexts/messages-context.tsx`)
+### 2. Messages Context (`@asset-mem/common/contexts/messages-context.tsx`)
 
 Provides real-time message loading for a session:
 - `messages`: Array of messages for the current session

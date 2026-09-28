@@ -1,6 +1,6 @@
 # Agent Framework
 
-Reusable **Google ADK agent platform** for HomeApp and future verticals. It holds domain-agnostic plumbing: turn resolution, tool registry, branch orchestration, session state merge, message-patch contracts, context assembly, observability, and parallel execution.
+Reusable **Google ADK agent platform** for AssetMem and future verticals. It holds domain-agnostic plumbing: turn resolution, tool registry, branch orchestration, session state merge, message-patch contracts, context assembly, observability, and parallel execution.
 
 **Layout:** `gcp/agent_framework/` — Python package imported as `agent_framework.*` (same monorepo pattern as `gcp/common/`).
 
@@ -80,7 +80,7 @@ See also `gcp/agents/homecare/property_agent/ARCHITECTURE.md` for how Homecare m
 
 ## Installation
 
-### As a path dependency (HomeApp)
+### As a path dependency (AssetMem)
 
 In the consumer `pyproject.toml`:
 

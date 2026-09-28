@@ -15,11 +15,11 @@ import {
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { CheckpointAccordionBranchBadge } from '@/components/CheckpointAccordionBranchBadge';
-import type { StructuredResponseData } from '@homeapp/common/types';
+import type { StructuredResponseData } from '@asset-mem/common/types';
 import {
   EXECUTIVE_SUMMARY_ACCORDION_TITLE,
   SUMMARY_ACCORDION_PLACEHOLDER_PREVIEW,
-} from '@homeapp/common/lib/executive-summary-display';
+} from '@asset-mem/common/lib/executive-summary-display';
 
 /** Sections opened in a side sheet from inline structured chat (no accordion). */
 export type StructuredSection =

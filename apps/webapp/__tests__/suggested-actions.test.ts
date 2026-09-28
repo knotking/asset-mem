@@ -1,5 +1,5 @@
 // Mirrors apps/common/__tests__/suggested-actions.test.ts (webapp keeps a
-// synced copy of the parser instead of importing @homeapp/common).
+// synced copy of the parser instead of importing @asset-mem/common).
 import { getSuggestedActionsFromContentJson } from "@/lib/suggested-actions";
 
 describe("getSuggestedActionsFromContentJson", () => {

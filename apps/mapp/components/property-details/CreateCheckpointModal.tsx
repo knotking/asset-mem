@@ -12,13 +12,13 @@ import { format } from 'date-fns';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { createLogger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
-import { CHECKPOINT_QUOTA_USER_MESSAGE } from '@homeapp/common/lib/document-analysis-errors';
+import { CHECKPOINT_QUOTA_USER_MESSAGE } from '@asset-mem/common/lib/document-analysis-errors';
 import {
   isAtPlanLimit,
   planLimitBlockMessage,
   planLimitUsageHint,
-} from '@homeapp/common/lib/plan-limit-slice';
-import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
+} from '@asset-mem/common/lib/plan-limit-slice';
+import { useLlmTokenUsage } from '@asset-mem/common/contexts/llm-token-usage-context';
 import { showThemedAlert } from '@/contexts/themed-alert-context';
 
 const checkpointLog = createLogger('checkpoint');

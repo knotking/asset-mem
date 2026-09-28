@@ -1,6 +1,6 @@
 /**
  * Webapp copy of apps/common/src/lib/user-display.ts — keep both in sync.
- * Webapp must not import @homeapp/common for this module.
+ * Webapp must not import @asset-mem/common for this module.
  */
 
 import type { User } from 'firebase/auth';

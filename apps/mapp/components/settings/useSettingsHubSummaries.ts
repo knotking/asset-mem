@@ -1,12 +1,12 @@
 import * as React from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { useAuth } from '@homeapp/common/contexts/auth-context';
-import { db } from '@homeapp/common/firebase';
-import { getUserDisplayLabel } from '@homeapp/common/lib/user-display';
-import { formatTokensCompact } from '@homeapp/common/lib/format-tokens';
-import { FREE_PLAN_TOKENS_PER_MONTH } from '@homeapp/common/lib/plan-defaults';
-import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
-import { usePreferences } from '@homeapp/common/contexts/preferences-context';
+import { useAuth } from '@asset-mem/common/contexts/auth-context';
+import { db } from '@asset-mem/common/firebase';
+import { getUserDisplayLabel } from '@asset-mem/common/lib/user-display';
+import { formatTokensCompact } from '@asset-mem/common/lib/format-tokens';
+import { FREE_PLAN_TOKENS_PER_MONTH } from '@asset-mem/common/lib/plan-defaults';
+import { useLlmTokenUsage } from '@asset-mem/common/contexts/llm-token-usage-context';
+import { usePreferences } from '@asset-mem/common/contexts/preferences-context';
 import { inferPlanTierFromLimits, PLAN_NAMES } from '@/lib/plan-limits';
 
 type BillingSummary = {

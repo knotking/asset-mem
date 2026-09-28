@@ -16,8 +16,8 @@ import type {
   SearchLocationInput,
   AnalysisOptionalAgent,
   CheckpointOptionalAgent,
-} from '@homeapp/common/types';
-import { searchLocationLabel } from '@homeapp/common/lib/search-location';
+} from '@asset-mem/common/types';
+import { searchLocationLabel } from '@asset-mem/common/lib/search-location';
 
 interface CompactSettingsBarProps {
   primaryAgent: PrimaryAgent;

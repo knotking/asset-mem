@@ -1,4 +1,4 @@
-import type { CheckpointListBadgeVariant } from '@homeapp/common/lib/checkpoint-list-badge';
+import type { CheckpointListBadgeVariant } from '@asset-mem/common/lib/checkpoint-list-badge';
 
 /** NativeWind classes for checkpoint list badges (mapp only). */
 export function checkpointListBadgeStyles(variant: CheckpointListBadgeVariant): {

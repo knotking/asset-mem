@@ -1,4 +1,4 @@
-import type { DocumentPickerAsset } from '@homeapp/common/contexts/document-upload-context';
+import type { DocumentPickerAsset } from '@asset-mem/common/contexts/document-upload-context';
 
 type PendingUpload = {
   propertyId: string;

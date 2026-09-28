@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { DeletionConfigProvider } from '@homeapp/common/contexts/deletion-config-context';
+import { DeletionConfigProvider } from '@asset-mem/common/contexts/deletion-config-context';
 import { getMappDeletionApiUrls } from '@/lib/deletion-api';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 
